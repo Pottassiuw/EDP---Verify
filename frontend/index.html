@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verificador de IDs · EDP</title>
+    <title>De olho no Problema 🔍 · EDP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -16,40 +16,14 @@
   <body>
     <!-- ── UPLOAD ── -->
     <div id="upload-screen">
-      <div
-        style="
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
-        "
-      >
-        <div class="edp-logo">
-          <svg
-            width="52"
-            height="52"
-            viewBox="0 0 52 52"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="52" height="52" rx="6" fill="#00A859" />
-            <text
-              x="26"
-              y="34"
-              font-family="'Barlow Condensed',Arial,sans-serif"
-              font-size="22"
-              font-weight="700"
-              fill="white"
-              text-anchor="middle"
-              letter-spacing="1"
-            >
-              EDP
-            </text>
-          </svg>
-          <div class="edp-logo-text">
-            EDP Brasil<span>Verificador de IDs</span>
-          </div>
-        </div>
+      <div class="upload-brand">
+        <img
+          id="logo-upload"
+          class="edp-logo-img"
+          src="assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.svg"
+          alt="EDP"
+        />
+        <p class="upload-brand-subtitle">🔍 De olho no Problema</p>
       </div>
 
       <label class="upload-box" id="upload-box">
@@ -81,23 +55,14 @@
       <div class="layout">
         <aside class="sidebar" id="sidebar">
           <div class="sidebar-brand">
-            <div class="edp-logo">
-              <svg width="30" height="30" viewBox="0 0 52 52" fill="none">
-                <rect width="52" height="52" rx="6" fill="#00A859" />
-                <text
-                  x="26"
-                  y="34"
-                  font-family="'Barlow Condensed',Arial,sans-serif"
-                  font-size="22"
-                  font-weight="700"
-                  fill="white"
-                  text-anchor="middle"
-                  letter-spacing="1"
-                >
-                  EDP
-                </text>
-              </svg>
-              <div class="edp-logo-text">Verificador<span>de IDs</span></div>
+            <div class="sidebar-logo-wrap">
+              <img
+                id="logo-sidebar"
+                class="edp-logo-img sidebar-logo-img"
+                src="assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.svg"
+                alt="EDP"
+              />
+              <span class="sidebar-app-name">🔍 De olho no Problema</span>
             </div>
             <button class="sidebar-close-btn" onclick="closeSidebar()">
               ✕
@@ -105,6 +70,14 @@
           </div>
 
           <div class="sidebar-section-title">Filtro por Regra</div>
+          <button
+            id="clear-rules-btn"
+            class="clear-rules-btn"
+            onclick="clearRules()"
+            style="display: none"
+          >
+            Limpar regras
+          </button>
           <div class="rule-list" id="rule-list"></div>
 
           <div class="sidebar-upload-again">
@@ -124,8 +97,18 @@
               >
                 ☰
               </button>
-              <h2>Painel de Ocorrências</h2>
+              <h2>🔍 De olho no Problema</h2>
               <span class="file-badge" id="file-badge">—</span>
+            </div>
+            <div class="topbar-right">
+              <button
+                class="theme-toggle-btn"
+                id="theme-toggle"
+                onclick="toggleTheme()"
+                title="Alternar tema"
+              >
+                <span id="theme-icon">☀</span>
+              </button>
             </div>
           </div>
 
@@ -146,12 +129,31 @@
               <div class="stat-label">Visíveis</div>
               <div class="stat-value" id="s-show">0</div>
             </div>
+            <div class="stat-card accent-done">
+              <div class="stat-label">Concluídas</div>
+              <div class="stat-value" id="s-done">0</div>
+            </div>
           </div>
 
           <div class="filters-bar">
             <div class="filter grow">
               <label>Buscar (ID / Referência / Tipo)</label>
-              <input id="f-search" placeholder="Ex: 12345678, AT-001…" />
+              <input
+                id="f-search"
+                placeholder="Ex: 12345, 67890, AT-001  (vírgula, espaço ou nova linha)"
+              />
+            </div>
+            <div class="filter filter-uf">
+              <label>Estado (UF) ★</label>
+              <select id="f-uf">
+                <option value="all">Todos os estados</option>
+              </select>
+            </div>
+            <div class="filter filter-setor">
+              <label>Setor</label>
+              <select id="f-setor">
+                <option value="all">Todos os setores</option>
+              </select>
             </div>
             <div class="filter">
               <label>Status</label>
@@ -180,11 +182,22 @@
             </div>
           </div>
 
+          <!-- Chips de filtros ativos -->
+          <div id="chips-bar" class="chips-bar" style="display: none"></div>
+
           <!-- Tabela (tablet/desktop) -->
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th class="th-check">
+                    <input
+                      type="checkbox"
+                      id="select-all"
+                      onchange="toggleSelectAll()"
+                      title="Selecionar todas as visíveis"
+                    />
+                  </th>
                   <th>ID / Nota</th>
                   <th>Urgência</th>
                   <th>Tipo Nota</th>
@@ -201,6 +214,24 @@
           <!-- Cards (mobile) -->
           <div class="card-list" id="card-list"></div>
         </main>
+      </div>
+    </div>
+
+    <!-- ── Toolbar de seleção em lote ── -->
+    <div class="selection-toolbar" id="selection-toolbar">
+      <div class="sel-info">
+        <strong id="sel-count">0</strong> selecionada(s)
+      </div>
+      <div class="sel-actions">
+        <button class="btn btn-bulk-complete" onclick="bulkComplete()">
+          ✓ Marcar concluídas
+        </button>
+        <button class="btn btn-bulk-coffee" onclick="bulkCoffee()">
+          ☕ Abrir no COFFEE
+        </button>
+        <button class="btn btn-bulk-clear" onclick="clearSelection()">
+          Limpar seleção
+        </button>
       </div>
     </div>
 
