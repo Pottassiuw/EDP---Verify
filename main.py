@@ -50,6 +50,7 @@ def load_state():
         pass
 
 
+# Carrega ao iniciar o servidor
 load_state()
 
 
@@ -76,41 +77,6 @@ def extract_str(row, *keys):
     return None
 
 
-# Columns excluded from the generic chk_* error loop
-_IGNORED_CHK = {"chk_duplicada", "chk_trafo"}
-
-
-def parse_duplicate_ids(value, own_id: str, id_set: set) -> list:
-    """Parse a chk_duplicada cell → deduplicated list of {id, in_sheet} dicts."""
-    if not value or str(value).strip().lower() in ("", "ok", "nan", "none"):
-        return []
-    raw = str(value).strip()
-    if not re.search(r"\d", raw):          # non-numeric sentinels: coordenada_invalida etc.
-        return []
-    seen, result = set(), []
-    for token in raw.split("/"):
-        t = token.strip()
-        if not t or not re.search(r"\d", t):
-            continue
-        if t == own_id or t in seen:       # discard self-reference and duplicates
-            continue
-        seen.add(t)
-        result.append({"id": t, "in_sheet": t in id_set})
-    return result
-
-
-def enrich_candidate(cand: dict, source: dict) -> dict:
-    return {
-        **cand,
-        "local_instalacao": source.get("local_instalacao") or "",
-        "poste":            source.get("poste") or "",
-        "referencia":       source.get("referencia") or "",
-        "problema":         source.get("problema") or "",
-        "latitude":         source.get("latitude"),
-        "longitude":        source.get("longitude"),
-    }
-
-
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
@@ -133,12 +99,9 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
 
     chk_cols = [
-        c for c in df.columns
-        if re.match(r"^chk_", str(c).strip(), re.IGNORECASE)
-        and str(c).strip().lower() not in _IGNORED_CHK
+        c for c in df.columns if re.match(r"^chk_", str(c).strip(), re.IGNORECASE)
     ]
 
-    # ── Pass 1: build records ─────────────────────────────────────────────
     records = []
 
     for _, row in df.iterrows():
@@ -163,9 +126,9 @@ async def upload_file(file: UploadFile = File(...)):
         except Exception:
             prioridade = 99
 
-        referencia = str(
+        referencia = (
             row.get("referencia_fisica") or row.get("referencia_eletrica") or "-"
-        ).strip()
+        )
 
         precisao_raw = row.get("precisao")
         precisao = (
@@ -174,62 +137,24 @@ async def upload_file(file: UploadFile = File(...)):
             else None
         )
 
-        problema_parts = [
-            extract_str(row, "componente"),
-            extract_str(row, "sintoma"),
-            extract_str(row, "causa"),
-        ]
-        problema = " · ".join(p for p in problema_parts if p) or None
-
         records.append(
             {
-                "id":         str(row.get("id", "")).strip(),
+                "id": str(row.get("id", "")).strip(),
                 "prioridade": prioridade,
-                "tipo_nota":  str(row.get("tipo_nota", "-")),
-                "referencia": referencia,
-                "uf":         extract_str(row, "uf"),
-                "setor":      extract_str(row, "setor"),
-                "latitude":   parse_coord(row.get("latitude")),
-                "longitude":  parse_coord(row.get("longitude")),
-                "precisao":   precisao,
-                "poste":      extract_str(row, "postes", "poste"),
-                "problema":   problema,
-                "errors":     errors,
-                "status":     "erro" if errors else "ok",
-                "_dup_raw":   str(row.get("chk_duplicada", "") or "").strip(),
-                "raw":        {str(k): str(v) if pd.notna(v) else "-" for k, v in row.items()},
+                "tipo_nota": str(row.get("tipo_nota", "-")),
+                "referencia": str(referencia).strip(),
+                "uf": extract_str(row, "uf"),
+                "setor": extract_str(row, "setor"),
+                "latitude": parse_coord(row.get("latitude")),
+                "longitude": parse_coord(row.get("longitude")),
+                "precisao": precisao,
+                "errors": errors,
+                "status": "erro" if errors else "ok",
+                "raw": {str(k): str(v) if pd.notna(v) else "-" for k, v in row.items()},
             }
         )
 
-    # ── Pass 2: resolve duplicates ────────────────────────────────────────
-    id_set = {r["id"] for r in records}
-    id_map = {r["id"]: r for r in records}
-
-    for rec in records:
-        dup_raw = rec.pop("_dup_raw", "")
-        cands = parse_duplicate_ids(dup_raw, rec["id"], id_set)
-
-        if not cands:
-            rec["duplicates"] = []
-            continue
-
-        enriched = []
-        for c in cands:
-            if c["in_sheet"]:
-                enriched.append(enrich_candidate(c, id_map[c["id"]]))
-            else:
-                enriched.append(c)
-
-        rec["duplicates"] = enriched
-        rec["errors"].append(
-            {
-                "rule":      "chk_duplicata",
-                "rule_name": "Duplicata",
-                "value":     f"{len(cands)} candidata{'s' if len(cands) != 1 else ''}",
-            }
-        )
-        rec["status"] = "erro"
-
+    # Nova planilha: zera concluídas anteriores
     RECORDS = records
     COMPLETED = set()
     save_state()
@@ -266,17 +191,10 @@ def toggle_complete(note_id: str):
         COMPLETED.remove(note_id)
     else:
         COMPLETED.add(note_id)
+
     save_state()
+
     return {"status": "ok", "completed": note_id in COMPLETED}
 
 
-@app.post("/api/duplicata/{note_id}")
-def mark_duplicata(note_id: str):
-    COMPLETED.add(note_id)
-    save_state()
-    return {"status": "ok"}
-
-
-DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"
-if DIST.exists():
-    app.mount("/", StaticFiles(directory=str(DIST), html=True), name="static")
+app.mount("/", StaticFiles(directory="frontend", html=True), name="static")

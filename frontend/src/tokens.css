@@ -1,0 +1,175 @@
+/* ============================================================
+   EDP Verify — elevated token system
+   Brand spectrum pulled from the EDP spiral mark:
+   indigo/violet → blue/cyan → green, on a near-black navy.
+   Scoped to .edp so dark & light instances coexist on one canvas.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.edp {
+  /* — brand spectrum — */
+  --green:    #00a859;
+  --green-2:  #1dbd6e;
+  --accent:      #00a859;
+  --accent-2:    #1dbd6e;
+  --accent-tint: rgba(0,168,89,0.13);
+  --blue:     #1f9fd6;
+  --indigo:   #6b5ce6;
+  --amber:    #f0a93b;
+  --red:      #f0555c;
+
+  /* — DARK — */
+  --bg:        #161e2b;
+  --bg-2:      #1b2433;
+  --surface:   #212c3e;
+  --surface-2: #283449;
+  --surface-3: #31405a;
+  --line:      rgba(255,255,255,0.07);
+  --line-2:    rgba(255,255,255,0.12);
+
+  --text:      #eef2f8;
+  --text-dim:  #9aa9c2;
+  --text-mute: #61708c;
+
+  --tint-green:  rgba(0,168,89,0.12);
+  --tint-blue:   rgba(31,159,214,0.13);
+  --tint-indigo: rgba(107,92,230,0.14);
+  --tint-amber:  rgba(240,169,59,0.13);
+  --tint-red:    rgba(240,85,92,0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow:    0 6px 24px rgba(0,0,0,0.32);
+  --shadow-lg: 0 24px 60px rgba(0,0,0,0.45);
+
+  /* — type — */
+  --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* — geometry — */
+  --r-sm: 6px;
+  --r:    9px;
+  --r-md: 11px;
+  --r-lg: 14px;
+
+  /* — density (cozy default) — */
+  --row-py: 13px;
+  --pad: 20px;
+  --gap: 16px;
+  --tile-py: 18px;
+
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.edp[data-density="compact"] {
+  --row-py: 8px;
+  --pad: 14px;
+  --gap: 11px;
+  --tile-py: 13px;
+}
+
+/* — LIGHT — */
+.edp[data-theme="light"] {
+  --bg:        #eef1f6;
+  --bg-2:      #e6eaf2;
+  --surface:   #ffffff;
+  --surface-2: #f4f6fb;
+  --surface-3: #e8ecf4;
+  --line:      rgba(22,30,43,0.09);
+  --line-2:    rgba(22,30,43,0.16);
+
+  --text:      #15203a;
+  --text-dim:  #4f6079;
+  --text-mute: #8a99b3;
+
+  --tint-green:  rgba(0,168,89,0.10);
+  --tint-blue:   rgba(31,159,214,0.11);
+  --tint-indigo: rgba(107,92,230,0.11);
+  --tint-amber:  rgba(240,169,59,0.14);
+  --tint-red:    rgba(240,85,92,0.10);
+
+  --shadow-sm: 0 1px 2px rgba(22,30,43,0.07);
+  --shadow:    0 8px 24px rgba(22,30,43,0.09);
+  --shadow-lg: 0 24px 60px rgba(22,30,43,0.16);
+}
+
+/* ---- shared atoms ---- */
+.edp * { box-sizing: border-box; }
+.edp ::-webkit-scrollbar { width: 8px; height: 8px; }
+.edp ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; }
+.edp ::-webkit-scrollbar-track { background: transparent; }
+
+.edp-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 500;
+}
+.edp-mono { font-family: var(--font-mono); }
+
+.edp-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 5px;
+  white-space: nowrap;
+}
+.edp-tag.ok  { background: var(--tint-green); color: var(--green); }
+.edp-tag.err { background: var(--tint-red);   color: var(--red); }
+.edp-tag.done{ background: var(--tint-indigo); color: var(--indigo); }
+.edp-tag.dup { background: var(--indigo); color: #fff; }
+.edp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.edp-prio {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 26px; padding: 0 7px;
+  border-radius: 7px;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.edp-prio.high { background: var(--tint-red);   color: var(--red);   border-color: rgba(240,85,92,0.3); }
+.edp-prio.med  { background: var(--tint-amber); color: var(--amber); border-color: rgba(240,169,59,0.32); }
+.edp-prio.low  { background: var(--tint-green); color: var(--green); border-color: rgba(0,168,89,0.3); }
+.edp-prio.none { background: var(--surface-2);  color: var(--text-mute); border-color: var(--line); }
+
+.edp-rule {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 500;
+  padding: 3px 9px 3px 7px; border-radius: 999px;
+  background: var(--tint-red); color: var(--red);
+  border: 1px solid rgba(240,85,92,0.22);
+  white-space: nowrap;
+}
+.edp-rule::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; opacity: 0.9;
+}
+
+.edp-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  padding: 8px 13px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-2); background: transparent; color: var(--text-dim);
+  cursor: pointer; transition: all .14s ease; white-space: nowrap;
+}
+.edp-btn:hover { color: var(--text); border-color: var(--text-mute); }
+.edp-btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
+.edp-btn.primary:hover { background: var(--green-2); }
+.edp-btn.coffee { background: rgba(111,78,55,0.18); border-color: rgba(190,140,100,0.3); color: #d8a883; }
+.edp-btn.ghost { border-color: transparent; }
+.edp-btn.sm { padding: 5px 9px; font-size: 12px; }
+
+.edp-seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+.edp-seg button {
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 5px; border: none; background: transparent;
+  color: var(--text-dim); cursor: pointer; transition: all .12s;
+}
+.edp-seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
