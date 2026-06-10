@@ -1,4 +1,4 @@
-import type { RuleKey, RuleMeta, FetchResult, Note, NoteError, NoteRaw, NoteStatus, DuplicateCandidate, UploadResult, ToggleResult, DuplicateResult, Source } from './types';
+import type { RuleKey, RuleMeta, FetchResult, Note, NoteError, NoteRaw, NoteStatus, DuplicateCandidate, UploadResult, ToggleResult, DuplicateResult } from './types';
 
 const BASE: string = localStorage.getItem("edp_api") || "/api";
 
@@ -76,7 +76,7 @@ function normalize(j: ApiData): FetchResult {
   const notes: Note[] = records.map((r): Note => {
     const raw = (r.raw ?? {}) as Partial<NoteRaw> & Record<string, unknown>;
     const ref = r.referencia;
-    const local = r.local_instalacao ?? str(raw.local_instalacao) ?? "";
+    const local = r.local_instalacao ?? str(raw.local_instalacao);
     return {
       id: r.id,
       prioridade: r.prioridade,
@@ -92,7 +92,7 @@ function normalize(j: ApiData): FetchResult {
       descricao: r.descricao ?? str(raw.descricao, ""),
       latitude: r.latitude ?? (raw.latitude != null ? String(raw.latitude) : null),
       longitude: r.longitude ?? (raw.longitude != null ? String(raw.longitude) : null),
-      colaborador: r.colaborador ?? str(raw.colaborador) ?? null,
+      colaborador: r.colaborador ?? (str(raw.colaborador) || null),
       imagens_totais: r.imagens_totais ?? num(raw.imagens_totais),
       imagens_recebidas: r.imagens_recebidas ?? num(raw.imagens_recebidas),
       errors: r.errors ?? [],
@@ -101,8 +101,7 @@ function normalize(j: ApiData): FetchResult {
       raw: raw as NoteRaw,
     };
   });
-  const source: Source = "api";
-  return { notes, completed: new Set(j.completed ?? []), source };
+  return { notes, completed: new Set(j.completed ?? []), source: "api" };
 }
 
 export async function fetchData(): Promise<FetchResult> {

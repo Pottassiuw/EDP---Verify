@@ -83,13 +83,6 @@ export interface RuleMeta {
   short: string;
 }
 
-export interface Totals {
-  total: number;
-  ok: number;
-  err: number;
-  done: number;
-}
-
 // ── Estado de Tweaks ─────────────────────────────────────────────────────
 export type Accent = [string, string, string];
 export interface TweakState {
@@ -105,13 +98,6 @@ export type SetTweak<T> = {
 };
 
 // ── Camada de dados / API ────────────────────────────────────────────────
-export interface EdpData {
-  RULES: Record<RuleKey, RuleDef>;
-  notes: Note[];
-  ruleStats: () => Record<RuleKey, number>;
-  totals: Totals;
-  file: string;
-}
 export interface EdpDemo {
   notes: Note[];
   file: string;
@@ -139,24 +125,6 @@ export interface DuplicateResult {
 export interface LogoProps {
   theme?: Theme;
   h?: number;
-}
-export interface StatTileProps {
-  label: string;
-  value: React.ReactNode;
-  accent?: string;
-  sub?: React.ReactNode;
-  big?: boolean;
-}
-export interface DonutProps {
-  pct: number;
-  size?: number;
-  stroke?: number;
-  color?: string;
-}
-export interface RuleBreakdownProps {
-  stats: Record<RuleKey, number>;
-  max: number;
-  compact?: boolean;
 }
 export interface FieldProps {
   label: string;

@@ -1,40 +1,25 @@
-/* EDP Verify — Painel de Triagem (interativo), TypeScript.
-   Direção B funcional: filtros reais (busca, UF, setor, urgência, status,
-   situação) + régua de chips por bloqueio, seleção em lote, painel de detalhe
-   persistente, comparação de duplicatas (COFFEE), tema/densidade via Tweaks. */
-
-/* Os componentes/funções abaixo são globais de script, declarados nos arquivos
-   irmãos (shared.tsx, tweaks-panel.tsx, upload-screen.tsx, duplicate-compare.tsx)
-   e carregados antes deste. Como nenhum arquivo usa import/export, todos
-   compartilham o mesmo escopo global — referenciamos direto, sem redeclarar.
-   Os dados (EDP, EDP_DEMO, EDPApi, ruleMeta) vêm de IIFEs e são lidos via window. */
-
-type CssVars = React.CSSProperties & Record<`--${string}`, string>;
-
-const TWEAK_DEFAULTS: TweakState = /*EDITMODE-BEGIN*/{
-  "theme": "dark",
-  "density": "cozy",
-  "accent": ["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
-  "showKpis": true,
-  "coffeeLayout": "composer"
-}/*EDITMODE-END*/;
+import React from 'react';
+import type { Note, TweakState, UrgBand, RuleKey } from '../types';
+import { EDPApi, ruleMeta } from '../api';
+import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
+import { DuplicateCompare } from './duplicate-compare';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
 
-interface DashboardProps {
+export interface DashboardProps {
   t: TweakState;
   notes: Note[];
   completed: Set<string>;
   dupResolved: Set<string>;
   onToggleComplete: (id: string) => void;
-  onMarkMany: (ids: string[]) => void;
+  onMarkMany: (ids: string[], action: "done" | "reopen") => void;
   onMarkDuplicate: (id: string) => void;
+  onSendToCoffee: (ids: string[], sourceId?: string) => void;
 }
 
-function Dashboard(props: DashboardProps): JSX.Element {
-  const { t, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate } = props;
-  // estado de filtro
+export function Dashboard(props: DashboardProps): React.JSX.Element {
+  const { t, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
   const [q, setQ] = React.useState("");
   const [uf, setUf] = React.useState("all");
   const [setor, setSetor] = React.useState("all");
@@ -42,8 +27,6 @@ function Dashboard(props: DashboardProps): JSX.Element {
   const [status, setStatus] = React.useState("all");
   const [situacao, setSituacao] = React.useState("all");
   const [rules, setRules] = React.useState<Set<RuleKey>>(() => new Set());
-
-  // estado local de UI
   const [selBatch, setSelBatch] = React.useState<Set<string>>(() => new Set());
   const [selId, setSelId] = React.useState<string | null>(notes[0] ? notes[0].id : null);
   const [queueCollapsed, setQueueCollapsed] = React.useState<boolean>(() => localStorage.getItem("edp_queue_collapsed") === "1");
@@ -54,9 +37,8 @@ function Dashboard(props: DashboardProps): JSX.Element {
   const ufOpts = [...new Set(notes.map((n) => n.uf).filter(Boolean))].sort();
   const setorOpts = [...new Set(notes.map((n) => n.setor).filter(Boolean))].sort();
   const ruleStats: Record<RuleKey, number> = {};
-  notes.forEach((n) => n.errors.forEach((e) => { ruleStats[e.rule] = (ruleStats[e.rule] || 0) + 1; }));
+  notes.forEach((n) => n.errors.forEach((e) => { ruleStats[e.rule] = (ruleStats[e.rule] ?? 0) + 1; }));
 
-  // ---- filtragem ----
   const terms = q.toLowerCase().split(/[\s,;]+/).filter(Boolean);
   function matches(n: Note): boolean {
     if (terms.length) {
@@ -76,13 +58,11 @@ function Dashboard(props: DashboardProps): JSX.Element {
   const filtered = notes.filter(matches).sort((a, b) =>
     (Number(b.errors.length > 0) - Number(a.errors.length > 0)) || a.prioridade - b.prioridade);
 
-  // mantém o detalhe válido
   React.useEffect(() => {
-    if (filtered.length && !filtered.some((n) => n.id === selId)) setSelId(filtered[0].id);
-  }, [q, uf, setor, urg, status, situacao, rules]);
-  const sel: Note | undefined = notes.find((n) => n.id === selId) || filtered[0];
+    if (filtered.length && !filtered.some((n) => n.id === selId)) setSelId(filtered[0]?.id ?? null);
+  }, [q, uf, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sel: Note | undefined = notes.find((n) => n.id === selId) ?? filtered[0];
 
-  // contadores
   const cTotal = notes.length;
   const cErr = notes.filter((n) => n.errors.length).length;
   const cOk = notes.filter((n) => !n.errors.length).length;
@@ -90,7 +70,6 @@ function Dashboard(props: DashboardProps): JSX.Element {
   const cDup = notes.filter((n) => n.duplicates.length).length;
   const pct = Math.round(cOk / cTotal * 100);
 
-  // chips de filtro ativo
   const chips: Array<{ k: string; clear: () => void }> = [];
   if (q) terms.forEach((tm) => chips.push({ k: "Busca: " + tm, clear: () => setQ(terms.filter((x) => x !== tm).join(" ")) }));
   if (uf !== "all") chips.push({ k: "UF: " + uf, clear: () => setUf("all") });
@@ -98,12 +77,11 @@ function Dashboard(props: DashboardProps): JSX.Element {
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
   if (status !== "all") chips.push({ k: "Status: " + (status === "ok" ? "Conforme" : "Com erro"), clear: () => setStatus("all") });
   if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Concluídas" : "Pendentes"), clear: () => setSituacao("all") });
-  rules.forEach((r) => chips.push({ k: "Bloqueio: " + window.ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
+  rules.forEach((r) => chips.push({ k: "Bloqueio: " + ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
   function clearAll(): void { setQ(""); setUf("all"); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
 
   function toggleRule(r: RuleKey): void { const s = new Set(rules); if (s.has(r)) s.delete(r); else s.add(r); setRules(s); }
   function toggleBatch(id: string): void { const s = new Set(selBatch); if (s.has(id)) s.delete(id); else s.add(id); setSelBatch(s); }
-  function markDone(ids: string[]): void { onMarkMany(ids); setSelBatch(new Set()); }
 
   return (
     <React.Fragment>
@@ -131,7 +109,6 @@ function Dashboard(props: DashboardProps): JSX.Element {
         .triage .accent-btn:hover{background:var(--accent-2)}
       `}</style>
 
-      {/* KPI strip — compacto: barra de conformidade + métricas inline */}
       {t.showKpis && (
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
                       padding: "9px 22px", background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
@@ -155,7 +132,6 @@ function Dashboard(props: DashboardProps): JSX.Element {
         </div>
       )}
 
-      {/* filter bar */}
       <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
           <Field label="Buscar · ID, referência, tipo, setor" grow>
@@ -183,16 +159,14 @@ function Dashboard(props: DashboardProps): JSX.Element {
           </Field>
         </div>
 
-        {/* rule chips */}
         <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "0 22px 13px", flexWrap: "wrap" }}>
           <span className="edp-eyebrow" style={{ marginRight: 2 }}>Bloqueio</span>
           {Object.entries(ruleStats).sort((a, b) => b[1] - a[1]).map(([r, n]) => (
             <button key={r} className={"rchip" + (rules.has(r) ? " on" : "")} onClick={() => toggleRule(r)}>
-              {window.ruleMeta(r).label}<span className="c">{n}</span></button>
+              {ruleMeta(r).label}<span className="c">{n}</span></button>
           ))}
         </div>
 
-        {/* active filter chips */}
         {chips.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 22px 13px", flexWrap: "wrap" }}>
             <span className="edp-eyebrow" style={{ marginRight: 2 }}>Ativos</span>
@@ -205,11 +179,9 @@ function Dashboard(props: DashboardProps): JSX.Element {
         )}
       </div>
 
-      {/* body: queue + detail */}
       <div style={{ flex: 1, display: "grid",
                     gridTemplateColumns: queueCollapsed ? "46px 1fr" : "minmax(430px,1fr) 1.2fr",
                     overflow: "hidden" }}>
-        {/* queue */}
         <div style={{ display: "flex", flexDirection: "column", borderRight: "1px solid var(--line)", overflow: "hidden", background: "var(--surface)" }}>
           {queueCollapsed && (
             <button onClick={toggleQueue} title="Expandir fila" aria-label="Expandir fila"
@@ -261,6 +233,11 @@ function Dashboard(props: DashboardProps): JSX.Element {
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.tipo_nota}</div>
                   </div>
+                  {flagDup && !isDup && (
+                    <button title="Enviar candidatas para a fila COFFEE"
+                            style={{ all: "unset", cursor: "pointer", fontSize: 13, color: "var(--amber)", flexShrink: 0, lineHeight: 1, padding: "2px 4px" }}
+                            onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>→ ☕</button>
+                  )}
                   {isDup ? <span className="edp-tag dup"><span className="edp-dot" />Dup.</span>
                     : done ? <span className="edp-tag done"><span className="edp-dot" />OK</span>
                     : n.errors.length ? <span className="edp-mono" style={{ fontSize: 11, color: "var(--red)", fontWeight: 600, flexShrink: 0 }}>
@@ -271,23 +248,36 @@ function Dashboard(props: DashboardProps): JSX.Element {
             })}
           </div>
 
-          {/* batch bar */}
-          {selBatch.size > 0 && (
-            <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "10px 15px",
-                          background: "var(--bg-2)", borderTop: "1px solid var(--line-2)" }}>
-              <span style={{ fontSize: 13, color: "var(--text-dim)" }}>
-                <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
-              <button className="edp-btn accent-btn sm" onClick={() => markDone([...selBatch])}>✓ Concluir</button>
-              <button className="edp-btn coffee sm" onClick={() => window.EDPApi.openCoffee([...selBatch])}>☕ COFFEE</button>
-              <button className="edp-btn ghost sm" onClick={() => setSelBatch(new Set())}>Limpar</button>
-            </div>
-          )}
+          {selBatch.size > 0 && (() => {
+            const ids = [...selBatch];
+            const allDone = ids.every((id) => completed.has(id));
+            const allOpen = ids.every((id) => !completed.has(id));
+            const doAction = (action: "done" | "reopen"): void => { onMarkMany(ids, action); setSelBatch(new Set()); };
+            return (
+              <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
+                            background: "var(--bg-2)", borderTop: "1px solid var(--line-2)", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
+                  <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
+                {!allDone && (
+                  <button className="edp-btn accent-btn sm" onClick={() => doAction("done")}>
+                    ✓ {allOpen ? "Concluir" : "Concluir pendentes"}
+                  </button>
+                )}
+                {!allOpen && (
+                  <button className="edp-btn ghost sm" onClick={() => doAction("reopen")}>
+                    ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
+                  </button>
+                )}
+                <button className="edp-btn coffee sm" onClick={() => EDPApi.openCoffee(ids)}>☕ COFFEE</button>
+                <button className="edp-btn ghost sm" onClick={() => setSelBatch(new Set())}>Limpar</button>
+              </div>
+            );
+          })()}
           </React.Fragment>)}
         </div>
 
-        {/* detail */}
         <Detail sel={sel} done={!!sel && completed.has(sel.id)} dup={!!sel && dupResolved.has(sel.id)}
-                onToggleDone={onToggleComplete} onMarkDuplicate={onMarkDuplicate} />
+                onToggleDone={onToggleComplete} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />
       </div>
     </React.Fragment>
   );
@@ -299,16 +289,17 @@ interface DetailProps {
   dup: boolean;
   onToggleDone: (id: string) => void;
   onMarkDuplicate: (id: string) => void;
+  onSendToCoffee: (ids: string[], sourceId?: string) => void;
 }
 
-function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate }: DetailProps): JSX.Element {
+function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee }: DetailProps): React.JSX.Element {
   if (!sel) return <div style={{ background: "var(--bg-2)" }} />;
   const v = (x: string | number | null | undefined, fb = "—"): string => {
     const s = x == null ? "" : String(x);
     return s === "" || s === "-" ? fb : s;
   };
   const fields: Array<[string, string]> = [
-    ["Tipo de nota", v(sel.tipo_nota)], ["Referência", v(sel.referencia)], ["Descrição", v(sel.descricao)],
+    ["Tipo de nota", v(sel.tipo_nota)], ["Referência", v(sel.referencia)], ["Problema", v(sel.problema || sel.descricao)],
     ["Colaborador", v(sel.colaborador)], ["Estado", v(sel.uf)], ["Setor", v(sel.setor)],
     ["Local instal.", v(sel.local_instalacao)], ["Poste", v(sel.poste)], ["ID SAP", v(sel.id_sap)],
     ["Imagens", v(sel.imagens_recebidas) + " / " + v(sel.imagens_totais)],
@@ -330,13 +321,13 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate }: DetailProps):
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button className="edp-btn coffee sm" onClick={() => window.EDPApi.openCoffee(sel.id)}>☕ COFFEE</button>
+          <button className="edp-btn coffee sm" onClick={() => EDPApi.openCoffee(sel.id)}>☕ COFFEE</button>
           <button className={"edp-btn sm" + (done ? "" : " accent-btn")} onClick={() => onToggleDone(sel.id)}>
             {done ? "↺ Reabrir" : "✓ Concluir"}</button>
         </div>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
-        {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} />}
+        {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />}
 
         <section>
           <div className="edp-eyebrow" style={{ marginBottom: 11 }}>
@@ -365,7 +356,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate }: DetailProps):
             ))}
           </div>
           {sel.latitude && sel.longitude && (
-            <a className="edp-btn sm" target="_blank" rel="noopener" href={window.EDPApi.mapsUrl(sel.latitude, sel.longitude)}
+            <a className="edp-btn sm" target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}
                style={{ marginTop: 12, color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>◎ Abrir no Google Maps</a>
           )}
         </section>
@@ -373,190 +364,3 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate }: DetailProps):
     </div>
   );
 }
-
-// ── Navegação (sidebar de ícones) ──────────────────────────────────────────
-const svgBase = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
-  strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-
-const BrandGlyph = (): JSX.Element => (
-  <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
-    <circle cx="50" cy="50" r="30" fill="none" stroke="var(--indigo)" strokeWidth="9" />
-    <circle cx="50" cy="50" r="18" fill="none" stroke="var(--blue)" strokeWidth="9" />
-    <circle cx="50" cy="50" r="7" fill="none" stroke="var(--green)" strokeWidth="9" />
-  </svg>
-);
-const IconTriage = (): JSX.Element => (<svg {...svgBase}><path d="M4 6h10M4 12h10M4 18h7" /><path d="M15.5 16.5l2 2 4-4.5" /></svg>);
-const IconCoffee = (): JSX.Element => (<svg {...svgBase}><path d="M5 9h12v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z" /><path d="M17 10h2.4a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3c-.5 1 .5 1.6 0 2.6M12 3c-.5 1 .5 1.6 0 2.6" /></svg>);
-const IconReport = (): JSX.Element => (<svg {...svgBase}><path d="M3 21h18" /><rect x="5" y="10" width="3" height="8" rx="1" /><rect x="11" y="5" width="3" height="13" rx="1" /><rect x="17" y="13" width="3" height="5" rx="1" /></svg>);
-const IconBI = (): JSX.Element => (<svg {...svgBase}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>);
-const IconGear = (): JSX.Element => (<svg {...svgBase}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>);
-
-interface NavBtnProps { active?: boolean; soon?: boolean; label: string; onClick?: () => void; children: React.ReactNode; }
-function NavBtn({ active, soon, label, onClick, children }: NavBtnProps): JSX.Element {
-  return (
-    <button title={soon ? label + " · em breve" : label} aria-label={label} disabled={soon} onClick={onClick}
-            style={{ position: "relative", width: 42, height: 42, border: 0, borderRadius: 11,
-                     cursor: soon ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                     background: active ? "var(--accent-tint)" : "transparent",
-                     color: active ? "var(--accent)" : "var(--text-mute)", opacity: soon ? 0.4 : 1, transition: "background .12s, color .12s" }}>
-      {active && <span style={{ position: "absolute", left: -7, top: 9, bottom: 9, width: 3, borderRadius: 999, background: "var(--accent)" }} />}
-      {children}
-      {soon && <span style={{ position: "absolute", top: 4, right: 4, width: 5, height: 5, borderRadius: "50%", background: "var(--amber)" }} />}
-    </button>
-  );
-}
-
-interface SidebarProps { section: AppSection; setSection: (s: AppSection) => void; }
-function Sidebar({ section, setSection }: SidebarProps): JSX.Element {
-  return (
-    <nav className="edp-nav" style={{ width: 56, flexShrink: 0, background: "var(--surface)", borderRight: "1px solid var(--line)",
-         display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0 14px", gap: 6, zIndex: 2 }}>
-      <style>{`.edp-nav button:not(:disabled):hover{background:var(--surface-2)!important;color:var(--text)!important}`}</style>
-      <div style={{ marginBottom: 10 }}><BrandGlyph /></div>
-      <NavBtn active={section === "triagem"} label="Triagem" onClick={() => setSection("triagem")}><IconTriage /></NavBtn>
-      <NavBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></NavBtn>
-      <div style={{ flex: 1 }} />
-      <NavBtn soon label="Relatórios"><IconReport /></NavBtn>
-      <NavBtn soon label="De olho no BI"><IconBI /></NavBtn>
-      <NavBtn soon label="Configurações"><IconGear /></NavBtn>
-    </nav>
-  );
-}
-
-interface TopBarProps { t: TweakState; setTweak: SetTweak<TweakState>; file: string; source: Source; onReset: () => void; }
-function TopBar({ t, setTweak, file, source, onReset }: TopBarProps): JSX.Element {
-  return (
-    <div style={{ height: 56, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "0 22px", background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
-      <Logo theme={t.theme} h={24} />
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-mute)", background: "var(--bg-2)",
-                   padding: "5px 10px", borderRadius: 6, border: "1px solid var(--line)" }}>{file}</span>
-        <span title={source === "api" ? "Conectado ao backend" : "Dados de demonstração (offline)"}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5, fontFamily: "var(--font-mono)",
-                       letterSpacing: ".06em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 999,
-                       color: source === "api" ? "var(--green)" : "var(--amber)",
-                       background: source === "api" ? "var(--tint-green)" : "var(--tint-amber)",
-                       border: "1px solid " + (source === "api" ? "rgba(0,168,89,.3)" : "rgba(240,169,59,.3)") }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
-          {source === "api" ? "API" : "Demo"}
-        </span>
-        <div className="edp-seg">
-          {(["dark", "light"] as Theme[]).map((th) => (
-            <button key={th} className={t.theme === th ? "on" : ""} onClick={() => setTweak("theme", th)}>
-              {th === "dark" ? "Escuro" : "Claro"}</button>
-          ))}
-        </div>
-        <button className="edp-btn ghost sm" title="Nova planilha" onClick={onReset}>↑ Nova</button>
-      </div>
-    </div>
-  );
-}
-
-function Root(): JSX.Element {
-  const [t, setTweak] = useTweaks<TweakState>(TWEAK_DEFAULTS);
-  const [screen, setScreen] = React.useState<"upload" | "dashboard">("upload");
-  const [notes, setNotes] = React.useState<Note[]>([]);
-  const [completed, setCompleted] = React.useState<Set<string>>(() => new Set());
-  const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set());
-  const [file, setFile] = React.useState("");
-  const [source, setSource] = React.useState<Source>("demo");
-  const [section, setSection] = React.useState<AppSection>("triagem");
-  const accentStyle: CssVars = { "--accent": t.accent[0], "--accent-2": t.accent[1], "--accent-tint": t.accent[2] };
-
-  // Auto-restaura do backend, se já houver planilha carregada lá.
-  React.useEffect(() => {
-    let cancel = false;
-    window.EDPApi.fetchData().then((d) => {
-      if (cancel || !d.notes || !d.notes.length) return;
-      setNotes(d.notes); setCompleted(d.completed); setSource("api");
-      setFile(localStorage.getItem("edp_file") || "planilha carregada");
-      setScreen("dashboard");
-    }).catch(() => {/* backend offline — segue na tela de upload */});
-    return () => { cancel = true; };
-  }, []);
-
-  function loadDemo(name?: string): void {
-    const savedDone = JSON.parse(localStorage.getItem("edp_demo_done") || "null") as string[] | null;
-    const savedDup = JSON.parse(localStorage.getItem("edp_demo_dup") || "null") as string[] | null;
-    setNotes(window.EDP_DEMO.notes);
-    setCompleted(new Set(savedDone || window.EDP_DEMO.defaultDone));
-    setDupResolved(new Set(savedDup || window.EDP_DEMO.defaultDup));
-    setSource("demo"); setFile(name || window.EDP_DEMO.file); setScreen("dashboard");
-  }
-
-  // Upload real: envia ao backend, recarrega os dados. Lança erro se offline.
-  async function handleUpload(f: File): Promise<void> {
-    await window.EDPApi.upload(f);
-    const d = await window.EDPApi.fetchData();
-    setNotes(d.notes); setCompleted(d.completed); setSource("api");
-    setFile(f.name); localStorage.setItem("edp_file", f.name);
-    setScreen("dashboard");
-  }
-
-  function persistDone(set: Set<string>): void { if (source === "demo") localStorage.setItem("edp_demo_done", JSON.stringify([...set])); }
-  function persistDup(set: Set<string>): void { if (source === "demo") localStorage.setItem("edp_demo_dup", JSON.stringify([...set])); }
-
-  function toggleComplete(id: string): void {
-    const reopening = completed.has(id);
-    setCompleted((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); persistDone(s); return s; });
-    if (reopening) setDupResolved((prev) => { const s = new Set(prev); s.delete(id); persistDup(s); return s; });
-    if (source === "api") window.EDPApi.toggleComplete(id).catch(() => {});
-  }
-
-  function markMany(ids: string[]): void {
-    const novos = ids.filter((i) => !completed.has(i));
-    setCompleted((prev) => { const s = new Set(prev); novos.forEach((i) => s.add(i)); persistDone(s); return s; });
-    if (source === "api") novos.forEach((id) => window.EDPApi.toggleComplete(id).catch(() => {}));
-  }
-
-  // Marca/desmarca a nota como duplicata. Resolver também a conclui (sai da fila).
-  function markDuplicate(id: string): void {
-    const undo = dupResolved.has(id);
-    setDupResolved((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDup(s); return s; });
-    setCompleted((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDone(s); return s; });
-    if (source === "api") {
-      if (undo) window.EDPApi.toggleComplete(id).catch(() => {});
-      else window.EDPApi.markDuplicate(id).catch(() => {});
-    }
-  }
-
-  return (
-    <div className="edp triage" data-theme={t.theme} data-density={t.density}
-         style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
-      {screen === "upload" ? (
-        <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
-      ) : (
-        <React.Fragment>
-          <Sidebar section={section} setSection={setSection} />
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => setScreen("upload")} />
-            {section === "triagem"
-              ? <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
-                           onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate} />
-              : <CoffeeSection notes={notes} layout={t.coffeeLayout} />}
-          </div>
-        </React.Fragment>
-      )}
-
-      <TweaksPanel>
-        <TweakSection label="Aparência" />
-        <TweakRadio label="Tema" value={t.theme} options={["dark", "light"]} onChange={(val) => setTweak("theme", val)} />
-        <TweakRadio label="Densidade" value={t.density} options={["compact", "cozy"]} onChange={(val) => setTweak("density", val)} />
-        <TweakColor label="Cor de destaque" value={t.accent}
-                    options={[["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
-                              ["#1f9fd6", "#46b6e3", "rgba(31,159,214,0.14)"],
-                              ["#6b5ce6", "#8576ec", "rgba(107,92,230,0.15)"]]}
-                    onChange={(val) => setTweak("accent", val as Accent)} />
-        <TweakSection label="Layout" />
-        <TweakToggle label="Mostrar indicadores (KPIs)" value={t.showKpis} onChange={(val) => setTweak("showKpis", val)} />
-        <TweakSection label="Seção COFFEE" />
-        <TweakRadio label="Layout" value={t.coffeeLayout}
-                    options={[{ value: "composer", label: "Composer" }, { value: "split", label: "Split" }]}
-                    onChange={(val) => setTweak("coffeeLayout", val)} />
-      </TweaksPanel>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")!).render(<Root />);
