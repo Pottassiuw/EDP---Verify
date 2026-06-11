@@ -3,6 +3,7 @@ import type { Note, TweakState, UrgBand, RuleKey } from '../types';
 import { EDPApi, ruleMeta } from '../api';
 import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
+import { KpiDrawer } from './kpi-drawer';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -109,30 +110,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         .triage .accent-btn:hover{background:var(--accent-2)}
       `}</style>
 
-      {t.showKpis && (
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
-                      padding: "9px 22px", background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="edp-eyebrow">Conformidade</span>
-            <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 17, lineHeight: 1, color: "var(--accent)" }}>{pct}%</span>
-            <div style={{ width: 96, height: 6, borderRadius: 999, background: "var(--surface-3)", overflow: "hidden" }}>
-              <div style={{ width: pct + "%", height: "100%", background: "var(--accent)", borderRadius: 999 }} />
-            </div>
-            <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-dim)", whiteSpace: "nowrap" }}>{cOk}/{cTotal} prontas</span>
-          </div>
-          <div style={{ width: 1, height: 24, background: "var(--line-2)" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
-            {([["Com erro", cErr, "red"], ["Duplicatas", cDup, "indigo"], ["Visíveis", filtered.length, "blue"], ["Concluídas", cDone, "green"]] as Array<[string, number, string]>).map(([lbl, val, c]) => (
-              <div key={lbl} style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 18, lineHeight: 1, color: "var(--" + c + ")" }}>{val}</span>
-                <span className="edp-eyebrow">{lbl}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
+<div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
           <Field label="Buscar · ID, referência, tipo, setor" grow>
             <input style={ctrlStyle} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
@@ -279,6 +257,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         <Detail sel={sel} done={!!sel && completed.has(sel.id)} dup={!!sel && dupResolved.has(sel.id)}
                 onToggleDone={onToggleComplete} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />
       </div>
+
+      {t.showKpis && (
+        <KpiDrawer pct={pct} cTotal={cTotal} cOk={cOk} cErr={cErr} cDup={cDup}
+                   cDone={cDone} cVisible={filtered.length} />
+      )}
     </React.Fragment>
   );
 }
