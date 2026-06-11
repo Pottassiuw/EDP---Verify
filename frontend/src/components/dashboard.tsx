@@ -110,7 +110,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         .triage .accent-btn:hover{background:var(--accent-2)}
       `}</style>
 
-<div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
+      <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
           <Field label="Buscar · ID, referência, tipo, setor" grow>
             <input style={ctrlStyle} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
