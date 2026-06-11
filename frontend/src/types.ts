@@ -148,6 +148,16 @@ export interface CoffeeSectionProps {
   layout: CoffeeLayout;
 }
 
+export interface KpiDrawerProps {
+  pct: number;      // conformidade %
+  cTotal: number;   // total de notas
+  cOk: number;      // notas sem falha
+  cErr: number;     // notas com erro
+  cDup: number;     // notas com duplicatas
+  cDone: number;    // notas concluídas
+  cVisible: number; // notas visíveis no filtro atual
+}
+
 export type TweakOption<T> = T | { value: T; label: string };
 export interface TweaksPanelProps {
   title?: string;
