@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re as _re
+import threading
 from typing import Optional
 
 import pandas as pd
@@ -18,12 +19,14 @@ router = APIRouter(prefix="/api/input")
 
 # Estado da migração inicial (resolvido no primeiro acesso)
 _migracao = {"resultado": None}
+_banco_lock = threading.Lock()
 
 
 def _garantir_banco() -> str:
-    if _migracao["resultado"] is None:
-        _migracao["resultado"] = db.migrar_da_rede_se_preciso()
-        db.inicializar_banco()
+    with _banco_lock:
+        if _migracao["resultado"] is None:
+            _migracao["resultado"] = db.migrar_da_rede_se_preciso()
+            db.inicializar_banco()
     return _migracao["resultado"]
 
 
@@ -222,11 +225,13 @@ def _achar_base(nome_arquivo: str) -> str:
 
 @router.get("/responsaveis")
 def obter_responsaveis():
+    _garantir_banco()
     return db.carregar_responsaveis()
 
 
 @router.put("/responsaveis")
-def gravar_responsaveis(novo: dict, usuario: str = Depends(usuario_atual)):
+def gravar_responsaveis(novo: dict[str, str], usuario: str = Depends(usuario_atual)):
+    _garantir_banco()
     db.salvar_responsaveis(novo)
     return {"ok": True}
 
@@ -256,6 +261,7 @@ def baixar_base(nome_arquivo: str):
 @router.post("/bases/{nome_arquivo}")
 def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
                     usuario: str = Depends(usuario_atual)):
+    _garantir_banco()
     caminho = _achar_base(nome_arquivo)
     try:
         with open(caminho, "wb") as f:
