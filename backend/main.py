@@ -277,6 +277,11 @@ def mark_duplicata(note_id: str):
     return {"status": "ok"}
 
 
+from input_module.routes import router as input_router
+
+app.include_router(input_router)
+
+
 DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"
 if DIST.exists():
     app.mount("/", StaticFiles(directory=str(DIST), html=True), name="static")

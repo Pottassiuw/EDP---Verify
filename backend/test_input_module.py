@@ -257,3 +257,49 @@ def test_status_bases(engine_isolado):
     por_nome = {b["nome"]: b for b in bases}
     assert por_nome["IW28"]["encontrada"] is True
     assert por_nome["IW38"]["encontrada"] is False
+
+
+# ── Tarefa 5: endpoints de leitura /api/input/* ──────────────────────────
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def cliente(engine_isolado):
+    from main import app
+    from input_module import routes
+    routes._migracao["resultado"] = None
+    return TestClient(app)
+
+
+def test_get_notas_traz_registros_e_meta(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    from input_module import engine
+    engine.invalidar_cache()
+    r = cliente.get("/api/input/notas")
+    assert r.status_code == 200
+    corpo = r.json()
+    assert len(corpo["registros"]) == 1
+    assert corpo["registros"][0]["Numero_Nota"] == 2000
+    meta = corpo["meta"]
+    assert "99 Encerrado" in meta["status_opcoes"]
+    assert "Emergente" in meta["prioridade_opcoes"]
+    assert isinstance(meta["bases"], list)
+    assert "ultima_alteracao" in meta
+    assert meta["migracao"] in ("ja-existe", "migrado", "rede-indisponivel")
+
+
+def test_get_sync(cliente):
+    r = cliente.get("/api/input/sync")
+    assert r.status_code == 200
+    assert "ultima_alteracao" in r.json()
+
+
+def test_get_logs_e_timeline(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    db.aplicar_edicoes([{"Numero_Nota": 2000, "Observacao": "oi"}], usuario="ana")
+    assert len(cliente.get("/api/input/logs").json()["registros"]) == 1
+    assert len(cliente.get("/api/input/logs/nota/2000").json()["registros"]) == 1
+    assert cliente.get("/api/input/logs/nota/999").json()["registros"] == []
+    assert cliente.get("/api/input/logs/arquivos").json()["registros"] == []
