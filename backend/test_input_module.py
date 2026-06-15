@@ -72,3 +72,103 @@ def test_migracao_sem_rede_retorna_indisponivel(monkeypatch, tmp_path):
     monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
     monkeypatch.setattr(config, "REDE_DB_ORIGEM", str(tmp_path / "nao_existe.db"))
     assert db.migrar_da_rede_se_preciso() == "rede-indisponivel"
+
+
+# ── Tarefa 3: CRUD, logs, undo, backups, responsáveis e edição com diff ──
+import pandas as pd
+
+
+def _nota(numero=1000, **extras):
+    base = {
+        "ID_Cronologia": 1, "Numero_Nota": numero, "Status_Obra": "-",
+        "Conjunto": "POA", "Circuito": "POA 123", "Local_Instalacao": "045 RL TESTE",
+        "Regional": "Guarulhos", "Planejado_DDPM": 2.0,
+        "Mes_Execucao_Planejado": "jun-2026", "Data_Envio_Projeto": "01/06/2026",
+        "Status_Nota": "10 Em planejamento", "Prioridade_Nota": "Programável",
+        "Observacao": "", "Check": "-", "Status_Anterior": "-",
+        "Centro_Responsavel": "-",
+    }
+    base.update(extras)
+    return base
+
+
+def test_upsert_e_carregar(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(1000), _nota(1001, Conjunto="SUZANO")]))
+    df = db.carregar_dados()
+    assert len(df) == 2
+    linha = df[df["Numero_Nota"] == 1000].iloc[0]
+    assert linha["Status_Nota"] == "10 Em planejamento"
+    assert linha["Cidade"] == "Guarulhos"
+    db.salvar_em_massa(pd.DataFrame([_nota(1000, Observacao="editada")]))
+    df = db.carregar_dados()
+    assert len(df) == 2
+    assert df[df["Numero_Nota"] == 1000].iloc[0]["Observacao"] == "editada"
+
+
+def test_aplicar_edicoes_gera_diff_log_e_status_anterior(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    resultado = db.aplicar_edicoes(
+        [{"Numero_Nota": 2000, "Status_Nota": "99 Encerrado", "Observacao": "feita"}],
+        usuario="tester")
+    assert resultado["alteradas"] == 1
+    assert resultado["campos"] == 2
+    df = db.carregar_dados()
+    linha = df[df["Numero_Nota"] == 2000].iloc[0]
+    assert linha["Status_Nota"] == "99 Encerrado"
+    assert str(linha["Status_Anterior"]).startswith("10")  # status antigo preservado (numérico)
+    logs = db.carregar_logs()
+    assert set(logs["Campo_Alterado"]) == {"Status_Nota", "Observacao"}
+    assert logs.iloc[0]["Usuario"] == "tester"
+    resultado = db.aplicar_edicoes([{"Numero_Nota": 2000, "Observacao": "feita"}], usuario="tester")
+    assert resultado["alteradas"] == 0
+
+
+def test_aplicar_edicoes_nota_inexistente_da_erro(banco_temporario):
+    from input_module import db
+    with pytest.raises(ValueError):
+        db.aplicar_edicoes([{"Numero_Nota": 999999, "Observacao": "x"}], usuario="t")
+
+
+def test_reverter_ultima_alteracao(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(3000)]))
+    db.aplicar_edicoes([{"Numero_Nota": 3000, "Status_Nota": "99 Encerrado"}], usuario="t")
+    ok, _msg = db.reverter_ultima_alteracao()
+    assert ok
+    df = db.carregar_dados()
+    assert df[df["Numero_Nota"] == 3000].iloc[0]["Status_Nota"] == "10 Em planejamento"
+    ok, _msg = db.reverter_ultima_alteracao()
+    assert not ok
+
+
+def test_deletar_notas(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4000), _nota(4001)]))
+    assert db.deletar_notas([4000]) == 1
+    assert list(db.carregar_dados()["Numero_Nota"]) == [4001]
+
+
+def test_backup_rotativo(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(5000)]))
+    db.realizar_backup(limite=20, intervalo_horas=0)
+    pasta = config_backups_dir()
+    arquivos = list(pasta.glob("notas_departamento_*.db"))
+    assert len(arquivos) == 1
+    db.realizar_backup(limite=20, intervalo_horas=2)
+    assert len(list(pasta.glob("notas_departamento_*.db"))) == 1
+
+
+def config_backups_dir():
+    from input_module import config
+    return config.data_dir() / "backups"
+
+
+def test_responsaveis_roundtrip(banco_temporario):
+    from input_module import db
+    padrao = db.carregar_responsaveis()
+    assert padrao["Poa"] == "Danilo"
+    db.salvar_responsaveis({"Poa": "Maria"})
+    assert db.carregar_responsaveis() == {"Poa": "Maria"}
