@@ -9,6 +9,7 @@ interface IdentityModalProps {
 
 export function IdentityModal({ aberto, onConfirmado, onCancelar }: IdentityModalProps): React.JSX.Element | null {
   const [nome, setNome] = React.useState('');
+  React.useEffect(() => { if (aberto) setNome(''); }, [aberto]);
   if (!aberto) return null;
   function confirmar(): void {
     if (!nome.trim()) return;

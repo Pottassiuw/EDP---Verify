@@ -59,7 +59,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
       await recarregar();
       setMsg({ tipo: 'ok', texto: rotuloOk });
     } catch (e) {
-      setMsg({ tipo: 'erro', texto: (e as Error).message });
+      setMsg({ tipo: 'erro', texto: e instanceof Error ? e.message : String(e) });
     } finally {
       setSalvando(false);
     }
