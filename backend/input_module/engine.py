@@ -48,6 +48,9 @@ def avaliar_prazo_sap(row):
         # nota; usamos também Status_Nota para detectar o 99 de forma robusta.
         status_nota = str(row.get('Status_Nota', ''))
         ordem_executada = str(row.get('Ordem_Executada', 'NÃO')).strip().upper()
+        # Desvio intencional: o original verificava apenas Status_Final; aqui também
+        # lemos Status_Nota para reconhecer notas logicamente encerradas (99) que
+        # casaram no IW28 com outro status SAP (ex.: LIBE).
         is_99 = ('99' in status_final) or ('99' in status_nota)
 
         # 1. TRATAMENTO ULTRA-ROBUSTO DO PLANEJADO (DDPM)
