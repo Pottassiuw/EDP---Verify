@@ -5,7 +5,7 @@ export type Theme = "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "demo" | "api";
-export type AppSection = "triagem" | "coffee";
+export type AppSection = "triagem" | "coffee" | "input";
 export type CoffeeLayout = "composer" | "split";
 export type CoffeeOpenMode = "all" | "block" | "links";
 

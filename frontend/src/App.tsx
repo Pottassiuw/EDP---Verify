@@ -9,6 +9,7 @@ import { CoffeeSection } from './components/coffee-section';
 import { Dashboard } from './components/dashboard';
 import { Sidebar } from './components/sidebar';
 import { useTriageData } from './hooks/useTriageData';
+import { InputSection } from './input/input-section';
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -142,12 +143,14 @@ export default function App(): React.JSX.Element {
   return (
     <div className="edp triage" data-theme={t.theme} data-density={t.density}
          style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
-      {screen === "upload" ? (
-        <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
-      ) : (
-        <React.Fragment>
-          <Sidebar section={section} setSection={changeSection} />
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Sidebar section={section} setSection={changeSection} />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {section === "input" ? (
+          <InputSection t={t} />
+        ) : screen === "upload" ? (
+          <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
+        ) : (
+          <React.Fragment>
             <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
             {section === "coffee" && coffeeReturn && (
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "8px 18px",
@@ -173,9 +176,9 @@ export default function App(): React.JSX.Element {
                            onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
                            onSendToCoffee={sendToCoffeeQueue} />
               : <CoffeeSection notes={notes} layout={t.coffeeLayout} />}
-          </div>
-        </React.Fragment>
-      )}
+          </React.Fragment>
+        )}
+      </div>
 
       <TweaksPanel>
         <TweakSection label="Aparência" />
