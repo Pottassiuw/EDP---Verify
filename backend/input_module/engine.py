@@ -142,35 +142,40 @@ def enriquecer_dados():
     # --- 3.2. PROCV DO INDICADOR DE CONTINUIDADE (CRITICIDADE E RANKING) ---
     # Lê a planilha externa da rede e verifica quais conjuntos estão próximos da violação (Limite ANEEL)
     if os.path.exists(config.CAMINHO_INDICADOR_CONTINUIDADE):
-        df_hierarquia = pd.read_excel(config.CAMINHO_INDICADOR_CONTINUIDADE)
-        df_hierarquia.columns = df_hierarquia.columns.astype(str).str.replace('\n', ' ').str.replace('[', '').str.replace(']', '').str.strip()
+        try:
+            df_hierarquia = pd.read_excel(config.CAMINHO_INDICADOR_CONTINUIDADE)
+            df_hierarquia.columns = df_hierarquia.columns.astype(str).str.replace('\n', ' ').str.replace('[', '').str.replace(']', '').str.strip()
 
-        col_alvo = 'DELTA_INDICADOR _12MM_CONJUNTO' if 'DELTA_INDICADOR _12MM_CONJUNTO' in df_hierarquia.columns else 'DELTA_INDICADOR_12MM_CONJUNTO'
-        df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'] = pd.to_numeric(df_hierarquia[col_alvo], errors='coerce')
+            col_alvo = 'DELTA_INDICADOR _12MM_CONJUNTO' if 'DELTA_INDICADOR _12MM_CONJUNTO' in df_hierarquia.columns else 'DELTA_INDICADOR_12MM_CONJUNTO'
+            df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'] = pd.to_numeric(df_hierarquia[col_alvo], errors='coerce')
 
-        col_nome_conjunto = 'TBL_HIERARQUIA_CONJUNTO CJ_NOME' if 'TBL_HIERARQUIA_CONJUNTO CJ_NOME' in df_hierarquia.columns else ('TBL_HIERARQUIA_CONJUNTO[CJ_NOME]' if 'TBL_HIERARQUIA_CONJUNTO[CJ_NOME]' in df_hierarquia.columns else df_hierarquia.columns[0])
+            col_nome_conjunto = 'TBL_HIERARQUIA_CONJUNTO CJ_NOME' if 'TBL_HIERARQUIA_CONJUNTO CJ_NOME' in df_hierarquia.columns else ('TBL_HIERARQUIA_CONJUNTO[CJ_NOME]' if 'TBL_HIERARQUIA_CONJUNTO[CJ_NOME]' in df_hierarquia.columns else df_hierarquia.columns[0])
 
-        # Padroniza nomes (remove acentos, espaços) para garantir que o cruzamento de dados (Merge/Map) funcione perfeitamente
-        df_hierarquia['Conj.Corrijido'] = df_hierarquia[col_nome_conjunto].astype(str).str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8').str.strip().str.upper()
-        df_hierarquia['Conjunto Crítico'] = df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'].apply(regra_conjunto_critico)
-        df_hierarquia['ranking'] = df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'].rank(ascending=False, method='min', na_option='bottom').fillna(99).astype(int)
+            # Padroniza nomes (remove acentos, espaços) para garantir que o cruzamento de dados (Merge/Map) funcione perfeitamente
+            df_hierarquia['Conj.Corrijido'] = df_hierarquia[col_nome_conjunto].astype(str).str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8').str.strip().str.upper()
+            df_hierarquia['Conjunto Crítico'] = df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'].apply(regra_conjunto_critico)
+            df_hierarquia['ranking'] = df_hierarquia['DELTA_INDICADOR_12MM_CONJUNTO'].rank(ascending=False, method='min', na_option='bottom').fillna(99).astype(int)
 
-        mapeamento_conjunto_critico = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia['Conjunto Crítico']))
-        mapeamento_ranking = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia['ranking']))
+            mapeamento_conjunto_critico = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia['Conjunto Crítico']))
+            mapeamento_ranking = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia['ranking']))
 
-        col_regional_excel = 'Regional_1' if 'Regional_1' in df_hierarquia.columns else 'Regional'
-        if col_regional_excel in df_hierarquia.columns:
-            mapeamento_regional = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia[col_regional_excel]))
-        else:
-            mapeamento_regional = {}
-            print("Aviso: Coluna Regional_1 não encontrada na planilha de indicadores.")
+            col_regional_excel = 'Regional_1' if 'Regional_1' in df_hierarquia.columns else 'Regional'
+            if col_regional_excel in df_hierarquia.columns:
+                mapeamento_regional = dict(zip(df_hierarquia['Conj.Corrijido'], df_hierarquia[col_regional_excel]))
+            else:
+                mapeamento_regional = {}
+                print("Aviso: Coluna Regional_1 não encontrada na planilha de indicadores.")
 
-        SINONIMOS_CONJUNTO = {"CARAGUATATUBA":"CARAGUA", "FERRAZ":"FERRAZ DE VASCONCELOS", "BRAS CUBAS": "BRAZ CUBAS"}
-        chave_busca_base = df['CJ_Aneel'].astype(str).str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8').str.strip().str.upper().replace(SINONIMOS_CONJUNTO)
+            SINONIMOS_CONJUNTO = {"CARAGUATATUBA":"CARAGUA", "FERRAZ":"FERRAZ DE VASCONCELOS", "BRAS CUBAS": "BRAZ CUBAS"}
+            chave_busca_base = df['CJ_Aneel'].astype(str).str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8').str.strip().str.upper().replace(SINONIMOS_CONJUNTO)
 
-        df['Conj.critico'] = chave_busca_base.map(mapeamento_conjunto_critico).fillna("-")
-        df['ranking'] = chave_busca_base.map(mapeamento_ranking).fillna(0).astype(int)
+            df['Conj.critico'] = chave_busca_base.map(mapeamento_conjunto_critico).fillna("-")
+            df['ranking'] = chave_busca_base.map(mapeamento_ranking).fillna(0).astype(int)
 
+        except Exception as e:
+            df['Conj.critico'] = "-"
+            df['ranking'] = 0
+            print(f"Erro ao ler Indicador de Continuidade: {e}")
     else:
         df['Conj.critico'] = "-"
         df['ranking'] = 0
@@ -491,7 +496,7 @@ def get_dataset(forcar: bool = False) -> pd.DataFrame:
         if forcar or _cache["df"] is None or expirado:
             _cache["df"] = enriquecer_dados()
             _cache["quando"] = time.time()
-        return _cache["df"]
+        return _cache["df"].copy()
 
 
 def invalidar_cache() -> None:
