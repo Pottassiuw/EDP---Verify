@@ -3,6 +3,7 @@ import type { TweakState } from '../types';
 import type { AbaInput } from './types';
 import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
+import { Manage } from './manage';
 
 const ABAS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -61,7 +62,7 @@ export function InputSection({ t: _t }: { t: TweakState }): React.JSX.Element {
       )}
 
       {dados && aba === 'visao' && <Overview dados={dados} />}
-      {dados && aba === 'gerenciar' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Gerenciar — próxima fase.</div>}
+      {dados && aba === 'gerenciar' && <Manage dados={dados} />}
       {dados && aba === 'relatorios' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Relatórios — próxima fase.</div>}
       {dados && aba === 'logs' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Logs — próxima fase.</div>}
       {dados && aba === 'config' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Configurações — próxima fase.</div>}
