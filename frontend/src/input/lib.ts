@@ -99,7 +99,8 @@ export function parseColagemTsv(texto: string, colunas: string[]): Partial<NotaI
 }
 
 export function formatarNumero(v: Celula, casas = 2): string {
+  if (v === null || v === undefined) return '-';
   const n = Number(v);
-  if (!Number.isFinite(n)) return String(v ?? '-');
+  if (!Number.isFinite(n)) return String(v);
   return n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
 }
