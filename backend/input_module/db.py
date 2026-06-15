@@ -190,14 +190,15 @@ def carregar_projeto_construcao() -> dict:
 # ==============================================================================
 def carregar_dados() -> pd.DataFrame:
     conn = get_db_connection()
-    df = pd.read_sql("SELECT * FROM notas ORDER BY ID_Cronologia ASC", conn)
+    try:
+        df = pd.read_sql("SELECT * FROM notas ORDER BY ID_Cronologia ASC", conn)
 
-    if 'Centro_Responsavel' in df.columns:
-        df['Centro_Responsavel'] = df['Centro_Responsavel'].fillna('-')
-    else:
-        df['Centro_Responsavel'] = '-'
-
-    conn.close()
+        if 'Centro_Responsavel' in df.columns:
+            df['Centro_Responsavel'] = df['Centro_Responsavel'].fillna('-')
+        else:
+            df['Centro_Responsavel'] = '-'
+    finally:
+        conn.close()
 
     if not df.empty:
         df['Status_Nota'] = df['Status_Nota'].map(STATUS_MAP)
