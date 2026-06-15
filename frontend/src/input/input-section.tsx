@@ -5,6 +5,7 @@ import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-i
 import { Overview } from './overview';
 import { Manage } from './manage';
 import { Reports } from './reports';
+import { Logs } from './logs';
 
 const ABAS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -65,7 +66,7 @@ export function InputSection({ t: _t }: { t: TweakState }): React.JSX.Element {
       {dados && aba === 'visao' && <Overview dados={dados} />}
       {dados && aba === 'gerenciar' && <Manage dados={dados} />}
       {dados && aba === 'relatorios' && <Reports dados={dados} />}
-      {dados && aba === 'logs' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Logs — próxima fase.</div>}
+      {dados && aba === 'logs' && <Logs />}
       {dados && aba === 'config' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Configurações — próxima fase.</div>}
     </div>
   );
