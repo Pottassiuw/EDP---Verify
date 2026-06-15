@@ -1,4 +1,6 @@
 """Testes do módulo Input (backend)."""
+import io
+
 from input_module import config
 
 
@@ -303,3 +305,93 @@ def test_get_logs_e_timeline(cliente):
     assert len(cliente.get("/api/input/logs/nota/2000").json()["registros"]) == 1
     assert cliente.get("/api/input/logs/nota/999").json()["registros"] == []
     assert cliente.get("/api/input/logs/arquivos").json()["registros"] == []
+
+
+# ── Tarefa 6: endpoints de escrita /api/input/* ──────────────────────────
+CABECALHO_USER = {"X-User": "ana"}
+
+
+def test_escrita_exige_x_user(cliente):
+    r = cliente.patch("/api/input/notas", json={"linhas": []})
+    assert r.status_code == 400
+    assert "X-User" in r.json()["detail"]
+
+
+def test_patch_edita_e_loga(cliente):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    engine.invalidar_cache()
+    r = cliente.patch("/api/input/notas", headers=CABECALHO_USER,
+                      json={"linhas": [{"Numero_Nota": 2000, "Observacao": "via api"}]})
+    assert r.status_code == 200
+    assert r.json()["alteradas"] == 1
+    registros = cliente.get("/api/input/notas").json()["registros"]
+    assert registros[0]["Observacao"] == "via api"
+
+
+def test_patch_nota_inexistente_404(cliente):
+    r = cliente.patch("/api/input/notas", headers=CABECALHO_USER,
+                      json={"linhas": [{"Numero_Nota": 31337, "Observacao": "x"}]})
+    assert r.status_code == 404
+
+
+def test_post_cria_e_rejeita_duplicata(cliente):
+    nova = {"Numero_Nota": 6000, "Status_Nota": "00 Pendente",
+            "Prioridade_Nota": "Programável", "Local_Instalacao": "045 RL X"}
+    r = cliente.post("/api/input/notas", headers=CABECALHO_USER, json=nova)
+    assert r.status_code == 200
+    from input_module import db
+    df = db.carregar_dados()
+    linha = df[df["Numero_Nota"] == 6000].iloc[0]
+    assert linha["Regional"] == "Guarulhos"
+    r = cliente.post("/api/input/notas", headers=CABECALHO_USER, json=nova)
+    assert r.status_code == 409
+
+
+def test_bulk_valida_duplicatas(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(7000)]))
+    lote = {"notas": [
+        {"Numero_Nota": 7000, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+        {"Numero_Nota": 7001, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+    ]}
+    r = cliente.post("/api/input/notas/bulk", headers=CABECALHO_USER, json=lote)
+    assert r.status_code == 409
+    assert "7000" in r.json()["detail"]
+    lote = {"notas": [
+        {"Numero_Nota": 7002, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+        {"Numero_Nota": 7002, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+    ]}
+    assert cliente.post("/api/input/notas/bulk", headers=CABECALHO_USER, json=lote).status_code == 409
+    lote = {"notas": [
+        {"Numero_Nota": 7003, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+        {"Numero_Nota": 7004, "Status_Nota": "00 Pendente", "Prioridade_Nota": "Programável"},
+    ]}
+    r = cliente.post("/api/input/notas/bulk", headers=CABECALHO_USER, json=lote)
+    assert r.status_code == 200
+    assert r.json()["inseridas"] == 2
+
+
+def test_delete_e_desfazer(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8000)]))
+    cliente.patch("/api/input/notas", headers=CABECALHO_USER,
+                  json={"linhas": [{"Numero_Nota": 8000, "Observacao": "antes do undo"}]})
+    r = cliente.post("/api/input/desfazer", headers=CABECALHO_USER, json={})
+    assert r.status_code == 200 and r.json()["ok"] is True
+    r = cliente.request("DELETE", "/api/input/notas", headers=CABECALHO_USER,
+                        json={"numeros": [8000]})
+    assert r.status_code == 200 and r.json()["excluidas"] == 1
+
+
+def test_export_gera_xlsx(cliente):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(9000)]))
+    engine.invalidar_cache()
+    r = cliente.post("/api/input/export",
+                     json={"numeros": [9000], "colunas": ["Numero_Nota", "Status_Nota"]})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    df = pd.read_excel(io.BytesIO(r.content))
+    assert list(df.columns) == ["Nº Nota (ID)", "Status Nota"]
