@@ -172,3 +172,88 @@ def test_responsaveis_roundtrip(banco_temporario):
     assert padrao["Poa"] == "Danilo"
     db.salvar_responsaveis({"Poa": "Maria"})
     assert db.carregar_responsaveis() == {"Poa": "Maria"}
+
+
+# ── Tarefa 4: motor de enriquecimento, auditoria, cache e cópia Excel ────
+def _excel_iw28(caminho):
+    pd.DataFrame({
+        "Nota": [2000], "Status usuário": ["LIBE"],
+        "CenTrabalho princ.": ["CT-01"], "Ordem": [777],
+        "Encerram.por data": [pd.Timestamp("2026-05-10")],
+    }).to_excel(caminho, index=False)
+
+
+def _excel_iw38(caminho):
+    pd.DataFrame({
+        "Ordem": [777], "Status usuário": ["JAND INVE"],
+        "Status do sistema": ["ENTE"], "Total planejado": [1000.0],
+        "Total real": [800.0],
+    }).to_excel(caminho, index=False)
+
+
+@pytest.fixture
+def engine_isolado(banco_temporario, monkeypatch, tmp_path):
+    """Banco temporário + caminhos de rede apontando para tmp (inexistentes por padrão)."""
+    from input_module import config, engine
+    for attr in ["CAMINHO_INDICADOR_CONTINUIDADE", "CAMINHO_BASE_IW28",
+                 "CAMINHO_CUSTO_ORD_IW38", "CAMINHO_CLIENTES_CONJUNTO",
+                 "CAMINHO_CUSTO_MODULAR", "CAMINHO_GANHOS", "CAMINHO_TABLE1",
+                 "CAMINHO_PROJETO_CONSTRUCAO"]:
+        monkeypatch.setattr(config, attr, str(tmp_path / f"{attr}.xlsx"))
+    monkeypatch.setattr(config, "BASES_REDE", {
+        "IW28": config.CAMINHO_BASE_IW28, "IW38": config.CAMINHO_CUSTO_ORD_IW38})
+    engine.invalidar_cache()
+    return tmp_path
+
+
+def test_engine_fallbacks_sem_rede(engine_isolado):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    df = engine.enriquecer_dados()
+    linha = df[df["Numero_Nota"] == 2000].iloc[0]
+    assert linha["Export_status"] == "Pendente Extração SAP"
+    assert linha["Conj.critico"] == "-"
+    assert linha["Cidade"] == "Guarulhos"
+    assert "Auditoria_Cronograma" in df.columns
+
+
+def test_engine_cruza_iw28_iw38(engine_isolado):
+    from input_module import config, db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
+    _excel_iw28(config.CAMINHO_BASE_IW28)
+    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    df = engine.enriquecer_dados()
+    linha = df[df["Numero_Nota"] == 2000].iloc[0]
+    assert linha["Export_status"] == "LIBE"
+    assert linha["Ordem"] == "777"
+    assert linha["Ordem_Executada"] == "SIM"
+    assert float(linha["Total_real_ordem"]) == 800.0
+    assert float(linha["Exec_percentagem_ordem"]) == pytest.approx(80.0)
+
+
+def test_auditoria_cronograma(engine_isolado):
+    from input_module import config, db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
+    _excel_iw28(config.CAMINHO_BASE_IW28)
+    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    df = engine.enriquecer_dados()
+    assert df.iloc[0]["Auditoria_Cronograma"] == "🟢 Adiantado"
+
+
+def test_cache_e_invalidacao(engine_isolado):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    df1 = engine.get_dataset()
+    db.salvar_em_massa(pd.DataFrame([_nota(2001)]))
+    assert len(engine.get_dataset()) == len(df1)  # cache segura
+    engine.invalidar_cache()
+    assert len(engine.get_dataset()) == len(df1) + 1
+
+
+def test_status_bases(engine_isolado):
+    from input_module import config, engine
+    _excel_iw28(config.CAMINHO_BASE_IW28)
+    bases = engine.status_bases()
+    por_nome = {b["nome"]: b for b in bases}
+    assert por_nome["IW28"]["encontrada"] is True
+    assert por_nome["IW38"]["encontrada"] is False
