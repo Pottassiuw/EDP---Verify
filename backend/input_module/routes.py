@@ -100,7 +100,6 @@ class NovaNota(BaseModel):
     Data_Envio_Projeto: str = "-"
     Observacao: str = ""
     Check: str = "-"
-    Status_Anterior: str = "-"
 
 
 class LotePedido(BaseModel):
@@ -116,12 +115,6 @@ class ExportPedido(BaseModel):
     colunas: list[str]
 
 
-def _proximo_id_cronologia(df: pd.DataFrame) -> int:
-    if df.empty or "ID_Cronologia" not in df.columns or not df["ID_Cronologia"].notna().any():
-        return 1
-    return int(pd.to_numeric(df["ID_Cronologia"], errors="coerce").max()) + 1
-
-
 def _preparar_novas(notas: list, df_banco: pd.DataFrame) -> pd.DataFrame:
     """Valida duplicatas e completa Regional/ID_Cronologia (Input/app.py:640-728)."""
     numeros = [n.Numero_Nota for n in notas]
@@ -132,13 +125,14 @@ def _preparar_novas(notas: list, df_banco: pd.DataFrame) -> pd.DataFrame:
     repetidas_banco = sorted(str(n) for n in numeros if n in existentes)
     if repetidas_banco:
         raise HTTPException(409, "Notas já existentes no banco: " + ", ".join(repetidas_banco))
-    base_id = _proximo_id_cronologia(df_banco)
+    base_id = db.proximo_id_cronologia(df_banco)
     linhas = []
     for i, nota in enumerate(notas):
         registro = nota.model_dump()
         registro["ID_Cronologia"] = base_id + i
         registro["Regional"] = config.DE_PARA_REGIONAL.get(str(nota.Local_Instalacao)[:3], "-")
         registro["Centro_Responsavel"] = "-"
+        registro["Status_Anterior"] = "-"
         linhas.append(registro)
     return pd.DataFrame(linhas)
 

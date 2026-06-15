@@ -258,6 +258,13 @@ def carregar_dados() -> pd.DataFrame:
     return df
 
 
+def proximo_id_cronologia(df: pd.DataFrame) -> int:
+    """Retorna o próximo ID_Cronologia disponível com base no DataFrame de notas."""
+    if df.empty or "ID_Cronologia" not in df.columns or not df["ID_Cronologia"].notna().any():
+        return 1
+    return int(pd.to_numeric(df["ID_Cronologia"], errors="coerce").max()) + 1
+
+
 def carregar_logs() -> pd.DataFrame:
     """Carrega todos os registros da tabela de log de alterações."""
     conn = get_db_connection()
