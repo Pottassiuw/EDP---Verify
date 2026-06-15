@@ -1,11 +1,15 @@
 """Rotas /api/input/* — módulo de Gestão de Notas (Input)."""
+import datetime
 import io
 import json
+import os
+import re as _re
 from typing import Optional
 
 import pandas as pd
-from fastapi import (APIRouter, BackgroundTasks, Depends, Header, HTTPException,
-                     Response)
+from fastapi import (APIRouter, BackgroundTasks, Depends, File, Header,
+                     HTTPException, Response, UploadFile)
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from input_module import config, db, engine
@@ -206,3 +210,91 @@ def exportar(pedido: ExportPedido):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="export_notas.xlsx"'},
     )
+
+
+# ── Tarefa 7: configuração (responsáveis, bases, backups, migração) ───────────
+def _achar_base(nome_arquivo: str) -> str:
+    for caminho in config.BASES_APOIO.values():
+        if os.path.basename(caminho) == nome_arquivo:
+            return caminho
+    raise HTTPException(404, f"Base '{nome_arquivo}' não é gerenciada pelo sistema.")
+
+
+@router.get("/responsaveis")
+def obter_responsaveis():
+    return db.carregar_responsaveis()
+
+
+@router.put("/responsaveis")
+def gravar_responsaveis(novo: dict, usuario: str = Depends(usuario_atual)):
+    db.salvar_responsaveis(novo)
+    return {"ok": True}
+
+
+@router.get("/bases")
+def listar_bases():
+    bases = []
+    for nome, caminho in config.BASES_APOIO.items():
+        existe = os.path.exists(caminho)
+        bases.append({
+            "nome": nome, "arquivo": os.path.basename(caminho),
+            "encontrada": existe,
+            "modificada": datetime.datetime.fromtimestamp(
+                os.path.getmtime(caminho)).isoformat() if existe else None,
+        })
+    return {"bases": bases}
+
+
+@router.get("/bases/{nome_arquivo}/download")
+def baixar_base(nome_arquivo: str):
+    caminho = _achar_base(nome_arquivo)
+    if not os.path.exists(caminho):
+        raise HTTPException(404, "Arquivo não encontrado na rede.")
+    return FileResponse(caminho, filename=nome_arquivo)
+
+
+@router.post("/bases/{nome_arquivo}")
+def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
+                    usuario: str = Depends(usuario_atual)):
+    caminho = _achar_base(nome_arquivo)
+    try:
+        with open(caminho, "wb") as f:
+            f.write(arquivo.file.read())
+    except OSError as e:
+        raise HTTPException(502, f"Erro ao gravar na rede: {e}")
+    db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
+    engine.invalidar_cache()
+    return {"ok": True}
+
+
+@router.get("/backups")
+def listar_backups():
+    pasta = config.data_dir() / "backups"
+    backups = []
+    if pasta.exists():
+        for arq in sorted(pasta.glob("notas_departamento_*.db"),
+                          key=os.path.getmtime, reverse=True):
+            backups.append({
+                "arquivo": arq.name,
+                "tamanho_mb": round(arq.stat().st_size / (1024 * 1024), 2),
+                "modificado": datetime.datetime.fromtimestamp(arq.stat().st_mtime).isoformat(),
+            })
+    return {"backups": backups}
+
+
+@router.get("/backups/{nome}/download")
+def baixar_backup(nome: str):
+    if not _re.fullmatch(r"notas_departamento_\d{8}_\d{6}\.db", nome):
+        raise HTTPException(400, "Nome de backup inválido.")
+    caminho = config.data_dir() / "backups" / nome
+    if not caminho.exists():
+        raise HTTPException(404, "Backup não encontrado.")
+    return FileResponse(str(caminho), filename=nome)
+
+
+@router.post("/migrar")
+def migrar_novamente(usuario: str = Depends(usuario_atual)):
+    _migracao["resultado"] = None
+    resultado = _garantir_banco()
+    engine.invalidar_cache()
+    return {"resultado": resultado}

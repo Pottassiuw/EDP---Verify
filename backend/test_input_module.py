@@ -395,3 +395,53 @@ def test_export_gera_xlsx(cliente):
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     df = pd.read_excel(io.BytesIO(r.content))
     assert list(df.columns) == ["Nº Nota (ID)", "Status Nota"]
+
+
+# ── Tarefa 7: endpoints de configuração (responsáveis, bases, backups, migração) ──
+def test_responsaveis_api(cliente):
+    r = cliente.get("/api/input/responsaveis")
+    assert r.json()["Poa"] == "Danilo"
+    r = cliente.put("/api/input/responsaveis", headers=CABECALHO_USER,
+                    json={"Poa": "Maria"})
+    assert r.status_code == 200
+    assert cliente.get("/api/input/responsaveis").json() == {"Poa": "Maria"}
+
+
+def test_bases_lista_download_upload(cliente, monkeypatch, tmp_path):
+    from input_module import config
+    caminho = tmp_path / "Clientes_Conjunto.xlsx"
+    pd.DataFrame({"CONJUNTO_DESC": ["POA"], "QTDE_CONJUNTO": [10]}).to_excel(caminho, index=False)
+    monkeypatch.setattr(config, "BASES_APOIO", {"Clientes por Conjunto": str(caminho)})
+    r = cliente.get("/api/input/bases")
+    assert r.json()["bases"][0]["encontrada"] is True
+    r = cliente.get("/api/input/bases/Clientes_Conjunto.xlsx/download")
+    assert r.status_code == 200
+    # Upload substitui o arquivo e registra no log
+    conteudo = caminho.read_bytes()
+    r = cliente.post("/api/input/bases/Clientes_Conjunto.xlsx",
+                     headers=CABECALHO_USER,
+                     files={"arquivo": ("novo.xlsx", conteudo)})
+    assert r.status_code == 200
+    logs = cliente.get("/api/input/logs/arquivos").json()["registros"]
+    assert logs[0]["Nome_Arquivo"] == "Clientes_Conjunto.xlsx"
+    assert logs[0]["Acao"] == "Substituição"
+    # Base desconhecida -> 404
+    assert cliente.get("/api/input/bases/nao_existe.xlsx/download").status_code == 404
+
+
+def test_backups_lista_e_download(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(9500)]))
+    db.realizar_backup(limite=20, intervalo_horas=0)
+    r = cliente.get("/api/input/backups")
+    backups = r.json()["backups"]
+    assert len(backups) >= 1
+    nome = backups[0]["arquivo"]
+    assert cliente.get(f"/api/input/backups/{nome}/download").status_code == 200
+    assert cliente.get("/api/input/backups/..%2Fhack.db/download").status_code in (400, 404)
+
+
+def test_migrar_endpoint(cliente):
+    r = cliente.post("/api/input/migrar", headers=CABECALHO_USER)
+    assert r.status_code == 200
+    assert r.json()["resultado"] in ("ja-existe", "migrado", "rede-indisponivel")
