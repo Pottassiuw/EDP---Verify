@@ -12,5 +12,8 @@ frontend/dist/
 # Estado de runtime do backend
 backend/app_state.json
 
+# Dados locais do módulo Input
+backend/data/
+
 # Sessões de brainstorm (visual companion)
 .superpowers/
