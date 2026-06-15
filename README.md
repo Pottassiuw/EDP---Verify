@@ -11,13 +11,16 @@ comparar duplicatas lado a lado e abrir notas direto no COFFEE.
 │   └── src/
 │       ├── components/   shared, dashboard, sidebar, upload-screen,
 │       │                 duplicate-compare, coffee-section, tweaks-panel
+│       ├── input/        módulo Input (gestão de notas do departamento)
 │       ├── hooks/        useTriageData (TanStack Query)
 │       ├── api.ts        integração com o backend + COFFEE/Maps
 │       ├── data.ts       dataset de demonstração (offline)
 │       └── types.ts      tipos compartilhados
 ├── backend/    FastAPI + pandas
 │   ├── main.py           endpoints /api/* + parsing da planilha
-│   └── test_upload.py    testes (pytest)
+│   ├── input_module/     módulo Input: banco SQLite local + motor de
+│   │                     enriquecimento (Excels da rede EDP) + /api/input/*
+│   └── test_upload.py / test_input_module.py    testes (pytest)
 └── docs/       especificações de design
 ```
 
@@ -58,9 +61,26 @@ processo (porta 8000).
 | Concluir / reabrir    | `POST /api/complete/{id}`      | `{ status, completed }` (toggle) |
 | Marcar como duplicata | `POST /api/duplicata/{id}`     | `{ status }` |
 
+## Módulo Input (Gestão de Notas)
+
+Porte do painel Streamlit do departamento (spec em
+`docs/superpowers/specs/2026-06-11-input-module-design.md`).
+
+- Banco local: `backend/data/notas_departamento.db` (migrado automaticamente
+  do servidor `\\ebeat-fp1` na primeira execução, se a rede estiver acessível).
+- O motor cruza o banco com as planilhas da rede EDP (SAP IW28/IW38,
+  indicadores ANEEL etc.); sem rede, o painel funciona com indicadores parciais.
+- Após cada salvamento, regrava `Base_Notas_Sincronizada.xlsx` na rede
+  (alimenta o BI do departamento) e mantém backups rotativos locais.
+- Escritas exigem o header `X-User` (a UI pede o nome na primeira edição).
+- API: `GET/PATCH/POST/DELETE /api/input/notas`, `/api/input/desfazer`,
+  `/api/input/logs*`, `/api/input/export`, `/api/input/responsaveis`,
+  `/api/input/bases*`, `/api/input/backups*`, `/api/input/sync`.
+- O módulo não tem modo demo: exige o backend rodando.
+
 ## Testes
 
 ```bash
-cd backend && python -m pytest test_upload.py   # backend
+cd backend && python -m pytest test_upload.py test_input_module.py   # backend
 cd frontend && npm run build                    # type-check (tsc) + build
 ```
