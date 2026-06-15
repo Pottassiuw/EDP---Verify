@@ -6,6 +6,7 @@ import { Overview } from './overview';
 import { Manage } from './manage';
 import { Reports } from './reports';
 import { Logs } from './logs';
+import { Settings } from './settings';
 
 const ABAS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -67,7 +68,7 @@ export function InputSection({ t: _t }: { t: TweakState }): React.JSX.Element {
       {dados && aba === 'gerenciar' && <Manage dados={dados} />}
       {dados && aba === 'relatorios' && <Reports dados={dados} />}
       {dados && aba === 'logs' && <Logs />}
-      {dados && aba === 'config' && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Configurações — próxima fase.</div>}
+      {dados && aba === 'config' && <Settings dados={dados} />}
     </div>
   );
 }
