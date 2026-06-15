@@ -88,6 +88,10 @@ export const InputApi = {
 export function baixarBlob(blob: Blob, nome: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = nome; a.click();
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
