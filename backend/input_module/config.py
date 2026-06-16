@@ -2,6 +2,7 @@
 
 Porte de Input/config.py, sem dependência de Streamlit.
 """
+
 import os
 from pathlib import Path
 
@@ -10,7 +11,11 @@ from pathlib import Path
 
 def data_dir() -> Path:
     """Diretório de dados local (sobrescritível por env para testes)."""
-    return Path(os.environ.get("INPUT_DATA_DIR", str(Path(__file__).resolve().parent.parent / "data")))
+    return Path(
+        os.environ.get(
+            "INPUT_DATA_DIR", str(Path(__file__).resolve().parent.parent / "data")
+        )
+    )
 
 
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
@@ -18,7 +23,9 @@ REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejame
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"
 
 REDE_DB_ORIGEM = REDE_INPUT_SQL + r"\notas_departamento.db"
-CAMINHO_INDICADOR_CONTINUIDADE = REDE_INPUT_SQL + r"\Indicador base conjunto - Limite Aneel.xlsx"
+CAMINHO_INDICADOR_CONTINUIDADE = (
+    REDE_INPUT_SQL + r"\Indicador base conjunto - Limite Aneel.xlsx"
+)
 CAMINHO_BASE_IW28 = REDE_INPUT_SQL + r"\Gerada_base_IW28.XLSX"
 CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Gerada_custo_ord_IW38.XLSX"
 CAMINHO_CLIENTES_CONJUNTO = REDE_INPUT_SQL + r"\Clientes_Conjunto.xlsx"
@@ -50,17 +57,45 @@ BASES_APOIO = {
 
 # ── Dicionários de domínio (porte literal de Input/config.py) ────────────
 STATUS_MAP = {
-    0: "00 Pendente", 1: "01 Sem providência", 2: "02 Predição de Sinal",
-    3: "03 Estudo de Proteção", 7: "07 Em analise", 10: "10 Em planejamento", 11: "11 Em execução",
-    20: "20 Envio Entidade Externa", 21: "21 Pré análise Projetos", 27: "27 Levantamento campo", 28: "28 Desenho",
-    29: "29 Orçamento", 30: "30 Aguardando material", 31: "31 Aguardando equipe", 32: "32 Aguardando terceiros",
-    33: "33 Aguardando aprovação", 34: "34 Aguardando liberação", 35: "35 Aguardando orçamento",
-    36: "36 Aguardando levantamento campo", 37: "37 Aguardando desenho", 38: "38 Aguardando estudo proteção",
-    39: "39 Aguardando predição sinal", 47: "47 Enviado Execução", 51: "51 Ordem Liberada", 52: "52 ADS e Viabilizado",
-    54: "54 Executado/Energizado", 55: "55 Cancelado", 56: "56 Reprogramado Execução", 57: "57 Reprogramado Planejamento",
-    58: "58 Reprogramado Análise", 59: "59 Reprogramado Levantamento", 60: "60 Reprogramado Desenho",
-    61: "61 Reprogramado Estudo Proteção", 62: "62 Obra Suspensa", 99: "99 Encerrado",
-    999: "Ence Exec", 998: "SUPR"}
+    0: "00 Pendente",
+    1: "01 Sem providência",
+    2: "02 Predição de Sinal",
+    3: "03 Estudo de Proteção",
+    7: "07 Em analise",
+    10: "10 Em planejamento",
+    11: "11 Em execução",
+    20: "20 Envio Entidade Externa",
+    21: "21 Pré análise Projetos",
+    27: "27 Levantamento campo",
+    28: "28 Desenho",
+    29: "29 Orçamento",
+    30: "30 Aguardando material",
+    31: "31 Aguardando equipe",
+    32: "32 Aguardando terceiros",
+    33: "33 Aguardando aprovação",
+    34: "34 Aguardando liberação",
+    35: "35 Aguardando orçamento",
+    36: "36 Aguardando levantamento campo",
+    37: "37 Aguardando desenho",
+    38: "38 Aguardando estudo proteção",
+    39: "39 Aguardando predição sinal",
+    47: "47 Enviado Execução",
+    51: "51 Ordem Liberada",
+    52: "52 ADS e Viabilizado",
+    53: "Programado Execução",
+    54: "54 Executado/Energizado",
+    55: "55 Cancelado",
+    56: "56 Reprogramado Execução",
+    57: "57 Reprogramado Planejamento",
+    58: "58 Reprogramado Análise",
+    59: "59 Reprogramado Levantamento",
+    60: "60 Reprogramado Desenho",
+    61: "61 Reprogramado Estudo Proteção",
+    62: "62 Obra Suspensa",
+    99: "99 Encerrado",
+    999: "Ence Exec",
+    998: "SUPR",
+}
 INV_STATUS_MAP = {v: k for k, v in STATUS_MAP.items()}
 
 DE_PARA_CIDADES = {
@@ -94,7 +129,7 @@ DE_PARA_CIDADES = {
     "260": "Caçapava -SP",
     "265": "Jambeiro - SP",
     "BIR": "Biritiba Mirim",
-    "GOP": "Guarulhos"
+    "GOP": "Guarulhos",
 }
 
 DE_PARA_REGIONAL = {
@@ -128,7 +163,7 @@ DE_PARA_REGIONAL = {
     "260": "São José dos Campos",
     "265": "São José dos Campos",
     "BIR": "Mogi das Cruzes",
-    "GOP": "Guarulhos"
+    "GOP": "Guarulhos",
 }
 
 DE_PARA_CJ_ANEEL = {
@@ -206,7 +241,7 @@ DE_PARA_CJ_ANEEL = {
     "SKO": "VALTER JOSE DOS SANTOS",
     "VJS": "VALTER JOSE DOS SANTOS",
     "VGA": "VILA GALVAO",
-    "VHE": "VILA HERMINIA"
+    "VHE": "VILA HERMINIA",
 }
 
 MAP_FILTROS = {
@@ -241,19 +276,19 @@ MAP_FILTROS = {
     "Nº Clientes Conjunto": "N_Clientes_Conjunto",
     "CHI": "CHI",
     "CIH": "CI",
-    "Ocorrências": "Ocorrencia",           # Corrigido: Estava 'Ocorrencias'
+    "Ocorrências": "Ocorrencia",  # Corrigido: Estava 'Ocorrencias'
     "DEC": "DEC",
     "FEC": "FEC",
-    "CHI Conjunto": "CHI_Conj",            # Corrigido: Estava 'CHI_conjunto'
-    "DIS Proteção": "Equipamento_Protecao",# Corrigido: Estava 'DIS_Protecao'
-    "CI-12M": "CI_12M",                    # Corrigido: Traço trocado por underline
-    "CHI-12M": "CHI_12M",                  # Corrigido: Traço trocado por underline
-    "Ocorrências-12M": "OCO_12M",          # Corrigido: Estava 'Ocorrencias-12M'
-    "Ocorrências-3M": "OCO_3M",            # Corrigido: Estava 'Ocorrencias-3M'
-    "DEC Prog. CHI": "DEC_PROG_CHI",       # Corrigido: Ajuste de capitalização
+    "CHI Conjunto": "CHI_Conj",  # Corrigido: Estava 'CHI_conjunto'
+    "DIS Proteção": "Equipamento_Protecao",  # Corrigido: Estava 'DIS_Protecao'
+    "CI-12M": "CI_12M",  # Corrigido: Traço trocado por underline
+    "CHI-12M": "CHI_12M",  # Corrigido: Traço trocado por underline
+    "Ocorrências-12M": "OCO_12M",  # Corrigido: Estava 'Ocorrencias-12M'
+    "Ocorrências-3M": "OCO_3M",  # Corrigido: Estava 'Ocorrencias-3M'
+    "DEC Prog. CHI": "DEC_PROG_CHI",  # Corrigido: Ajuste de capitalização
     "Projeto Construção": "Projeto_Construcao",
     "Data Envio Projeto": "Data_Envio_Projeto",
-    "Observação": "Observacao"
+    "Observação": "Observacao",
 }
 
 MAP_ORDEM_EXECUTADA = {
@@ -281,7 +316,7 @@ MAP_ORDEM_EXECUTADA = {
     "JAND PRES": "NÃO",
     "JAND VIAB": "NÃO",
     "JAND VIAB INVE BLOQ": "NÃO",
-    "JAND PDEV": "NÃO"
+    "JAND PDEV": "NÃO",
 }
 
 MAP_REGIONAL_CSD = {
@@ -342,55 +377,148 @@ MAP_REGIONAL_CSD = {
     "VALE DO SOL": "São José dos Campos",
     "VALTER JOSE DOS SANTOS": "Guarulhos",
     "VILA GALVAO": "Guarulhos",
-    "VILA HERMINIA": "Guarulhos"
+    "VILA HERMINIA": "Guarulhos",
 }
 
-PRIORIDADES = ["Emergente", "Urgente", "Importante", "Prioritário",
-               "Programável", "Informativo", "Protheus", "Nota Projetos"]
+PRIORIDADES = [
+    "Emergente",
+    "Urgente",
+    "Importante",
+    "Prioritário",
+    "Programável",
+    "Informativo",
+    "Protheus",
+    "Nota Projetos",
+]
 
 # Responsáveis padrão (Input/database.py:87-91) e projeto construção padrão
 # (Input/database.py:106-120 — copiar literal)
 DE_PARA_RESPONSAVEIS_PADRAO = {
-    "Poa": "Danilo", "Suzano": "Danilo", "São José dos Campos": "James",
-    "Guaratinguetá": "Danilo", "Litoral Norte": "Danilo", "Guarulhos": "James",
+    "Poa": "Danilo",
+    "Suzano": "Danilo",
+    "São José dos Campos": "James",
+    "Guaratinguetá": "Danilo",
+    "Litoral Norte": "Danilo",
+    "Guarulhos": "James",
     "Mogi das Cruzes": "Fabricio",
 }
 MAP_PROJETO_CONSTRUCAO_PADRAO = {
-    "ALEX SANFORD PETRASOLI": "SIM", "ALTOS DA VILA PAIVA": "-", "APARECIDA": "-",
-    "ARARETAMA": "-", "BARREIRO": "-", "BOISSUCANGA": "SIM", "BONSUCESSO": "-",
-    "BRAS CUBAS": "-", "CACAPAVA": "-", "CACHOEIRA PAULISTA": "-", "CARAGUATATUBA": "-",
-    "CESAR DE SOUZA": "-", "COLORADO": "-", "CRUZEIRO": "-", "DONA BENTA": "SIM",
-    "DUTRA": "-", "FERRAZ": "SIM", "GOPOUVA": "-", "GUARAREMA": "SIM", "GUARATINGUETÁ": "-",
-    "GUARULHOS": "-", "IPORANGA": "-", "ITAQUAQUECETUBA": "-", "JACAREI": "-",
-    "JOAO NOVAES": "-", "JOSE CENTRO": "-", "KIDA MACEDO": "-", "LORENA": "-",
-    "MANTIQUEIRA": "-", "MASSAGUACU": "-", "MOGI CIDADE": "-", "PARQUE INDUSTRIAL": "-",
-    "PARQUE TECNOLÓGICO": "-", "PEDREIRA": "-", "PIMENTAS": "-", "PINDAMONHANGABA": "-",
-    "POA": "SIM", "ROSEIRA": "-", "SANTA LUZIA": "-", "SANTA PAULA": "-",
-    "SAO JOSE DOS CAMPOS": "-", "SAO LUIS": "-", "SATÉLITE": "SIM", "SUZANO": "-",
-    "TAUBATÉ": "-", "URBANOVA": "-", "VALE DO SOL": "-", "VALTER JOSE DOS SANTOS": "-",
-    "VILA GALVAO": "-", "VILA HERMINIA": "-"
+    "ALEX SANFORD PETRASOLI": "SIM",
+    "ALTOS DA VILA PAIVA": "-",
+    "APARECIDA": "-",
+    "ARARETAMA": "-",
+    "BARREIRO": "-",
+    "BOISSUCANGA": "SIM",
+    "BONSUCESSO": "-",
+    "BRAS CUBAS": "-",
+    "CACAPAVA": "-",
+    "CACHOEIRA PAULISTA": "-",
+    "CARAGUATATUBA": "-",
+    "CESAR DE SOUZA": "-",
+    "COLORADO": "-",
+    "CRUZEIRO": "-",
+    "DONA BENTA": "SIM",
+    "DUTRA": "-",
+    "FERRAZ": "SIM",
+    "GOPOUVA": "-",
+    "GUARAREMA": "SIM",
+    "GUARATINGUETÁ": "-",
+    "GUARULHOS": "-",
+    "IPORANGA": "-",
+    "ITAQUAQUECETUBA": "-",
+    "JACAREI": "-",
+    "JOAO NOVAES": "-",
+    "JOSE CENTRO": "-",
+    "KIDA MACEDO": "-",
+    "LORENA": "-",
+    "MANTIQUEIRA": "-",
+    "MASSAGUACU": "-",
+    "MOGI CIDADE": "-",
+    "PARQUE INDUSTRIAL": "-",
+    "PARQUE TECNOLÓGICO": "-",
+    "PEDREIRA": "-",
+    "PIMENTAS": "-",
+    "PINDAMONHANGABA": "-",
+    "POA": "SIM",
+    "ROSEIRA": "-",
+    "SANTA LUZIA": "-",
+    "SANTA PAULA": "-",
+    "SAO JOSE DOS CAMPOS": "-",
+    "SAO LUIS": "-",
+    "SATÉLITE": "SIM",
+    "SUZANO": "-",
+    "TAUBATÉ": "-",
+    "URBANOVA": "-",
+    "VALE DO SOL": "-",
+    "VALTER JOSE DOS SANTOS": "-",
+    "VILA GALVAO": "-",
+    "VILA HERMINIA": "-",
 }
 
 # Nomes amigáveis de coluna para exports (Input/app.py:67-84, mesma lógica)
 NOMES_AMIGAVEIS = {v: k for k, v in MAP_FILTROS.items()}
-NOMES_AMIGAVEIS.update({
-    "Numero_Nota": "Nº Nota (ID)", "Status_Nota": "Status Nota",
-    "Prioridade_Nota": "Prioridade Nota", "Status_Obra": "Status Obra",
-    "Planejado_DDPM": "Planejado", "Local_Instalacao": "Local Instalação",
-    "Mes_Execucao_Planejado": "Mês Execução Planejado",
-    "substacao_conjunto": "Subestação Conj", "CJ_Aneel": "Cj. Aneel",
-    "Check": "Check", "Observacao": "Observação",
-    "Centro_Responsavel": "Centro de Trabalho Responsável",
-    "Total_planejado_ordem": "Total Planejado Ordem (R$)",
-    "Total_real_ordem": "Total Real Ordem (R$)", "Modular": "Modular (R$)",
-})
+NOMES_AMIGAVEIS.update(
+    {
+        "Numero_Nota": "Nº Nota (ID)",
+        "Status_Nota": "Status Nota",
+        "Prioridade_Nota": "Prioridade Nota",
+        "Status_Obra": "Status Obra",
+        "Planejado_DDPM": "Planejado",
+        "Local_Instalacao": "Local Instalação",
+        "Mes_Execucao_Planejado": "Mês Execução Planejado",
+        "substacao_conjunto": "Subestação Conj",
+        "CJ_Aneel": "Cj. Aneel",
+        "Check": "Check",
+        "Observacao": "Observação",
+        "Centro_Responsavel": "Centro de Trabalho Responsável",
+        "Total_planejado_ordem": "Total Planejado Ordem (R$)",
+        "Total_real_ordem": "Total Real Ordem (R$)",
+        "Modular": "Modular (R$)",
+    }
+)
 
 # Colunas exibidas/exportadas na ordem do painel (Input/app.py:172-179 — copiar literal)
 COLUNAS_PAINEL = [
-    "Regional", "Numero_Nota", "Status_Obra", "Conjunto", "Circuito", "Local_Instalacao",
-    "Planejado_DDPM", "Mes_Execucao_Planejado", "Data_Envio_Projeto", "Centro_Responsavel",
-    "Prioridade_Nota", "Status_Nota", "Cidade", "Observacao", "CJ_Aneel",
-    "substacao_conjunto", "Conj.critico", "ranking", "Check", "Export_status", "Status_Final", "Status_Anterior", "Check_Cancelado",
-    "Ordem", "Status_Usuário_Ordem", "Status_Sistema", "Total_planejado_ordem", "Total_real_ordem", "Exec_percentagem_ordem", "Ordem_Executada", "Modular",
-    "Total_planejado_modular", "Regional_CSD", "N_Clientes_Conjunto", "CHI", "CI", "Ocorrencia", "DEC", "FEC", "CHI_Conjunto", "Equipamento_Protecao", "DEC_Prog_CHI"
+    "Regional",
+    "Numero_Nota",
+    "Status_Obra",
+    "Conjunto",
+    "Circuito",
+    "Local_Instalacao",
+    "Planejado_DDPM",
+    "Mes_Execucao_Planejado",
+    "Data_Envio_Projeto",
+    "Centro_Responsavel",
+    "Prioridade_Nota",
+    "Status_Nota",
+    "Cidade",
+    "Observacao",
+    "CJ_Aneel",
+    "substacao_conjunto",
+    "Conj.critico",
+    "ranking",
+    "Check",
+    "Export_status",
+    "Status_Final",
+    "Status_Anterior",
+    "Check_Cancelado",
+    "Ordem",
+    "Status_Usuário_Ordem",
+    "Status_Sistema",
+    "Total_planejado_ordem",
+    "Total_real_ordem",
+    "Exec_percentagem_ordem",
+    "Ordem_Executada",
+    "Modular",
+    "Total_planejado_modular",
+    "Regional_CSD",
+    "N_Clientes_Conjunto",
+    "CHI",
+    "CI",
+    "Ocorrencia",
+    "DEC",
+    "FEC",
+    "CHI_Conjunto",
+    "Equipamento_Protecao",
+    "DEC_Prog_CHI",
 ]
