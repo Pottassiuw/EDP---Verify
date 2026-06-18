@@ -6,7 +6,7 @@ export function useInputData() {
   return useQuery({
     queryKey: ['input-dados'],
     queryFn: InputApi.dados,
-    staleTime: 60_000,
+    staleTime: 300_000,
     retry: 1,
   });
 }
