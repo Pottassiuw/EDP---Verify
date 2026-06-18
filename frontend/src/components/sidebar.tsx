@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AppSection } from '../types';
+import type { AppSection, CoffeeSubPage } from '../types';
 
 const svgBase = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
   strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -36,20 +36,106 @@ function NavBtn({ active, soon, label, onClick, children }: NavBtnProps): React.
   );
 }
 
+const COFFEE_SUBS: { id: CoffeeSubPage; label: string; icon: string }[] = [
+  { id: "abrir", label: "Abrir Notas", icon: "☕" },
+  { id: "geradas", label: "Geradas", icon: "✓" },
+  { id: "corrigidas", label: "Corrigidas", icon: "↻" },
+  { id: "pendentes", label: "Pendentes", icon: "⏳" },
+  { id: "verificar", label: "Verificar", icon: "🔍" },
+];
+
+function readCoffeeSub(): CoffeeSubPage {
+  try {
+    const raw = sessionStorage.getItem("edp_coffee_sub");
+    if (raw) return JSON.parse(raw) as CoffeeSubPage;
+  } catch { /* ignore */ }
+  return "abrir";
+}
+
+function writeCoffeeSub(sub: CoffeeSubPage): void {
+  try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify(sub)); } catch { /* ignore */ }
+}
+
 interface SidebarProps { section: AppSection; setSection: (s: AppSection) => void; }
 export function Sidebar({ section, setSection }: SidebarProps): React.JSX.Element {
+  const [flyoutOpen, setFlyoutOpen] = React.useState(false);
+  const flyoutRef = React.useRef<HTMLDivElement>(null);
+  const chevronRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    if (!flyoutOpen) return;
+    function onMouseDown(e: MouseEvent): void {
+      if (flyoutRef.current?.contains(e.target as Node)) return;
+      if (chevronRef.current?.contains(e.target as Node)) return;
+      setFlyoutOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === "Escape") setFlyoutOpen(false);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => { document.removeEventListener("mousedown", onMouseDown); document.removeEventListener("keydown", onKeyDown); };
+  }, [flyoutOpen]);
+
+  function selectSub(sub: CoffeeSubPage): void {
+    writeCoffeeSub(sub);
+    setSection("coffee");
+    setFlyoutOpen(false);
+  }
+
+  const activeSub = readCoffeeSub();
+
   return (
     <nav className="edp-nav" style={{ width: 56, flexShrink: 0, background: "var(--surface)", borderRight: "1px solid var(--line)",
          display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0 14px", gap: 6, zIndex: 2 }}>
       <style>{`.edp-nav button:not(:disabled):hover{background:var(--surface-2)!important;color:var(--text)!important}`}</style>
       <div style={{ marginBottom: 10 }}><BrandGlyph /></div>
       <NavBtn active={section === "triagem"} label="Triagem" onClick={() => setSection("triagem")}><IconTriage /></NavBtn>
-      <NavBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></NavBtn>
+
+      {/* COFFEE com flyout */}
+      <div style={{ position: "relative" }}>
+        <NavBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></NavBtn>
+        <button ref={chevronRef} aria-label="Sub-paginas COFFEE"
+                onClick={() => setFlyoutOpen((p) => !p)}
+                style={{ position: "absolute", bottom: 0, right: 0, width: 14, height: 14, border: 0,
+                         borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                         background: flyoutOpen ? "var(--accent)" : "var(--surface-2)",
+                         color: flyoutOpen ? "#fff" : "var(--text-mute)", fontSize: 8, lineHeight: 1,
+                         transition: "background .12s" }}>
+          ▾
+        </button>
+
+        {flyoutOpen && (
+          <div ref={flyoutRef}
+               style={{ position: "absolute", left: "calc(100% + 8px)", top: 0, width: 180,
+                        background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-md)",
+                        boxShadow: "0 4px 24px rgba(0,0,0,.25)", zIndex: 100,
+                        display: "flex", flexDirection: "column", padding: "4px 0", overflow: "hidden" }}>
+            {COFFEE_SUBS.map((s) => {
+              const isActive = section === "coffee" && activeSub === s.id;
+              return (
+                <button key={s.id} onClick={() => selectSub(s.id)}
+                        style={{ position: "relative", display: "flex", alignItems: "center", gap: 10,
+                                 padding: "9px 14px", border: 0, cursor: "pointer", fontSize: 13,
+                                 background: isActive ? "var(--accent-tint)" : "transparent",
+                                 color: isActive ? "var(--accent)" : "var(--text)",
+                                 transition: "background .1s" }}>
+                  {isActive && <span style={{ position: "absolute", left: 0, top: 6, bottom: 6, width: 3,
+                                              borderRadius: 999, background: "var(--accent)" }} />}
+                  <span style={{ width: 18, textAlign: "center", fontSize: 14 }}>{s.icon}</span>
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <NavBtn active={section === "input"} label="Input" onClick={() => setSection("input")}><IconInput /></NavBtn>
       <div style={{ flex: 1 }} />
-      <NavBtn soon label="Relatórios"><IconReport /></NavBtn>
+      <NavBtn soon label="Relatorios"><IconReport /></NavBtn>
       <NavBtn soon label="De olho no BI"><IconBI /></NavBtn>
-      <NavBtn soon label="Configurações"><IconGear /></NavBtn>
+      <NavBtn soon label="Configuracoes"><IconGear /></NavBtn>
     </nav>
   );
 }
