@@ -159,12 +159,12 @@ export default function App(): React.JSX.Element {
         <React.Suspense fallback={<SectionLoading />}>
           {section === "input" ? (
             <InputSection t={t} />
-          ) : screen === "upload" ? (
-            <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
-          ) : (
+          ) : section === "coffee" ? (
             <React.Fragment>
-              <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
-              {section === "coffee" && coffeeReturn && (
+              {screen === "dashboard" && (
+                <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
+              )}
+              {screen === "dashboard" && coffeeReturn && (
                 <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "8px 18px",
                               background: "var(--tint-amber)", borderBottom: "1px solid rgba(240,169,59,.3)",
                               fontSize: 13, color: "var(--text)" }}>
@@ -183,11 +183,16 @@ export default function App(): React.JSX.Element {
                           title="Dispensar" aria-label="Dispensar">×</button>
                 </div>
               )}
-              {section === "triagem"
-                ? <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
-                             onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
-                             onSendToCoffee={sendToCoffeeQueue} />
-                : <CoffeeSection notes={notes} layout={t.coffeeLayout} />}
+              <CoffeeSection notes={notes} layout={t.coffeeLayout} />
+            </React.Fragment>
+          ) : screen === "upload" ? (
+            <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
+          ) : (
+            <React.Fragment>
+              <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
+              <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
+                         onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
+                         onSendToCoffee={sendToCoffeeQueue} />
             </React.Fragment>
           )}
         </React.Suspense>
