@@ -1,4 +1,6 @@
 """Testes do módulo COFFEE (backend)."""
+import time as _time
+
 import pytest
 
 import httpx
@@ -143,3 +145,44 @@ def test_escritas_montam_url(monkeypatch):
     assert urls[0].endswith("/deolhonarede/sap/123321/10000000")
     assert urls[1].endswith("/deolhonarede/desarquivar/123321")
     assert urls[2].endswith("/deolhonarede/local_instalacao/123321/701CF12345678")
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — jobs.py (batch fetch runner with progress)
+# ---------------------------------------------------------------------------
+
+
+def _aguardar_job(jobs, job_id, limite_s=3.0):
+    """Faz polling do job até concluir (ou estourar o tempo)."""
+    fim = _time.time() + limite_s
+    while _time.time() < fim:
+        j = jobs.obter_job(job_id)
+        if j and j["estado"] == "concluido":
+            return j
+        _time.sleep(0.01)
+    raise TimeoutError("job não concluiu a tempo")
+
+
+def test_job_busca_lote_com_progresso_e_erros(coffee_tmp, monkeypatch):
+    from coffee_module import client, db, jobs
+
+    def fake_buscar(id):
+        if str(id) == "999":
+            raise RuntimeError("timeout")
+        return {"pk": int(id), "id_sap": 17247854, "arquivado": True,
+                "fields": {"id_sap": 17247854}}
+
+    monkeypatch.setattr(client, "buscar_nota", fake_buscar)
+    job_id = jobs.iniciar_busca(["355617", "999", "355618"])
+    j = _aguardar_job(jobs, job_id)
+    assert j["total"] == 3
+    assert j["feitas"] == 3
+    assert len(j["erros"]) == 1
+    assert j["erros"][0]["pk"] == "999"
+    # as duas notas válidas foram persistidas
+    assert len(db.listar_notas("gerada")) == 2
+
+
+def test_obter_job_inexistente(coffee_tmp):
+    from coffee_module import jobs
+    assert jobs.obter_job("nao-existe") is None
