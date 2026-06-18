@@ -69,3 +69,18 @@ def test_enrich_candidate_empty_fields():
     assert result["local_instalacao"] == ""
     assert result["poste"] == ""
     assert result["problema"] == ""
+
+def test_gzip_comprime_resposta_grande(monkeypatch):
+    """Respostas acima do limite saem comprimidas quando o cliente aceita gzip."""
+    from fastapi.testclient import TestClient
+    import main
+
+    grande = [{"id": str(i), "errors": [], "uf": "SP", "setor": "Centro"}
+              for i in range(500)]
+    monkeypatch.setattr(main, "RECORDS", grande)
+    client = TestClient(main.app)
+    r = client.get("/api/data", headers={"Accept-Encoding": "gzip"})
+    assert r.status_code == 200
+    assert r.headers.get("content-encoding") == "gzip"
+    # httpx descomprime transparentemente: o corpo continua íntegro
+    assert len(r.json()["records"]) == 500
