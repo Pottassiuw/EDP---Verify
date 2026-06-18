@@ -19,6 +19,7 @@ const TABLE_STYLE = `
 
 function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
   const now = Date.now();
   const diff = now - d.getTime();
   const mins = Math.floor(diff / 60000);
