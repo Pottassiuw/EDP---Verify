@@ -2,7 +2,10 @@ import React from 'react';
 import type { Note, CoffeeSubPage } from '../types';
 import { usePersistedState } from '../hooks/use-persisted-state';
 import { CoffeeAbrir } from './coffee-abrir';
-import { CoffeePlaceholder } from './placeholder';
+import { CoffeeGeradas } from './coffee-geradas';
+import { CoffeeCorrigidas } from './coffee-corrigidas';
+import { CoffeePendentes } from './coffee-pendentes';
+import { CoffeeVerificar } from './coffee-verificar';
 
 const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
   { id: "abrir", rotulo: "Abrir" },
@@ -11,13 +14,6 @@ const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
   { id: "pendentes", rotulo: "Pendentes" },
   { id: "verificar", rotulo: "Verificar" },
 ];
-
-const PLACEHOLDERS: Record<string, { titulo: string; descricao: string }> = {
-  geradas: { titulo: "Notas Geradas", descricao: "Notas com SAP real ja geradas pelo COFFEE. Em breve voce podera visualiza-las e move-las para o Input." },
-  corrigidas: { titulo: "Notas Corrigidas", descricao: "Notas que transitaram de pendente para SAP real. Em breve voce podera acompanhar as correcoes." },
-  pendentes: { titulo: "Notas Pendentes", descricao: "Notas aguardando geracao (SAP 10000000). Em breve voce podera disparar buscas e acompanhar o progresso." },
-  verificar: { titulo: "Verificar Notas", descricao: "Verificacao de notas COFFEE com interface amigavel. Em breve." },
-};
 
 interface CoffeeHubProps {
   notes: Note[];
@@ -46,11 +42,15 @@ export function CoffeeHub({ notes, layout, coffeeReturn, onClearReturn, onBackTo
         <CoffeeAbrir notes={notes} layout={layout}
                      coffeeReturn={coffeeReturn} onClearReturn={onClearReturn}
                      onBackToTriagem={onBackToTriagem} />
-      ) : (
-        <CoffeePlaceholder
-          titulo={PLACEHOLDERS[sub]?.titulo ?? sub}
-          descricao={PLACEHOLDERS[sub]?.descricao ?? ""} />
-      )}
+      ) : sub === "geradas" ? (
+        <CoffeeGeradas />
+      ) : sub === "corrigidas" ? (
+        <CoffeeCorrigidas />
+      ) : sub === "pendentes" ? (
+        <CoffeePendentes />
+      ) : sub === "verificar" ? (
+        <CoffeeVerificar />
+      ) : null}
     </div>
   );
 }
