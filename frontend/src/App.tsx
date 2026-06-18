@@ -53,6 +53,14 @@ function TopBar({ t, setTweak, file, source, onReset }: TopBarProps): React.JSX.
   );
 }
 
+const VERIFY_FILTER_KEYS = [
+  "edp_verify_q", "edp_verify_uf", "edp_verify_setor", "edp_verify_urg",
+  "edp_verify_status", "edp_verify_situacao", "edp_verify_rules",
+];
+function limparFiltrosVerify(): void {
+  try { VERIFY_FILTER_KEYS.forEach((k) => sessionStorage.removeItem(k)); } catch { /* ignore */ }
+}
+
 function SectionLoading(): React.JSX.Element {
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -91,6 +99,7 @@ export default function App(): React.JSX.Element {
   }, [apiData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function loadDemo(name?: string): void {
+    limparFiltrosVerify();
     const savedDone = JSON.parse(localStorage.getItem("edp_demo_done") ?? "null") as string[] | null;
     const savedDup = JSON.parse(localStorage.getItem("edp_demo_dup") ?? "null") as string[] | null;
     setNotes(EDP_DEMO.notes);
@@ -100,6 +109,7 @@ export default function App(): React.JSX.Element {
   }
 
   async function handleUpload(f: File): Promise<void> {
+    limparFiltrosVerify();
     await EDPApi.upload(f);
     const d = await EDPApi.fetchData();
     setNotes(d.notes); setCompleted(d.completed); setSource("api");

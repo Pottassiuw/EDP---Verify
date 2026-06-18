@@ -4,6 +4,7 @@ import { EDPApi, ruleMeta } from '../api';
 import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
+import { usePersistedState } from '../hooks/use-persisted-state';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -21,13 +22,15 @@ export interface DashboardProps {
 
 export function Dashboard(props: DashboardProps): React.JSX.Element {
   const { t, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
-  const [q, setQ] = React.useState("");
-  const [uf, setUf] = React.useState("all");
-  const [setor, setSetor] = React.useState("all");
-  const [urg, setUrg] = React.useState("all");
-  const [status, setStatus] = React.useState("all");
-  const [situacao, setSituacao] = React.useState("all");
-  const [rules, setRules] = React.useState<Set<RuleKey>>(() => new Set());
+  const [q, setQ] = usePersistedState("edp_verify_q", "");
+  const [uf, setUf] = usePersistedState("edp_verify_uf", "all");
+  const [setor, setSetor] = usePersistedState("edp_verify_setor", "all");
+  const [urg, setUrg] = usePersistedState("edp_verify_urg", "all");
+  const [status, setStatus] = usePersistedState("edp_verify_status", "all");
+  const [situacao, setSituacao] = usePersistedState("edp_verify_situacao", "all");
+  const [rulesArr, setRulesArr] = usePersistedState<RuleKey[]>("edp_verify_rules", []);
+  const rules = React.useMemo(() => new Set(rulesArr), [rulesArr]);
+  const setRules = React.useCallback((s: Set<RuleKey>) => setRulesArr([...s]), [setRulesArr]);
   const [selBatch, setSelBatch] = React.useState<Set<string>>(() => new Set());
   const [selId, setSelId] = React.useState<string | null>(notes[0] ? notes[0].id : null);
   const [queueCollapsed, setQueueCollapsed] = React.useState<boolean>(() => localStorage.getItem("edp_queue_collapsed") === "1");
