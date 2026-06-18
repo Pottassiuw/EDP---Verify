@@ -10,8 +10,8 @@ import { Sidebar } from './components/sidebar';
 import { useTriageData } from './hooks/useTriageData';
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
-const CoffeeSection = React.lazy(() =>
-  import('./components/coffee-section').then((m) => ({ default: m.CoffeeSection })));
+const CoffeeHub = React.lazy(() =>
+  import('./coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -148,6 +148,7 @@ export default function App(): React.JSX.Element {
       const src = notes.find((n) => n.id === sourceId);
       setCoffeeReturn(src ? { noteId: src.id, noteRef: src.referencia } : null);
     }
+    try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify("abrir")); } catch { /* ignore */ }
     setSection("coffee");
   }
 
@@ -170,31 +171,10 @@ export default function App(): React.JSX.Element {
           {section === "input" ? (
             <InputSection t={t} />
           ) : section === "coffee" ? (
-            <React.Fragment>
-              {screen === "dashboard" && (
-                <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
-              )}
-              {screen === "dashboard" && coffeeReturn && (
-                <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "8px 18px",
-                              background: "var(--tint-amber)", borderBottom: "1px solid rgba(240,169,59,.3)",
-                              fontSize: 13, color: "var(--text)" }}>
-                  <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    Você estava na{" "}
-                    <strong className="edp-mono" style={{ fontSize: 13 }}>Nota {coffeeReturn.noteId}</strong>
-                    {coffeeReturn.noteRef ? <span style={{ color: "var(--text-dim)" }}> · {coffeeReturn.noteRef}</span> : null}
-                  </span>
-                  <button className="edp-btn sm" style={{ background: "var(--accent)", borderColor: "var(--accent)", color: "#fff", fontWeight: 600 }}
-                          onClick={() => { changeSection("triagem"); }}>
-                    ← Voltar à triagem
-                  </button>
-                  <button onClick={() => setCoffeeReturn(null)}
-                          style={{ all: "unset", cursor: "pointer", fontSize: 18, lineHeight: 1, color: "var(--text-mute)", padding: "2px 6px" }}
-                          title="Dispensar" aria-label="Dispensar">×</button>
-                </div>
-              )}
-              <CoffeeSection notes={notes} layout={t.coffeeLayout} />
-            </React.Fragment>
+            <CoffeeHub notes={notes} layout={t.coffeeLayout}
+                       coffeeReturn={coffeeReturn}
+                       onClearReturn={() => setCoffeeReturn(null)}
+                       onBackToTriagem={() => { changeSection("triagem"); }} />
           ) : screen === "upload" ? (
             <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
           ) : (

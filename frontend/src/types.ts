@@ -144,10 +144,6 @@ export interface DuplicateCompareProps {
   onMarkDuplicate: (id: string) => void;
   onSendToCoffee?: (ids: string[], sourceId?: string) => void;
 }
-export interface CoffeeSectionProps {
-  notes: Note[];
-  layout: CoffeeLayout;
-}
 
 export interface KpiDrawerProps {
   pct: number;      // conformidade %
