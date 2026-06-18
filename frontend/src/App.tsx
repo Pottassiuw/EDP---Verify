@@ -5,11 +5,13 @@ import { EDP_DEMO } from './data';
 import { Logo } from './components/shared';
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, TweakColor } from './components/tweaks-panel';
 import { UploadScreen } from './components/upload-screen';
-import { CoffeeSection } from './components/coffee-section';
 import { Dashboard } from './components/dashboard';
 import { Sidebar } from './components/sidebar';
 import { useTriageData } from './hooks/useTriageData';
-import { InputSection } from './input/input-section';
+const InputSection = React.lazy(() =>
+  import('./input/input-section').then((m) => ({ default: m.InputSection })));
+const CoffeeSection = React.lazy(() =>
+  import('./components/coffee-section').then((m) => ({ default: m.CoffeeSection })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -47,6 +49,15 @@ function TopBar({ t, setTweak, file, source, onReset }: TopBarProps): React.JSX.
         </div>
         <button className="edp-btn ghost sm" title="Nova planilha" onClick={onReset}>↑ Nova</button>
       </div>
+    </div>
+  );
+}
+
+function SectionLoading(): React.JSX.Element {
+  return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "var(--text-mute)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+      Carregando…
     </div>
   );
 }
@@ -145,39 +156,41 @@ export default function App(): React.JSX.Element {
          style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
       <Sidebar section={section} setSection={changeSection} />
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {section === "input" ? (
-          <InputSection t={t} />
-        ) : screen === "upload" ? (
-          <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
-        ) : (
-          <React.Fragment>
-            <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
-            {section === "coffee" && coffeeReturn && (
-              <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "8px 18px",
-                            background: "var(--tint-amber)", borderBottom: "1px solid rgba(240,169,59,.3)",
-                            fontSize: 13, color: "var(--text)" }}>
-                <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  Você estava na{" "}
-                  <strong className="edp-mono" style={{ fontSize: 13 }}>Nota {coffeeReturn.noteId}</strong>
-                  {coffeeReturn.noteRef ? <span style={{ color: "var(--text-dim)" }}> · {coffeeReturn.noteRef}</span> : null}
-                </span>
-                <button className="edp-btn sm" style={{ background: "var(--accent)", borderColor: "var(--accent)", color: "#fff", fontWeight: 600 }}
-                        onClick={() => { changeSection("triagem"); }}>
-                  ← Voltar à triagem
-                </button>
-                <button onClick={() => setCoffeeReturn(null)}
-                        style={{ all: "unset", cursor: "pointer", fontSize: 18, lineHeight: 1, color: "var(--text-mute)", padding: "2px 6px" }}
-                        title="Dispensar" aria-label="Dispensar">×</button>
-              </div>
-            )}
-            {section === "triagem"
-              ? <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
-                           onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
-                           onSendToCoffee={sendToCoffeeQueue} />
-              : <CoffeeSection notes={notes} layout={t.coffeeLayout} />}
-          </React.Fragment>
-        )}
+        <React.Suspense fallback={<SectionLoading />}>
+          {section === "input" ? (
+            <InputSection t={t} />
+          ) : screen === "upload" ? (
+            <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
+          ) : (
+            <React.Fragment>
+              <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
+              {section === "coffee" && coffeeReturn && (
+                <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "8px 18px",
+                              background: "var(--tint-amber)", borderBottom: "1px solid rgba(240,169,59,.3)",
+                              fontSize: 13, color: "var(--text)" }}>
+                  <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    Você estava na{" "}
+                    <strong className="edp-mono" style={{ fontSize: 13 }}>Nota {coffeeReturn.noteId}</strong>
+                    {coffeeReturn.noteRef ? <span style={{ color: "var(--text-dim)" }}> · {coffeeReturn.noteRef}</span> : null}
+                  </span>
+                  <button className="edp-btn sm" style={{ background: "var(--accent)", borderColor: "var(--accent)", color: "#fff", fontWeight: 600 }}
+                          onClick={() => { changeSection("triagem"); }}>
+                    ← Voltar à triagem
+                  </button>
+                  <button onClick={() => setCoffeeReturn(null)}
+                          style={{ all: "unset", cursor: "pointer", fontSize: 18, lineHeight: 1, color: "var(--text-mute)", padding: "2px 6px" }}
+                          title="Dispensar" aria-label="Dispensar">×</button>
+                </div>
+              )}
+              {section === "triagem"
+                ? <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
+                             onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
+                             onSendToCoffee={sendToCoffeeQueue} />
+                : <CoffeeSection notes={notes} layout={t.coffeeLayout} />}
+            </React.Fragment>
+          )}
+        </React.Suspense>
       </div>
 
       <TweaksPanel>
