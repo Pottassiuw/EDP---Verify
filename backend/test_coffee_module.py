@@ -186,3 +186,55 @@ def test_job_busca_lote_com_progresso_e_erros(coffee_tmp, monkeypatch):
 def test_obter_job_inexistente(coffee_tmp):
     from coffee_module import jobs
     assert jobs.obter_job("nao-existe") is None
+
+
+# ---------------------------------------------------------------------------
+# Task 5 — routes.py (API router)
+# ---------------------------------------------------------------------------
+
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def coffee_cliente(coffee_tmp, monkeypatch):
+    from coffee_module import client
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": True,
+                    "fields": {"id_sap": 17247854}},
+    )
+    from main import app
+    return TestClient(app)
+
+
+def test_rota_buscar_job_e_notas(coffee_cliente):
+    from coffee_module import jobs
+    r = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["355617"]})
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    _aguardar_job(jobs, job_id)
+    rj = coffee_cliente.get(f"/api/coffee/job/{job_id}")
+    assert rj.json()["feitas"] == 1
+    notas = coffee_cliente.get("/api/coffee/notas").json()["registros"]
+    assert len(notas) == 1 and notas[0]["pk"] == 355617
+    assert coffee_cliente.get("/api/coffee/notas?status=gerada").json()["registros"][0]["pk"] == 355617
+
+
+def test_rota_buscar_lista_vazia_400(coffee_cliente):
+    assert coffee_cliente.post("/api/coffee/buscar", json={"ids": []}).status_code == 400
+
+
+def test_rota_job_inexistente_404(coffee_cliente):
+    assert coffee_cliente.get("/api/coffee/job/nao-existe").status_code == 404
+
+
+def test_rotas_de_escrita(coffee_cliente, monkeypatch):
+    from coffee_module import client
+    chamadas = []
+    monkeypatch.setattr(client, "arquivar", lambda i, s: chamadas.append(("sap", i, s)) or True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: chamadas.append(("loc", i, l)) or True)
+    assert coffee_cliente.post("/api/coffee/sap", json={"id": 1, "sap": 10000000}).json()["ok"] is True
+    assert coffee_cliente.post("/api/coffee/desarquivar", json={"id": 1}).json()["ok"] is True
+    assert coffee_cliente.post("/api/coffee/local-instalacao", json={"id": 1, "local": "X"}).json()["ok"] is True
+    assert ("sap", 1, 10000000) in chamadas

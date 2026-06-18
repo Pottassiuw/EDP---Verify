@@ -283,6 +283,10 @@ from input_module.routes import router as input_router
 
 app.include_router(input_router)
 
+from coffee_module.routes import router as coffee_router
+
+app.include_router(coffee_router)
+
 
 DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"
 if DIST.exists():
