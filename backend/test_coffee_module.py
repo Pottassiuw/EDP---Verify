@@ -1,6 +1,8 @@
 """Testes do módulo COFFEE (backend)."""
 import pytest
 
+import httpx
+
 from coffee_module import classify, config
 
 
@@ -68,3 +70,76 @@ def test_registrar_erro_e_listar_tudo(coffee_tmp):
     assert len(todas) == 2
     erro = [n for n in todas if n["pk"] == 2][0]
     assert erro["erro"] == "timeout"
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — client.py (httpx wrapper)
+# ---------------------------------------------------------------------------
+
+
+class _FakeResp:
+    def __init__(self, payload=None, status=200):
+        self._payload = payload
+        self.status_code = status
+
+    def raise_for_status(self):
+        if self.status_code != 200:
+            raise httpx.HTTPStatusError(
+                "erro",
+                request=httpx.Request("GET", "test"),
+                response=httpx.Response(self.status_code),
+            )
+
+    def json(self):
+        return self._payload
+
+
+# json_all retorna uma STRING JSON (duplamente codificada)
+_JSON_ALL = (
+    '[{"model": "AppDeOlhoNaRede2.informativo", "pk": 355617, '
+    '"fields": {"id_sap": 17247854, "arquivado": true, "sintoma": "EEST"}}]'
+)
+
+
+def test_buscar_nota_faz_duplo_parse(monkeypatch):
+    monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
+    capturado = {}
+
+    def fake_get(url, timeout=None):
+        capturado["url"] = url
+        return _FakeResp(payload=_JSON_ALL)
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    from coffee_module import client
+    nota = client.buscar_nota(355617)
+    assert nota["pk"] == 355617
+    assert nota["id_sap"] == 17247854
+    assert nota["arquivado"] is True
+    assert nota["fields"]["sintoma"] == "EEST"
+    assert capturado["url"].endswith("/deolhonarede/json_all/355617")
+
+
+def test_buscar_nota_propaga_erro_http(monkeypatch):
+    monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
+    monkeypatch.setattr(httpx, "get", lambda url, timeout=None: _FakeResp(status=500))
+    from coffee_module import client
+    with pytest.raises(httpx.HTTPStatusError):
+        client.buscar_nota(1)
+
+
+def test_escritas_montam_url(monkeypatch):
+    monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
+    urls = []
+
+    def fake_get(url, timeout=None):
+        urls.append(url)
+        return _FakeResp(payload="ok")
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    from coffee_module import client
+    assert client.arquivar(123321, 10000000) is True
+    assert client.desarquivar(123321) is True
+    assert client.alterar_local(123321, "701CF12345678") is True
+    assert urls[0].endswith("/deolhonarede/sap/123321/10000000")
+    assert urls[1].endswith("/deolhonarede/desarquivar/123321")
+    assert urls[2].endswith("/deolhonarede/local_instalacao/123321/701CF12345678")
