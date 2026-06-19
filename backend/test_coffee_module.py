@@ -124,6 +124,38 @@ def test_registrar_log_nunca_levanta(coffee_tmp):
 
 
 # ---------------------------------------------------------------------------
+# Task 2 — Transition logs in upsert_nota
+# ---------------------------------------------------------------------------
+
+
+def test_upsert_registra_transicao_de_classificacao(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})  # pendente (sem anterior)
+    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})   # -> corrigida
+    trans = db.listar_logs(tipo="transicao")
+    classif = [t for t in trans if t["acao"] == "classificar"]
+    assert len(classif) == 1
+    assert classif[0]["nota_pk"] == 355617
+    assert classif[0]["detalhes"]["anterior"] == "pendente"
+    assert classif[0]["detalhes"]["novo"] == "corrigida"
+
+
+def test_upsert_registra_transicao_de_arquivado(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})  # arquivado=False
+    db.upsert_nota(355617, 10000000, True, {"id_sap": 10000000})   # -> arquivado=True
+    arq = [t for t in db.listar_logs(tipo="transicao") if t["acao"] == "arquivar_estado"]
+    assert len(arq) == 1
+    assert arq[0]["detalhes"] == {"anterior": False, "novo": True}
+
+
+def test_upsert_primeira_busca_nao_gera_transicao(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    assert db.listar_logs(tipo="transicao") == []
+
+
+# ---------------------------------------------------------------------------
 # Task 3 — client.py (httpx wrapper)
 # ---------------------------------------------------------------------------
 

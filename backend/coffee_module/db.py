@@ -59,8 +59,12 @@ def inicializar_banco() -> None:
 
 def upsert_nota(pk: int, id_sap: int, arquivado: bool, dados_json: dict) -> str:
     conn = get_db_connection()
-    row = conn.execute("SELECT id_sap FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
+    row = conn.execute(
+        "SELECT id_sap, classificacao, arquivado FROM notas_coffee WHERE pk = ?", (pk,)
+    ).fetchone()
     id_sap_anterior = row[0] if row is not None else None
+    classe_anterior = row[1] if row is not None else None
+    arquivado_anterior = bool(row[2]) if row is not None and row[2] is not None else None
     classe = classificar(id_sap, id_sap_anterior)
     conn.execute(
         """
@@ -78,6 +82,14 @@ def upsert_nota(pk: int, id_sap: int, arquivado: bool, dados_json: dict) -> str:
     )
     conn.commit()
     conn.close()
+    # Transition logs — best-effort, after commit so primary upsert is never affected
+    if row is not None and classe_anterior is not None and classe != classe_anterior:
+        registrar_log("transicao", "classificar", pk,
+                      {"anterior": classe_anterior, "novo": classe,
+                       "id_sap_anterior": id_sap_anterior, "id_sap_atual": id_sap}, True)
+    if arquivado_anterior is not None and arquivado_anterior != arquivado:
+        registrar_log("transicao", "arquivar_estado", pk,
+                      {"anterior": arquivado_anterior, "novo": arquivado}, True)
     return classe
 
 
