@@ -86,8 +86,14 @@ def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None, limit: int =
 @router.post("/regerar")
 def regerar(pedido: IdPedido):
     _garantir_banco()
-    db.registrar_log("acao_usuario", "regerar", pedido.id, {"id": pedido.id, "origem": "ui"}, True)
-    client.desarquivar(pedido.id)
-    nota = client.buscar_nota(pedido.id)
-    db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+    try:
+        client.desarquivar(pedido.id)
+        nota = client.buscar_nota(pedido.id)
+        db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+    except Exception:
+        db.registrar_log("acao_usuario", "regerar", pedido.id,
+                         {"id": pedido.id, "origem": "ui"}, False)
+        raise
+    db.registrar_log("acao_usuario", "regerar", pedido.id,
+                     {"id": pedido.id, "origem": "ui"}, True)
     return {"ok": True, "nota": nota}
