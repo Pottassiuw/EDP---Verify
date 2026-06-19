@@ -75,6 +75,55 @@ def test_registrar_erro_e_listar_tudo(coffee_tmp):
 
 
 # ---------------------------------------------------------------------------
+# Sub-projeto 1 — Sistema de logs (coffee_logs)
+# ---------------------------------------------------------------------------
+
+
+def test_registrar_e_listar_log_roundtrip(coffee_tmp):
+    from coffee_module import db
+    db.registrar_log("api_call", "buscar_nota", 355617,
+                     {"id": 355617, "status_http": 200, "tempo_ms": 12}, True)
+    logs = db.listar_logs()
+    assert len(logs) == 1
+    log = logs[0]
+    assert log["tipo"] == "api_call"
+    assert log["acao"] == "buscar_nota"
+    assert log["nota_pk"] == 355617
+    assert log["sucesso"] is True
+    assert log["detalhes"]["status_http"] == 200
+    assert isinstance(log["id"], int)
+
+
+def test_listar_logs_filtra_por_nota_e_tipo(coffee_tmp):
+    from coffee_module import db
+    db.registrar_log("api_call", "buscar_nota", 1, {"id": 1}, True)
+    db.registrar_log("api_call", "arquivar", 2, {"id": 2}, True)
+    db.registrar_log("transicao", "classificar", 1, {"anterior": "pendente"}, True)
+    assert len(db.listar_logs(nota_pk=1)) == 2
+    assert len(db.listar_logs(tipo="api_call")) == 2
+    assert len(db.listar_logs(nota_pk=1, tipo="transicao")) == 1
+
+
+def test_listar_logs_ordena_desc_e_respeita_limit(coffee_tmp):
+    from coffee_module import db
+    for i in range(5):
+        db.registrar_log("acao_usuario", "regerar", i, {"i": i}, True)
+    logs = db.listar_logs(limit=3)
+    assert len(logs) == 3
+    # mais recentes primeiro: o último inserido (i=4) deve vir antes
+    assert logs[0]["detalhes"]["i"] >= logs[-1]["detalhes"]["i"]
+
+
+def test_registrar_log_nunca_levanta(coffee_tmp):
+    from coffee_module import db
+    # detalhes não-serializável não deve quebrar o chamador
+    db.registrar_log("api_call", "x", None, {"obj": object()}, False)
+    # erro de sucesso=False registrado normalmente continua funcionando
+    db.registrar_log("api_call", "y", None, None, False)
+    assert any(l["acao"] == "y" for l in db.listar_logs())
+
+
+# ---------------------------------------------------------------------------
 # Task 3 — client.py (httpx wrapper)
 # ---------------------------------------------------------------------------
 

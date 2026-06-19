@@ -37,6 +37,22 @@ def inicializar_banco() -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS coffee_logs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp   TEXT NOT NULL,
+            tipo        TEXT NOT NULL,
+            acao        TEXT NOT NULL,
+            nota_pk     INTEGER,
+            detalhes    TEXT,
+            sucesso     INTEGER NOT NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_nota_pk ON coffee_logs(nota_pk)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_tipo ON coffee_logs(tipo)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON coffee_logs(timestamp)")
     conn.commit()
     conn.close()
 
@@ -92,5 +108,66 @@ def listar_notas(status: str | None = None) -> list:
         d = dict(zip(_COLUNAS, r))
         d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
         d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
+        saida.append(d)
+    return saida
+
+
+# ---------------------------------------------------------------------------
+# Sistema de logs (coffee_logs)
+# ---------------------------------------------------------------------------
+
+_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso"]
+
+
+def registrar_log(tipo: str, acao: str, nota_pk: int | None,
+                  detalhes: dict | None, sucesso: bool) -> None:
+    """Insere um registro em coffee_logs. Best-effort: nunca levanta."""
+    try:
+        det = json.dumps(detalhes, ensure_ascii=False, default=str) if detalhes is not None else None
+        conn = get_db_connection()
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS coffee_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
+                tipo TEXT NOT NULL, acao TEXT NOT NULL, nota_pk INTEGER,
+                detalhes TEXT, sucesso INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (datetime.datetime.now().isoformat(), tipo, acao, nota_pk, det,
+             1 if sucesso else 0),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:  # noqa: BLE001 -- log jamais quebra a operacao primaria
+        pass
+
+
+def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
+                limit: int = 100) -> list:
+    conn = get_db_connection()
+    sql = f"SELECT {', '.join(_COLUNAS_LOG)} FROM coffee_logs"
+    clausulas: list = []
+    params: list = []
+    if nota_pk is not None:
+        clausulas.append("nota_pk = ?")
+        params.append(nota_pk)
+    if tipo:
+        clausulas.append("tipo = ?")
+        params.append(tipo)
+    if clausulas:
+        sql += " WHERE " + " AND ".join(clausulas)
+    sql += " ORDER BY timestamp DESC, id DESC LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(sql, tuple(params)).fetchall()
+    conn.close()
+    saida = []
+    for r in rows:
+        d = dict(zip(_COLUNAS_LOG, r))
+        d["sucesso"] = bool(d["sucesso"])
+        d["detalhes"] = json.loads(d["detalhes"]) if d["detalhes"] else None
         saida.append(d)
     return saida
