@@ -16,3 +16,13 @@ export interface CoffeeJob {
   erros: Array<{ pk: number | string; msg: string }>;
   iniciado_em: string;
 }
+
+export interface CoffeeLog {
+  id: number;
+  timestamp: string;
+  tipo: "api_call" | "transicao" | "acao_usuario";
+  acao: string;
+  nota_pk: number | null;
+  detalhes: Record<string, unknown> | null;
+  sucesso: boolean;
+}

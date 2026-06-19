@@ -17,7 +17,7 @@ const TABLE_STYLE = `
   .cnt-tag.pendente{background:var(--tint-amber);color:var(--amber)}
 `;
 
-function formatRelativeTime(iso: string): string {
+export function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   const now = Date.now();
