@@ -21,8 +21,38 @@ const IconReport = (): React.JSX.Element => (<svg {...svgBase}><path d="M3 21h18
 const IconBI = (): React.JSX.Element => (<svg {...svgBase}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>);
 const IconGear = (): React.JSX.Element => (<svg {...svgBase}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>);
 
-interface NavBtnProps { active?: boolean; soon?: boolean; label: string; onClick?: () => void; children: React.ReactNode; }
-function NavBtn({ active, soon, label, onClick, children }: NavBtnProps): React.JSX.Element {
+const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
+  { id: "abrir", label: "Abrir" },
+  { id: "geradas", label: "Gerar" },
+  { id: "corrigidas", label: "Corrigidas" },
+  { id: "pendentes", label: "Pendentes" },
+  { id: "verificar", label: "Verificar" },
+];
+
+function readBool(key: string, def: boolean): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) return raw === "true";
+  } catch { /* ignore */ }
+  return def;
+}
+function writeBool(key: string, val: boolean): void {
+  try { localStorage.setItem(key, String(val)); } catch { /* ignore */ }
+}
+
+function readCoffeeSub(): CoffeeSubPage {
+  try {
+    const raw = sessionStorage.getItem("edp_coffee_sub");
+    if (raw) return JSON.parse(raw) as CoffeeSubPage;
+  } catch { /* ignore */ }
+  return "abrir";
+}
+function writeCoffeeSub(sub: CoffeeSubPage): void {
+  try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify(sub)); } catch { /* ignore */ }
+}
+
+interface IconBtnProps { active?: boolean; soon?: boolean; label: string; onClick?: () => void; children: React.ReactNode; }
+function IconBtn({ active, soon, label, onClick, children }: IconBtnProps): React.JSX.Element {
   return (
     <button title={soon ? label + " · em breve" : label} aria-label={label} disabled={soon} onClick={onClick}
             style={{ position: "relative", width: 42, height: 42, border: 0, borderRadius: 11,
@@ -36,106 +66,120 @@ function NavBtn({ active, soon, label, onClick, children }: NavBtnProps): React.
   );
 }
 
-const COFFEE_SUBS: { id: CoffeeSubPage; label: string; icon: string }[] = [
-  { id: "abrir", label: "Abrir Notas", icon: "☕" },
-  { id: "geradas", label: "Geradas", icon: "✓" },
-  { id: "corrigidas", label: "Corrigidas", icon: "↻" },
-  { id: "pendentes", label: "Pendentes", icon: "⏳" },
-  { id: "verificar", label: "Verificar", icon: "🔍" },
-];
-
-function readCoffeeSub(): CoffeeSubPage {
-  try {
-    const raw = sessionStorage.getItem("edp_coffee_sub");
-    if (raw) return JSON.parse(raw) as CoffeeSubPage;
-  } catch { /* ignore */ }
-  return "abrir";
-}
-
-function writeCoffeeSub(sub: CoffeeSubPage): void {
-  try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify(sub)); } catch { /* ignore */ }
+// Linha completa (ícone + label) usada na sidebar expandida.
+interface RowProps { active?: boolean; soon?: boolean; label: string; onClick?: () => void; icon: React.ReactNode; right?: React.ReactNode; }
+function Row({ active, soon, label, onClick, icon, right }: RowProps): React.JSX.Element {
+  return (
+    <button title={soon ? label + " · em breve" : label} aria-label={label} disabled={soon} onClick={onClick}
+            style={{ position: "relative", width: "100%", height: 42, border: 0, borderRadius: 11, padding: "0 10px",
+                     cursor: soon ? "default" : "pointer", display: "flex", alignItems: "center", gap: 11,
+                     background: active ? "var(--accent-tint)" : "transparent",
+                     color: active ? "var(--accent)" : "var(--text-mute)", opacity: soon ? 0.4 : 1,
+                     transition: "background .12s, color .12s", textAlign: "left", fontSize: 13.5 }}>
+      {active && <span style={{ position: "absolute", left: -4, top: 9, bottom: 9, width: 3, borderRadius: 999, background: "var(--accent)" }} />}
+      <span style={{ display: "flex", width: 20, justifyContent: "center", flexShrink: 0 }}>{icon}</span>
+      <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      {soon ? <span style={{ fontSize: 9, opacity: .8 }}>soon</span> : right}
+    </button>
+  );
 }
 
 interface SidebarProps { section: AppSection; setSection: (s: AppSection) => void; }
 export function Sidebar({ section, setSection }: SidebarProps): React.JSX.Element {
-  const [flyoutOpen, setFlyoutOpen] = React.useState(false);
-  const flyoutRef = React.useRef<HTMLDivElement>(null);
-  const chevronRef = React.useRef<HTMLButtonElement>(null);
+  const [expanded, setExpanded] = React.useState(() => readBool("edp_sidebar_expanded", true));
+  const [coffeeOpen, setCoffeeOpen] = React.useState(() => readBool("edp_coffee_open", true));
+  const [activeSub, setActiveSub] = React.useState<CoffeeSubPage>(() => readCoffeeSub());
 
-  React.useEffect(() => {
-    if (!flyoutOpen) return;
-    function onMouseDown(e: MouseEvent): void {
-      if (flyoutRef.current?.contains(e.target as Node)) return;
-      if (chevronRef.current?.contains(e.target as Node)) return;
-      setFlyoutOpen(false);
-    }
-    function onKeyDown(e: KeyboardEvent): void {
-      if (e.key === "Escape") setFlyoutOpen(false);
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => { document.removeEventListener("mousedown", onMouseDown); document.removeEventListener("keydown", onKeyDown); };
-  }, [flyoutOpen]);
-
+  function toggleExpanded(): void {
+    setExpanded((p) => { const v = !p; writeBool("edp_sidebar_expanded", v); return v; });
+  }
+  function toggleCoffee(): void {
+    setCoffeeOpen((p) => { const v = !p; writeBool("edp_coffee_open", v); return v; });
+  }
   function selectSub(sub: CoffeeSubPage): void {
     writeCoffeeSub(sub);
+    setActiveSub(sub);
     setSection("coffee");
-    setFlyoutOpen(false);
   }
 
-  const activeSub = readCoffeeSub();
+  const navStyle: React.CSSProperties = {
+    width: expanded ? 220 : 56, flexShrink: 0, background: "var(--surface)",
+    borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column",
+    alignItems: expanded ? "stretch" : "center", padding: expanded ? "12px 10px 14px" : "12px 0 14px",
+    gap: 6, zIndex: 2, transition: "width 150ms ease",
+  };
 
   return (
-    <nav className="edp-nav" style={{ width: 56, flexShrink: 0, background: "var(--surface)", borderRight: "1px solid var(--line)",
-         display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0 14px", gap: 6, zIndex: 2 }}>
+    <nav className="edp-nav" style={navStyle}>
       <style>{`.edp-nav button:not(:disabled):hover{background:var(--surface-2)!important;color:var(--text)!important}`}</style>
-      <div style={{ marginBottom: 10 }}><BrandGlyph /></div>
-      <NavBtn active={section === "triagem"} label="Triagem" onClick={() => setSection("triagem")}><IconTriage /></NavBtn>
 
-      {/* COFFEE com flyout */}
-      <div style={{ position: "relative" }}>
-        <NavBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></NavBtn>
-        <button ref={chevronRef} aria-label="Sub-paginas COFFEE"
-                onClick={() => setFlyoutOpen((p) => !p)}
-                style={{ position: "absolute", bottom: 0, right: 0, width: 14, height: 14, border: 0,
-                         borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                         background: flyoutOpen ? "var(--accent)" : "var(--surface-2)",
-                         color: flyoutOpen ? "#fff" : "var(--text-mute)", fontSize: 8, lineHeight: 1,
-                         transition: "background .12s" }}>
-          ▾
+      {/* Topo: brand + toggle (expandida) | toggle (colapsada) */}
+      {expanded ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px 6px" }}>
+          <BrandGlyph />
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>EDP Verify</span>
+          <button aria-label="Colapsar menu" title="Colapsar" onClick={toggleExpanded}
+                  style={{ width: 24, height: 24, border: 0, borderRadius: 6, cursor: "pointer",
+                           background: "var(--surface-2)", color: "var(--text-mute)", fontSize: 12 }}>
+            &laquo;
+          </button>
+        </div>
+      ) : (
+        <button aria-label="Expandir menu" title="Expandir" onClick={toggleExpanded}
+                style={{ width: 42, height: 42, marginBottom: 6, border: 0, borderRadius: 11, cursor: "pointer",
+                         background: "var(--surface-2)", color: "var(--text-mute)", fontSize: 14 }}>
+          &raquo;
         </button>
+      )}
 
-        {flyoutOpen && (
-          <div ref={flyoutRef}
-               style={{ position: "absolute", left: "calc(100% + 8px)", top: 0, width: 180,
-                        background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-md)",
-                        boxShadow: "0 4px 24px rgba(0,0,0,.25)", zIndex: 100,
-                        display: "flex", flexDirection: "column", padding: "4px 0", overflow: "hidden" }}>
-            {COFFEE_SUBS.map((s) => {
-              const isActive = section === "coffee" && activeSub === s.id;
-              return (
-                <button key={s.id} onClick={() => selectSub(s.id)}
-                        style={{ position: "relative", display: "flex", alignItems: "center", gap: 10,
-                                 padding: "9px 14px", border: 0, cursor: "pointer", fontSize: 13,
-                                 background: isActive ? "var(--accent-tint)" : "transparent",
-                                 color: isActive ? "var(--accent)" : "var(--text)",
-                                 transition: "background .1s" }}>
-                  {isActive && <span style={{ position: "absolute", left: 0, top: 6, bottom: 6, width: 3,
-                                              borderRadius: 999, background: "var(--accent)" }} />}
-                  <span style={{ width: 18, textAlign: "center", fontSize: 14 }}>{s.icon}</span>
-                  <span>{s.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {expanded ? (
+        <>
+          <Row active={section === "triagem"} label="Triagem" icon={<IconTriage />} onClick={() => setSection("triagem")} />
 
-      <NavBtn active={section === "input"} label="Input" onClick={() => setSection("input")}><IconInput /></NavBtn>
-      <div style={{ flex: 1 }} />
-      <NavBtn soon label="Relatorios"><IconReport /></NavBtn>
-      <NavBtn soon label="De olho no BI"><IconBI /></NavBtn>
-      <NavBtn soon label="Configuracoes"><IconGear /></NavBtn>
+          {/* COFFEE com accordion */}
+          <Row active={section === "coffee"} label="COFFEE" icon={<IconCoffee />}
+               onClick={() => setSection("coffee")}
+               right={
+                 <span role="button" aria-label={coffeeOpen ? "Fechar sub-itens COFFEE" : "Abrir sub-itens COFFEE"}
+                       onClick={(e) => { e.stopPropagation(); toggleCoffee(); }}
+                       style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 10, cursor: "pointer", color: "var(--text-mute)" }}>
+                   {coffeeOpen ? "▾" : "▸"}
+                 </span>
+               } />
+          {coffeeOpen && COFFEE_SUBS.map((s) => {
+            const isActive = section === "coffee" && activeSub === s.id;
+            return (
+              <button key={s.id} onClick={() => selectSub(s.id)} aria-label={s.label}
+                      style={{ position: "relative", display: "flex", alignItems: "center",
+                               width: "100%", height: 34, padding: "0 10px 0 41px", border: 0, borderRadius: 9,
+                               cursor: "pointer", fontSize: 12.5, textAlign: "left",
+                               background: isActive ? "var(--accent-tint)" : "transparent",
+                               color: isActive ? "var(--accent)" : "var(--text-mute)", transition: "background .1s" }}>
+                {isActive && <span style={{ position: "absolute", left: 24, top: 7, bottom: 7, width: 3, borderRadius: 999, background: "var(--accent)" }} />}
+                {s.label}
+              </button>
+            );
+          })}
+
+          <Row active={section === "input"} label="Input" icon={<IconInput />} onClick={() => setSection("input")} />
+          <div style={{ flex: 1 }} />
+          <div style={{ height: 1, background: "var(--line)", margin: "6px 4px" }} />
+          <Row soon label="Relatorios" icon={<IconReport />} />
+          <Row soon label="De olho no BI" icon={<IconBI />} />
+          <Row soon label="Configuracoes" icon={<IconGear />} />
+        </>
+      ) : (
+        <>
+          <IconBtn active={section === "triagem"} label="Triagem" onClick={() => setSection("triagem")}><IconTriage /></IconBtn>
+          <IconBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></IconBtn>
+          <IconBtn active={section === "input"} label="Input" onClick={() => setSection("input")}><IconInput /></IconBtn>
+          <div style={{ flex: 1 }} />
+          <IconBtn soon label="Relatorios"><IconReport /></IconBtn>
+          <IconBtn soon label="De olho no BI"><IconBI /></IconBtn>
+          <IconBtn soon label="Configuracoes"><IconGear /></IconBtn>
+        </>
+      )}
     </nav>
   );
 }
