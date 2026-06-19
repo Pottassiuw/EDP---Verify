@@ -6,13 +6,15 @@ import { CoffeeGeradas } from './coffee-geradas';
 import { CoffeeCorrigidas } from './coffee-corrigidas';
 import { CoffeePendentes } from './coffee-pendentes';
 import { CoffeeVerificar } from './coffee-verificar';
+import { CoffeeLogs } from './coffee-logs';
 
 const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
   { id: "abrir", rotulo: "Abrir" },
-  { id: "geradas", rotulo: "Geradas" },
+  { id: "geradas", rotulo: "Gerar" },
   { id: "corrigidas", rotulo: "Corrigidas" },
   { id: "pendentes", rotulo: "Pendentes" },
   { id: "verificar", rotulo: "Verificar" },
+  { id: "logs", rotulo: "Logs" },
 ];
 
 interface CoffeeHubProps {
@@ -50,6 +52,8 @@ export function CoffeeHub({ notes, layout, coffeeReturn, onClearReturn, onBackTo
         <CoffeePendentes />
       ) : sub === "verificar" ? (
         <CoffeeVerificar />
+      ) : sub === "logs" ? (
+        <CoffeeLogs />
       ) : null}
     </div>
   );

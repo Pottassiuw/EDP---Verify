@@ -27,6 +27,7 @@ const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
   { id: "corrigidas", label: "Corrigidas" },
   { id: "pendentes", label: "Pendentes" },
   { id: "verificar", label: "Verificar" },
+  { id: "logs", label: "Logs" },
 ];
 
 function readBool(key: string, def: boolean): boolean {
