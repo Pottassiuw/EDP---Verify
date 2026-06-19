@@ -40,6 +40,8 @@ def buscar(pedido: BuscaPedido):
     _garantir_banco()
     if not pedido.ids:
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
+    db.registrar_log("acao_usuario", "busca_lote", None,
+                     {"ids": pedido.ids, "total": len(pedido.ids)}, True)
     return {"job_id": jobs.iniciar_busca(pedido.ids)}
 
 
@@ -73,3 +75,19 @@ def desarquivar(pedido: IdPedido):
 def local_instalacao(pedido: LocalPedido):
     client.alterar_local(pedido.id, pedido.local)
     return {"ok": True}
+
+
+@router.get("/logs")
+def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None, limit: int = 100):
+    _garantir_banco()
+    return {"logs": db.listar_logs(nota_pk=nota_pk, tipo=tipo, limit=limit)}
+
+
+@router.post("/regerar")
+def regerar(pedido: IdPedido):
+    _garantir_banco()
+    db.registrar_log("acao_usuario", "regerar", pedido.id, {"id": pedido.id, "origem": "ui"}, True)
+    client.desarquivar(pedido.id)
+    nota = client.buscar_nota(pedido.id)
+    db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+    return {"ok": True, "nota": nota}

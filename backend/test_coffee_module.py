@@ -327,3 +327,47 @@ def test_rotas_de_escrita(coffee_cliente, monkeypatch):
     assert coffee_cliente.post("/api/coffee/desarquivar", json={"id": 1}).json()["ok"] is True
     assert coffee_cliente.post("/api/coffee/local-instalacao", json={"id": 1, "local": "X"}).json()["ok"] is True
     assert ("sap", 1, 10000000) in chamadas
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — Routes /logs, /regerar + acao_usuario logging
+# ---------------------------------------------------------------------------
+
+
+def test_rota_buscar_registra_acao_usuario(coffee_cliente):
+    from coffee_module import jobs, db
+    r = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["355617", "355618"]})
+    _aguardar_job(jobs, r.json()["job_id"])
+    lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "busca_lote"]
+    assert len(lote) == 1
+    assert lote[0]["detalhes"]["total"] == 2
+
+
+def test_rota_logs_filtra(coffee_cliente):
+    from coffee_module import db
+    db.registrar_log("api_call", "buscar_nota", 1, {"id": 1}, True)
+    db.registrar_log("transicao", "classificar", 1, {"x": 1}, True)
+    todos = coffee_cliente.get("/api/coffee/logs").json()["logs"]
+    assert len(todos) >= 2
+    so_api = coffee_cliente.get("/api/coffee/logs?tipo=api_call").json()["logs"]
+    assert all(l["tipo"] == "api_call" for l in so_api)
+    so_nota = coffee_cliente.get("/api/coffee/logs?nota_pk=1").json()["logs"]
+    assert all(l["nota_pk"] == 1 for l in so_nota)
+
+
+def test_rota_regerar(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    chamadas = []
+    monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["nota"]["pk"] == 355617
+    assert ("des", 355617) in chamadas
+    assert any(l["acao"] == "regerar" for l in db.listar_logs(tipo="acao_usuario"))
