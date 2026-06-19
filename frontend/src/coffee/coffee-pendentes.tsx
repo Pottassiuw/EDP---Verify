@@ -2,6 +2,7 @@ import React from 'react';
 import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
 import { CoffeeNotasTable } from './coffee-notas-table';
+import { LogDrawer } from './coffee-log-drawer';
 
 const API_BASE = localStorage.getItem("edp_api") || "/api";
 
@@ -13,6 +14,7 @@ export function CoffeePendentes(): React.JSX.Element {
   const [buscaJob, setBuscaJob] = React.useState<CoffeeJob | null>(null);
   const [buscaErro, setBuscaErro] = React.useState<string | null>(null);
   const timerRef = React.useRef<number | null>(null);
+  const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     return () => { if (timerRef.current !== null) clearInterval(timerRef.current); };
@@ -133,7 +135,16 @@ export function CoffeePendentes(): React.JSX.Element {
         notas={notas}
         isLoading={isLoading}
         emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
+        actionColumn={(nota) => (
+          <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+                  title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+            Logs
+          </button>
+        )}
       />
+      {drawerPk !== null && (
+        <LogDrawer notaPk={drawerPk} open onClose={() => setDrawerPk(null)} />
+      )}
     </div>
   );
 }
