@@ -184,7 +184,7 @@ _JSON_ALL = (
 )
 
 
-def test_buscar_nota_faz_duplo_parse(monkeypatch):
+def test_buscar_nota_faz_duplo_parse(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     capturado = {}
 
@@ -193,24 +193,30 @@ def test_buscar_nota_faz_duplo_parse(monkeypatch):
         return _FakeResp(payload=_JSON_ALL)
 
     monkeypatch.setattr(httpx, "get", fake_get)
-    from coffee_module import client
+    from coffee_module import client, db
     nota = client.buscar_nota(355617)
     assert nota["pk"] == 355617
     assert nota["id_sap"] == 17247854
     assert nota["arquivado"] is True
     assert nota["fields"]["sintoma"] == "EEST"
     assert capturado["url"].endswith("/deolhonarede/json_all/355617")
+    logs = db.listar_logs(tipo="api_call")
+    assert len(logs) == 1 and logs[0]["acao"] == "buscar_nota" and logs[0]["sucesso"] is True
+    assert "tempo_ms" in logs[0]["detalhes"]
 
 
-def test_buscar_nota_propaga_erro_http(monkeypatch):
+def test_buscar_nota_propaga_erro_http(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     monkeypatch.setattr(httpx, "get", lambda url, timeout=None: _FakeResp(status=500))
-    from coffee_module import client
+    from coffee_module import client, db
     with pytest.raises(httpx.HTTPStatusError):
         client.buscar_nota(1)
+    logs = db.listar_logs(tipo="api_call")
+    assert len(logs) == 1 and logs[0]["sucesso"] is False
+    assert logs[0]["detalhes"]["status_http"] == 500
 
 
-def test_escritas_montam_url(monkeypatch):
+def test_escritas_montam_url(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     urls = []
 
@@ -219,13 +225,15 @@ def test_escritas_montam_url(monkeypatch):
         return _FakeResp(payload="ok")
 
     monkeypatch.setattr(httpx, "get", fake_get)
-    from coffee_module import client
+    from coffee_module import client, db
     assert client.arquivar(123321, 10000000) is True
     assert client.desarquivar(123321) is True
     assert client.alterar_local(123321, "701CF12345678") is True
     assert urls[0].endswith("/deolhonarede/sap/123321/10000000")
     assert urls[1].endswith("/deolhonarede/desarquivar/123321")
     assert urls[2].endswith("/deolhonarede/local_instalacao/123321/701CF12345678")
+    acoes = {l["acao"] for l in db.listar_logs(tipo="api_call")}
+    assert {"arquivar", "desarquivar", "alterar_local"} <= acoes
 
 
 # ---------------------------------------------------------------------------
