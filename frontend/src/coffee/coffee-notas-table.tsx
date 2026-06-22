@@ -15,6 +15,7 @@ const TABLE_STYLE = `
   .cnt-tag.gerada{background:var(--tint-green);color:var(--green)}
   .cnt-tag.corrigida{background:rgba(31,159,214,0.14);color:#1f9fd6}
   .cnt-tag.pendente{background:var(--tint-amber);color:var(--amber)}
+  .cnt-tag.nao_gerada{background:rgba(148,163,184,0.16);color:#94a3b8}
 `;
 
 export function formatRelativeTime(iso: string): string {
