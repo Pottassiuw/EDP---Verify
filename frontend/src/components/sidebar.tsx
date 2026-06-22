@@ -41,16 +41,6 @@ function writeBool(key: string, val: boolean): void {
   try { localStorage.setItem(key, String(val)); } catch { /* ignore */ }
 }
 
-function readCoffeeSub(): CoffeeSubPage {
-  try {
-    const raw = sessionStorage.getItem("edp_coffee_sub");
-    if (raw) return JSON.parse(raw) as CoffeeSubPage;
-  } catch { /* ignore */ }
-  return "abrir";
-}
-function writeCoffeeSub(sub: CoffeeSubPage): void {
-  try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify(sub)); } catch { /* ignore */ }
-}
 
 interface IconBtnProps { active?: boolean; soon?: boolean; label: string; onClick?: () => void; children: React.ReactNode; }
 function IconBtn({ active, soon, label, onClick, children }: IconBtnProps): React.JSX.Element {
@@ -85,11 +75,15 @@ function Row({ active, soon, label, onClick, icon, right }: RowProps): React.JSX
   );
 }
 
-interface SidebarProps { section: AppSection; setSection: (s: AppSection) => void; }
-export function Sidebar({ section, setSection }: SidebarProps): React.JSX.Element {
+interface SidebarProps {
+  section: AppSection;
+  setSection: (s: AppSection) => void;
+  coffeeSub: CoffeeSubPage;
+  setCoffeeSub: (s: CoffeeSubPage) => void;
+}
+export function Sidebar({ section, setSection, coffeeSub, setCoffeeSub }: SidebarProps): React.JSX.Element {
   const [expanded, setExpanded] = React.useState(() => readBool("edp_sidebar_expanded", true));
   const [coffeeOpen, setCoffeeOpen] = React.useState(() => readBool("edp_coffee_open", true));
-  const [activeSub, setActiveSub] = React.useState<CoffeeSubPage>(() => readCoffeeSub());
 
   function toggleExpanded(): void {
     setExpanded((p) => { const v = !p; writeBool("edp_sidebar_expanded", v); return v; });
@@ -98,8 +92,7 @@ export function Sidebar({ section, setSection }: SidebarProps): React.JSX.Elemen
     setCoffeeOpen((p) => { const v = !p; writeBool("edp_coffee_open", v); return v; });
   }
   function selectSub(sub: CoffeeSubPage): void {
-    writeCoffeeSub(sub);
-    setActiveSub(sub);
+    setCoffeeSub(sub);
     setSection("coffee");
   }
 
@@ -149,7 +142,7 @@ export function Sidebar({ section, setSection }: SidebarProps): React.JSX.Elemen
                  </span>
                } />
           {coffeeOpen && COFFEE_SUBS.map((s) => {
-            const isActive = section === "coffee" && activeSub === s.id;
+            const isActive = section === "coffee" && coffeeSub === s.id;
             return (
               <button key={s.id} onClick={() => selectSub(s.id)} aria-label={s.label}
                       style={{ position: "relative", display: "flex", alignItems: "center",

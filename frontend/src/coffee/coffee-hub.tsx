@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Note, CoffeeSubPage } from '../types';
-import { usePersistedState } from '../hooks/use-persisted-state';
+
 import { CoffeeAbrir } from './coffee-abrir';
 import { CoffeeGeradas } from './coffee-geradas';
 import { CoffeeCorrigidas } from './coffee-corrigidas';
@@ -20,13 +20,14 @@ const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
 interface CoffeeHubProps {
   notes: Note[];
   layout: "composer" | "split";
+  sub: CoffeeSubPage;
+  setSub: (s: CoffeeSubPage) => void;
   coffeeReturn: { noteId: string; noteRef: string } | null;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
 }
 
-export function CoffeeHub({ notes, layout, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
-  const [sub, setSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "abrir");
+export function CoffeeHub({ notes, layout, sub, setSub, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>

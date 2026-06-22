@@ -1,5 +1,6 @@
 import React from 'react';
-import type { Note, TweakState, Source, AppSection, Theme, Accent, SetTweak } from './types';
+import type { Note, TweakState, Source, AppSection, Theme, Accent, SetTweak, CoffeeSubPage } from './types';
+import { usePersistedState } from './hooks/use-persisted-state';
 import { EDPApi } from './api';
 import { EDP_DEMO } from './data';
 import { Logo } from './components/shared';
@@ -80,6 +81,7 @@ export default function App(): React.JSX.Element {
   const [source, setSource] = React.useState<Source>("demo");
   const [section, setSection] = React.useState<AppSection>("triagem");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
+  const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const accentStyle: CssVars = { "--accent": t.accent[0], "--accent-2": t.accent[1], "--accent-tint": t.accent[2] };
 
   function changeSection(s: AppSection): void {
@@ -148,7 +150,7 @@ export default function App(): React.JSX.Element {
       const src = notes.find((n) => n.id === sourceId);
       setCoffeeReturn(src ? { noteId: src.id, noteRef: src.referencia } : null);
     }
-    try { sessionStorage.setItem("edp_coffee_sub", JSON.stringify("abrir")); } catch { /* ignore */ }
+    setCoffeeSub("abrir");
     setSection("coffee");
   }
 
@@ -165,13 +167,15 @@ export default function App(): React.JSX.Element {
   return (
     <div className="edp triage" data-theme={t.theme} data-density={t.density}
          style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
-      <Sidebar section={section} setSection={changeSection} />
+      <Sidebar section={section} setSection={changeSection}
+               coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub} />
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <React.Suspense fallback={<SectionLoading />}>
           {section === "input" ? (
             <InputSection t={t} />
           ) : section === "coffee" ? (
             <CoffeeHub notes={notes} layout={t.coffeeLayout}
+                       sub={coffeeSub} setSub={setCoffeeSub}
                        coffeeReturn={coffeeReturn}
                        onClearReturn={() => setCoffeeReturn(null)}
                        onBackToTriagem={() => { changeSection("triagem"); }} />
