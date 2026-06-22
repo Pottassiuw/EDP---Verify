@@ -433,3 +433,58 @@ def test_nota_existe(coffee_tmp):
     assert db.nota_existe(99) is False
     db.upsert_nota(99, 10000000, False, {})
     assert db.nota_existe(99) is True
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — Routes /marcar-gerar + limpeza de a_gerar no /regerar
+# ---------------------------------------------------------------------------
+
+
+def test_rota_marcar_gerar_nota_existente(coffee_cliente):
+    from coffee_module import db
+    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert db.listar_notas("a_gerar")[0]["pk"] == 355617
+    assert any(l["acao"] == "marcar_gerar" for l in db.listar_logs(tipo="acao_usuario"))
+
+
+def test_rota_marcar_gerar_busca_se_ausente(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
+    assert r.status_code == 200
+    assert db.nota_existe(355617) is True
+    assert db.listar_notas("a_gerar")[0]["pk"] == 355617
+
+
+def test_rota_marcar_gerar_falha_busca_502(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+
+    def boom(i):
+        raise RuntimeError("falha API")
+
+    monkeypatch.setattr(client, "buscar_nota", boom)
+    r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 999, "a_gerar": True})
+    assert r.status_code == 502
+    assert any(l["acao"] == "marcar_gerar" and l["sucesso"] is False
+               for l in db.listar_logs(tipo="acao_usuario"))
+
+
+def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.marcar_gerar(355617, True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert r.status_code == 200
+    assert db.listar_notas("a_gerar") == []
