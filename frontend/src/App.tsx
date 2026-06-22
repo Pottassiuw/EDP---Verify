@@ -24,10 +24,34 @@ const TWEAK_DEFAULTS: TweakState = {
 
 const VERIFY_FILTER_KEYS = [
   "edp_verify_q", "edp_verify_uf", "edp_verify_setor", "edp_verify_urg",
-  "edp_verify_status", "edp_verify_situacao", "edp_verify_rules",
+  "edp_verify_status", "edp_verify_situacao", "edp_verify_rules", "edp_verify_sel",
 ];
 function limparFiltrosVerify(): void {
   try { VERIFY_FILTER_KEYS.forEach((k) => sessionStorage.removeItem(k)); } catch { /* ignore */ }
+}
+
+const TRIAGE_SNAPSHOT_KEY = "edp_triage_snapshot";
+
+interface TriageSnapshot {
+  notes: Note[];
+  completed: string[];
+  dupResolved: string[];
+  file: string;
+  source: Source;
+  screen: "upload" | "dashboard";
+}
+
+function lerSnapshot(): TriageSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(TRIAGE_SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as TriageSnapshot) : null;
+  } catch { return null; }
+}
+function gravarSnapshot(s: TriageSnapshot): void {
+  try { sessionStorage.setItem(TRIAGE_SNAPSHOT_KEY, JSON.stringify(s)); } catch { /* cota/indisponivel: degrada */ }
+}
+function limparSnapshot(): void {
+  try { sessionStorage.removeItem(TRIAGE_SNAPSHOT_KEY); } catch { /* ignore */ }
 }
 
 function SectionLoading(): React.JSX.Element {
@@ -41,16 +65,24 @@ function SectionLoading(): React.JSX.Element {
 
 export default function App(): React.JSX.Element {
   const [t, setTweak] = useTweaks<TweakState>(TWEAK_DEFAULTS);
-  const [screen, setScreen] = React.useState<"upload" | "dashboard">("upload");
-  const [notes, setNotes] = React.useState<Note[]>([]);
-  const [completed, setCompleted] = React.useState<Set<string>>(() => new Set());
-  const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set());
-  const [file, setFile] = React.useState("");
-  const [source, setSource] = React.useState<Source>("demo");
+  const _snap = React.useMemo(() => lerSnapshot(), []);
+  const [screen, setScreen] = React.useState<"upload" | "dashboard">(_snap?.screen ?? "upload");
+  const [notes, setNotes] = React.useState<Note[]>(_snap?.notes ?? []);
+  const [completed, setCompleted] = React.useState<Set<string>>(() => new Set(_snap?.completed ?? []));
+  const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set(_snap?.dupResolved ?? []));
+  const [file, setFile] = React.useState(_snap?.file ?? "");
+  const [source, setSource] = React.useState<Source>(_snap?.source ?? "demo");
   const [section, setSection] = React.useState<AppSection>("coffee");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const accentStyle: CssVars = { "--accent": t.accent[0], "--accent-2": t.accent[1], "--accent-tint": t.accent[2] };
+
+  React.useEffect(() => {
+    if (screen !== "dashboard" || notes.length === 0) return;
+    gravarSnapshot({
+      notes, completed: [...completed], dupResolved: [...dupResolved], file, source, screen,
+    });
+  }, [notes, completed, dupResolved, file, source, screen]);
 
   function changeSection(s: AppSection): void {
     if (s !== "coffee") setCoffeeReturn(null);
@@ -60,6 +92,7 @@ export default function App(): React.JSX.Element {
   const { data: apiData } = useTriageData();
 
   React.useEffect(() => {
+    if (_snap) return;  // snapshot válido tem prioridade sobre o refetch
     if (!apiData?.notes?.length || screen !== "upload" || source === "demo") return;
     setNotes(apiData.notes);
     setCompleted(apiData.completed);
@@ -70,6 +103,7 @@ export default function App(): React.JSX.Element {
 
   function loadDemo(name?: string): void {
     limparFiltrosVerify();
+    limparSnapshot();
     const savedDone = JSON.parse(localStorage.getItem("edp_demo_done") ?? "null") as string[] | null;
     const savedDup = JSON.parse(localStorage.getItem("edp_demo_dup") ?? "null") as string[] | null;
     setNotes(EDP_DEMO.notes);
@@ -80,6 +114,7 @@ export default function App(): React.JSX.Element {
 
   async function handleUpload(f: File): Promise<void> {
     limparFiltrosVerify();
+    limparSnapshot();
     await EDPApi.upload(f);
     const d = await EDPApi.fetchData();
     setNotes(d.notes); setCompleted(d.completed); setSource("api");
@@ -140,7 +175,7 @@ export default function App(): React.JSX.Element {
     onSendToCoffee: sendToCoffeeQueue,
     onUpload: handleUpload,
     onDemo: loadDemo,
-    onReset: () => { setCoffeeReturn(null); setScreen("upload"); },
+    onReset: () => { setCoffeeReturn(null); limparSnapshot(); setScreen("upload"); },
   };
 
   return (

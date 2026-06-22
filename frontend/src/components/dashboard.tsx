@@ -44,7 +44,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const rules = React.useMemo(() => new Set(rulesArr), [rulesArr]);
   const setRules = React.useCallback((s: Set<RuleKey>) => setRulesArr([...s]), [setRulesArr]);
   const [selBatch, setSelBatch] = React.useState<Set<string>>(() => new Set());
-  const [selId, setSelId] = React.useState<string | null>(notes[0] ? notes[0].id : null);
+  const [selId, setSelId] = usePersistedState<string | null>("edp_verify_sel", notes[0] ? notes[0].id : null);
   const [queueCollapsed, setQueueCollapsed] = React.useState<boolean>(() => localStorage.getItem("edp_queue_collapsed") === "1");
   function toggleQueue(): void {
     setQueueCollapsed((c) => { const v = !c; localStorage.setItem("edp_queue_collapsed", v ? "1" : "0"); return v; });
