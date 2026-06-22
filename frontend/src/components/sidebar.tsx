@@ -11,7 +11,6 @@ const BrandGlyph = (): React.JSX.Element => (
     <circle cx="50" cy="50" r="7" fill="none" stroke="var(--green)" strokeWidth="9" />
   </svg>
 );
-const IconTriage = (): React.JSX.Element => (<svg {...svgBase}><path d="M4 6h10M4 12h10M4 18h7" /><path d="M15.5 16.5l2 2 4-4.5" /></svg>);
 const IconCoffee = (): React.JSX.Element => (<svg {...svgBase}><path d="M5 9h12v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z" /><path d="M17 10h2.4a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3c-.5 1 .5 1.6 0 2.6M12 3c-.5 1 .5 1.6 0 2.6" /></svg>);
 const IconInput = (): React.JSX.Element => (
   <svg {...svgBase}><rect x="3" y="4" width="18" height="16" rx="2" />
@@ -128,8 +127,6 @@ export function Sidebar({ section, setSection, coffeeSub, setCoffeeSub }: Sideba
 
       {expanded ? (
         <>
-          <Row active={section === "triagem"} label="Triagem" icon={<IconTriage />} onClick={() => setSection("triagem")} />
-
           {/* COFFEE com accordion */}
           <Row active={section === "coffee"} label="COFFEE" icon={<IconCoffee />}
                onClick={() => setSection("coffee")}
@@ -165,7 +162,6 @@ export function Sidebar({ section, setSection, coffeeSub, setCoffeeSub }: Sideba
         </>
       ) : (
         <>
-          <IconBtn active={section === "triagem"} label="Triagem" onClick={() => setSection("triagem")}><IconTriage /></IconBtn>
           <IconBtn active={section === "coffee"} label="COFFEE" onClick={() => setSection("coffee")}><IconCoffee /></IconBtn>
           <IconBtn active={section === "input"} label="Input" onClick={() => setSection("input")}><IconInput /></IconBtn>
           <div style={{ flex: 1 }} />

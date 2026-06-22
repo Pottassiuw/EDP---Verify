@@ -1,39 +1,42 @@
 import React from 'react';
-import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable } from './coffee-notas-table';
+import type { Note, TweakState, Source, SetTweak } from '../types';
+import { TopBar } from '../components/top-bar';
+import { UploadScreen } from '../components/upload-screen';
+import { Dashboard } from '../components/dashboard';
 
-export function CoffeeVerificar(): React.JSX.Element {
-  const { notas, isLoading, error, refetch } = useCoffeeNotas();
+export interface TriageHandoff {
+  t: TweakState;
+  setTweak: SetTweak<TweakState>;
+  notes: Note[];
+  completed: Set<string>;
+  dupResolved: Set<string>;
+  source: Source;
+  file: string;
+  screen: "upload" | "dashboard";
+  onToggleComplete: (id: string) => void;
+  onMarkMany: (ids: string[], action: "done" | "reopen") => void;
+  onMarkDuplicate: (id: string) => void;
+  onSendToCoffee: (ids: string[], sourceId?: string) => void;
+  onUpload: (file: File) => Promise<void>;
+  onDemo: (name?: string) => void;
+  onReset: () => void;
+}
 
-  if (error) {
+export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JSX.Element {
+  if (triage.screen === "upload") {
     return (
-      <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
-        <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
-        <button className="edp-btn sm" onClick={refetch}>Tentar de novo</button>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <UploadScreen theme={triage.t.theme} onDemo={triage.onDemo} onUpload={triage.onUpload} />
       </div>
     );
   }
-
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 15, fontWeight: 700 }}>Verificar Notas</span>
-        {!isLoading && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
-            {notas.length} nota{notas.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "8px 22px 10px",
-                    background: "var(--tint-amber)", borderBottom: "1px solid rgba(240,169,59,.3)", fontSize: 13 }}>
-        <span style={{ fontSize: 15 }}>🚧</span>
-        <span>Em breve: verificacao automatica de regras para notas COFFEE</span>
-      </div>
-      <CoffeeNotasTable
-        notas={notas}
-        isLoading={isLoading}
-        emptyMessage="Nenhuma nota no banco COFFEE. Busque notas pela pagina Pendentes ou Abrir Notas."
-      />
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <TopBar t={triage.t} setTweak={triage.setTweak} file={triage.file}
+              source={triage.source} onReset={triage.onReset} />
+      <Dashboard t={triage.t} notes={triage.notes} completed={triage.completed} dupResolved={triage.dupResolved}
+                 onToggleComplete={triage.onToggleComplete} onMarkMany={triage.onMarkMany}
+                 onMarkDuplicate={triage.onMarkDuplicate} onSendToCoffee={triage.onSendToCoffee} />
     </div>
   );
 }

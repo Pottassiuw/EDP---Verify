@@ -1,13 +1,11 @@
 import React from 'react';
 import type { Note, TweakState, Source, AppSection, Accent, CoffeeSubPage } from './types';
+import type { TriageHandoff } from './coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { EDPApi } from './api';
 import { EDP_DEMO } from './data';
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, TweakColor } from './components/tweaks-panel';
-import { UploadScreen } from './components/upload-screen';
-import { Dashboard } from './components/dashboard';
 import { Sidebar } from './components/sidebar';
-import { TopBar } from './components/top-bar';
 import { useTriageData } from './hooks/useTriageData';
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
@@ -49,7 +47,7 @@ export default function App(): React.JSX.Element {
   const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set());
   const [file, setFile] = React.useState("");
   const [source, setSource] = React.useState<Source>("demo");
-  const [section, setSection] = React.useState<AppSection>("triagem");
+  const [section, setSection] = React.useState<AppSection>("coffee");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const accentStyle: CssVars = { "--accent": t.accent[0], "--accent-2": t.accent[1], "--accent-tint": t.accent[2] };
@@ -134,6 +132,17 @@ export default function App(): React.JSX.Element {
     }
   }
 
+  const triage: TriageHandoff = {
+    t, setTweak, notes, completed, dupResolved, source, file, screen,
+    onToggleComplete: toggleComplete,
+    onMarkMany: markMany,
+    onMarkDuplicate: markDuplicate,
+    onSendToCoffee: sendToCoffeeQueue,
+    onUpload: handleUpload,
+    onDemo: loadDemo,
+    onReset: () => { setCoffeeReturn(null); setScreen("upload"); },
+  };
+
   return (
     <div className="edp triage" data-theme={t.theme} data-density={t.density}
          style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
@@ -143,21 +152,13 @@ export default function App(): React.JSX.Element {
         <React.Suspense fallback={<SectionLoading />}>
           {section === "input" ? (
             <InputSection t={t} />
-          ) : section === "coffee" ? (
+          ) : (
             <CoffeeHub notes={notes} layout={t.coffeeLayout}
                        sub={coffeeSub} setSub={setCoffeeSub}
+                       triage={triage}
                        coffeeReturn={coffeeReturn}
                        onClearReturn={() => setCoffeeReturn(null)}
-                       onBackToTriagem={() => { changeSection("triagem"); }} />
-          ) : screen === "upload" ? (
-            <UploadScreen theme={t.theme} onDemo={loadDemo} onUpload={handleUpload} />
-          ) : (
-            <React.Fragment>
-              <TopBar t={t} setTweak={setTweak} file={file} source={source} onReset={() => { setCoffeeReturn(null); setScreen("upload"); }} />
-              <Dashboard t={t} notes={notes} completed={completed} dupResolved={dupResolved}
-                         onToggleComplete={toggleComplete} onMarkMany={markMany} onMarkDuplicate={markDuplicate}
-                         onSendToCoffee={sendToCoffeeQueue} />
-            </React.Fragment>
+                       onBackToTriagem={() => { setCoffeeSub("verificar"); }} />
           )}
         </React.Suspense>
       </div>

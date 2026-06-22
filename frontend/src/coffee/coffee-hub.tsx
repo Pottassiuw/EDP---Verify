@@ -5,7 +5,7 @@ import { CoffeeAbrir } from './coffee-abrir';
 import { CoffeeGeradas } from './coffee-geradas';
 import { CoffeeCorrigidas } from './coffee-corrigidas';
 import { CoffeePendentes } from './coffee-pendentes';
-import { CoffeeVerificar } from './coffee-verificar';
+import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 
 const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
@@ -22,12 +22,13 @@ interface CoffeeHubProps {
   layout: "composer" | "split";
   sub: CoffeeSubPage;
   setSub: (s: CoffeeSubPage) => void;
+  triage: TriageHandoff;
   coffeeReturn: { noteId: string; noteRef: string } | null;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
 }
 
-export function CoffeeHub({ notes, layout, sub, setSub, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
+export function CoffeeHub({ notes, layout, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -52,7 +53,7 @@ export function CoffeeHub({ notes, layout, sub, setSub, coffeeReturn, onClearRet
       ) : sub === "pendentes" ? (
         <CoffeePendentes />
       ) : sub === "verificar" ? (
-        <CoffeeVerificar />
+        <CoffeeVerificar triage={triage} />
       ) : sub === "logs" ? (
         <CoffeeLogs />
       ) : null}
