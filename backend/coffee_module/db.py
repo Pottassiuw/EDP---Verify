@@ -1,10 +1,23 @@
 """Persistência local do módulo COFFEE (SQLite) com snapshot de id_sap."""
 import datetime
+import getpass
 import json
+import os
 import sqlite3
 
 from coffee_module import config
 from coffee_module.classify import classificar
+
+
+def _usuario_atual() -> str:
+    """Usuário da máquina (best-effort, nunca levanta)."""
+    try:
+        nome = getpass.getuser()
+        if nome:
+            return nome
+    except Exception:  # noqa: BLE001
+        pass
+    return os.environ.get("USERNAME") or os.environ.get("USER") or "desconhecido"
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro"]
@@ -46,10 +59,14 @@ def inicializar_banco() -> None:
             acao        TEXT NOT NULL,
             nota_pk     INTEGER,
             detalhes    TEXT,
-            sucesso     INTEGER NOT NULL
+            sucesso     INTEGER NOT NULL,
+            usuario     TEXT
         )
         """
     )
+    cols_logs = [r[1] for r in conn.execute("PRAGMA table_info(coffee_logs)").fetchall()]
+    if "usuario" not in cols_logs:
+        conn.execute("ALTER TABLE coffee_logs ADD COLUMN usuario TEXT")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_nota_pk ON coffee_logs(nota_pk)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_tipo ON coffee_logs(tipo)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON coffee_logs(timestamp)")
@@ -128,7 +145,7 @@ def listar_notas(status: str | None = None) -> list:
 # Sistema de logs (coffee_logs)
 # ---------------------------------------------------------------------------
 
-_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso"]
+_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso", "usuario"]
 
 
 def registrar_log(tipo: str, acao: str, nota_pk: int | None,
@@ -142,15 +159,15 @@ def registrar_log(tipo: str, acao: str, nota_pk: int | None,
             CREATE TABLE IF NOT EXISTS coffee_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
                 tipo TEXT NOT NULL, acao TEXT NOT NULL, nota_pk INTEGER,
-                detalhes TEXT, sucesso INTEGER NOT NULL
+                detalhes TEXT, sucesso INTEGER NOT NULL, usuario TEXT
             )
             """
         )
         conn.execute(
-            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso, usuario) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (datetime.datetime.now().isoformat(), tipo, acao, nota_pk, det,
-             1 if sucesso else 0),
+             1 if sucesso else 0, _usuario_atual()),
         )
         conn.commit()
         conn.close()

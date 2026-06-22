@@ -371,3 +371,27 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     assert body["nota"]["pk"] == 355617
     assert ("des", 355617) in chamadas
     assert any(l["acao"] == "regerar" for l in db.listar_logs(tipo="acao_usuario"))
+
+
+# ---------------------------------------------------------------------------
+# Sub-projeto 3 — usuario nos logs
+# ---------------------------------------------------------------------------
+
+
+def test_log_grava_usuario(coffee_tmp, monkeypatch):
+    from coffee_module import db
+    monkeypatch.setattr(db.getpass, "getuser", lambda: "operador.teste")
+    db.registrar_log("acao_usuario", "x", None, None, True)
+    logs = db.listar_logs()
+    assert logs[0]["usuario"] == "operador.teste"
+
+
+def test_usuario_atual_fallback_nunca_levanta(coffee_tmp, monkeypatch):
+    from coffee_module import db
+
+    def boom():
+        raise OSError("sem tty")
+
+    monkeypatch.setattr(db.getpass, "getuser", boom)
+    monkeypatch.setenv("USERNAME", "via.env")
+    assert db._usuario_atual() == "via.env"
