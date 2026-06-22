@@ -359,17 +359,23 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     from coffee_module import client, db
     chamadas = []
     monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
+    monkeypatch.setattr(client, "arquivar", lambda i, sap: chamadas.append(("arq", i, sap)) or True)
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
-                   "fields": {"id_sap": 17247854}},
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+                   "fields": {"id_sap": 10000000}},
     )
     r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
     assert r.status_code == 200
     body = r.json()
     assert body["ok"] is True
     assert body["nota"]["pk"] == 355617
+    # desarquivar e arquivar(10000000) foram chamados, nessa ordem
     assert ("des", 355617) in chamadas
+    assert ("arq", 355617, 10000000) in chamadas
+    assert chamadas.index(("des", 355617)) < chamadas.index(("arq", 355617, 10000000))
+    # nota re-buscada com 10000000 fica pendente
+    assert db.listar_notas("pendente")[0]["pk"] == 355617
     assert any(l["acao"] == "regerar" for l in db.listar_logs(tipo="acao_usuario"))
 
 
@@ -480,10 +486,11 @@ def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
     db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
     db.marcar_gerar(355617, True)
     monkeypatch.setattr(client, "desarquivar", lambda i: True)
+    monkeypatch.setattr(client, "arquivar", lambda i, sap: True)
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
-                   "fields": {"id_sap": 17247854}},
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+                   "fields": {"id_sap": 10000000}},
     )
     r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
     assert r.status_code == 200

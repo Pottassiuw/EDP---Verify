@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from coffee_module import client, db, jobs
+from coffee_module import client, config, db, jobs
 
 router = APIRouter(prefix="/api/coffee")
 
@@ -111,6 +111,7 @@ def regerar(pedido: IdPedido):
     _garantir_banco()
     try:
         client.desarquivar(pedido.id)
+        client.arquivar(pedido.id, config.SAP_PENDENTE)
         nota = client.buscar_nota(pedido.id)
         db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
     except Exception:
