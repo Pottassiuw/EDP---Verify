@@ -61,6 +61,9 @@ function TransicaoCard({ result, onVerLogs, onNova }: {
 
 export function CoffeeGeradas(): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("gerada");
+  const aGerar = useCoffeeNotas("a_gerar");
+  const [lote, setLote] = React.useState<{ rodando: boolean; feitas: number; total: number }>(
+    { rodando: false, feitas: 0, total: 0 });
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // regerar state
@@ -93,6 +96,23 @@ export function CoffeeGeradas(): React.JSX.Element {
       });
   }
 
+  function regerarTodas(): void {
+    const pks = aGerar.notas.map((n) => n.pk);
+    if (pks.length === 0 || lote.rodando) return;
+    setLote({ rodando: true, feitas: 0, total: pks.length });
+    let chain = Promise.resolve();
+    pks.forEach((pk) => {
+      chain = chain.then(() => regerar(pk).then(() => {
+        setLote((s) => ({ ...s, feitas: s.feitas + 1 }));
+      }).catch(() => { setLote((s) => ({ ...s, feitas: s.feitas + 1 })); }));
+    });
+    chain.then(() => {
+      setLote({ rodando: false, feitas: 0, total: 0 });
+      aGerar.refetch();
+      refetch();
+    });
+  }
+
   function handleRegerar(): void {
     const id = Number(regerarId.trim());
     if (!Number.isFinite(id) || id <= 0) return;
@@ -115,7 +135,7 @@ export function CoffeeGeradas(): React.JSX.Element {
   function handleRowRegerar(pk: number): void {
     setRowBusy((s) => new Set(s).add(pk));
     regerar(pk)
-      .then(() => refetch())
+      .then(() => { refetch(); aGerar.refetch(); })
       .catch(() => {})
       .finally(() => setRowBusy((s) => { const n = new Set(s); n.delete(pk); return n; }));
   }
@@ -171,6 +191,44 @@ export function CoffeeGeradas(): React.JSX.Element {
         )}
       </div>
 
+      {/* Zona 1.5: A gerar */}
+      <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>A gerar</span>
+        {!aGerar.isLoading && (
+          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+            {aGerar.notas.length} nota{aGerar.notas.length !== 1 ? "s" : ""}
+          </span>
+        )}
+        {aGerar.notas.length > 0 && (
+          <button className="edp-btn sm" style={{ fontWeight: 600 }} disabled={lote.rodando}
+                  onClick={regerarTodas}>
+            {lote.rodando ? `Regenerando ${lote.feitas}/${lote.total}…` : "Regerar todas"}
+          </button>
+        )}
+      </div>
+      {aGerar.notas.length > 0 && (
+        <CoffeeNotasTable
+          notas={aGerar.notas}
+          isLoading={aGerar.isLoading}
+          emptyMessage="Nenhuma nota marcada para gerar."
+          actionColumn={(nota) => {
+            const busy = rowBusy.has(nota.pk);
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button className="edp-btn sm" disabled={busy || lote.rodando} onClick={() => handleRowRegerar(nota.pk)}
+                        style={{ fontWeight: 600, fontSize: 12 }}>
+                  {busy ? "..." : "Regerar"}
+                </button>
+                <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+                        title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+                  Logs
+                </button>
+              </div>
+            );
+          }}
+        />
+      )}
+
       {/* Zona 2: Tabela de Geradas */}
       <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>Notas Geradas</span>
@@ -183,7 +241,9 @@ export function CoffeeGeradas(): React.JSX.Element {
       <CoffeeNotasTable
         notas={notas}
         isLoading={isLoading}
-        emptyMessage="Nenhuma nota gerada encontrada. Use o formulario acima para regerar uma nota."
+        emptyMessage={aGerar.notas.length > 0
+          ? "Nenhuma nota gerada ainda. As notas acima estao aguardando geracao."
+          : "Nenhuma nota gerada encontrada. Use o formulario acima ou marque notas na Verificar."}
         actionColumn={(nota) => {
           const busy = rowBusy.has(nota.pk);
           return (
