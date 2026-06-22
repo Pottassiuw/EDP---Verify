@@ -395,3 +395,41 @@ def test_usuario_atual_fallback_nunca_levanta(coffee_tmp, monkeypatch):
     monkeypatch.setattr(db.getpass, "getuser", boom)
     monkeypatch.setenv("USERNAME", "via.env")
     assert db._usuario_atual() == "via.env"
+
+
+# ---------------------------------------------------------------------------
+# Sub-projeto 3 — flag a_gerar
+# ---------------------------------------------------------------------------
+
+
+def test_marcar_gerar_e_listar(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    assert db.listar_notas("a_gerar") == []
+    db.marcar_gerar(355617, True)
+    aged = db.listar_notas("a_gerar")
+    assert len(aged) == 1 and aged[0]["pk"] == 355617
+    assert aged[0]["a_gerar"] is True
+
+
+def test_marcar_gerar_falso_remove_da_lista(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(1, 17247854, False, {})
+    db.marcar_gerar(1, True)
+    db.marcar_gerar(1, False)
+    assert db.listar_notas("a_gerar") == []
+
+
+def test_a_gerar_preservado_em_refetch(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(1, 10000000, False, {"id_sap": 10000000})
+    db.marcar_gerar(1, True)
+    db.upsert_nota(1, 17247854, True, {"id_sap": 17247854})  # re-busca
+    assert db.listar_notas("a_gerar")[0]["pk"] == 1
+
+
+def test_nota_existe(coffee_tmp):
+    from coffee_module import db
+    assert db.nota_existe(99) is False
+    db.upsert_nota(99, 10000000, False, {})
+    assert db.nota_existe(99) is True

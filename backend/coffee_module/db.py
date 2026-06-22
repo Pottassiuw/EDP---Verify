@@ -20,7 +20,7 @@ def _usuario_atual() -> str:
     return os.environ.get("USERNAME") or os.environ.get("USER") or "desconhecido"
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
-            "classificacao", "dados_json", "buscado_em", "erro"]
+            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar"]
 
 
 def obter_caminho_banco() -> str:
@@ -46,10 +46,14 @@ def inicializar_banco() -> None:
             classificacao   TEXT,
             dados_json      TEXT,
             buscado_em      TEXT,
-            erro            TEXT
+            erro            TEXT,
+            a_gerar         INTEGER NOT NULL DEFAULT 0
         )
         """
     )
+    cols_notas = [r[1] for r in conn.execute("PRAGMA table_info(notas_coffee)").fetchall()]
+    if "a_gerar" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN a_gerar INTEGER NOT NULL DEFAULT 0")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS coffee_logs (
@@ -127,7 +131,9 @@ def listar_notas(status: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee"
     params: tuple = ()
-    if status:
+    if status == "a_gerar":
+        sql += " WHERE a_gerar = 1"
+    elif status:
         sql += " WHERE classificacao = ?"
         params = (status,)
     rows = conn.execute(sql, params).fetchall()
@@ -136,9 +142,26 @@ def listar_notas(status: str | None = None) -> list:
     for r in rows:
         d = dict(zip(_COLUNAS, r))
         d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
+        d["a_gerar"] = bool(d["a_gerar"])
         d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
         saida.append(d)
     return saida
+
+
+def marcar_gerar(pk: int, a_gerar: bool) -> None:
+    """Liga/desliga a flag a_gerar de uma nota existente."""
+    conn = get_db_connection()
+    conn.execute("UPDATE notas_coffee SET a_gerar = ? WHERE pk = ?",
+                 (1 if a_gerar else 0, pk))
+    conn.commit()
+    conn.close()
+
+
+def nota_existe(pk: int) -> bool:
+    conn = get_db_connection()
+    row = conn.execute("SELECT 1 FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
+    conn.close()
+    return row is not None
 
 
 # ---------------------------------------------------------------------------
