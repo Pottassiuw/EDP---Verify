@@ -78,6 +78,7 @@ export function LogTable({ logs, loading, compact }: LogTableProps): React.JSX.E
             <th>Tipo</th>
             <th>Acao</th>
             {!compact && <th>Nota</th>}
+            {!compact && <th>Usuario</th>}
             <th style={{ width: 50, textAlign: "center" }}>OK</th>
             <th>Detalhes</th>
           </tr>
@@ -100,6 +101,13 @@ export function LogTable({ logs, loading, compact }: LogTableProps): React.JSX.E
                 <td>
                   {l.nota_pk !== null
                     ? <span className="edp-mono" style={{ fontWeight: 600 }}>{l.nota_pk}</span>
+                    : <span style={{ color: "var(--text-mute)" }}>—</span>}
+                </td>
+              )}
+              {!compact && (
+                <td style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                  {l.usuario
+                    ? <span className="edp-mono">{l.usuario}</span>
                     : <span style={{ color: "var(--text-mute)" }}>—</span>}
                 </td>
               )}

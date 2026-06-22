@@ -25,4 +25,5 @@ export interface CoffeeLog {
   nota_pk: number | null;
   detalhes: Record<string, unknown> | null;
   sucesso: boolean;
+  usuario: string | null;
 }
