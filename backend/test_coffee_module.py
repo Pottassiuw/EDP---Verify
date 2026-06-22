@@ -488,3 +488,24 @@ def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
     r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
     assert r.status_code == 200
     assert db.listar_notas("a_gerar") == []
+
+
+# ---------------------------------------------------------------------------
+# Sub-projeto 4 — status nao_gerada
+# ---------------------------------------------------------------------------
+
+
+def test_classificacao_nao_gerada():
+    from coffee_module import classify
+    assert classify.classificar(None, None) == "nao_gerada"
+    assert classify.classificar(0, None) == "nao_gerada"
+    assert classify.classificar("", None) == "nao_gerada"
+    # sem SAP atual = nao_gerada mesmo com anterior conhecido
+    assert classify.classificar(None, config.SAP_PENDENTE) == "nao_gerada"
+
+
+def test_upsert_nota_sem_sap_classifica_nao_gerada(coffee_tmp):
+    from coffee_module import db
+    classe = db.upsert_nota(355617, None, False, {"id_sap": None})
+    assert classe == "nao_gerada"
+    assert db.listar_notas("nao_gerada")[0]["pk"] == 355617
