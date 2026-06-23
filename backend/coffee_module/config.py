@@ -12,7 +12,9 @@ def data_dir() -> Path:
     )
 
 
-COFFEE_API_KEY = os.environ.get("COFFEE_API_KEY", "")
+COFFEE_API_KEY = os.environ.get(
+    "COFFEE_API_KEY", "CC575E3C071BB24932AC90F1D9E59537AD9974D47582042098DA28E1"
+)
 DELAY_BUSCA = float(os.environ.get("COFFEE_DELAY_BUSCA", "1.0"))
 DELAY_GERACAO = float(os.environ.get("COFFEE_DELAY_GERACAO", "0.5"))
 SAP_PENDENTE = 10000000
