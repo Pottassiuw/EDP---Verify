@@ -38,6 +38,7 @@ class LocalPedido(BaseModel):
 class MarcarGerarPedido(BaseModel):
     id: int
     a_gerar: bool = True
+    justificativa: Optional[str] = None
 
 
 class RegerarPedido(BaseModel):
@@ -101,18 +102,23 @@ def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None, limit: int =
 @router.post("/marcar-gerar")
 def marcar_gerar(pedido: MarcarGerarPedido):
     _garantir_banco()
+    if not pedido.a_gerar and not (pedido.justificativa and pedido.justificativa.strip()):
+        raise HTTPException(status_code=400,
+                            detail="Justificativa obrigatoria para remover da fila.")
     if pedido.a_gerar and not db.nota_existe(pedido.id):
         try:
             nota = client.buscar_nota(pedido.id)
             db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
         except Exception:
             db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
-                             {"id": pedido.id, "a_gerar": pedido.a_gerar}, False)
+                             {"id": pedido.id, "a_gerar": pedido.a_gerar,
+                              "justificativa": pedido.justificativa}, False)
             raise HTTPException(status_code=502,
                                 detail="Nao foi possivel buscar a nota na API COFFEE.")
     db.marcar_gerar(pedido.id, pedido.a_gerar)
     db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
-                     {"id": pedido.id, "a_gerar": pedido.a_gerar}, True)
+                     {"id": pedido.id, "a_gerar": pedido.a_gerar,
+                      "justificativa": pedido.justificativa}, True)
     return {"ok": True}
 
 

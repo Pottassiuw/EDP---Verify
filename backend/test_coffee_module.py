@@ -569,3 +569,32 @@ def test_rota_gerar_lote(coffee_cliente, monkeypatch):
 
 def test_rota_gerar_lote_vazio_400(coffee_cliente):
     assert coffee_cliente.post("/api/coffee/gerar-lote", json={"ids": []}).status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — /marcar-gerar com justificativa obrigatoria ao remover da fila
+# ---------------------------------------------------------------------------
+
+
+def test_marcar_gerar_remover_exige_justificativa(coffee_cliente):
+    from coffee_module import db
+    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    db.marcar_gerar(355617, True)
+    # sem justificativa ao remover → 400
+    r = coffee_cliente.post("/api/coffee/marcar-gerar",
+                            json={"id": 355617, "a_gerar": False})
+    assert r.status_code == 400
+    assert db.listar_notas("a_gerar")[0]["pk"] == 355617  # continua na fila
+
+
+def test_marcar_gerar_remover_com_justificativa(coffee_cliente):
+    from coffee_module import db
+    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    db.marcar_gerar(355617, True)
+    r = coffee_cliente.post("/api/coffee/marcar-gerar",
+                            json={"id": 355617, "a_gerar": False,
+                                  "justificativa": "posta por engano"})
+    assert r.status_code == 200
+    assert db.listar_notas("a_gerar") == []
+    log = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "marcar_gerar"]
+    assert log and log[0]["detalhes"]["justificativa"] == "posta por engano"
