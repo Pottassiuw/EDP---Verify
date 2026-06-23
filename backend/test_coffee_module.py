@@ -517,3 +517,55 @@ def test_upsert_nota_sem_sap_classifica_nao_gerada(coffee_tmp):
     classe = db.upsert_nota(355617, None, False, {"id_sap": None})
     assert classe == "nao_gerada"
     assert db.listar_notas("nao_gerada")[0]["pk"] == 355617
+
+
+# ---------------------------------------------------------------------------
+# Geração em lote (jobs.iniciar_geracao + /gerar-lote)
+# ---------------------------------------------------------------------------
+
+
+def test_job_geracao_define_sap_e_isola_erro(coffee_tmp, monkeypatch):
+    from coffee_module import client, db, jobs
+    saps = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: saps.append((int(i), sap)) or True)
+
+    def fake_buscar(id):
+        if str(id) == "999":
+            raise RuntimeError("timeout")
+        return {"pk": int(id), "id_sap": 10000000, "arquivado": False,
+                "fields": {"id_sap": 10000000}}
+
+    monkeypatch.setattr(client, "buscar_nota", fake_buscar)
+    job_id = jobs.iniciar_geracao([355617, 999, 355618], justificativa="lote x")
+    j = _aguardar_job(jobs, job_id)
+    assert j["total"] == 3
+    assert j["feitas"] == 3
+    assert len(j["erros"]) == 1
+    assert j["erros"][0]["pk"] == 999
+    # SAP=10000000 definido para as duas válidas
+    assert (355617, 10000000) in saps and (355618, 10000000) in saps
+    # válidas persistidas como pendentes e fora da fila
+    assert len(db.listar_notas("pendente")) == 2
+    assert db.listar_notas("a_gerar") == []
+
+
+def test_rota_gerar_lote(coffee_cliente, monkeypatch):
+    from coffee_module import client, db, jobs
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+                   "fields": {"id_sap": 10000000}},
+    )
+    r = coffee_cliente.post("/api/coffee/gerar-lote",
+                            json={"ids": [355617, 355618], "justificativa": "j"})
+    assert r.status_code == 200
+    _aguardar_job(jobs, r.json()["job_id"])
+    lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "geracao_lote"]
+    assert lote and lote[0]["detalhes"]["total"] == 2
+    assert lote[0]["detalhes"]["justificativa"] == "j"
+
+
+def test_rota_gerar_lote_vazio_400(coffee_cliente):
+    assert coffee_cliente.post("/api/coffee/gerar-lote", json={"ids": []}).status_code == 400

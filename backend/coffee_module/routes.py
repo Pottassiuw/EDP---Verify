@@ -45,6 +45,11 @@ class RegerarPedido(BaseModel):
     justificativa: Optional[str] = None
 
 
+class GerarLotePedido(BaseModel):
+    ids: list[int]
+    justificativa: Optional[str] = None
+
+
 @router.post("/buscar")
 def buscar(pedido: BuscaPedido):
     _garantir_banco()
@@ -128,3 +133,14 @@ def regerar(pedido: RegerarPedido):
                      {"id": pedido.id, "origem": "ui",
                       "justificativa": pedido.justificativa}, True)
     return {"ok": True, "nota": nota}
+
+
+@router.post("/gerar-lote")
+def gerar_lote(pedido: GerarLotePedido):
+    _garantir_banco()
+    if not pedido.ids:
+        raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
+    db.registrar_log("acao_usuario", "geracao_lote", None,
+                     {"ids": pedido.ids, "total": len(pedido.ids),
+                      "justificativa": pedido.justificativa}, True)
+    return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa)}

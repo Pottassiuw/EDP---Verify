@@ -48,3 +48,36 @@ def obter_job(job_id: str):
     with _LOCK:
         job = _JOBS.get(job_id)
         return dict(job) if job else None
+
+
+def iniciar_geracao(ids: list, justificativa: str | None = None) -> str:
+    job_id = uuid.uuid4().hex
+    with _LOCK:
+        _JOBS[job_id] = {
+            "estado": "rodando",
+            "total": len(ids),
+            "feitas": 0,
+            "erros": [],
+            "iniciado_em": datetime.datetime.now().isoformat(),
+        }
+    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), justificativa),
+                     daemon=True).start()
+    return job_id
+
+
+def _rodar_geracao(job_id: str, ids: list, justificativa: str | None) -> None:
+    for ident in ids:
+        try:
+            client.definir_sap(ident, config.SAP_PENDENTE)
+            nota = client.buscar_nota(ident)
+            db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+            db.marcar_gerar(nota["pk"], False)
+        except Exception as exc:  # noqa: BLE001 — uma falha não derruba o lote
+            with _LOCK:
+                _JOBS[job_id]["erros"].append({"pk": ident, "msg": str(exc)})
+        finally:
+            with _LOCK:
+                _JOBS[job_id]["feitas"] += 1
+        time.sleep(config.DELAY_GERACAO)
+    with _LOCK:
+        _JOBS[job_id]["estado"] = "concluido"
