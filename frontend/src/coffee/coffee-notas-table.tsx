@@ -39,9 +39,14 @@ interface CoffeeNotasTableProps {
   isLoading: boolean;
   emptyMessage?: string;
   actionColumn?: (nota: CoffeeNota) => React.ReactNode;
+  selectable?: boolean;
+  selectedPks?: Set<number>;
+  onToggleSelect?: (pk: number) => void;
+  onToggleAll?: () => void;
 }
 
-export function CoffeeNotasTable({ notas, isLoading, emptyMessage, actionColumn }: CoffeeNotasTableProps): React.JSX.Element {
+export function CoffeeNotasTable({ notas, isLoading, emptyMessage, actionColumn,
+  selectable, selectedPks, onToggleSelect, onToggleAll }: CoffeeNotasTableProps): React.JSX.Element {
   if (isLoading) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -66,6 +71,13 @@ export function CoffeeNotasTable({ notas, isLoading, emptyMessage, actionColumn 
       <table className="cnt-tbl">
         <thead>
           <tr>
+            {selectable && (
+              <th style={{ width: 36, textAlign: "center" }}>
+                <input type="checkbox" aria-label="Selecionar todas"
+                       checked={notas.length > 0 && selectedPks?.size === notas.length}
+                       onChange={() => onToggleAll?.()} />
+              </th>
+            )}
             <th>ID</th>
             <th>SAP</th>
             <th>Status</th>
@@ -76,6 +88,13 @@ export function CoffeeNotasTable({ notas, isLoading, emptyMessage, actionColumn 
         <tbody>
           {notas.map((n) => (
             <tr key={n.pk}>
+              {selectable && (
+                <td style={{ textAlign: "center" }}>
+                  <input type="checkbox" aria-label={`Selecionar nota ${n.pk}`}
+                         checked={selectedPks?.has(n.pk) ?? false}
+                         onChange={() => onToggleSelect?.(n.pk)} />
+                </td>
+              )}
               <td><span className="edp-mono" style={{ fontWeight: 600 }}>{n.pk}</span></td>
               <td>
                 <span className="edp-mono">{n.id_sap}</span>
