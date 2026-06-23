@@ -59,8 +59,8 @@ def _get_logado(acao: str, url: str, nota_pk, detalhes: dict) -> bool:
         raise
 
 
-def arquivar(id, sap) -> bool:
-    return _get_logado("arquivar", f"{config.base_url()}/sap/{id}/{sap}", id, {"id": id, "sap": sap})
+def definir_sap(id, sap) -> bool:
+    return _get_logado("definir_sap", f"{config.base_url()}/sap/{id}/{sap}", id, {"id": id, "sap": sap})
 
 
 def desarquivar(id) -> bool:

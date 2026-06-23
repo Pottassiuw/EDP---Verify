@@ -226,14 +226,14 @@ def test_escritas_montam_url(coffee_tmp, monkeypatch):
 
     monkeypatch.setattr(httpx, "get", fake_get)
     from coffee_module import client, db
-    assert client.arquivar(123321, 10000000) is True
+    assert client.definir_sap(123321, 10000000) is True
     assert client.desarquivar(123321) is True
     assert client.alterar_local(123321, "701CF12345678") is True
     assert urls[0].endswith("/deolhonarede/sap/123321/10000000")
     assert urls[1].endswith("/deolhonarede/desarquivar/123321")
     assert urls[2].endswith("/deolhonarede/local_instalacao/123321/701CF12345678")
     acoes = {l["acao"] for l in db.listar_logs(tipo="api_call")}
-    assert {"arquivar", "desarquivar", "alterar_local"} <= acoes
+    assert {"definir_sap", "desarquivar", "alterar_local"} <= acoes
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +320,7 @@ def test_rota_job_inexistente_404(coffee_cliente):
 def test_rotas_de_escrita(coffee_cliente, monkeypatch):
     from coffee_module import client
     chamadas = []
-    monkeypatch.setattr(client, "arquivar", lambda i, s: chamadas.append(("sap", i, s)) or True)
+    monkeypatch.setattr(client, "definir_sap", lambda i, s: chamadas.append(("sap", i, s)) or True)
     monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
     monkeypatch.setattr(client, "alterar_local", lambda i, l: chamadas.append(("loc", i, l)) or True)
     assert coffee_cliente.post("/api/coffee/sap", json={"id": 1, "sap": 10000000}).json()["ok"] is True
@@ -359,7 +359,7 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     from coffee_module import client, db
     chamadas = []
     monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
-    monkeypatch.setattr(client, "arquivar", lambda i, sap: chamadas.append(("arq", i, sap)) or True)
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: chamadas.append(("sap", i, sap)) or True)
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
@@ -370,10 +370,10 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     body = r.json()
     assert body["ok"] is True
     assert body["nota"]["pk"] == 355617
-    # desarquivar e arquivar(10000000) foram chamados, nessa ordem
+    # desarquivar e definir_sap(10000000) foram chamados, nessa ordem
     assert ("des", 355617) in chamadas
-    assert ("arq", 355617, 10000000) in chamadas
-    assert chamadas.index(("des", 355617)) < chamadas.index(("arq", 355617, 10000000))
+    assert ("sap", 355617, 10000000) in chamadas
+    assert chamadas.index(("des", 355617)) < chamadas.index(("sap", 355617, 10000000))
     # nota re-buscada com 10000000 fica pendente
     assert db.listar_notas("pendente")[0]["pk"] == 355617
     assert any(l["acao"] == "regerar" for l in db.listar_logs(tipo="acao_usuario"))
@@ -486,7 +486,7 @@ def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
     db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
     db.marcar_gerar(355617, True)
     monkeypatch.setattr(client, "desarquivar", lambda i: True)
-    monkeypatch.setattr(client, "arquivar", lambda i, sap: True)
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,

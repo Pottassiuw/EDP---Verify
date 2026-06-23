@@ -66,7 +66,7 @@ def notas(status: Optional[str] = None):
 
 @router.post("/sap")
 def sap(pedido: SapPedido):
-    client.arquivar(pedido.id, pedido.sap)
+    client.definir_sap(pedido.id, pedido.sap)
     return {"ok": True}
 
 
@@ -111,7 +111,7 @@ def regerar(pedido: IdPedido):
     _garantir_banco()
     try:
         client.desarquivar(pedido.id)
-        client.arquivar(pedido.id, config.SAP_PENDENTE)
+        client.definir_sap(pedido.id, config.SAP_PENDENTE)
         nota = client.buscar_nota(pedido.id)
         db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
     except Exception:
