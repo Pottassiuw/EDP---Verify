@@ -362,21 +362,22 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: chamadas.append(("sap", i, sap)) or True)
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": True,
                    "fields": {"id_sap": 10000000}},
     )
-    r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    r = coffee_cliente.post("/api/coffee/regerar",
+                            json={"id": 355617, "justificativa": "reprocessar"})
     assert r.status_code == 200
     body = r.json()
     assert body["ok"] is True
     assert body["nota"]["pk"] == 355617
-    # desarquivar e definir_sap(10000000) foram chamados, nessa ordem
-    assert ("des", 355617) in chamadas
+    # NÃO desarquiva; apenas define SAP=10000000
+    assert ("des", 355617) not in chamadas
     assert ("sap", 355617, 10000000) in chamadas
-    assert chamadas.index(("des", 355617)) < chamadas.index(("sap", 355617, 10000000))
     # nota re-buscada com 10000000 fica pendente
     assert db.listar_notas("pendente")[0]["pk"] == 355617
-    assert any(l["acao"] == "regerar" for l in db.listar_logs(tipo="acao_usuario"))
+    log = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "regerar"]
+    assert log and log[0]["detalhes"]["justificativa"] == "reprocessar"
 
 
 # ---------------------------------------------------------------------------

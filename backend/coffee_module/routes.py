@@ -40,6 +40,11 @@ class MarcarGerarPedido(BaseModel):
     a_gerar: bool = True
 
 
+class RegerarPedido(BaseModel):
+    id: int
+    justificativa: Optional[str] = None
+
+
 @router.post("/buscar")
 def buscar(pedido: BuscaPedido):
     _garantir_banco()
@@ -107,18 +112,19 @@ def marcar_gerar(pedido: MarcarGerarPedido):
 
 
 @router.post("/regerar")
-def regerar(pedido: IdPedido):
+def regerar(pedido: RegerarPedido):
     _garantir_banco()
     try:
-        client.desarquivar(pedido.id)
         client.definir_sap(pedido.id, config.SAP_PENDENTE)
         nota = client.buscar_nota(pedido.id)
         db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
     except Exception:
         db.registrar_log("acao_usuario", "regerar", pedido.id,
-                         {"id": pedido.id, "origem": "ui"}, False)
+                         {"id": pedido.id, "origem": "ui",
+                          "justificativa": pedido.justificativa}, False)
         raise
     db.marcar_gerar(nota["pk"], False)
     db.registrar_log("acao_usuario", "regerar", pedido.id,
-                     {"id": pedido.id, "origem": "ui"}, True)
+                     {"id": pedido.id, "origem": "ui",
+                      "justificativa": pedido.justificativa}, True)
     return {"ok": True, "nota": nota}
