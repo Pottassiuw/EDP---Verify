@@ -60,12 +60,12 @@ def iniciar_geracao(ids: list, justificativa: str | None = None) -> str:
             "erros": [],
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
-    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), justificativa),
+    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids)),
                      daemon=True).start()
     return job_id
 
 
-def _rodar_geracao(job_id: str, ids: list, justificativa: str | None) -> None:
+def _rodar_geracao(job_id: str, ids: list) -> None:
     for ident in ids:
         try:
             client.definir_sap(ident, config.SAP_PENDENTE)
