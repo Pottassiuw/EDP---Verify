@@ -35,6 +35,11 @@ class LocalPedido(BaseModel):
     local: str
 
 
+class ArquivarPedido(BaseModel):
+    id: int
+    justificativa: str
+
+
 class MarcarGerarPedido(BaseModel):
     id: int
     a_gerar: bool = True
@@ -94,9 +99,29 @@ def local_instalacao(pedido: LocalPedido):
 
 
 @router.get("/logs")
-def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None, limit: int = 100):
+def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None,
+         limit: int = 100, usuario: Optional[str] = None):
     _garantir_banco()
-    return {"logs": db.listar_logs(nota_pk=nota_pk, tipo=tipo, limit=limit)}
+    return {"logs": db.listar_logs(nota_pk=nota_pk, tipo=tipo, limit=limit, usuario=usuario)}
+
+
+@router.get("/logs/usuarios")
+def logs_usuarios():
+    _garantir_banco()
+    return {"usuarios": db.listar_usuarios_log()}
+
+
+@router.post("/arquivar")
+def arquivar(pedido: ArquivarPedido):
+    _garantir_banco()
+    if not pedido.justificativa.strip():
+        raise HTTPException(status_code=400, detail="Justificativa obrigatoria.")
+    if not db.nota_existe(pedido.id):
+        raise HTTPException(status_code=404, detail="Nota nao encontrada.")
+    db.arquivar_nota(pedido.id)
+    db.registrar_log("acao_usuario", "arquivar", pedido.id,
+                     {"justificativa": pedido.justificativa.strip()}, True)
+    return {"ok": True}
 
 
 @router.post("/marcar-gerar")

@@ -3,6 +3,7 @@ import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
 import { CoffeeNotasTable } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
+import { ConfirmModal } from './confirm-modal';
 
 const API_BASE = localStorage.getItem("edp_api") || "/api";
 
@@ -15,6 +16,8 @@ export function CoffeePendentes(): React.JSX.Element {
   const [buscaErro, setBuscaErro] = React.useState<string | null>(null);
   const timerRef = React.useRef<number | null>(null);
   const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
+  const [arquivarPk, setArquivarPk] = React.useState<number | null>(null);
+  const [modalBusy, setModalBusy] = React.useState(false);
 
   React.useEffect(() => {
     return () => { if (timerRef.current !== null) clearInterval(timerRef.current); };
@@ -136,15 +139,45 @@ export function CoffeePendentes(): React.JSX.Element {
         isLoading={isLoading}
         emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
         actionColumn={(nota) => (
-          <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
-                  title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
-            Logs
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button className="edp-btn sm"
+                    onClick={() => setArquivarPk(nota.pk)}
+                    title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
+              Arquivar
+            </button>
+            <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+                    title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+              Logs
+            </button>
+          </div>
         )}
       />
       {drawerPk !== null && (
         <LogDrawer notaPk={drawerPk} open onClose={() => setDrawerPk(null)} />
       )}
+      <ConfirmModal
+        open={arquivarPk !== null}
+        title="Arquivar nota"
+        message="A nota sera arquivada e nao aparecera mais nas listagens."
+        confirmLabel="Arquivar"
+        tone="danger"
+        requireJustification
+        busy={modalBusy}
+        onConfirm={(justificativa) => {
+          if (arquivarPk === null) return;
+          setModalBusy(true);
+          fetch(`${API_BASE}/coffee/arquivar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: arquivarPk, justificativa }),
+          })
+            .then((res) => { if (!res.ok) throw new Error(`POST /arquivar -> ${res.status}`); })
+            .then(() => refetch())
+            .catch(() => {})
+            .finally(() => { setModalBusy(false); setArquivarPk(null); });
+        }}
+        onCancel={() => setArquivarPk(null)}
+      />
     </div>
   );
 }

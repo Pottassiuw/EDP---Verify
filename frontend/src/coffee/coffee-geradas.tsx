@@ -19,7 +19,8 @@ type PendingAction =
   | { kind: "gerar"; pk: number }
   | { kind: "gerar-form"; id: number }
   | { kind: "gerar-lote"; pks: number[] }
-  | { kind: "remover"; pk: number };
+  | { kind: "remover"; pk: number }
+  | { kind: "arquivar"; pk: number };
 
 function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
   return (
@@ -141,6 +142,16 @@ export function CoffeeGeradas(): React.JSX.Element {
       });
   }
 
+  function arquivar(pk: number, justificativa: string): Promise<void> {
+    return fetch(`${API_BASE}/coffee/arquivar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: pk, justificativa }),
+    })
+      .then((res) => { if (!res.ok) throw new Error(`POST /arquivar -> ${res.status}`); })
+      .then(() => { refetch(); });
+  }
+
   function remover(pk: number, justificativa: string): Promise<void> {
     return fetch(`${API_BASE}/coffee/marcar-gerar`, {
       method: "POST",
@@ -177,6 +188,8 @@ export function CoffeeGeradas(): React.JSX.Element {
       gerarLote(pending.pks, justificativa).catch(() => {}).finally(done);
     } else if (pending.kind === "remover") {
       remover(pending.pk, justificativa).catch(() => {}).finally(done);
+    } else if (pending.kind === "arquivar") {
+      arquivar(pending.pk, justificativa).catch(() => {}).finally(done);
     }
   }
 
@@ -197,6 +210,7 @@ export function CoffeeGeradas(): React.JSX.Element {
     "gerar-form": { title: "Gerar nota", confirmLabel: "Gerar", tone: "default", required: false, message: "Define o SAP placeholder 10000000 para esta nota entrar em geracao." },
     "gerar-lote": { title: "Gerar em lote", confirmLabel: "Gerar selecionadas", tone: "default", required: false, message: "Cada nota selecionada recebe o SAP placeholder 10000000." },
     "remover": { title: "Remover da fila", confirmLabel: "Remover", tone: "danger", required: true, message: "A nota sai da fila de geracao. Justifique o motivo." },
+    "arquivar": { title: "Arquivar nota", confirmLabel: "Arquivar", tone: "danger", required: true, message: "A nota sera arquivada e nao aparecera mais nas listagens." },
   };
 
   if (error) {
@@ -316,6 +330,11 @@ export function CoffeeGeradas(): React.JSX.Element {
                 {busy ? "..." : "Regerar"}
               </button>
               <AbrirCoffeeBtn pk={nota.pk} />
+              <button className="edp-btn sm" disabled={busy}
+                      onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
+                      title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
+                Arquivar
+              </button>
               <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
                       title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
                 Logs

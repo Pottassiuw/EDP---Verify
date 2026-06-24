@@ -7,6 +7,7 @@ interface UseCoffeeLogsParams {
   nota_pk?: number;
   tipo?: string;
   limit?: number;
+  usuario?: string;
 }
 
 interface UseCoffeeLogsResult {
@@ -30,6 +31,7 @@ export function useCoffeeLogs(params?: UseCoffeeLogsParams): UseCoffeeLogsResult
     const qs = new URLSearchParams();
     if (params?.nota_pk !== undefined) qs.set("nota_pk", String(params.nota_pk));
     if (params?.tipo) qs.set("tipo", params.tipo);
+    if (params?.usuario) qs.set("usuario", params.usuario);
     if (params?.limit !== undefined) qs.set("limit", String(params.limit));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
 

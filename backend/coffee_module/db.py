@@ -127,16 +127,28 @@ def registrar_erro(pk: int, mensagem: str) -> None:
     conn.close()
 
 
+def arquivar_nota(pk: int) -> None:
+    conn = get_db_connection()
+    conn.execute("UPDATE notas_coffee SET arquivado = 1 WHERE pk = ?", (pk,))
+    conn.commit()
+    conn.close()
+
+
 def listar_notas(status: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee"
-    params: tuple = ()
+    clausulas: list[str] = []
+    params: list = []
     if status == "a_gerar":
-        sql += " WHERE a_gerar = 1"
+        clausulas.append("a_gerar = 1")
+    elif status == "gerada":
+        clausulas.append("classificacao IN ('gerada', 'corrigida')")
     elif status:
-        sql += " WHERE classificacao = ?"
-        params = (status,)
-    rows = conn.execute(sql, params).fetchall()
+        clausulas.append("classificacao = ?")
+        params.append(status)
+    clausulas.append("(arquivado IS NULL OR arquivado = 0)")
+    sql += " WHERE " + " AND ".join(clausulas)
+    rows = conn.execute(sql, tuple(params)).fetchall()
     conn.close()
     saida = []
     for r in rows:
@@ -198,8 +210,17 @@ def registrar_log(tipo: str, acao: str, nota_pk: int | None,
         pass
 
 
+def listar_usuarios_log() -> list[str]:
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT DISTINCT usuario FROM coffee_logs WHERE usuario IS NOT NULL ORDER BY usuario"
+    ).fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
+
 def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
-                limit: int = 100) -> list:
+                limit: int = 100, usuario: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS_LOG)} FROM coffee_logs"
     clausulas: list = []
@@ -210,6 +231,9 @@ def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
     if tipo:
         clausulas.append("tipo = ?")
         params.append(tipo)
+    if usuario:
+        clausulas.append("usuario = ?")
+        params.append(usuario)
     if clausulas:
         sql += " WHERE " + " AND ".join(clausulas)
     sql += " ORDER BY timestamp DESC, id DESC LIMIT ?"
