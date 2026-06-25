@@ -1,4 +1,4 @@
-import type { RuleKey, RuleDef, Note, NoteError, DuplicateCandidate, DuplicateField, NoteRaw, Totals, EdpData, EdpDemo } from './types';
+import type { RuleKey, RuleDef, Note, NoteError, DuplicateCandidate, DuplicateField, NoteRaw, EdpDemo } from './types';
 
 const RULES: Record<RuleKey, RuleDef> = {
   chk_coordenada:   { label: "Coordenada",       short: "Coordenada",  field: "latitude" },
@@ -167,20 +167,6 @@ notes.forEach((n) => {
   n.status = "erro";
 });
 
-function ruleStats(): Record<RuleKey, number> {
-  const s: Record<RuleKey, number> = {};
-  notes.forEach((n) => n.errors.forEach((e) => { s[e.rule] = (s[e.rule] ?? 0) + 1; }));
-  return s;
-}
-
-const totals: Totals = {
-  total: notes.length,
-  ok: notes.filter((n) => n.errors.length === 0).length,
-  err: notes.filter((n) => n.errors.length > 0).length,
-  done: 4,
-};
-
-export const EDP: EdpData = { RULES, notes, ruleStats, totals, file: "Verificar_2026-06-02.xlsx" };
 export const EDP_DEMO: EdpDemo = {
   notes, file: "Verificar_2026-06-02.xlsx",
   defaultDone: ["104728860", "104728934", "104728972", "104729051"],

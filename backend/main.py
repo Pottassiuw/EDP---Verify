@@ -6,6 +6,7 @@ import re
 import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="De olho no Problema")
@@ -16,6 +17,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 RECORDS = []
 COMPLETED = set()
@@ -275,6 +277,15 @@ def mark_duplicata(note_id: str):
     COMPLETED.add(note_id)
     save_state()
     return {"status": "ok"}
+
+
+from input_module.routes import router as input_router
+
+app.include_router(input_router)
+
+from coffee_module.routes import router as coffee_router
+
+app.include_router(coffee_router)
 
 
 DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"

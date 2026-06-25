@@ -5,7 +5,8 @@ export type Theme = "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "demo" | "api";
-export type AppSection = "triagem" | "coffee";
+export type AppSection = "coffee" | "input";
+export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 export type CoffeeLayout = "composer" | "split";
 export type CoffeeOpenMode = "all" | "block" | "links";
 
@@ -83,13 +84,6 @@ export interface RuleMeta {
   short: string;
 }
 
-export interface Totals {
-  total: number;
-  ok: number;
-  err: number;
-  done: number;
-}
-
 // ── Estado de Tweaks ─────────────────────────────────────────────────────
 export type Accent = [string, string, string];
 export interface TweakState {
@@ -105,13 +99,6 @@ export type SetTweak<T> = {
 };
 
 // ── Camada de dados / API ────────────────────────────────────────────────
-export interface EdpData {
-  RULES: Record<RuleKey, RuleDef>;
-  notes: Note[];
-  ruleStats: () => Record<RuleKey, number>;
-  totals: Totals;
-  file: string;
-}
 export interface EdpDemo {
   notes: Note[];
   file: string;
@@ -140,24 +127,6 @@ export interface LogoProps {
   theme?: Theme;
   h?: number;
 }
-export interface StatTileProps {
-  label: string;
-  value: React.ReactNode;
-  accent?: string;
-  sub?: React.ReactNode;
-  big?: boolean;
-}
-export interface DonutProps {
-  pct: number;
-  size?: number;
-  stroke?: number;
-  color?: string;
-}
-export interface RuleBreakdownProps {
-  stats: Record<RuleKey, number>;
-  max: number;
-  compact?: boolean;
-}
 export interface FieldProps {
   label: string;
   accent?: boolean;
@@ -175,9 +144,17 @@ export interface DuplicateCompareProps {
   onMarkDuplicate: (id: string) => void;
   onSendToCoffee?: (ids: string[], sourceId?: string) => void;
 }
-export interface CoffeeSectionProps {
-  notes: Note[];
-  layout: CoffeeLayout;
+
+export interface KpiDrawerProps {
+  pct: number;      // conformidade %
+  cTotal: number;   // total de notas
+  cOk: number;      // notas sem falha
+  cErr: number;     // notas com erro
+  cDup: number;     // notas com duplicatas
+  cDone: number;    // notas concluídas
+  cVisible: number; // notas visíveis no filtro atual
+  selectedNotes?: Note[];
+  onRemoveSelected?: (id: string) => void;
 }
 
 export type TweakOption<T> = T | { value: T; label: string };
