@@ -2,7 +2,7 @@ import React from 'react';
 import type { KpiDrawerProps } from '../types';
 
 export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
-  const { pct, cTotal, cOk, cErr, cDup, cDone, cVisible } = props;
+  const { pct, cTotal, cOk, cErr, cDup, cDone, cVisible, selectedNotes = [], onRemoveSelected } = props;
   const [open, setOpen] = React.useState(false);
 
   const safePct = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
@@ -73,6 +73,26 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
                 <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 18, lineHeight: 1, color: "var(--" + c + ")" }}>{val}</span>
               </div>
             ))}
+            {selectedNotes.length > 0 && (
+              <div style={{ background: "var(--surface-2)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+                <div className="edp-eyebrow" style={{ marginBottom: 8 }}>
+                  Notas Selecionadas · {selectedNotes.length}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflow: "auto" }}>
+                  {selectedNotes.map((n) => (
+                    <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="edp-mono" style={{ fontSize: 12, fontWeight: 600 }}>{n.id}</span>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--text-mute)",
+                                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {n.tipo_nota} · {n.uf}/{n.setor}</span>
+                      {onRemoveSelected && (
+                        <span role="button" aria-label={"Remover " + n.id} onClick={() => onRemoveSelected(n.id)}
+                              style={{ cursor: "pointer", color: "var(--text-mute)", fontSize: 14, lineHeight: 1, padding: "0 4px" }}>×</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </aside>
         </React.Fragment>
       )}

@@ -279,7 +279,9 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
       {t.showKpis && (
         <KpiDrawer pct={pct} cTotal={cTotal} cOk={cOk} cErr={cErr} cDup={cDup}
-                   cDone={cDone} cVisible={filtered.length} />
+                   cDone={cDone} cVisible={filtered.length}
+                   selectedNotes={notes.filter((n) => selBatch.has(n.id))}
+                   onRemoveSelected={(id) => toggleBatch(id)} />
       )}
     </React.Fragment>
   );
@@ -296,6 +298,13 @@ interface DetailProps {
 
 function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee }: DetailProps): React.JSX.Element {
   const [gerarMsg, setGerarMsg] = React.useState<{ ok: boolean; txt: string } | null>(null);
+  const [fs, setFs] = React.useState(false);
+  React.useEffect(() => {
+    if (!fs) return;
+    const onKey = (e: KeyboardEvent): void => { if (e.key === "Escape") setFs(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fs]);
   if (!sel) return <div style={{ background: "var(--bg-2)" }} />;
   const podeGerar = COFFEE_ID_RE.test(sel.id);
   const selId = sel.id;
@@ -319,7 +328,10 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
   const otherErrors = sel.errors.filter((e) => e.rule !== "chk_duplicata");
   const hasDup = sel.duplicates.length > 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-2)" }}>
+    <div style={fs
+      ? { position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column",
+          overflow: "hidden", background: "var(--bg-2)" }
+      : { display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-2)" }}>
       <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface)",
                     display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexShrink: 0 }}>
         <div>
@@ -337,6 +349,9 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             ⚙ Marcar p/ gerar
           </button>
           <button className="edp-btn coffee sm" onClick={() => EDPApi.openCoffee(sel.id)}>☕ COFFEE</button>
+          <button className="edp-btn sm" title={fs ? "Sair da tela cheia" : "Expandir"}
+                  aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
+            {fs ? "⤡ Fechar" : "⤢ Expandir"}</button>
           <button className={"edp-btn sm" + (done ? "" : " accent-btn")} onClick={() => onToggleDone(sel.id)}>
             {done ? "↺ Reabrir" : "✓ Concluir"}</button>
         </div>
