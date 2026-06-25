@@ -598,3 +598,46 @@ def test_marcar_gerar_remover_com_justificativa(coffee_cliente):
     assert db.listar_notas("a_gerar") == []
     log = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "marcar_gerar"]
     assert log and log[0]["detalhes"]["justificativa"] == "posta por engano"
+
+
+# ---------------------------------------------------------------------------
+# Verify batch — Task 5: geração checa arquivado antes de gerar
+# ---------------------------------------------------------------------------
+
+
+def test_geracao_nota_arquivada_nao_define_sap(coffee_tmp, monkeypatch):
+    from coffee_module import client, db, jobs
+    saps = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: saps.append((int(i), sap)) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": True,
+                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+    )
+    job_id = jobs.iniciar_geracao([355617])
+    j = _aguardar_job(jobs, job_id)
+    assert saps == []  # arquivada: nunca define SAP
+    assert j["arquivadas"] == [
+        {"pk": 355617, "id_sap": 17247854, "local_instalacao": "701CF999"}
+    ]
+    assert db.listar_notas("pendente") == []
+
+
+def test_geracao_busca_antes_de_definir_sap(coffee_tmp, monkeypatch):
+    from coffee_module import client, db, jobs
+    ordem = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: ordem.append("sap") or True)
+
+    def fake_buscar(i):
+        ordem.append("buscar")
+        return {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+                "fields": {"id_sap": 10000000}}
+
+    monkeypatch.setattr(client, "buscar_nota", fake_buscar)
+    job_id = jobs.iniciar_geracao([355617])
+    _aguardar_job(jobs, job_id)
+    assert ordem[0] == "buscar"  # GET antes de definir_sap
+    assert "sap" in ordem
+    assert db.listar_notas("pendente")[0]["pk"] == 355617
