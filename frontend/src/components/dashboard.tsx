@@ -86,8 +86,9 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const cDup = notes.filter((n) => n.duplicates.length).length;
   const pct = Math.round(cOk / cTotal * 100);
 
+  // IDs da search bar não viram chips: com muitos IDs a barra "Ativos" estourava
+  // (1 chip por nota, sem scroll). Gerenciamento de IDs é feito direto na search bar.
   const chips: Array<{ k: string; clear: () => void }> = [];
-  if (q) terms.forEach((tm) => chips.push({ k: "Busca: " + tm, clear: () => setQ(terms.filter((x) => x !== tm).join(" ")) }));
   if (uf !== "all") chips.push({ k: "UF: " + uf, clear: () => setUf("all") });
   if (setor !== "all") chips.push({ k: "Setor: " + setor, clear: () => setSetor("all") });
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
@@ -128,7 +129,16 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
       <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
           <Field label="Buscar · ID, referência, tipo, setor" grow>
-            <input style={ctrlStyle} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
+            <div style={{ position: "relative", width: "100%" }}>
+              <input style={{ ...ctrlStyle, paddingRight: q ? 30 : 11 }} value={q}
+                     onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
+              {q && (
+                <button type="button" aria-label="Limpar busca" onClick={() => setQ("")}
+                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                                 border: 0, background: "transparent", color: "var(--text-mute)", cursor: "pointer",
+                                 fontSize: 16, lineHeight: 1, padding: "2px 4px" }}>×</button>
+              )}
+            </div>
           </Field>
           <Field label="Estado (UF)" accent>
             <select style={ctrlStyle} value={uf} onChange={(e) => setUf(e.target.value)}>
