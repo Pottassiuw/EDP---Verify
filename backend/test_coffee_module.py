@@ -641,3 +641,28 @@ def test_geracao_busca_antes_de_definir_sap(coffee_tmp, monkeypatch):
     assert ordem[0] == "buscar"  # GET antes de definir_sap
     assert "sap" in ordem
     assert db.listar_notas("pendente")[0]["pk"] == 355617
+
+
+# ---------------------------------------------------------------------------
+# Verify batch — Task 3a: diagnóstico de transição (caracterização)
+# ---------------------------------------------------------------------------
+
+
+def test_diagnosticar_nota_retorna_estado_e_logs(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(356322, 10000000, False, {"id_sap": 10000000})  # pendente
+    diag = db.diagnosticar_nota(356322)
+    assert diag["pk"] == 356322
+    assert diag["id_sap"] == 10000000
+    assert diag["classificacao"] == "pendente"
+    assert isinstance(diag["logs"], list)
+    assert db.diagnosticar_nota(999999) is None
+
+
+def test_caracteriza_avulsa_atualmente_vira_corrigida(coffee_tmp):
+    """Caracterização: HOJE uma nota avulsa (pendente -> SAP real) é rotulada
+    'corrigida' — comportamento que a Task 3b corrige para 'gerada'."""
+    from coffee_module import db
+    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    assert classe == "corrigida"  # estado atual (pré-fix)

@@ -219,6 +219,24 @@ def listar_usuarios_log() -> list[str]:
     return [r[0] for r in rows]
 
 
+def diagnosticar_nota(pk: int) -> dict | None:
+    """Estado bruto de uma nota + seus logs, para diagnóstico de transição."""
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT pk, id_sap, id_sap_anterior, classificacao, arquivado, buscado_em "
+        "FROM notas_coffee WHERE pk = ?", (pk,)
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return {
+        "pk": row[0], "id_sap": row[1], "id_sap_anterior": row[2],
+        "classificacao": row[3],
+        "arquivado": bool(row[4]) if row[4] is not None else None,
+        "buscado_em": row[5], "logs": listar_logs(nota_pk=pk, limit=200),
+    }
+
+
 def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
                 limit: int = 100, usuario: str | None = None) -> list:
     conn = get_db_connection()
