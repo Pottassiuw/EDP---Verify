@@ -46,6 +46,9 @@ const COFFEE_ID_RE = /^\d{5,12}$/;
 function coffeeTokens(text: string): string[] {
   return text.split(/[^0-9]+/).filter(Boolean);
 }
+function sortIdsDesc(list: string[]): string[] {
+  return [...list].sort((a, b) => Number(b) - Number(a));
+}
 
 interface CoffeeAbrirProps {
   notes: Note[];
@@ -69,6 +72,10 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
   const [feedback, setFeedback] = React.useState<React.ReactNode>(null);
   const [mode, setMode] = React.useState<CoffeeOpenMode>("all");
   const [block, setBlock] = React.useState(10);
+
+  function setBlockClamped(v: number): void {
+    setBlock(Math.min(50, Math.max(1, Math.floor(v) || 1)));
+  }
 
   const noteIndex = React.useMemo(() => {
     const m = new Map<string, Note>();
@@ -187,16 +194,18 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <p style={{ fontSize: 12.5, color: "var(--text-dim)", margin: 0 }}>
-            Abre uma aba por nota ainda não aberta. Se o navegador bloquear muitas abas, libere os popups deste site e tente de novo.</p>
+            Abre uma aba por nota ainda não aberta, em ordem decrescente de ID. As abas
+            abrem em sequência; agrupar abas em janelas exige uma extensão de navegador.</p>
           <button className="edp-btn coffee" style={{ alignSelf: "flex-start", padding: "11px 20px", fontWeight: 700, fontSize: 14 }}
-                  disabled={!remaining.length} onClick={() => openList(remaining)}>
+                  disabled={!remaining.length} onClick={() => openList(sortIdsDesc(remaining))}>
             ☕ Abrir {remaining.length} nota{remaining.length === 1 ? "" : "s"} no COFFEE</button>
           {!remaining.length && <span className="edp-tag done" style={{ alignSelf: "flex-start" }}><span className="edp-dot" />Todas as notas já foram abertas</span>}
         </div>
       );
     }
     if (mode === "block") {
-      const next = remaining.slice(0, block);
+      const ordered = sortIdsDesc(remaining);
+      const next = ordered.slice(0, block);
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <p style={{ fontSize: 12.5, color: "var(--text-dim)", margin: 0 }}>
@@ -204,9 +213,14 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <span className="edp-eyebrow">Tamanho do bloco</span>
             <div className="coffee-stepper">
-              <button aria-label="Diminuir" onClick={() => setBlock((b) => Math.max(1, b - 1))}>−</button>
-              <span>{block}</span>
-              <button aria-label="Aumentar" onClick={() => setBlock((b) => Math.min(50, b + 1))}>+</button>
+              <button aria-label="Diminuir" onClick={() => setBlockClamped(block - 1)}>−</button>
+              <input type="number" min={1} max={50} value={block}
+                     onChange={(e) => setBlockClamped(Number(e.target.value))}
+                     aria-label="Tamanho do bloco"
+                     style={{ width: 46, textAlign: "center", border: 0, background: "var(--surface-2)",
+                              color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 14,
+                              fontWeight: 600, outline: "none", MozAppearance: "textfield" }} />
+              <button aria-label="Aumentar" onClick={() => setBlockClamped(block + 1)}>＋</button>
             </div>
             <button className="edp-btn coffee" style={{ fontWeight: 700 }} disabled={!next.length} onClick={() => openList(next)}>
               ☕ Abrir próximas {next.length}</button>
@@ -215,6 +229,8 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
             <div className="coffee-bar"><div style={{ width: (ids.length ? (opened.size / ids.length) * 100 : 0) + "%" }} /></div>
             <span className="edp-mono" style={{ fontSize: 11.5, color: "var(--text-mute)" }}>{opened.size} de {ids.length} abertas</span>
           </div>
+          <span style={{ fontSize: 11, color: "var(--text-mute)" }}>
+            Abre em ordem decrescente, em sequência. Agrupar abas exige extensão de navegador.</span>
         </div>
       );
     }
