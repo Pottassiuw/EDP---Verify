@@ -80,6 +80,7 @@ def _rodar_geracao(job_id: str, ids: list) -> None:
                                  nota["pk"],
                                  {"id_sap": nota["id_sap"], "local_instalacao": local},
                                  True)
+                db.marcar_gerar(nota["pk"], False)
             else:
                 client.definir_sap(ident, config.SAP_PENDENTE)
                 nota = client.buscar_nota(ident)

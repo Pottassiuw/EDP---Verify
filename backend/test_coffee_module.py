@@ -624,6 +624,24 @@ def test_geracao_nota_arquivada_nao_define_sap(coffee_tmp, monkeypatch):
     assert db.listar_notas("pendente") == []
 
 
+def test_geracao_nota_arquivada_remove_da_fila(coffee_tmp, monkeypatch):
+    """Nota arquivada deve ter a_gerar desmarcado apos geracao, saindo da fila."""
+    from coffee_module import client, db, jobs
+
+    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.marcar_gerar(355617, True)
+    assert db.listar_notas("a_gerar")[0]["pk"] == 355617  # esta na fila
+
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": True,
+                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+    )
+    job_id = jobs.iniciar_geracao([355617])
+    _aguardar_job(jobs, job_id)
+    assert db.listar_notas("a_gerar") == []  # deve ter saido da fila
+
+
 def test_geracao_busca_antes_de_definir_sap(coffee_tmp, monkeypatch):
     from coffee_module import client, db, jobs
     ordem = []
