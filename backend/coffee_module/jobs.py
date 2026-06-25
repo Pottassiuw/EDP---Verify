@@ -85,6 +85,7 @@ def _rodar_geracao(job_id: str, ids: list) -> None:
                 nota = client.buscar_nota(ident)
                 db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
                 db.marcar_gerar(nota["pk"], False)
+                db.definir_origem(nota["pk"], "avulsa")
         except Exception as exc:  # noqa: BLE001 — uma falha não derruba o lote
             with _LOCK:
                 _JOBS[job_id]["erros"].append({"pk": ident, "msg": str(exc)})

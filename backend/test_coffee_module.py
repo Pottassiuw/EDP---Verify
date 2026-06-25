@@ -660,9 +660,53 @@ def test_diagnosticar_nota_retorna_estado_e_logs(coffee_tmp):
 
 
 def test_caracteriza_avulsa_atualmente_vira_corrigida(coffee_tmp):
-    """Caracterização: HOJE uma nota avulsa (pendente -> SAP real) é rotulada
-    'corrigida' — comportamento que a Task 3b corrige para 'gerada'."""
+    """Task 3b: nota avulsa (pendente -> SAP real) com origem='avulsa' é
+    rotulada 'gerada', não 'corrigida'."""
     from coffee_module import db
     db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.definir_origem(355617, "avulsa")
     classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
-    assert classe == "corrigida"  # estado atual (pré-fix)
+    assert classe == "gerada"  # após Task 3b: avulsa corretamente vira gerada
+
+
+# ---------------------------------------------------------------------------
+# Verify batch — Task 3b: origem distingue avulsa (gerada) de corrigida
+# ---------------------------------------------------------------------------
+
+
+def test_classificacao_avulsa_vira_gerada():
+    from coffee_module import classify, config
+    assert classify.classificar(17247854, config.SAP_PENDENTE, "avulsa") == "gerada"
+
+
+def test_classificacao_sem_origem_mantem_corrigida():
+    from coffee_module import classify, config
+    # backwards-compat: origem desconhecida continua corrigida
+    assert classify.classificar(17247854, config.SAP_PENDENTE) == "corrigida"
+    assert classify.classificar(17247854, config.SAP_PENDENTE, None) == "corrigida"
+
+
+def test_upsert_avulsa_vira_gerada_apos_pendente(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(1, 10000000, False, {"id_sap": 10000000})  # pendente
+    db.definir_origem(1, "avulsa")
+    classe = db.upsert_nota(1, 17247854, False, {"id_sap": 17247854})
+    assert classe == "gerada"
+    assert db.listar_notas("corrigida") == []
+
+
+def test_geracao_marca_origem_avulsa(coffee_tmp, monkeypatch):
+    from coffee_module import client, db, jobs
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
+                   "fields": {"id_sap": 10000000}},
+    )
+    job_id = jobs.iniciar_geracao([355617])
+    _aguardar_job(jobs, job_id)
+    diag = db.diagnosticar_nota(355617)
+    assert diag is not None
+    # origem persistida; re-busca com SAP real classifica como gerada
+    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    assert classe == "gerada"

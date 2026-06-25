@@ -20,7 +20,7 @@ def _usuario_atual() -> str:
     return os.environ.get("USERNAME") or os.environ.get("USER") or "desconhecido"
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
-            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar"]
+            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem"]
 
 
 def obter_caminho_banco() -> str:
@@ -54,6 +54,8 @@ def inicializar_banco() -> None:
     cols_notas = [r[1] for r in conn.execute("PRAGMA table_info(notas_coffee)").fetchall()]
     if "a_gerar" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN a_gerar INTEGER NOT NULL DEFAULT 0")
+    if "origem" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN origem TEXT")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS coffee_logs (
@@ -81,12 +83,13 @@ def inicializar_banco() -> None:
 def upsert_nota(pk: int, id_sap: int, arquivado: bool, dados_json: dict) -> str:
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT id_sap, classificacao, arquivado FROM notas_coffee WHERE pk = ?", (pk,)
+        "SELECT id_sap, classificacao, arquivado, origem FROM notas_coffee WHERE pk = ?", (pk,)
     ).fetchone()
     id_sap_anterior = row[0] if row is not None else None
     classe_anterior = row[1] if row is not None else None
     arquivado_anterior = bool(row[2]) if row is not None and row[2] is not None else None
-    classe = classificar(id_sap, id_sap_anterior)
+    origem = row[3] if row is not None else None
+    classe = classificar(id_sap, id_sap_anterior, origem)
     conn.execute(
         """
         INSERT INTO notas_coffee
@@ -165,6 +168,14 @@ def marcar_gerar(pk: int, a_gerar: bool) -> None:
     conn = get_db_connection()
     conn.execute("UPDATE notas_coffee SET a_gerar = ? WHERE pk = ?",
                  (1 if a_gerar else 0, pk))
+    conn.commit()
+    conn.close()
+
+
+def definir_origem(pk: int, origem: str) -> None:
+    """Marca a origem da nota ('avulsa' | 'verificar')."""
+    conn = get_db_connection()
+    conn.execute("UPDATE notas_coffee SET origem = ? WHERE pk = ?", (origem, pk))
     conn.commit()
     conn.close()
 
