@@ -9,11 +9,11 @@ import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 
 const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
+  { id: "verificar", rotulo: "Verificar" },
   { id: "abrir", rotulo: "Abrir" },
   { id: "geradas", rotulo: "Gerar" },
   { id: "corrigidas", rotulo: "Corrigidas" },
   { id: "pendentes", rotulo: "Pendentes" },
-  { id: "verificar", rotulo: "Verificar" },
   { id: "logs", rotulo: "Logs" },
 ];
 
