@@ -5,8 +5,6 @@
    Scoped to .edp so dark & light instances coexist on one canvas.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
 .edp {
   /* — brand spectrum — */
   --green:    #00a859;
@@ -43,8 +41,8 @@
   --shadow-lg: 0 24px 60px rgba(0,0,0,0.45);
 
   /* — type — */
-  --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
-  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* — geometry — */
