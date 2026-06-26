@@ -1,11 +1,11 @@
 // ── Domínio ──────────────────────────────────────────────────────────────
 export type RuleKey = string;
 export type NoteStatus = "erro" | "ok";
-export type Theme = "dark" | "light";
+export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "demo" | "api";
-export type AppSection = "coffee" | "input";
+export type AppSection = "coffee" | "input" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 export type CoffeeLayout = "composer" | "split";
 export type CoffeeOpenMode = "all" | "block" | "links";
