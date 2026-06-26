@@ -4,7 +4,7 @@ import type { AppSection, CoffeeSubPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu,
   SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
-  SidebarMenuSubItem, SidebarTrigger,
+  SidebarMenuSubItem, SidebarRail, SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -155,6 +155,7 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
