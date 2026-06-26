@@ -86,17 +86,6 @@ export interface RuleMeta {
 
 // ── Estado de Tweaks ─────────────────────────────────────────────────────
 export type Accent = [string, string, string];
-export interface TweakState {
-  theme: Theme;
-  density: Density;
-  accent: Accent;
-  showKpis: boolean;
-  coffeeLayout: CoffeeLayout;
-}
-export type SetTweak<T> = {
-  <K extends keyof T>(key: K, value: T[K]): void;
-  (edits: Partial<T>): void;
-};
 
 // ── Camada de dados / API ────────────────────────────────────────────────
 export interface EdpDemo {
@@ -157,30 +146,3 @@ export interface KpiDrawerProps {
   onRemoveSelected?: (id: string) => void;
 }
 
-export type TweakOption<T> = T | { value: T; label: string };
-export interface TweaksPanelProps {
-  title?: string;
-  children?: React.ReactNode;
-}
-export interface TweakSectionProps {
-  label: string;
-  children?: React.ReactNode;
-}
-export interface TweakRadioProps<T extends string> {
-  label: string;
-  value: T;
-  options: ReadonlyArray<TweakOption<T>>;
-  onChange: (v: T) => void;
-}
-export interface TweakToggleProps {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}
-export type ColorValue = string | string[];
-export interface TweakColorProps {
-  label: string;
-  value: ColorValue;
-  options?: ReadonlyArray<ColorValue>;
-  onChange: (v: ColorValue) => void;
-}

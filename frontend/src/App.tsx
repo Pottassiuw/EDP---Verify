@@ -1,26 +1,22 @@
 import React from 'react';
-import type { Note, TweakState, Source, AppSection, Accent, CoffeeSubPage } from './types';
+import type { Note, Source, AppSection, CoffeeSubPage } from './types';
 import type { TriageHandoff } from './coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
+import { SettingsProvider, useSettings } from './context/settings-context';
 import { EDPApi } from './api';
 import { EDP_DEMO } from './data';
-import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, TweakColor } from './components/tweaks-panel';
-import { Sidebar } from './components/sidebar';
+import { AppSidebar } from './components/app-sidebar';
 import { useTriageData } from './hooks/useTriageData';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
 const CoffeeHub = React.lazy(() =>
   import('./coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
+const ConfiguracoesPage = React.lazy(() =>
+  import('./pages/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
-
-const TWEAK_DEFAULTS: TweakState = {
-  theme: "dark",
-  density: "cozy",
-  accent: ["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
-  showKpis: true,
-  coffeeLayout: "composer",
-};
 
 const VERIFY_FILTER_KEYS = [
   "edp_verify_q", "edp_verify_uf", "edp_verify_setor", "edp_verify_urg",
@@ -48,7 +44,7 @@ function lerSnapshot(): TriageSnapshot | null {
   } catch { return null; }
 }
 function gravarSnapshot(s: TriageSnapshot): void {
-  try { sessionStorage.setItem(TRIAGE_SNAPSHOT_KEY, JSON.stringify(s)); } catch { /* cota/indisponivel: degrada */ }
+  try { sessionStorage.setItem(TRIAGE_SNAPSHOT_KEY, JSON.stringify(s)); } catch { /* ignore */ }
 }
 function limparSnapshot(): void {
   try { sessionStorage.removeItem(TRIAGE_SNAPSHOT_KEY); } catch { /* ignore */ }
@@ -63,8 +59,8 @@ function SectionLoading(): React.JSX.Element {
   );
 }
 
-export default function App(): React.JSX.Element {
-  const [t, setTweak] = useTweaks<TweakState>(TWEAK_DEFAULTS);
+function AppContent(): React.JSX.Element {
+  const { settings, resolvedTheme } = useSettings();
   const _snap = React.useMemo(() => lerSnapshot(), []);
   const [screen, setScreen] = React.useState<"upload" | "dashboard">(_snap?.screen ?? "upload");
   const [notes, setNotes] = React.useState<Note[]>(_snap?.notes ?? []);
@@ -75,13 +71,16 @@ export default function App(): React.JSX.Element {
   const [section, setSection] = React.useState<AppSection>("coffee");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
-  const accentStyle: CssVars = { "--accent": t.accent[0], "--accent-2": t.accent[1], "--accent-tint": t.accent[2] };
+
+  const accentStyle: CssVars = {
+    "--accent": settings.accent[0],
+    "--accent-2": settings.accent[1],
+    "--accent-tint": settings.accent[2],
+  };
 
   React.useEffect(() => {
     if (screen !== "dashboard" || notes.length === 0) return;
-    gravarSnapshot({
-      notes, completed: [...completed], dupResolved: [...dupResolved], file, source, screen,
-    });
+    gravarSnapshot({ notes, completed: [...completed], dupResolved: [...dupResolved], file, source, screen });
   }, [notes, completed, dupResolved, file, source, screen]);
 
   function changeSection(s: AppSection): void {
@@ -92,7 +91,7 @@ export default function App(): React.JSX.Element {
   const { data: apiData } = useTriageData();
 
   React.useEffect(() => {
-    if (_snap) return;  // snapshot válido tem prioridade sobre o refetch
+    if (_snap) return;
     if (!apiData?.notes?.length || screen !== "upload" || source === "demo") return;
     setNotes(apiData.notes);
     setCompleted(apiData.completed);
@@ -168,8 +167,8 @@ export default function App(): React.JSX.Element {
   }
 
   const triage: TriageHandoff = {
-    resolvedTheme: t.theme as "dark" | "light",
-    showKpis: t.showKpis,
+    resolvedTheme,
+    showKpis: settings.showKpis,
     notes, completed, dupResolved, source, file, screen,
     onToggleComplete: toggleComplete,
     onMarkMany: markMany,
@@ -181,41 +180,32 @@ export default function App(): React.JSX.Element {
   };
 
   return (
-    <div className="edp triage" data-theme={t.theme} data-density={t.density}
-         style={{ height: "100vh", display: "flex", flexDirection: "row", background: "var(--bg)", ...accentStyle }}>
-      <Sidebar section={section} setSection={changeSection}
-               coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub} />
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <React.Suspense fallback={<SectionLoading />}>
-          {section === "input" ? (
-            <InputSection />
-          ) : (
-            <CoffeeHub notes={notes} layout={t.coffeeLayout}
-                       sub={coffeeSub} setSub={setCoffeeSub}
-                       triage={triage}
-                       coffeeReturn={coffeeReturn}
-                       onClearReturn={() => setCoffeeReturn(null)}
-                       onBackToTriagem={() => { setCoffeeSub("verificar"); }} />
-          )}
-        </React.Suspense>
-      </div>
-
-      <TweaksPanel>
-        <TweakSection label="Aparência" />
-        <TweakRadio label="Tema" value={t.theme} options={["dark", "light"]} onChange={(val) => setTweak("theme", val)} />
-        <TweakRadio label="Densidade" value={t.density} options={["compact", "cozy"]} onChange={(val) => setTweak("density", val)} />
-        <TweakColor label="Cor de destaque" value={t.accent}
-                    options={[["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
-                              ["#1f9fd6", "#46b6e3", "rgba(31,159,214,0.14)"],
-                              ["#6b5ce6", "#8576ec", "rgba(107,92,230,0.15)"]]}
-                    onChange={(val) => setTweak("accent", val as Accent)} />
-        <TweakSection label="Layout" />
-        <TweakToggle label="Mostrar indicadores (KPIs)" value={t.showKpis} onChange={(val) => setTweak("showKpis", val)} />
-        <TweakSection label="Seção COFFEE" />
-        <TweakRadio label="Layout" value={t.coffeeLayout}
-                    options={[{ value: "composer", label: "Composer" }, { value: "split", label: "Split" }]}
-                    onChange={(val) => setTweak("coffeeLayout", val)} />
-      </TweaksPanel>
+    <div className="edp triage" data-theme={resolvedTheme} data-density={settings.density}
+         style={{ height: "100vh", overflow: "hidden", background: "var(--bg)", ...accentStyle } as CssVars}>
+      <SidebarProvider style={{ height: "100%", minHeight: 0 }}>
+        <AppSidebar section={section} setSection={changeSection}
+                    coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub} />
+        <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <React.Suspense fallback={<SectionLoading />}>
+            {section === "input"         ? <InputSection /> :
+             section === "configuracoes" ? <ConfiguracoesPage /> :
+             <CoffeeHub notes={notes} layout={settings.coffeeLayout}
+                        sub={coffeeSub} setSub={setCoffeeSub}
+                        triage={triage}
+                        coffeeReturn={coffeeReturn}
+                        onClearReturn={() => setCoffeeReturn(null)}
+                        onBackToTriagem={() => { setCoffeeSub("verificar"); }} />}
+          </React.Suspense>
+        </SidebarInset>
+      </SidebarProvider>
     </div>
+  );
+}
+
+export default function App(): React.JSX.Element {
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
   );
 }
