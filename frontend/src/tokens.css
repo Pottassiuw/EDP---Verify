@@ -203,3 +203,31 @@
   color: var(--text-dim); cursor: pointer; transition: all .12s;
 }
 .edp-seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+/* ============================================================
+   Reset escopado para superfícies shadcn (preflight ainda OFF
+   globalmente — ver index.css). Especificidade ZERO via :where()
+   para que as classes utilitárias do shadcn sempre vençam.
+   Escopos:
+     [data-sidebar="sidebar"]  → subtree da sidebar (desktop+mobile)
+     .ui-reset                 → páginas já migradas (opt-in)
+   ============================================================ */
+:where([data-sidebar="sidebar"], .ui-reset) :where(ul, ol) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+:where([data-sidebar="sidebar"], .ui-reset) :where(li) {
+  margin: 0;
+}
+:where([data-sidebar="sidebar"], .ui-reset) :where(button) {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
