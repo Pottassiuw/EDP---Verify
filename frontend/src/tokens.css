@@ -59,6 +59,28 @@
   --gap: 16px;
   --tile-py: 18px;
 
+  /* — bridge shadcn (mapeado para os tokens EDP; herda dark/light) — */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);            /* marca EDP */
+  --primary-foreground: #fff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-dim);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-mute);
+  --sh-accent: var(--surface-2);       /* hover sutil do shadcn (NÃO é a marca EDP) */
+  --accent-foreground: var(--text);
+  --destructive: var(--red);
+  --destructive-foreground: #fff;
+  --border: var(--line-2);
+  --input: var(--line-2);
+  --ring: var(--accent);
+  --radius: var(--r);
+
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
