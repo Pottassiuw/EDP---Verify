@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Note, TweakState, UrgBand, RuleKey } from '../types';
+import type { Note, UrgBand, RuleKey } from '../types';
 import { EDPApi, ruleMeta } from '../api';
 import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
@@ -22,7 +22,7 @@ async function marcarParaGerar(id: string): Promise<void> {
 }
 
 export interface DashboardProps {
-  t: TweakState;
+  showKpis: boolean;
   notes: Note[];
   completed: Set<string>;
   dupResolved: Set<string>;
@@ -33,7 +33,7 @@ export interface DashboardProps {
 }
 
 export function Dashboard(props: DashboardProps): React.JSX.Element {
-  const { t, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
+  const { showKpis, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
   const [q, setQ] = usePersistedState("edp_verify_q", "");
   const [uf, setUf] = usePersistedState("edp_verify_uf", "all");
   const [setor, setSetor] = usePersistedState("edp_verify_setor", "all");
@@ -287,7 +287,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                 onToggleDone={onToggleComplete} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />
       </div>
 
-      {t.showKpis && (
+      {showKpis && (
         <KpiDrawer pct={pct} cTotal={cTotal} cOk={cOk} cErr={cErr} cDup={cDup}
                    cDone={cDone} cVisible={filtered.length}
                    selectedNotes={notes.filter((n) => selBatch.has(n.id))}

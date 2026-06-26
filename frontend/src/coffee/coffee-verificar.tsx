@@ -1,12 +1,12 @@
 import React from 'react';
-import type { Note, TweakState, Source, SetTweak } from '../types';
+import type { Note, Source } from '../types';
 import { TopBar } from '../components/top-bar';
 import { UploadScreen } from '../components/upload-screen';
 import { Dashboard } from '../components/dashboard';
 
 export interface TriageHandoff {
-  t: TweakState;
-  setTweak: SetTweak<TweakState>;
+  resolvedTheme: "dark" | "light";
+  showKpis: boolean;
   notes: Note[];
   completed: Set<string>;
   dupResolved: Set<string>;
@@ -26,15 +26,16 @@ export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JS
   if (triage.screen === "upload") {
     return (
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <UploadScreen theme={triage.t.theme} onDemo={triage.onDemo} onUpload={triage.onUpload} />
+        <UploadScreen theme={triage.resolvedTheme} onDemo={triage.onDemo} onUpload={triage.onUpload} />
       </div>
     );
   }
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <TopBar t={triage.t} setTweak={triage.setTweak} file={triage.file}
+      <TopBar resolvedTheme={triage.resolvedTheme} file={triage.file}
               source={triage.source} onReset={triage.onReset} />
-      <Dashboard t={triage.t} notes={triage.notes} completed={triage.completed} dupResolved={triage.dupResolved}
+      <Dashboard showKpis={triage.showKpis} notes={triage.notes} completed={triage.completed}
+                 dupResolved={triage.dupResolved}
                  onToggleComplete={triage.onToggleComplete} onMarkMany={triage.onMarkMany}
                  onMarkDuplicate={triage.onMarkDuplicate} onSendToCoffee={triage.onSendToCoffee} />
     </div>

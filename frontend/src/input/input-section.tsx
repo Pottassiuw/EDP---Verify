@@ -1,5 +1,4 @@
 import React from 'react';
-import type { TweakState } from '../types';
 import type { AbaInput } from './types';
 import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
@@ -16,7 +15,7 @@ const ABAS: { id: AbaInput; rotulo: string }[] = [
   { id: 'config', rotulo: 'Configurações' },
 ];
 
-export function InputSection({ t: _t }: { t: TweakState }): React.JSX.Element {
+export function InputSection(): React.JSX.Element {
   const [aba, setAba] = React.useState<AbaInput>('visao');
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();

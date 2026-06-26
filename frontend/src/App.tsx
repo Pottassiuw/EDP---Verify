@@ -168,7 +168,9 @@ export default function App(): React.JSX.Element {
   }
 
   const triage: TriageHandoff = {
-    t, setTweak, notes, completed, dupResolved, source, file, screen,
+    resolvedTheme: t.theme as "dark" | "light",
+    showKpis: t.showKpis,
+    notes, completed, dupResolved, source, file, screen,
     onToggleComplete: toggleComplete,
     onMarkMany: markMany,
     onMarkDuplicate: markDuplicate,
@@ -186,7 +188,7 @@ export default function App(): React.JSX.Element {
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <React.Suspense fallback={<SectionLoading />}>
           {section === "input" ? (
-            <InputSection t={t} />
+            <InputSection />
           ) : (
             <CoffeeHub notes={notes} layout={t.coffeeLayout}
                        sub={coffeeSub} setSub={setCoffeeSub}
