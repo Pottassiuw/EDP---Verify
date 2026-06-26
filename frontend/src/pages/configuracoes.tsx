@@ -65,6 +65,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
                     const isActive = settings.accent[0] === preset[0];
                     return (
                       <button
+                        type="button"
                         key={preset[0]}
                         aria-label={`Cor de destaque ${preset[0]}`}
                         onClick={() => setSetting("accent", preset)}
@@ -73,7 +74,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
                           background: preset[0],
                           outline: isActive ? `2px solid ${preset[0]}` : "none",
                           outlineOffset: 2,
-                          boxShadow: isActive ? "0 0 0 4px var(--bg)" : "none",
+                          boxShadow: isActive ? "0 0 0 4px var(--background)" : "none",
                         }}
                       />
                     );

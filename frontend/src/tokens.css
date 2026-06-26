@@ -230,4 +230,5 @@
   font: inherit;
   color: inherit;
   cursor: pointer;
+  box-sizing: inherit;
 }

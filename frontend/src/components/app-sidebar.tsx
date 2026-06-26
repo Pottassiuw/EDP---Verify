@@ -126,7 +126,7 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
+              <SidebarMenuButton disabled className="opacity-40">
                 <IconReport />
                 <span>Relatórios</span>
                 <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
@@ -134,7 +134,7 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
+              <SidebarMenuButton disabled className="opacity-40">
                 <IconBI />
                 <span>De olho no BI</span>
                 <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
