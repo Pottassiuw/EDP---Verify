@@ -31,5 +31,5 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 3px);
   --font-sans: var(--font-body);
-  --font-mono: var(--font-mono);
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
