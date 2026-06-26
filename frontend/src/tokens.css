@@ -79,6 +79,16 @@
   --ring: var(--accent);
   --radius: var(--r);
 
+  /* — sidebar shadcn — */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
