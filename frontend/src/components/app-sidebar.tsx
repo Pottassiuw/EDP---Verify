@@ -2,9 +2,10 @@ import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { AppSection, CoffeeSubPage } from '../types';
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu,
-  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
-  SidebarMenuSubItem, SidebarRail, SidebarTrigger,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
+  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -77,67 +78,70 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Collapsible defaultOpen className="group/coffee">
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton
-                  tooltip="COFFEE"
-                  isActive={section === "coffee"}
-                  onClick={() => setSection("coffee")}
-                >
-                  <IconCoffee />
-                  <span>COFFEE</span>
-                  <ChevronDown
-                    size={14}
-                    className="ml-auto transition-transform duration-200 group-data-[state=open]/coffee:rotate-180"
-                  />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {COFFEE_SUBS.map((s) => (
-                    <SidebarMenuSubItem key={s.id}>
-                      <SidebarMenuSubButton
-                        isActive={section === "coffee" && coffeeSub === s.id}
-                        onClick={() => selectSub(s.id)}
-                      >
-                        {s.label}
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarMenuItem>
+        <SidebarGroup>
+          <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Collapsible defaultOpen className="group/coffee">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="COFFEE"
+                    isActive={section === "coffee"}
+                    onClick={() => setSection("coffee")}
+                  >
+                    <IconCoffee />
+                    <span>COFFEE</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/coffee:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {COFFEE_SUBS.map((s) => (
+                      <SidebarMenuSubItem key={s.id}>
+                        <SidebarMenuSubButton
+                          isActive={section === "coffee" && coffeeSub === s.id}
+                          onClick={() => selectSub(s.id)}
+                        >
+                          {s.label}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Input"
-              isActive={section === "input"}
-              onClick={() => setSection("input")}
-            >
-              <IconInput />
-              <span>Input</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Input"
+                isActive={section === "input"}
+                onClick={() => setSection("input")}
+              >
+                <IconInput />
+                <span>Input</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
-              <IconReport />
-              <span>Relatórios</span>
-              <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
+                <IconReport />
+                <span>Relatórios</span>
+                <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
-              <IconBI />
-              <span>De olho no BI</span>
-              <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled style={{ opacity: 0.4 }}>
+                <IconBI />
+                <span>De olho no BI</span>
+                <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
