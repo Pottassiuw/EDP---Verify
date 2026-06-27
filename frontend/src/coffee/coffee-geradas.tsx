@@ -193,9 +193,9 @@ export function CoffeeGeradas(): React.JSX.Element {
     } else if (pending.kind === "gerar-lote") {
       gerarLote(pending.pks, justificativa).catch((e: unknown) => notify.error("Falha ao gerar em lote", e instanceof Error ? e.message : String(e))).finally(done);
     } else if (pending.kind === "remover") {
-      remover(pending.pk, justificativa).catch(() => {}).finally(done);
+      remover(pending.pk, justificativa).finally(done);
     } else if (pending.kind === "arquivar") {
-      arquivar(pending.pk, justificativa).catch(() => {}).finally(done);
+      arquivar(pending.pk, justificativa).finally(done);
     }
   }
 

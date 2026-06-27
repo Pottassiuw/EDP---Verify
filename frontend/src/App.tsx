@@ -164,8 +164,8 @@ function AppContent(): React.JSX.Element {
     });
     const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
     if (source === "api") {
-      targets.forEach((id) => EDPApi.toggleComplete(id).catch(() => {}));
-      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch(() => {}));
+      targets.forEach((id) => EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao atualizar nota", e instanceof Error ? e.message : String(e))));
+      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch((e) => notify.error("Falha ao marcar para gerar", e instanceof Error ? e.message : String(e))));
     }
     if (targets.length === 0) return;
     const gerarInfo = source === "api" && numericTargets.length > 0
@@ -176,7 +176,7 @@ function AppContent(): React.JSX.Element {
 
   function sendToCoffeeQueue(ids: string[], sourceId?: string): void {
     const existing = JSON.parse(localStorage.getItem("edp_coffee_ids") ?? "[]") as string[];
-    const valid = ids.filter((id) => /^\d{5,12}$/.test(id));
+    const valid = ids.filter((id) => NUMERIC_ID_RE.test(id));
     const merged = [...new Set([...existing, ...valid])];
     localStorage.setItem("edp_coffee_ids", JSON.stringify(merged));
     if (sourceId) {
