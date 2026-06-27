@@ -5,6 +5,7 @@ import { CoffeeNotasTable } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { coffeeUrl } from '../api';
+import { notify } from '../lib/notify';
 
 const API_BASE = localStorage.getItem("edp_api") || "/api";
 
@@ -139,6 +140,7 @@ export function CoffeeGeradas(): React.JSX.Element {
         setSelected(new Set());
         aGerar.refetch();
         refetch();
+        notify.success(`${pks.length} nota(s) enviada(s) para geração`);
       });
   }
 
@@ -149,7 +151,8 @@ export function CoffeeGeradas(): React.JSX.Element {
       body: JSON.stringify({ id: pk, justificativa }),
     })
       .then((res) => { if (!res.ok) throw new Error(`POST /arquivar -> ${res.status}`); })
-      .then(() => { refetch(); });
+      .then(() => { refetch(); notify.success("Nota arquivada"); })
+      .catch((e: unknown) => notify.error("Falha ao arquivar", e instanceof Error ? e.message : String(e)));
   }
 
   function remover(pk: number, justificativa: string): Promise<void> {
@@ -159,7 +162,8 @@ export function CoffeeGeradas(): React.JSX.Element {
       body: JSON.stringify({ id: pk, a_gerar: false, justificativa }),
     })
       .then((res) => { if (!res.ok) throw new Error(`POST /marcar-gerar -> ${res.status}`); })
-      .then(() => { aGerar.refetch(); });
+      .then(() => { aGerar.refetch(); notify.success("Nota desmarcada para geração"); })
+      .catch((e: unknown) => notify.error("Falha ao desmarcar", e instanceof Error ? e.message : String(e)));
   }
 
   function handleConfirm(justificativa: string): void {
@@ -174,6 +178,7 @@ export function CoffeeGeradas(): React.JSX.Element {
         .then((result) => {
           if (pending.kind === "gerar-form") {
             setRegerarResult(result); setRegerarEstado("ok");
+            notify.success("Nota gerada");
           }
           refetch(); aGerar.refetch();
         })
@@ -181,11 +186,12 @@ export function CoffeeGeradas(): React.JSX.Element {
           if (pending.kind === "gerar-form") {
             setRegerarErro(err instanceof Error ? err.message : String(err));
             setRegerarEstado("erro");
+            notify.error("Falha ao gerar", err instanceof Error ? err.message : String(err));
           }
         })
         .finally(() => { setRowBusy((s) => { const n = new Set(s); n.delete(id); return n; }); done(); });
     } else if (pending.kind === "gerar-lote") {
-      gerarLote(pending.pks, justificativa).catch(() => {}).finally(done);
+      gerarLote(pending.pks, justificativa).catch((e: unknown) => notify.error("Falha ao gerar em lote", e instanceof Error ? e.message : String(e))).finally(done);
     } else if (pending.kind === "remover") {
       remover(pending.pk, justificativa).catch(() => {}).finally(done);
     } else if (pending.kind === "arquivar") {
