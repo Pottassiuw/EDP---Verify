@@ -112,16 +112,24 @@ function AppContent(): React.JSX.Element {
     setCompleted(new Set(savedDone ?? EDP_DEMO.defaultDone));
     setDupResolved(new Set(savedDup ?? EDP_DEMO.defaultDup));
     setSource("demo"); setFile(name ?? EDP_DEMO.file); setScreen("dashboard");
+    notify.info("Dados de demonstração carregados");
   }
 
   async function handleUpload(f: File): Promise<void> {
     limparFiltrosVerify();
     limparSnapshot();
-    await EDPApi.upload(f);
-    const d = await EDPApi.fetchData();
-    setNotes(d.notes); setCompleted(d.completed); setSource("api");
-    setFile(f.name); localStorage.setItem("edp_file", f.name);
-    setScreen("dashboard");
+    const p = (async () => { await EDPApi.upload(f); return EDPApi.fetchData(); })();
+    notify.promise(p, {
+      loading: "Enviando planilha…",
+      success: "Planilha carregada",
+      error: (e) => `Falha no upload: ${e instanceof Error ? e.message : String(e)}`,
+    });
+    try {
+      const d = await p;
+      setNotes(d.notes); setCompleted(d.completed); setSource("api");
+      setFile(f.name); localStorage.setItem("edp_file", f.name);
+      setScreen("dashboard");
+    } catch { /* toast já informou o erro */ }
   }
 
   function persistDone(set: Set<string>): void { if (source === "demo") localStorage.setItem("edp_demo_done", JSON.stringify([...set])); }
@@ -177,6 +185,7 @@ function AppContent(): React.JSX.Element {
     }
     setCoffeeSub("abrir");
     setSection("coffee");
+    if (valid.length > 0) notify.success(`${valid.length} nota(s) enviada(s) para a fila do COFFEE`);
   }
 
   function markDuplicate(id: string): void {
@@ -184,9 +193,10 @@ function AppContent(): React.JSX.Element {
     setDupResolved((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDup(s); return s; });
     setCompleted((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDone(s); return s; });
     if (source === "api") {
-      if (undo) EDPApi.toggleComplete(id).catch(() => {});
-      else EDPApi.markDuplicate(id).catch(() => {});
+      if (undo) EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao desfazer duplicata", e instanceof Error ? e.message : String(e)));
+      else EDPApi.markDuplicate(id).catch((e) => notify.error("Falha ao marcar duplicata", e instanceof Error ? e.message : String(e)));
     }
+    notify.success(undo ? "Duplicata desfeita" : "Nota marcada como duplicata");
   }
 
   const triage: TriageHandoff = {
