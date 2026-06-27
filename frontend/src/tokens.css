@@ -5,6 +5,12 @@
    Scoped to .edp so dark & light instances coexist on one canvas.
    ============================================================ */
 
+/* :root recebe os mesmos tokens base (tema escuro) para que conteúdo
+   PORTALIZADO pelo Radix (tooltip, dropdown, sheet…) — que renderiza fora
+   do .edp, direto no <body> — também resolva as cores. Não altera as telas
+   dentro do .edp: lá os valores são os mesmos, e .edp[data-theme="light"]
+   continua sobrescrevendo para o tema claro. */
+:root,
 .edp {
   /* — brand spectrum — */
   --green:    #00a859;

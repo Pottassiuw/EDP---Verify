@@ -104,6 +104,7 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
                     {COFFEE_SUBS.map((s) => (
                       <SidebarMenuSubItem key={s.id}>
                         <SidebarMenuSubButton
+                          className="cursor-pointer"
                           isActive={section === "coffee" && coffeeSub === s.id}
                           onClick={() => selectSub(s.id)}
                         >
