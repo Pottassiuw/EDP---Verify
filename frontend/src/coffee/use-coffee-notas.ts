@@ -1,7 +1,6 @@
 import React from 'react';
 import type { CoffeeNota } from './types';
-
-const API_BASE = localStorage.getItem("edp_api") || "/api";
+import { BASE as API_BASE } from '../api';
 
 interface UseCoffeeNotasResult {
   notas: CoffeeNota[];

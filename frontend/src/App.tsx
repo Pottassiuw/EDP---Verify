@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
 import type { TriageHandoff } from './coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
@@ -8,8 +8,7 @@ import { EDP_DEMO } from './data';
 import { AppSidebar } from './components/app-sidebar';
 import { useTriageData } from './hooks/useTriageData';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { Toaster } from 'sonner';
-import { notify } from './lib/notify';
+import { toast, Toaster } from 'sonner';
 
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
@@ -112,14 +111,14 @@ function AppContent(): React.JSX.Element {
     setCompleted(new Set(savedDone ?? EDP_DEMO.defaultDone));
     setDupResolved(new Set(savedDup ?? EDP_DEMO.defaultDup));
     setSource("demo"); setFile(name ?? EDP_DEMO.file); setScreen("dashboard");
-    notify.info("Dados de demonstração carregados");
+    toast("Dados de demonstração carregados");
   }
 
   async function handleUpload(f: File): Promise<void> {
     limparFiltrosVerify();
     limparSnapshot();
     const p = (async () => { await EDPApi.upload(f); return EDPApi.fetchData(); })();
-    notify.promise(p, {
+    toast.promise(p, {
       loading: "Enviando planilha…",
       success: "Planilha carregada",
       error: (e) => `Falha no upload: ${e instanceof Error ? e.message : String(e)}`,
@@ -144,12 +143,12 @@ function AppContent(): React.JSX.Element {
     const numeric = NUMERIC_ID_RE.test(id);
     const willGenerate = source === "api" && numeric;
     if (source === "api") {
-      EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao atualizar nota", e instanceof Error ? e.message : String(e)));
-      if (numeric) EDPApi.marcarGerar(id, concluding).catch((e) => notify.error("Falha ao marcar para gerar", e instanceof Error ? e.message : String(e)));
+      EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao atualizar nota", { description: e instanceof Error ? e.message : String(e) }));
+      if (numeric) EDPApi.marcarGerar(id, concluding).catch((e) => toast.error("Falha ao marcar para gerar", { description: e instanceof Error ? e.message : String(e) }));
     }
-    notify.success(
+    toast.success(
       concluding ? `Nota ${id} concluída` : `Nota ${id} reaberta`,
-      willGenerate ? (concluding ? "Marcada para gerar" : "Desmarcada para gerar") : undefined,
+      { description: willGenerate ? (concluding ? "Marcada para gerar" : "Desmarcada para gerar") : undefined },
     );
   }
 
@@ -164,14 +163,14 @@ function AppContent(): React.JSX.Element {
     });
     const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
     if (source === "api") {
-      targets.forEach((id) => EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao atualizar nota", e instanceof Error ? e.message : String(e))));
-      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch((e) => notify.error("Falha ao marcar para gerar", e instanceof Error ? e.message : String(e))));
+      targets.forEach((id) => EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao atualizar nota", { description: e instanceof Error ? e.message : String(e) })));
+      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch((e) => toast.error("Falha ao marcar para gerar", { description: e instanceof Error ? e.message : String(e) })));
     }
     if (targets.length === 0) return;
     const gerarInfo = source === "api" && numericTargets.length > 0
       ? `${numericTargets.length} ${marking ? "marcada(s) para gerar" : "desmarcada(s)"}`
       : undefined;
-    notify.success(`${targets.length} nota(s) ${marking ? "concluída(s)" : "reaberta(s)"}`, gerarInfo);
+    toast.success(`${targets.length} nota(s) ${marking ? "concluída(s)" : "reaberta(s)"}`, { description: gerarInfo });
   }
 
   function sendToCoffeeQueue(ids: string[], sourceId?: string): void {
@@ -185,7 +184,7 @@ function AppContent(): React.JSX.Element {
     }
     setCoffeeSub("abrir");
     setSection("coffee");
-    if (valid.length > 0) notify.success(`${valid.length} nota(s) enviada(s) para a fila do COFFEE`);
+    if (valid.length > 0) toast.success(`${valid.length} nota(s) enviada(s) para a fila do COFFEE`);
   }
 
   function markDuplicate(id: string): void {
@@ -193,10 +192,10 @@ function AppContent(): React.JSX.Element {
     setDupResolved((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDup(s); return s; });
     setCompleted((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDone(s); return s; });
     if (source === "api") {
-      if (undo) EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao desfazer duplicata", e instanceof Error ? e.message : String(e)));
-      else EDPApi.markDuplicate(id).catch((e) => notify.error("Falha ao marcar duplicata", e instanceof Error ? e.message : String(e)));
+      if (undo) EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao desfazer duplicata", { description: e instanceof Error ? e.message : String(e) }));
+      else EDPApi.markDuplicate(id).catch((e) => toast.error("Falha ao marcar duplicata", { description: e instanceof Error ? e.message : String(e) }));
     }
-    notify.success(undo ? "Duplicata desfeita" : "Nota marcada como duplicata");
+    toast.success(undo ? "Duplicata desfeita" : "Nota marcada como duplicata");
   }
 
   const triage: TriageHandoff = {

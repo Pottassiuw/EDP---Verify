@@ -8,13 +8,13 @@ import { CoffeePendentes } from './coffee-pendentes';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 
-const SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
-  { id: "verificar", rotulo: "Verificar" },
-  { id: "abrir", rotulo: "Abrir" },
-  { id: "geradas", rotulo: "Gerar" },
-  { id: "corrigidas", rotulo: "Corrigidas" },
-  { id: "pendentes", rotulo: "Pendentes" },
-  { id: "logs", rotulo: "Logs" },
+export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
+  { id: "verificar", label: "Verificar" },
+  { id: "abrir",     label: "Abrir" },
+  { id: "geradas",   label: "Gerar" },
+  { id: "corrigidas",label: "Corrigidas" },
+  { id: "pendentes", label: "Pendentes" },
+  { id: "logs",      label: "Logs" },
 ];
 
 interface CoffeeHubProps {
@@ -36,8 +36,8 @@ export function CoffeeHub({ notes, layout, sub, setSub, triage, coffeeReturn, on
                     padding: "0 22px", background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <strong style={{ fontSize: 14 }}>COFFEE</strong>
         <div className="edp-seg">
-          {SUBS.map((s) => (
-            <button key={s.id} className={sub === s.id ? "on" : ""} onClick={() => setSub(s.id)}>{s.rotulo}</button>
+          {COFFEE_SUBS.map((s) => (
+            <button key={s.id} className={sub === s.id ? "on" : ""} onClick={() => setSub(s.id)}>{s.label}</button>
           ))}
         </div>
       </div>

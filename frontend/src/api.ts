@@ -1,6 +1,6 @@
 import type { RuleKey, RuleMeta, FetchResult, Note, NoteError, NoteRaw, NoteStatus, DuplicateCandidate, UploadResult, ToggleResult, DuplicateResult } from './types';
 
-const BASE: string = localStorage.getItem("edp_api") || "/api";
+export const BASE: string = localStorage.getItem("edp_api") || "/api";
 
 const COFFEE_BASE = "https://coffee.edp.gpti.com.br/7ff2b230b16cbe2ecdde87a58AppDeOlhoNaRede2/informativo/";
 export const coffeeUrl = (id: string): string => COFFEE_BASE + encodeURIComponent(id) + "/change/";

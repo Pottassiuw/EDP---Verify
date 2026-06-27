@@ -1,9 +1,9 @@
 import React from "react";
 import type { LogoProps, FieldProps, NoteStatus } from "../types";
 
-const LOGO_DARK =
+export const LOGO_DARK =
   "/assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.png";
-const LOGO_LIGHT =
+export const LOGO_LIGHT =
   "/assets/RGB/Light/Regular/POS/EDP_Group_MasterLogo_RRGB_Light_POS.png";
 
 export const Logo: React.FC<LogoProps> = ({ theme = "dark", h = 24 }) => (

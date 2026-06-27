@@ -2,6 +2,7 @@ import React from "react";
 import type { UploadScreenProps } from "../types";
 import { EDPApi } from "../api";
 import LOGO_EXCEL from "../../public/assets/logo_excel.svg";
+import { LOGO_DARK, LOGO_LIGHT } from "./shared";
 
 export const UploadScreen: React.FC<UploadScreenProps> = ({
   theme = "dark",
@@ -43,11 +44,6 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
     const f = e.dataTransfer.files[0];
     if (f) void start(f);
   }
-
-  const LOGO_DARK =
-    "/assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.png";
-  const LOGO_LIGHT =
-    "/assets/RGB/Light/Regular/POS/EDP_Group_MasterLogo_RRGB_Light_POS.png";
 
   const corners: Array<{ v: "top" | "bottom"; h: "left" | "right" }> = [
     { v: "top", h: "left" },

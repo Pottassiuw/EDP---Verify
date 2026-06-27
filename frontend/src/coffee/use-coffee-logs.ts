@@ -1,7 +1,6 @@
 import React from 'react';
 import type { CoffeeLog } from './types';
-
-const API_BASE = localStorage.getItem("edp_api") || "/api";
+import { BASE as API_BASE } from '../api';
 
 interface UseCoffeeLogsParams {
   nota_pk?: number;

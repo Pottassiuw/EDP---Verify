@@ -1,15 +1,8 @@
 import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable } from './coffee-log-table';
-
-const API_BASE = localStorage.getItem("edp_api") || "/api";
-
-const TIPOS = [
-  { value: "", label: "Todos" },
-  { value: "api_call", label: "API" },
-  { value: "transicao", label: "Transicao" },
-  { value: "acao_usuario", label: "Usuario" },
-] as const;
+import { BASE as API_BASE } from '../api';
+import { TIPOS } from './coffee-log-drawer';
 
 const LIMITES = [50, 100, 500] as const;
 

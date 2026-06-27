@@ -1,11 +1,11 @@
-import React from 'react';
+﻿import React from 'react';
 import type { Note, UrgBand, RuleKey } from '../types';
 import { EDPApi, ruleMeta } from '../api';
 import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../hooks/use-persisted-state';
-import { notify } from '../lib/notify';
+import { toast } from 'sonner';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -261,7 +261,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
                   </button>
                 )}
-                <button className="edp-btn coffee sm" onClick={() => { notify.info("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</button>
+                <button className="edp-btn coffee sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</button>
                 <button className="edp-btn ghost sm" onClick={() => setSelBatch(new Set())}>Limpar</button>
               </div>
             );
@@ -331,7 +331,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button className="edp-btn coffee sm" onClick={() => { notify.info("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</button>
+          <button className="edp-btn coffee sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</button>
           <button className="edp-btn sm" title={fs ? "Sair da tela cheia" : "Expandir"}
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
             {fs ? "⤡ Fechar" : "⤢ Expandir"}</button>

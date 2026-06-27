@@ -1,12 +1,11 @@
-import React from 'react';
+﻿import React from 'react';
 import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
 import { CoffeeNotasTable } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
-import { notify } from '../lib/notify';
-
-const API_BASE = localStorage.getItem("edp_api") || "/api";
+import { toast } from 'sonner';
+import { BASE as API_BASE } from '../api';
 
 type BuscaEstado = "idle" | "rodando" | "concluido";
 
@@ -57,7 +56,7 @@ export function CoffeePendentes(): React.JSX.Element {
                 if (timerRef.current !== null) { clearInterval(timerRef.current); timerRef.current = null; }
                 setBuscaEstado("concluido");
                 refetch();
-                notify.success("Busca concluída");
+                toast.success("Busca concluída");
                 setTimeout(() => setBuscaEstado("idle"), 3000);
               }
             })
@@ -71,7 +70,7 @@ export function CoffeePendentes(): React.JSX.Element {
       .catch((err: unknown) => {
         setBuscaErro(err instanceof Error ? err.message : String(err));
         setBuscaEstado("idle");
-        notify.error("Falha na busca", err instanceof Error ? err.message : String(err));
+        toast.error("Falha na busca", { description: err instanceof Error ? err.message : String(err) });
       });
   }
 
@@ -175,8 +174,8 @@ export function CoffeePendentes(): React.JSX.Element {
             body: JSON.stringify({ id: arquivarPk, justificativa }),
           })
             .then((res) => { if (!res.ok) throw new Error(`POST /arquivar -> ${res.status}`); })
-            .then(() => { refetch(); notify.success("Nota arquivada"); })
-            .catch((e: unknown) => notify.error("Falha ao arquivar", e instanceof Error ? e.message : String(e)))
+            .then(() => { refetch(); toast.success("Nota arquivada"); })
+            .catch((e: unknown) => toast.error("Falha ao arquivar", { description: e instanceof Error ? e.message : String(e) }))
             .finally(() => { setModalBusy(false); setArquivarPk(null); });
         }}
         onCancel={() => setArquivarPk(null)}

@@ -2,7 +2,7 @@ import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable } from './coffee-log-table';
 
-const TIPOS = [
+export const TIPOS = [
   { value: "", label: "Todos" },
   { value: "api_call", label: "API" },
   { value: "transicao", label: "Transicao" },
