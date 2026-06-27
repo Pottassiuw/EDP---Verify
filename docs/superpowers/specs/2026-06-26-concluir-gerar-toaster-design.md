@@ -36,26 +36,14 @@ Hoje a triagem tem **dois botões redundantes**: "✓ Concluir" e "⚙ Marcar p/
   - `--normal-bg: var(--popover)`, `--normal-text: var(--popover-foreground)`, `--normal-border: var(--border)`.
   - success → verde EDP (`--green`); error → vermelho EDP (`--red`).
 
-### 2. `lib/notify.ts` (único ponto que importa o sonner)
+### 2. Toasts — chamada direta ao sonner
 
-Wrapper fino e tipado:
+> **Ponytail-audit (`6455ed0`):** `lib/notify.ts` foi deletado. Os 37 call-sites agora importam e chamam `toast.*` diretamente do `sonner`. Não há wrapper.
 
-```ts
-import { toast } from 'sonner';
-
-export const notify = {
-  success: (message: string, description?: string) => toast.success(message, { description }),
-  error:   (message: string, description?: string) => toast.error(message, { description }),
-  info:    (message: string, description?: string) => toast(message, { description }),
-  promise: <T>(p: Promise<T>, msgs: { loading: string; success: string | ((v: T) => string); error: string | ((e: unknown) => string) }) =>
-    toast.promise(p, msgs),
-};
-```
-
-Convenções de uso:
-- **Chamada de API** (assíncrona): `notify.promise(promise, { loading, success, error })`.
-- **Mudança local instantânea** (sem await): `notify.success(...)`.
-- **Erro engolido hoje** (`.catch(() => {})` em ação do usuário): passa a `.catch((e) => notify.error(...))`.
+Convenções de uso (inalteradas, só muda o símbolo):
+- **Chamada de API** (assíncrona): `toast.promise(promise, { loading, success, error })`.
+- **Mudança local instantânea** (sem await): `toast.success(...)`.
+- **Erro engolido antes** (`.catch(() => {})` em ação do usuário): passa a `.catch((e) => toast.error(...))`.
 
 ### 3. Unificação Concluir + Gerar
 
@@ -120,7 +108,7 @@ Instrumentar as ações iniciadas pelo usuário. **Não** instrumentar GET/refet
 ## Arquivos afetados
 
 - `frontend/package.json` / lockfile — dependência `sonner`.
-- `frontend/src/lib/notify.ts` — **novo** helper.
+- ~~`frontend/src/lib/notify.ts`~~ — deletado no ponytail-audit; `toast.*` usado diretamente.
 - `frontend/src/App.tsx` — `<Toaster>`, handlers (toggleComplete, markMany, markDuplicate, sendToCoffeeQueue, handleUpload, loadDemo).
 - `frontend/src/api.ts` — `marcarGerar`.
 - `frontend/src/components/dashboard.tsx` — remover botões/banner "Marcar p/ gerar"; toast no openCoffee.

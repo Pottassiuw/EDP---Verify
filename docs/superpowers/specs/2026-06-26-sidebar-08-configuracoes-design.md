@@ -60,7 +60,7 @@ O reset normaliza dentro desse escopo:
 }
 ```
 
-(Os seletores exatos serão validados contra `ui/sidebar.tsx` durante a implementação.)
+> **Implementado (`a4d6a3c`):** o escopo em `tokens.css` ganhou também um "preflight-lite" de bordas (`*, *::before, *::after { border: 0 solid }` dentro do escopo), necessário para que as utilities de borda do Tailwind (`border`, `border-input`) renderizem corretamente sem o preflight global.
 
 Convenção: páginas/telas que migrarem para shadcn passam a usar o marcador `.ui-reset` na sua raiz para entrar no escopo. Isso mantém o caminho de migração consistente até a Fase 4.
 
@@ -82,6 +82,8 @@ Estrutura final do `app-sidebar.tsx`:
 A fiação de props (`section`, `setSection`, `coffeeSub`, `setCoffeeSub`) e os ícones inline existentes são preservados.
 
 Sub-componentes do sidebar-08 que **não** serão usados (remover/não importar): `team-switcher`, `nav-user`, `nav-projects`.
+
+> **Implementado (`a4d6a3c`):** `<SidebarRail />` foi removido — a barra lateral aparecia como faixa branca. O botão de colapso ficou no `SidebarHeader` e fica sempre visível (centralizado quando a sidebar está colapsada). `collapsible="icon"` mantido, mas expansão por hover via rail não está mais presente.
 
 ### 3. Cores e bordas — apenas tokens
 
@@ -113,7 +115,7 @@ Subir o dev server (`npm run dev` em `frontend/`) e confirmar visualmente:
 
 1. Bullets/bolinhas sumiram da sidebar.
 2. Fundo da sidebar sólido; sem barra branca ao colapsar.
-3. Colapso → rail de ícones funciona (incl. expansão por hover via `SidebarRail`).
+3. Colapso → sidebar colapsa para ícones; botão de toggle sempre visível no header (centralizado). ~~SidebarRail removido.~~
 4. Item ativo destacado com o verde EDP.
 5. COFFEE expande/colapsa com os 6 subitens; navegação troca a seção corretamente.
 6. Página Configurações: toggles como segmented control unificado, layout sem espaço vazio gigante, todos os controles funcionando.
