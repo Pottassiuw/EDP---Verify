@@ -4,7 +4,7 @@ import type { AppSection, CoffeeSubPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail,
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -66,12 +66,14 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-1 py-1">
-              <BrandGlyph />
+            <div className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:px-0">
+              <span className="flex items-center group-data-[collapsible=icon]:hidden">
+                <BrandGlyph />
+              </span>
               <span className="font-semibold text-sm truncate group-data-[collapsible=icon]:hidden">
                 EDP Verify
               </span>
-              <SidebarTrigger className="ml-auto group-data-[collapsible=icon]:hidden" />
+              <SidebarTrigger className="ml-auto group-data-[collapsible=icon]:mx-auto" />
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -159,7 +161,6 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }

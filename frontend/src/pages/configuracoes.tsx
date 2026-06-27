@@ -39,6 +39,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
               <Row label="Tema">
                 <ToggleGroup
                   type="single"
+                  variant="outline"
                   value={settings.theme}
                   onValueChange={(v) => { if (v) setSetting("theme", v as typeof settings.theme); }}
                 >
@@ -51,6 +52,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
               <Row label="Densidade">
                 <ToggleGroup
                   type="single"
+                  variant="outline"
                   value={settings.density}
                   onValueChange={(v) => { if (v) setSetting("density", v as typeof settings.density); }}
                 >
@@ -110,6 +112,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
               <Row label="Layout">
                 <ToggleGroup
                   type="single"
+                  variant="outline"
                   value={settings.coffeeLayout}
                   onValueChange={(v) => { if (v) setSetting("coffeeLayout", v as typeof settings.coffeeLayout); }}
                 >
