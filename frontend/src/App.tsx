@@ -8,6 +8,7 @@ import { EDP_DEMO } from './data';
 import { AppSidebar } from './components/app-sidebar';
 import { useTriageData } from './hooks/useTriageData';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Toaster } from 'sonner';
 
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
@@ -198,6 +199,7 @@ function AppContent(): React.JSX.Element {
           </React.Suspense>
         </SidebarInset>
       </SidebarProvider>
+      <Toaster theme={resolvedTheme} position="bottom-right" richColors closeButton />
     </div>
   );
 }
