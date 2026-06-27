@@ -133,4 +133,13 @@ export async function markDuplicate(id: string): Promise<DuplicateResult> {
   return res.json() as Promise<DuplicateResult>;
 }
 
-export const EDPApi = { BASE, fetchData, upload, toggleComplete, markDuplicate, coffeeUrl, mapsUrl, openCoffee };
+export async function marcarGerar(id: string, aGerar: boolean): Promise<void> {
+  const res = await fetch(BASE + "/coffee/marcar-gerar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: Number(id), a_gerar: aGerar }),
+  });
+  if (!res.ok) throw new Error("POST /marcar-gerar -> " + res.status);
+}
+
+export const EDPApi = { BASE, fetchData, upload, toggleComplete, markDuplicate, marcarGerar, coffeeUrl, mapsUrl, openCoffee };

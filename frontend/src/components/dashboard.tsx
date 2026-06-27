@@ -5,21 +5,11 @@ import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../hooks/use-persisted-state';
+import { notify } from '../lib/notify';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
 
-const API_BASE = localStorage.getItem("edp_api") || "/api";
-const COFFEE_ID_RE = /^\d{5,12}$/;
-
-async function marcarParaGerar(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/coffee/marcar-gerar`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: Number(id), a_gerar: true }),
-  });
-  if (!res.ok) throw new Error(`POST /marcar-gerar -> ${res.status}`);
-}
 
 export interface DashboardProps {
   showKpis: boolean;
@@ -271,11 +261,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
                   </button>
                 )}
-                <button className="edp-btn coffee sm" onClick={() => EDPApi.openCoffee(ids)}>☕ COFFEE</button>
-                <button className="edp-btn sm" onClick={() => {
-                  ids.filter((id) => COFFEE_ID_RE.test(id)).forEach((id) => { marcarParaGerar(id).catch(() => {}); });
-                  setSelBatch(new Set());
-                }}>⚙ Marcar p/ gerar</button>
+                <button className="edp-btn coffee sm" onClick={() => { notify.info("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</button>
                 <button className="edp-btn ghost sm" onClick={() => setSelBatch(new Set())}>Limpar</button>
               </div>
             );
@@ -307,7 +293,6 @@ interface DetailProps {
 }
 
 function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee }: DetailProps): React.JSX.Element {
-  const [gerarMsg, setGerarMsg] = React.useState<{ ok: boolean; txt: string } | null>(null);
   const [fs, setFs] = React.useState(false);
   React.useEffect(() => {
     if (!fs) return;
@@ -316,14 +301,6 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
     return () => window.removeEventListener("keydown", onKey);
   }, [fs]);
   if (!sel) return <div style={{ background: "var(--bg-2)" }} />;
-  const podeGerar = COFFEE_ID_RE.test(sel.id);
-  const selId = sel.id;
-  function onMarcarGerar(): void {
-    setGerarMsg(null);
-    marcarParaGerar(selId)
-      .then(() => setGerarMsg({ ok: true, txt: "Marcada para gerar." }))
-      .catch((e: unknown) => setGerarMsg({ ok: false, txt: e instanceof Error ? e.message : String(e) }));
-  }
   const v = (x: string | number | null | undefined, fb = "—"): string => {
     const s = x == null ? "" : String(x);
     return s === "" || s === "-" ? fb : s;
@@ -354,11 +331,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button className="edp-btn sm" disabled={!podeGerar} onClick={onMarcarGerar}
-                  title={podeGerar ? "Marcar para gerar no COFFEE" : "ID nao numerico: nao pode ser gerado"}>
-            ⚙ Marcar p/ gerar
-          </button>
-          <button className="edp-btn coffee sm" onClick={() => EDPApi.openCoffee(sel.id)}>☕ COFFEE</button>
+          <button className="edp-btn coffee sm" onClick={() => { notify.info("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</button>
           <button className="edp-btn sm" title={fs ? "Sair da tela cheia" : "Expandir"}
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
             {fs ? "⤡ Fechar" : "⤢ Expandir"}</button>
@@ -366,15 +339,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {done ? "↺ Reabrir" : "✓ Concluir"}</button>
         </div>
       </div>
-      {gerarMsg && (
-        <div style={{ flexShrink: 0, padding: "8px 24px", fontSize: 12.5,
-                      color: gerarMsg.ok ? "var(--green)" : "var(--red)",
-                      background: gerarMsg.ok ? "var(--tint-green)" : "var(--tint-red)",
-                      borderBottom: "1px solid var(--line)" }}>
-          {gerarMsg.txt}
-        </div>
-      )}
-      <div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
+<div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
         {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />}
 
         <section>

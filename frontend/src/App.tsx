@@ -9,6 +9,7 @@ import { AppSidebar } from './components/app-sidebar';
 import { useTriageData } from './hooks/useTriageData';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from 'sonner';
+import { notify } from './lib/notify';
 
 const InputSection = React.lazy(() =>
   import('./input/input-section').then((m) => ({ default: m.InputSection })));
@@ -28,6 +29,7 @@ function limparFiltrosVerify(): void {
 }
 
 const TRIAGE_SNAPSHOT_KEY = "edp_triage_snapshot";
+const NUMERIC_ID_RE = /^\d{5,12}$/;
 
 interface TriageSnapshot {
   notes: Note[];
@@ -127,9 +129,20 @@ function AppContent(): React.JSX.Element {
 
   function toggleComplete(id: string): void {
     const reopening = completed.has(id);
+    const concluding = !reopening;
     setCompleted((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); persistDone(s); return s; });
     if (reopening) setDupResolved((prev) => { const s = new Set(prev); s.delete(id); persistDup(s); return s; });
-    if (source === "api") EDPApi.toggleComplete(id).catch(() => {});
+
+    const numeric = NUMERIC_ID_RE.test(id);
+    const willGenerate = source === "api" && numeric;
+    if (source === "api") {
+      EDPApi.toggleComplete(id).catch((e) => notify.error("Falha ao atualizar nota", e instanceof Error ? e.message : String(e)));
+      if (numeric) EDPApi.marcarGerar(id, concluding).catch((e) => notify.error("Falha ao marcar para gerar", e instanceof Error ? e.message : String(e)));
+    }
+    notify.success(
+      concluding ? `Nota ${id} concluída` : `Nota ${id} reaberta`,
+      willGenerate ? (concluding ? "Marcada para gerar" : "Desmarcada para gerar") : undefined,
+    );
   }
 
   function markMany(ids: string[], action: "done" | "reopen"): void {
@@ -141,7 +154,16 @@ function AppContent(): React.JSX.Element {
       persistDone(s);
       return s;
     });
-    if (source === "api") targets.forEach((id) => EDPApi.toggleComplete(id).catch(() => {}));
+    const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
+    if (source === "api") {
+      targets.forEach((id) => EDPApi.toggleComplete(id).catch(() => {}));
+      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch(() => {}));
+    }
+    if (targets.length === 0) return;
+    const gerarInfo = source === "api" && numericTargets.length > 0
+      ? `${numericTargets.length} ${marking ? "marcada(s) para gerar" : "desmarcada(s)"}`
+      : undefined;
+    notify.success(`${targets.length} nota(s) ${marking ? "concluída(s)" : "reaberta(s)"}`, gerarInfo);
   }
 
   function sendToCoffeeQueue(ids: string[], sourceId?: string): void {
