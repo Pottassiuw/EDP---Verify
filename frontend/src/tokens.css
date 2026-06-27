@@ -260,3 +260,14 @@
     cursor: pointer;
   }
 }
+
+/* O container fixo da sidebar (shadcn) tem uma `border-r` que renderiza como
+   uma linha escura na fronteira sidebar↔conteúdo (confirmado por geometria:
+   container=256px, inner=255px → 1px de borda). A separação visual já vem da
+   diferença de cor entre sidebar e conteúdo, então removemos a borda.
+   UNLAYERED de propósito: precisa vencer a utility `border-r` (que está em
+   @layer utilities); CSS sem layer sempre vence CSS com layer. */
+[data-slot="sidebar-container"] {
+  border-right-width: 0;
+  border-left-width: 0;
+}
