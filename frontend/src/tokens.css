@@ -224,6 +224,13 @@
      .ui-reset                 → páginas já migradas (opt-in)
    ============================================================ */
 @layer base {
+  /* App fullscreen: sem o preflight global, o <body> mantém a margin
+     padrão de 8px do navegador. Isso desalinha a sidebar (position:fixed,
+     relativa à viewport, em x=0) do conteúdo em fluxo (.edp/gap/inset,
+     empurrado 8px), expondo uma faixa do sidebar-gap na borda direita.
+     Zerar a margin do documento alinha tudo e elimina a faixa. */
+  html, body { margin: 0; padding: 0; }
+
   /* border-width:0 + style:solid reativa as utilities de borda do shadcn
      (sem preflight, border-style padrão é `none` e nada renderiza). */
   :where([data-sidebar="sidebar"], .ui-reset) *,
