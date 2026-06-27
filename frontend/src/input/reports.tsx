@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Celula, InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
+import { notify } from '../lib/notify';
 import { valoresUnicos } from './lib';
 import type { ColunaDef } from './columns';
 import { NotesTable } from './notes-table';
@@ -126,6 +127,9 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
       const blob = await InputApi.exportar(
         auditadas.map((n) => n.Numero_Nota), COLUNAS_AUDITORIA.map((c) => c.key));
       baixarBlob(blob, `Auditoria_Prazos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      notify.success('Exportação concluída');
+    } catch (e) {
+      notify.error('Falha na exportação', e instanceof Error ? e.message : String(e));
     } finally {
       setExportando(false);
     }

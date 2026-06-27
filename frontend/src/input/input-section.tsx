@@ -1,5 +1,6 @@
 import React from 'react';
 import type { AbaInput } from './types';
+import { notify } from '../lib/notify';
 import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
 import { Manage } from './manage';
@@ -46,7 +47,8 @@ export function InputSection(): React.JSX.Element {
           Importação inicial pendente: a rede da EDP estava indisponível.{' '}
           <button className="edp-btn sm" onClick={() => { void (async () => {
             const { InputApi } = await import('./api');
-            await InputApi.migrar(); await recarregar();
+            try { await InputApi.migrar(); await recarregar(); notify.success('Importação reprocessada'); }
+            catch (e) { notify.error('Falha na importação', e instanceof Error ? e.message : String(e)); }
           })(); }}>Tentar importar de novo</button>
         </div>
       )}

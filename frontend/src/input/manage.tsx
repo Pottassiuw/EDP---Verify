@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Celula, InputDataset, NotaInput } from './types';
 import { getUsuario, InputApi } from './api';
+import { notify } from '../lib/notify';
 import { parseColagemTsv } from './lib';
 import { COLUNAS, COLUNAS_COLAGEM, ROTULOS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
@@ -58,8 +59,11 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
       await fn();
       await recarregar();
       setMsg({ tipo: 'ok', texto: rotuloOk });
+      notify.success(rotuloOk);
     } catch (e) {
-      setMsg({ tipo: 'erro', texto: e instanceof Error ? e.message : String(e) });
+      const txt = e instanceof Error ? e.message : String(e);
+      setMsg({ tipo: 'erro', texto: txt });
+      notify.error('Falha na operação', txt);
     } finally {
       setSalvando(false);
     }

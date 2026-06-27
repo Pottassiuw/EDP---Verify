@@ -1,6 +1,7 @@
 import React from 'react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
+import { notify } from '../lib/notify';
 import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
@@ -28,6 +29,9 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
         filtrados.map((r) => r.Numero_Nota), COLUNAS.map((c) => c.key));
       const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
       baixarBlob(blob, `export_notas_${stamp}.xlsx`);
+      notify.success('Exportação concluída');
+    } catch (e) {
+      notify.error('Falha na exportação', e instanceof Error ? e.message : String(e));
     } finally {
       setExportando(false);
     }

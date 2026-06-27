@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { InputDataset } from './types';
 import { getUsuario, InputApi, setUsuario } from './api';
+import { notify } from '../lib/notify';
 import { useRecarregarInput } from './use-input-data';
 
 const estiloCampo: React.CSSProperties = { padding: '6px 10px', borderRadius: 7,
@@ -29,7 +30,8 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
 
   async function agir(fn: () => Promise<unknown>, ok: string): Promise<void> {
     setMsg('');
-    try { await fn(); setMsg(ok); } catch (e) { setMsg(`Erro: ${e instanceof Error ? e.message : String(e)}`); }
+    try { await fn(); setMsg(ok); notify.success(ok); }
+    catch (e) { const t = e instanceof Error ? e.message : String(e); setMsg(`Erro: ${t}`); notify.error('Falha na operação', t); }
   }
 
   return (
@@ -40,7 +42,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={nome} onChange={(e) => setNome(e.target.value)} style={estiloCampo} />
           <button className="edp-btn sm" disabled={!nome.trim()}
-                  onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); }}>Salvar</button>
+                  onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); notify.success('Nome atualizado.'); }}>Salvar</button>
         </div>
       </Cartao>
 
