@@ -156,6 +156,13 @@ def marcar_gerar(pedido: MarcarGerarPedido):
 def regerar(pedido: RegerarPedido):
     _garantir_banco()
     try:
+        nota = client.buscar_nota(pedido.id)
+        if nota["id_sap"] and nota["id_sap"] != config.SAP_PENDENTE and not nota["arquivado"]:
+            db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+            db.marcar_gerar(nota["pk"], False)
+            db.registrar_log("acao_usuario", "geracao_ignorada_sap_real", nota["pk"],
+                             {"id_sap": nota["id_sap"]}, True)
+            return {"ok": True, "nota": nota}
         client.definir_sap(pedido.id, config.SAP_PENDENTE)
         nota = client.buscar_nota(pedido.id)
         db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])

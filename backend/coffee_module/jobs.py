@@ -70,23 +70,29 @@ def _rodar_geracao(job_id: str, ids: list) -> None:
         try:
             nota = client.buscar_nota(ident)
             db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+            pk = nota["pk"]
+            sap = nota["id_sap"]
             if nota["arquivado"]:
                 local = nota["fields"].get("local_instalacao")
                 with _LOCK:
                     _JOBS[job_id].setdefault("arquivadas", []).append(
-                        {"pk": nota["pk"], "id_sap": nota["id_sap"],
-                         "local_instalacao": local})
-                db.registrar_log("acao_usuario", "geracao_ignorada_arquivada",
-                                 nota["pk"],
-                                 {"id_sap": nota["id_sap"], "local_instalacao": local},
-                                 True)
-                db.marcar_gerar(nota["pk"], False)
+                        {"pk": pk, "id_sap": sap, "local_instalacao": local})
+                db.registrar_log("acao_usuario", "geracao_ignorada_arquivada", pk,
+                                 {"id_sap": sap, "local_instalacao": local}, True)
+                db.marcar_gerar(pk, False)
+            elif sap and sap != config.SAP_PENDENTE:
+                # Ja tem SAP real: nao re-gera, so tira da fila.
+                db.registrar_log("acao_usuario", "geracao_ignorada_sap_real", pk,
+                                 {"id_sap": sap}, True)
+                db.marcar_gerar(pk, False)
             else:
+                # nao_gerada ou pendente: forca o placeholder (re-)gerando.
                 client.definir_sap(ident, config.SAP_PENDENTE)
                 nota = client.buscar_nota(ident)
                 db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
                 db.marcar_gerar(nota["pk"], False)
-                db.definir_origem(nota["pk"], "avulsa")
+                if db.origem_atual(nota["pk"]) is None:
+                    db.definir_origem(nota["pk"], "avulsa")
         except Exception as exc:  # noqa: BLE001 — uma falha não derruba o lote
             with _LOCK:
                 _JOBS[job_id]["erros"].append({"pk": ident, "msg": str(exc)})

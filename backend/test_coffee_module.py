@@ -758,3 +758,53 @@ def test_marcar_gerar_grava_origem_verificar(coffee_cliente, monkeypatch):
     )
     coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
     assert db.origem_atual(355617) == "verificar"
+
+
+# ---------------------------------------------------------------------------
+# 2026-06-27 — bug 2: gerar nao toca SAP real; bug 3: origem preservada
+# ---------------------------------------------------------------------------
+
+
+def _SAP_REAL():
+    return 17247854
+
+
+def test_geracao_pula_nota_com_sap_real(coffee_tmp, monkeypatch):
+    """Nota nao-arquivada com SAP real nao recebe placeholder; sai da fila."""
+    from coffee_module import client, db, jobs
+    saps = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: saps.append((int(i), sap)) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": _SAP_REAL(), "arquivado": False,
+                   "fields": {"id_sap": _SAP_REAL()}},
+    )
+    db.upsert_nota(355617, _SAP_REAL(), False, {"id_sap": _SAP_REAL()})
+    db.marcar_gerar(355617, True)
+    job_id = jobs.iniciar_geracao([355617])
+    _aguardar_job(jobs, job_id)
+    assert saps == []                              # nao definiu SAP
+    assert db.listar_notas("a_gerar") == []        # saiu da fila
+    ignorada = [l for l in db.listar_logs(tipo="acao_usuario")
+                if l["acao"] == "geracao_ignorada_sap_real"]
+    assert ignorada and ignorada[0]["nota_pk"] == 355617
+
+
+def test_geracao_nao_sobrescreve_origem_verificar(coffee_tmp, monkeypatch):
+    """Nota da Verificar gerada via lote mantem origem='verificar' (-> corrigida)."""
+    from coffee_module import client, db, jobs
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": False,
+                   "fields": {"id_sap": config.SAP_PENDENTE}},
+    )
+    db.upsert_nota(355617, config.SAP_PENDENTE, False, {"id_sap": config.SAP_PENDENTE})
+    db.definir_origem(355617, "verificar")
+    job_id = jobs.iniciar_geracao([355617])
+    _aguardar_job(jobs, job_id)
+    assert db.origem_atual(355617) == "verificar"
+    # re-busca com SAP real -> corrigida (origem != avulsa)
+    classe = db.upsert_nota(355617, _SAP_REAL(), False, {"id_sap": _SAP_REAL()})
+    assert classe == "corrigida"
