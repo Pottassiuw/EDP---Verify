@@ -68,7 +68,7 @@ Novo `GET /coffee/consultar/{id}` — síncrono, para a consulta ao vivo do moda
 
 - `client.buscar_nota(id)` (reusa o existente) + `db.upsert_nota(...)`.
 - Retorna `{ pk, id_sap, local_instalacao, classificacao, arquivado }`.
-- `local_instalacao` sai de `fields.local_instalacao` (em `dados_json`); `classificacao` vem do upsert/listagem.
+- `local_instalacao` **não existe pronto** na resposta da API COFFEE — é composto a partir dos campos decompostos de `fields`: `cidade`(3 díg, zero à esquerda) + `tipo_local_instalacao`(2 letras) + `local_instalacao_numero`(8 díg, zero à esquerda). Ex.: `cidade='718'`, `tipo='ET'`, `numero=26773` → `718ET00026773` (bate com o formato de escrita `local_instalacao/{id}/{local}`). A composição vive em `client.compor_local_instalacao(fields)` e é exposta por `buscar_nota` (chave `local_instalacao`). `classificacao` vem do upsert/listagem.
 - Erro de API COFFEE → 502 com mensagem (a linha do modal mostra o erro).
 
 ### 5. Frontend — modal (`coffee/coffee-gerar-modal.tsx`, novo)

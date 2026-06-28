@@ -73,7 +73,7 @@ def _rodar_geracao(job_id: str, ids: list) -> None:
             pk = nota["pk"]
             sap = nota["id_sap"]
             if nota["arquivado"]:
-                local = nota["fields"].get("local_instalacao")
+                local = nota["local_instalacao"]
                 with _LOCK:
                     _JOBS[job_id].setdefault("arquivadas", []).append(
                         {"pk": pk, "id_sap": sap, "local_instalacao": local})

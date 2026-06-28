@@ -93,7 +93,7 @@ def consultar(id: int):
     return {
         "pk": nota["pk"],
         "id_sap": nota["id_sap"],
-        "local_instalacao": nota["fields"].get("local_instalacao"),
+        "local_instalacao": nota["local_instalacao"],
         "classificacao": classe,
         "arquivado": nota["arquivado"],
     }

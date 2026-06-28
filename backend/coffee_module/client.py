@@ -14,6 +14,22 @@ def _status_de(exc: Exception):
     return getattr(resp, "status_code", None)
 
 
+def compor_local_instalacao(fields: dict):
+    """Compoe o local de instalacao a partir dos campos decompostos da API COFFEE.
+
+    A API nao devolve um campo 'local_instalacao' pronto: ele e cidade(3) +
+    tipo_local_instalacao(2 letras) + local_instalacao_numero(8, zero a esquerda).
+    Ex.: cidade='718', tipo='ET', numero=26773 -> '718ET00026773'.
+    Retorna None se faltar algum componente.
+    """
+    cidade = fields.get("cidade")
+    tipo = fields.get("tipo_local_instalacao")
+    numero = fields.get("local_instalacao_numero")
+    if not (cidade and tipo and numero):
+        return None
+    return f"{str(cidade).zfill(3)}{tipo}{str(numero).zfill(8)}"
+
+
 def buscar_nota(id) -> dict:
     """GET json_all/{id}. Faz o duplo-parse e retorna campos-chave + fields."""
     inicio = time.perf_counter()
@@ -32,6 +48,7 @@ def buscar_nota(id) -> dict:
             "pk": registro.get("pk"),
             "id_sap": fields.get("id_sap"),
             "arquivado": bool(fields.get("arquivado")),
+            "local_instalacao": compor_local_instalacao(fields),
             "fields": fields,
         }
     except Exception as exc:  # noqa: BLE001

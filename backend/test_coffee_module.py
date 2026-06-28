@@ -508,16 +508,32 @@ def test_rota_consultar_retorna_campos(coffee_cliente, monkeypatch):
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
-                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+                   "local_instalacao": "718ET00026773",
+                   "fields": {"id_sap": 17247854}},
     )
     r = coffee_cliente.get("/api/coffee/consultar/355617")
     assert r.status_code == 200
     body = r.json()
     assert body["pk"] == 355617
     assert body["id_sap"] == 17247854
-    assert body["local_instalacao"] == "701CF999"
+    assert body["local_instalacao"] == "718ET00026773"
     assert body["classificacao"] == "gerada"
     assert body["arquivado"] is False
+
+
+def test_compor_local_instalacao():
+    from coffee_module import client
+    # cidade(3) + tipo(2) + numero(8, zero a esquerda) — formato real da API COFFEE
+    assert client.compor_local_instalacao(
+        {"cidade": "718", "tipo_local_instalacao": "ET", "local_instalacao_numero": 26773}
+    ) == "718ET00026773"
+    # cidade com menos de 3 digitos recebe zero a esquerda
+    assert client.compor_local_instalacao(
+        {"cidade": "45", "tipo_local_instalacao": "CF", "local_instalacao_numero": 25416}
+    ) == "045CF00025416"
+    # falta componente -> None
+    assert client.compor_local_instalacao({"cidade": "718", "tipo_local_instalacao": "ET"}) is None
+    assert client.compor_local_instalacao({}) is None
 
 
 def test_rota_consultar_falha_502(coffee_cliente, monkeypatch):
@@ -645,7 +661,8 @@ def test_geracao_nota_arquivada_nao_define_sap(coffee_tmp, monkeypatch):
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": True,
-                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+                   "local_instalacao": "701CF999",
+                   "fields": {"id_sap": 17247854}},
     )
     job_id = jobs.iniciar_geracao([355617])
     j = _aguardar_job(jobs, job_id)
@@ -667,7 +684,8 @@ def test_geracao_nota_arquivada_remove_da_fila(coffee_tmp, monkeypatch):
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": True,
-                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+                   "local_instalacao": "701CF999",
+                   "fields": {"id_sap": 17247854}},
     )
     job_id = jobs.iniciar_geracao([355617])
     _aguardar_job(jobs, job_id)
