@@ -269,6 +269,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                                       color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 12 }} />
                     ) : r.estado === "ok" ? (
                       <span className="edp-mono">{r.localAtual ? maskLocal(r.localAtual) : "—"}</span>
+                    ) : r.estado === "consultando" ? (
+                      <span style={{ color: "var(--text-mute)" }}>…</span>
                     ) : (
                       <span style={{ color: "var(--text-mute)" }}>—</span>
                     )}
