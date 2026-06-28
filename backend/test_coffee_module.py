@@ -52,13 +52,13 @@ def test_upsert_transicao_corrigida_depois_gerada(coffee_tmp):
     from coffee_module import db
     db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
     # SAP atribuído: 10000000 -> real
-    classe = db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
     assert classe == "corrigida"
     nota = db.listar_notas("corrigida")[0]
     assert nota["id_sap_anterior"] == 10000000
-    assert nota["arquivado"] is True
+    assert nota["arquivado"] is False
     # re-busca: transição consumida -> gerada
-    classe = db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
     assert classe == "gerada"
     assert db.listar_notas("corrigida") == []
     assert len(db.listar_notas("gerada")) == 1
@@ -258,7 +258,7 @@ def test_job_busca_lote_com_progresso_e_erros(coffee_tmp, monkeypatch):
     def fake_buscar(id):
         if str(id) == "999":
             raise RuntimeError("timeout")
-        return {"pk": int(id), "id_sap": 17247854, "arquivado": True,
+        return {"pk": int(id), "id_sap": 17247854, "arquivado": False,
                 "fields": {"id_sap": 17247854}}
 
     monkeypatch.setattr(client, "buscar_nota", fake_buscar)
@@ -289,7 +289,7 @@ def coffee_cliente(coffee_tmp, monkeypatch):
     from coffee_module import client
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": True,
+        lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": False,
                     "fields": {"id_sap": 17247854}},
     )
     from main import app
@@ -362,7 +362,7 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: chamadas.append(("sap", i, sap)) or True)
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": True,
+        lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
                    "fields": {"id_sap": 10000000}},
     )
     r = coffee_cliente.post("/api/coffee/regerar",
@@ -431,7 +431,7 @@ def test_a_gerar_preservado_em_refetch(coffee_tmp):
     from coffee_module import db
     db.upsert_nota(1, 10000000, False, {"id_sap": 10000000})
     db.marcar_gerar(1, True)
-    db.upsert_nota(1, 17247854, True, {"id_sap": 17247854})  # re-busca
+    db.upsert_nota(1, 17247854, False, {"id_sap": 17247854})  # re-busca
     assert db.listar_notas("a_gerar")[0]["pk"] == 1
 
 
@@ -610,7 +610,7 @@ def test_rota_gerar_lote_vazio_400(coffee_cliente):
 
 def test_marcar_gerar_remover_exige_justificativa(coffee_cliente):
     from coffee_module import db
-    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
     db.marcar_gerar(355617, True)
     # sem justificativa ao remover → 400
     r = coffee_cliente.post("/api/coffee/marcar-gerar",
