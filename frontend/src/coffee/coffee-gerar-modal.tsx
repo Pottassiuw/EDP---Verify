@@ -23,6 +23,7 @@ interface Row {
   localAtual?: string;          // sem máscara (como veio do backend)
   localEditado?: string;        // mascarado, no input
   salvandoLocal?: boolean;
+  editando?: boolean;
   erro?: string;
 }
 
@@ -91,6 +92,22 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     toast.info("Reconsultando notas…");
   }
 
+  function removerLinha(id: number): void {
+    setRows((rs) => rs.filter((r) => r.id !== id));
+  }
+
+  function iniciarEdicao(row: Row): void {
+    setRows((rs) => rs.map((r) => r.id === row.id
+      ? { ...r, editando: true, localEditado: r.localAtual ? maskLocal(r.localAtual) : "" }
+      : r));
+  }
+
+  function cancelarEdicao(id: number): void {
+    setRows((rs) => rs.map((r) => r.id === id
+      ? { ...r, editando: false, localEditado: r.localAtual ? maskLocal(r.localAtual) : "" }
+      : r));
+  }
+
   function salvarLocal(row: Row): void {
     const local = unmaskLocal(row.localEditado ?? "");
     setRows((rs) => rs.map((r) => r.id === row.id ? { ...r, salvandoLocal: true } : r));
@@ -102,7 +119,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
       .then((res) => { if (!res.ok) throw new Error(`POST /local-instalacao -> ${res.status}`); })
       .then(() => {
         setRows((rs) => rs.map((r) => r.id === row.id
-          ? { ...r, salvandoLocal: false, localAtual: local } : r));
+          ? { ...r, salvandoLocal: false, editando: false, localAtual: local } : r));
         toast.success("Local de instalação atualizado");
       })
       .catch((e: unknown) => {
@@ -198,7 +215,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                 <th style={th}>ID SAP</th>
                 <th style={th}>Local de instalação</th>
                 <th style={th}>Status</th>
-                <th style={th}></th>
+                <th style={th}>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -216,8 +233,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                      : <span className="edp-mono">{r.idSap ?? "—"}</span>}
                   </td>
                   <td style={td}>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <input value={r.localEditado ?? ""} disabled={r.estado !== "ok"}
+                    {r.editando ? (
+                      <input value={r.localEditado ?? ""} autoFocus
                              onChange={(e) => {
                                const m = maskLocal(e.target.value);
                                setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, localEditado: m } : x));
@@ -225,23 +242,52 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                              style={{ width: 150, padding: "4px 8px", borderRadius: 6,
                                       border: "1px solid var(--line)", background: "var(--surface-2)",
                                       color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 12 }} />
-                      {r.estado === "ok" && unmaskLocal(r.localEditado ?? "") !== (r.localAtual ?? "") && (
-                        <button className="edp-btn sm" disabled={r.salvandoLocal}
-                                onClick={() => salvarLocal(r)} style={{ fontSize: 11, padding: "3px 6px" }}>
-                          {r.salvandoLocal ? "…" : "Salvar"}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td style={td}>
-                    {r.classificacao && (
-                      <span style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)", fontWeight: 600 }}>
-                        {r.arquivado ? "arquivada" : r.classificacao}
-                      </span>
+                    ) : r.estado === "ok" ? (
+                      <span className="edp-mono">{r.localAtual ? maskLocal(r.localAtual) : "—"}</span>
+                    ) : (
+                      <span style={{ color: "var(--text-mute)" }}>—</span>
                     )}
                   </td>
                   <td style={td}>
-                    {r.estado === "erro" && <span style={{ color: "var(--red)", fontSize: 11 }}>{r.erro}</span>}
+                    {r.estado === "erro"
+                      ? <span style={{ color: "var(--red)", fontSize: 11 }}>{r.erro}</span>
+                      : r.classificacao
+                        ? <span style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)", fontWeight: 600 }}>
+                            {r.arquivado ? "arquivada" : r.classificacao}
+                          </span>
+                        : null}
+                  </td>
+                  <td style={td}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {r.estado === "ok" && !r.editando && (
+                        <button className="edp-btn sm" onClick={() => iniciarEdicao(r)}
+                                style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
+                          Alterar local
+                        </button>
+                      )}
+                      {r.editando && (
+                        <>
+                          <button className="edp-btn sm"
+                                  disabled={r.salvandoLocal || unmaskLocal(r.localEditado ?? "") === (r.localAtual ?? "")}
+                                  onClick={() => salvarLocal(r)}
+                                  style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
+                            {r.salvandoLocal ? "…" : "Salvar"}
+                          </button>
+                          <button className="edp-btn sm" disabled={r.salvandoLocal}
+                                  onClick={() => cancelarEdicao(r.id)}
+                                  style={{ fontSize: 11, padding: "3px 6px" }}>
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                      {!r.editando && (
+                        <button className="edp-btn sm" onClick={() => removerLinha(r.id)}
+                                title="Remover da lista"
+                                style={{ fontSize: 11, padding: "3px 6px", color: "var(--red)" }}>
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
