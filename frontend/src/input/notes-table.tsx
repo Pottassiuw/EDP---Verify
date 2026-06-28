@@ -2,6 +2,9 @@ import React from "react";
 import type { Celula, NotaInput } from "./types";
 import type { ColunaDef } from "./columns";
 import { compararDatas, formatarNumero } from "./lib";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 
 const ALTURA_LINHA = 32;
 
@@ -24,6 +27,14 @@ interface CelulaEditando {
   numero: number;
   campo: string;
 }
+
+const HEADER_STICKY: React.CSSProperties = {
+  position: "sticky",
+  top: 0,
+  zIndex: 1,
+  background: "var(--surface)",
+  boxShadow: "inset 0 -1px 0 var(--line)",
+};
 
 export function NotesTable(props: NotesTableProps): React.JSX.Element {
   const {
@@ -72,6 +83,12 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
   const inicio = Math.max(0, Math.floor(scrollTop / ALTURA_LINHA) - 5);
   const qtdVisiveis = Math.ceil(altura / ALTURA_LINHA) + 10;
   const fatia = ordenados.slice(inicio, inicio + qtdVisiveis);
+  const espacoTopo = inicio * ALTURA_LINHA;
+  const espacoFundo = Math.max(
+    0,
+    (ordenados.length - inicio - fatia.length) * ALTURA_LINHA,
+  );
+  const totalColunas = colunas.length + (selecionados ? 1 : 0);
 
   function valor(r: NotaInput, campo: string): Celula {
     const pendente = edicoes?.get(r.Numero_Nota);
@@ -82,31 +99,22 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
   function cabecalho(c: ColunaDef): React.JSX.Element {
     const ativa = ordem?.campo === c.key;
     return (
-      <th
+      <TableHead
         key={c.key}
         onClick={() =>
           setOrdem({ campo: c.key, asc: ativa ? !ordem!.asc : true })
         }
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 1,
-          background: "var(--surface)",
-          borderBottom: "1px solid var(--line)",
-          padding: "6px 10px",
-          textAlign: "left",
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: ".05em",
-          color: ativa ? "var(--accent)" : "var(--text-mute)",
+          ...HEADER_STICKY,
           cursor: "pointer",
           whiteSpace: "nowrap",
           minWidth: c.largura ?? 90,
+          color: ativa ? "var(--accent)" : undefined,
         }}
       >
         {c.label}
         {ativa ? (ordem!.asc ? " ↑" : " ↓") : ""}
-      </th>
+      </TableHead>
     );
   }
 
@@ -132,7 +140,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             ? prioridadeOpcoes
             : null;
       return (
-        <td key={c.key} style={{ padding: 0 }}>
+        <TableCell key={c.key} style={{ padding: 0, height: ALTURA_LINHA }}>
           {opcoes ? (
             <select
               autoFocus
@@ -164,11 +172,11 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               }}
             />
           )}
-        </td>
+        </TableCell>
       );
     }
     return (
-      <td
+      <TableCell
         key={c.key}
         title={editavel ? "Duplo clique para editar" : undefined}
         onDoubleClick={
@@ -177,8 +185,6 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             : undefined
         }
         style={{
-          padding: "0 10px",
-          borderBottom: "1px solid var(--line)",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -186,8 +192,8 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
           height: ALTURA_LINHA,
           fontSize: 12.5,
           cursor: editavel ? "cell" : "default",
-          color: alterada ? "var(--accent)" : "var(--text)",
-          fontWeight: alterada ? 600 : 400,
+          color: alterada ? "var(--accent)" : undefined,
+          fontWeight: alterada ? 600 : undefined,
         }}
       >
         {c.numeric
@@ -196,7 +202,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               c.key === "Numero_Nota" || c.key === "ranking" ? 0 : 2,
             )
           : String(v ?? "")}
-      </td>
+      </TableCell>
     );
   }
 
@@ -211,79 +217,60 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
         borderRadius: 8,
       }}
     >
-      <div
-        style={{
-          height: ordenados.length * ALTURA_LINHA + ALTURA_LINHA,
-          position: "relative",
-        }}
-      >
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            position: "absolute",
-            top: 0,
-            transform: `translateY(${inicio * ALTURA_LINHA}px)`,
-          }}
-        >
-          <thead>
-            <tr>
+      <Table style={{ borderCollapse: "collapse" }}>
+        <TableHeader>
+          <TableRow>
+            {selecionados && (
+              <TableHead style={{ ...HEADER_STICKY, width: 36, textAlign: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={
+                    numerosFatia.length > 0 &&
+                    numerosFatia.every((n) => selecionados.has(n))
+                  }
+                  onChange={(e) =>
+                    props.onToggleTodos?.(numerosFatia, e.target.checked)
+                  }
+                />
+              </TableHead>
+            )}
+            {colunas.map(cabecalho)}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {espacoTopo > 0 && (
+            <tr style={{ height: espacoTopo }}>
+              <td colSpan={totalColunas} style={{ padding: 0, border: 0 }} />
+            </tr>
+          )}
+          {fatia.map((r) => (
+            <TableRow
+              key={r.Numero_Nota}
+              style={{
+                background: selecionados?.has(r.Numero_Nota)
+                  ? "var(--accent-tint)"
+                  : undefined,
+              }}
+            >
               {selecionados && (
-                <th
-                  style={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 1,
-                    background: "var(--surface)",
-                    borderBottom: "1px solid var(--line)",
-                    width: 36,
-                  }}
-                >
+                <TableCell style={{ textAlign: "center", height: ALTURA_LINHA }}>
                   <input
                     type="checkbox"
-                    checked={
-                      numerosFatia.length > 0 &&
-                      numerosFatia.every((n) => selecionados.has(n))
-                    }
-                    onChange={(e) =>
-                      props.onToggleTodos?.(numerosFatia, e.target.checked)
-                    }
+                    checked={selecionados.has(r.Numero_Nota)}
+                    onChange={() => onToggleSelecionado?.(r.Numero_Nota)}
                   />
-                </th>
+                </TableCell>
               )}
-              {colunas.map(cabecalho)}
+              {colunas.map((c) => celula(r, c))}
+            </TableRow>
+          ))}
+          {espacoFundo > 0 && (
+            <tr style={{ height: espacoFundo }}>
+              <td colSpan={totalColunas} style={{ padding: 0, border: 0 }} />
             </tr>
-          </thead>
-          <tbody>
-            {fatia.map((r) => (
-              <tr
-                key={r.Numero_Nota}
-                style={{
-                  background: selecionados?.has(r.Numero_Nota)
-                    ? "var(--accent-tint)"
-                    : "transparent",
-                }}
-              >
-                {selecionados && (
-                  <td
-                    style={{
-                      textAlign: "center",
-                      borderBottom: "1px solid var(--line)",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selecionados.has(r.Numero_Nota)}
-                      onChange={() => onToggleSelecionado?.(r.Numero_Nota)}
-                    />
-                  </td>
-                )}
-                {colunas.map((c) => celula(r, c))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }
