@@ -14,6 +14,7 @@ export interface CoffeeJob {
   total: number;
   feitas: number;
   erros: Array<{ pk: number | string; msg: string }>;
+  arquivadas?: Array<{ pk: number; id_sap: number | null; local_instalacao: string | null }>;
   iniciado_em: string;
 }
 

@@ -111,8 +111,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
       });
   }
 
-  function pollJob(jobId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+  function pollJob(jobId: string): Promise<CoffeeJob> {
+    return new Promise<CoffeeJob>((resolve, reject) => {
       let falhas = 0;
       const tick = (): void => {
         fetch(`${BASE}/coffee/job/${jobId}`, { headers: { Accept: "application/json" } })
@@ -120,7 +120,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
           .then((j: CoffeeJob) => {
             falhas = 0;
             setGerando({ rodando: true, feitas: j.feitas, total: j.total });
-            if (j.estado === "concluido") resolve();
+            if (j.estado === "concluido") resolve(j);
             else window.setTimeout(tick, 600);
           })
           .catch((e: unknown) => {
@@ -133,8 +133,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   }
 
   function gerar(): void {
-    const ids = rows.map((r) => r.id);
-    if (ids.length === 0) return;
+    const ids = rows.filter((r) => r.estado === "ok").map((r) => r.id);
+    if (ids.length === 0) { toast.info("Nenhuma nota consultada para gerar"); return; }
     setGerando({ rodando: true, feitas: 0, total: ids.length });
     fetch(`${BASE}/coffee/gerar-lote`, {
       method: "POST",
@@ -143,11 +143,20 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     })
       .then((res) => { if (!res.ok) throw new Error(`POST /gerar-lote -> ${res.status}`); return res.json(); })
       .then((data: { job_id: string }) => pollJob(data.job_id))
-      .then(() => {
+      .then((job: CoffeeJob) => {
         setGerando({ rodando: false, feitas: 0, total: 0 });
-        rows.forEach((r) => consultar(r.id)); // atualiza status pós-geração
+        rows.forEach((r) => consultar(r.id));
         onChanged();
-        toast.success(`${ids.length} nota(s) processada(s)`);
+        const nErros = job.erros?.length ?? 0;
+        const nArq = job.arquivadas?.length ?? 0;
+        if (nErros > 0) {
+          toast.error(`${nErros} de ${ids.length} nota(s) falharam`,
+            { description: nArq ? `${nArq} arquivada(s) pulada(s)` : undefined });
+        } else if (nArq > 0) {
+          toast.success(`${ids.length - nArq} gerada(s), ${nArq} arquivada(s) pulada(s)`);
+        } else {
+          toast.success(`${ids.length} nota(s) processada(s)`);
+        }
       })
       .catch((e: unknown) => {
         setGerando({ rodando: false, feitas: 0, total: 0 });
