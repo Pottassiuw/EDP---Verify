@@ -218,7 +218,8 @@ function AppContent(): React.JSX.Element {
          style={{ height: "100vh", overflow: "hidden", background: "var(--bg)", ...accentStyle } as CssVars}>
       <SidebarProvider style={{ height: "100%", minHeight: 0 }}>
         <AppSidebar section={section} setSection={changeSection}
-                    coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub} />
+                    coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub}
+                    inputSub={inputSub} setInputSub={setInputSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
             {section === "input"         ? <InputSection sub={inputSub} setSub={setInputSub} /> :

@@ -10,6 +10,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { COFFEE_SUBS } from '../coffee/coffee-hub';
+import { INPUT_SUBS } from '../input/input-section';
+import type { AbaInput } from '../input/types';
 
 // ─── Ícones inline ────────────────────────────────────────────────────────────
 const svgBase = {
@@ -46,12 +48,18 @@ interface AppSidebarProps {
   setSection: (s: AppSection) => void;
   coffeeSub: CoffeeSubPage;
   setCoffeeSub: (s: CoffeeSubPage) => void;
+  inputSub: AbaInput;
+  setInputSub: (s: AbaInput) => void;
 }
 
-export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: AppSidebarProps): React.JSX.Element {
+export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, inputSub, setInputSub }: AppSidebarProps): React.JSX.Element {
   function selectSub(sub: CoffeeSubPage): void {
     setCoffeeSub(sub);
     setSection("coffee");
+  }
+  function selectInputSub(sub: AbaInput): void {
+    setInputSub(sub);
+    setSection("input");
   }
 
   return (
@@ -111,14 +119,37 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub }: App
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip="Input"
-                isActive={section === "input"}
-                onClick={() => setSection("input")}
-              >
-                <IconInput />
-                <span>Input</span>
-              </SidebarMenuButton>
+              <Collapsible defaultOpen className="group/input">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Input"
+                    isActive={section === "input"}
+                    onClick={() => setSection("input")}
+                  >
+                    <IconInput />
+                    <span>Input</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/input:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {INPUT_SUBS.map((s) => (
+                      <SidebarMenuSubItem key={s.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "input" && inputSub === s.id}
+                          onClick={() => selectInputSub(s.id)}
+                        >
+                          {s.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
             </SidebarMenuItem>
 
             <SidebarMenuItem>
