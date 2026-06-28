@@ -90,6 +90,7 @@ def consultar(id: int):
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=502,
                             detail="Nao foi possivel consultar a nota na API COFFEE.")
+    db.registrar_log("acao_usuario", "consultar", nota["pk"], {"id": id}, True)
     return {
         "pk": nota["pk"],
         "id_sap": nota["id_sap"],
@@ -113,7 +114,10 @@ def desarquivar(pedido: IdPedido):
 
 @router.post("/local-instalacao")
 def local_instalacao(pedido: LocalPedido):
+    _garantir_banco()
     client.alterar_local(pedido.id, pedido.local)
+    db.registrar_log("acao_usuario", "alterar_local", pedido.id,
+                     {"id": pedido.id, "local": pedido.local}, True)
     return {"ok": True}
 
 

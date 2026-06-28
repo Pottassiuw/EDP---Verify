@@ -279,7 +279,11 @@ def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
     clausulas: list = []
     params: list = []
     if nota_pk is not None:
-        clausulas.append("nota_pk = ?")
+        clausulas.append(
+            "(nota_pk = ? OR (tipo = 'acao_usuario' AND trace_id IN "
+            "(SELECT trace_id FROM coffee_logs WHERE nota_pk = ? AND trace_id IS NOT NULL)))"
+        )
+        params.append(nota_pk)
         params.append(nota_pk)
     if tipo:
         clausulas.append("tipo = ?")

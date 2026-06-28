@@ -924,3 +924,43 @@ def test_job_geracao_propaga_trace_aos_filhos(coffee_cliente, monkeypatch):
     filhos = [l for l in logs if l["acao"] == "buscar_nota"]
     assert lote["trace_id"] is not None
     assert filhos and all(f["trace_id"] == lote["trace_id"] for f in filhos)
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — consultar/alterar_local acao_usuario + filtro nota_pk inclui lote
+# ---------------------------------------------------------------------------
+
+
+def test_consultar_sucesso_loga_acao_usuario(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": False,
+                    "local_instalacao": "718ET00026773", "fields": {"id_sap": 17247854}},
+    )
+    coffee_cliente.get("/api/coffee/consultar/44421")
+    consultas = [l for l in db.listar_logs(tipo="acao_usuario")
+                 if l["acao"] == "consultar" and l["sucesso"]]
+    assert consultas and consultas[0]["nota_pk"] == 44421
+
+
+def test_alterar_local_loga_acao_usuario(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+    coffee_cliente.post("/api/coffee/local-instalacao",
+                        json={"id": 44421, "local": "718ET00026773"})
+    locs = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "alterar_local"]
+    assert locs and locs[0]["nota_pk"] == 44421
+
+
+def test_listar_logs_nota_inclui_cabecalho_de_lote(coffee_tmp):
+    from coffee_module import db
+    db.definir_trace("t1")
+    db.registrar_log("acao_usuario", "geracao_lote", None, {"total": 2}, True)
+    db.registrar_log("api_call", "buscar_nota", 44421, {"id": 44421}, True)
+    db.definir_trace(None)
+    db.registrar_log("acao_usuario", "outra", None, {}, True)
+    acoes = {l["acao"] for l in db.listar_logs(nota_pk=44421)}
+    assert "buscar_nota" in acoes       # filho da nota
+    assert "geracao_lote" in acoes      # cabecalho do trace (nota_pk NULL)
+    assert "outra" not in acoes         # sem trace, nao relacionado
