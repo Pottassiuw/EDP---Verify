@@ -2,6 +2,7 @@ import io
 import json
 import pathlib
 import re
+import uuid
 
 import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -18,6 +19,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+from coffee_module import db as _coffee_db
+
+
+@app.middleware("http")
+async def _trace_middleware(request, call_next):
+    _coffee_db.definir_trace(uuid.uuid4().hex[:12])
+    return await call_next(request)
+
 
 RECORDS = []
 COMPLETED = set()

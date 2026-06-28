@@ -1,4 +1,5 @@
 """Persistência local do módulo COFFEE (SQLite) com snapshot de id_sap."""
+import contextvars
 import datetime
 import getpass
 import json
@@ -18,6 +19,13 @@ def _usuario_atual() -> str:
     except Exception:  # noqa: BLE001
         pass
     return os.environ.get("USERNAME") or os.environ.get("USER") or "desconhecido"
+
+_trace_atual: contextvars.ContextVar = contextvars.ContextVar("coffee_trace", default=None)
+
+
+def definir_trace(trace_id) -> None:
+    """Define o trace_id da operação atual (por requisição / por thread de job)."""
+    _trace_atual.set(trace_id)
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem"]
@@ -66,13 +74,16 @@ def inicializar_banco() -> None:
             nota_pk     INTEGER,
             detalhes    TEXT,
             sucesso     INTEGER NOT NULL,
-            usuario     TEXT
+            usuario     TEXT,
+            trace_id    TEXT
         )
         """
     )
     cols_logs = [r[1] for r in conn.execute("PRAGMA table_info(coffee_logs)").fetchall()]
     if "usuario" not in cols_logs:
         conn.execute("ALTER TABLE coffee_logs ADD COLUMN usuario TEXT")
+    if "trace_id" not in cols_logs:
+        conn.execute("ALTER TABLE coffee_logs ADD COLUMN trace_id TEXT")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_nota_pk ON coffee_logs(nota_pk)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_tipo ON coffee_logs(tipo)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON coffee_logs(timestamp)")
@@ -199,7 +210,7 @@ def nota_existe(pk: int) -> bool:
 # Sistema de logs (coffee_logs)
 # ---------------------------------------------------------------------------
 
-_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso", "usuario"]
+_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso", "usuario", "trace_id"]
 
 
 def registrar_log(tipo: str, acao: str, nota_pk: int | None,
@@ -213,15 +224,15 @@ def registrar_log(tipo: str, acao: str, nota_pk: int | None,
             CREATE TABLE IF NOT EXISTS coffee_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
                 tipo TEXT NOT NULL, acao TEXT NOT NULL, nota_pk INTEGER,
-                detalhes TEXT, sucesso INTEGER NOT NULL, usuario TEXT
+                detalhes TEXT, sucesso INTEGER NOT NULL, usuario TEXT, trace_id TEXT
             )
             """
         )
         conn.execute(
-            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso, usuario) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso, usuario, trace_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (datetime.datetime.now().isoformat(), tipo, acao, nota_pk, det,
-             1 if sucesso else 0, _usuario_atual()),
+             1 if sucesso else 0, _usuario_atual(), _trace_atual.get()),
         )
         conn.commit()
         conn.close()

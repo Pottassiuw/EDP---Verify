@@ -879,3 +879,28 @@ def test_rota_regerar_pula_sap_real(coffee_cliente, monkeypatch):
     ignorada = [l for l in db.listar_logs(tipo="acao_usuario")
                 if l["acao"] == "geracao_ignorada_sap_real" and l["nota_pk"] == 355617]
     assert ignorada
+
+
+# ---------------------------------------------------------------------------
+# Logs git-graph — trace_id
+# ---------------------------------------------------------------------------
+
+
+def test_registrar_log_carimba_trace(coffee_tmp):
+    from coffee_module import db
+    db.definir_trace("abc123")
+    db.registrar_log("acao_usuario", "x", None, {"k": 1}, True)
+    db.definir_trace(None)
+    db.registrar_log("acao_usuario", "y", None, None, True)
+    logs = db.listar_logs()
+    x = next(l for l in logs if l["acao"] == "x")
+    y = next(l for l in logs if l["acao"] == "y")
+    assert x["trace_id"] == "abc123"
+    assert y["trace_id"] is None
+
+
+def test_middleware_carimba_trace_na_requisicao(coffee_cliente):
+    from coffee_module import db
+    coffee_cliente.post("/api/coffee/buscar", json={"ids": ["1"]})
+    lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "busca_lote"]
+    assert lote and lote[0]["trace_id"] is not None
