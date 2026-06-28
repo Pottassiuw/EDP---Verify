@@ -28,7 +28,7 @@ O workflow de gerar/pendentes/corrigidas tem três defeitos:
 
 ## Decisões (confirmadas com o usuário)
 
-- **Gerar** força placeholder `10000000` em notas `nao_gerada` **e** `pendente` (re-forçando geração); **nunca** toca SAP real; **nunca** arquiva.
+- **Gerar** força placeholder `10000000` em notas `nao_gerada` **e** `pendente` (re-forçando geração); **nunca** toca SAP real; a ação de gerar **nunca arquiva**. Nota que já está **arquivada** no COFFEE continua sendo **pulada** (segurança atual mantida).
 - **Consulta ao vivo:** ao adicionar um id no modal, consulta na hora.
 - **Local de instalação:** input com máscara `DDD-DD-resto`, editável por nota; salva via `/coffee/local-instalacao`.
 - **Local só no modal** (não na tabela principal).
@@ -47,10 +47,10 @@ O workflow de gerar/pendentes/corrigidas tem três defeitos:
 `_rodar_geracao` passa a, para cada id:
 
 1. `client.buscar_nota(ident)` + `db.upsert_nota(...)` (consulta ao vivo).
-2. Classifica pelo SAP atual:
+2. **Arquivada** → **pula** (mantém o branch atual: registra em `arquivadas`, log `geracao_ignorada_arquivada`, `db.marcar_gerar(pk, False)`). Gerar nunca arquiva, mas respeita quem já está arquivado.
+3. Não-arquivada, classifica pelo SAP atual:
    - `nao_gerada` (sem SAP) **ou** `pendente` (SAP == 10000000) → `client.definir_sap(ident, SAP_PENDENTE)`, re-consulta, `db.upsert_nota`, `db.marcar_gerar(pk, False)`.
    - SAP real (`corrigida`/`gerada`) → **pula**; registra log `geracao_ignorada_sap_real`; `db.marcar_gerar(pk, False)`.
-3. **Remove** o branch que tratava nota arquivada de forma especial — gerar nunca arquiva nem pula por arquivamento.
 
 `regerar` (rota): aplicar a mesma regra — só `definir_sap(SAP_PENDENTE)` se a nota não tiver SAP real. (A tela usa só o modal agora, mas a rota permanece consistente.)
 
@@ -126,6 +126,7 @@ export interface CoffeeConsulta {
   1. Concluir nota numérica na Verificar → aparece em "A gerar". (bug 1)
   2. Modal: colar ids → consulta ao vivo mostra `id_coffee · id_sap · local · status`.
   3. Gerar com nota de SAP real no lote → ela é pulada ("já gerada"), SAP não muda. (bug 2)
+  3b. Gerar com nota arquivada no lote → pulada (sem definir SAP), sai da fila.
   4. Gerar nota `nao_gerada`/`pendente` → vira/segue pendente com SAP 10000000.
   5. Alterar local (máscara DDD-DD-resto) → Salvar → confirma chamada `/local-instalacao`.
   6. Nota da Verificar gerada → ao receber SAP real, classifica `corrigida`; nota avulsa → `gerada`. (bug 3)
