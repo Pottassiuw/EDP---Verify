@@ -130,18 +130,23 @@ def marcar_gerar(pedido: MarcarGerarPedido):
     if not pedido.a_gerar and not (pedido.justificativa and pedido.justificativa.strip()):
         raise HTTPException(status_code=400,
                             detail="Justificativa obrigatoria para remover da fila.")
-    if pedido.a_gerar and not db.nota_existe(pedido.id):
+    pk = pedido.id
+    if pedido.a_gerar:
+        # Resolve o pk real via API (o id de entrada pode != pk do COFFEE).
         try:
             nota = client.buscar_nota(pedido.id)
-            db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+            pk = nota["pk"]
+            if not db.nota_existe(pk):
+                db.upsert_nota(pk, nota["id_sap"], nota["arquivado"], nota["fields"])
         except Exception:
             db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
                              {"id": pedido.id, "a_gerar": pedido.a_gerar,
                               "justificativa": pedido.justificativa}, False)
             raise HTTPException(status_code=502,
                                 detail="Nao foi possivel buscar a nota na API COFFEE.")
-    db.marcar_gerar(pedido.id, pedido.a_gerar)
-    db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
+        db.definir_origem(pk, "verificar")
+    db.marcar_gerar(pk, pedido.a_gerar)
+    db.registrar_log("acao_usuario", "marcar_gerar", pk,
                      {"id": pedido.id, "a_gerar": pedido.a_gerar,
                       "justificativa": pedido.justificativa}, True)
     return {"ok": True}

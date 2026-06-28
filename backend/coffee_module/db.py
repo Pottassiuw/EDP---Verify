@@ -180,6 +180,14 @@ def definir_origem(pk: int, origem: str) -> None:
     conn.close()
 
 
+def origem_atual(pk: int) -> str | None:
+    """Retorna a origem registrada da nota, ou None."""
+    conn = get_db_connection()
+    row = conn.execute("SELECT origem FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
+    conn.close()
+    return row[0] if row is not None else None
+
+
 def nota_existe(pk: int) -> bool:
     conn = get_db_connection()
     row = conn.execute("SELECT 1 FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
