@@ -1,6 +1,7 @@
 import React from 'react';
 import type { CoffeeLog } from './types';
 import { formatRelativeTime } from './coffee-notas-table';
+import { useSettings } from '../context/settings-context';
 
 const TIMELINE_STYLE = `
   .clog-timeline{flex:1;min-height:0;overflow:auto;padding:0 22px 24px}
@@ -23,6 +24,11 @@ const TIMELINE_STYLE = `
   .clog-detail-row{display:flex;gap:6px;font-size:11.5px;line-height:1.5}
   .clog-detail-key{color:var(--text-mute);min-width:0;flex-shrink:0}
   .clog-detail-val{color:var(--text);word-break:break-all}
+  .clog-root{display:flex;align-items:center;gap:8px;padding:4px 22px 10px;font-weight:700}
+  .clog-group{margin-bottom:4px}
+  .clog-filho{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 0;font-size:12px}
+  .clog-filho:hover{background:var(--surface-2)}
+  .clog-conector{color:var(--text-mute)}
 `;
 
 const TIPO_CLASS: Record<string, string> = {
@@ -140,14 +146,28 @@ function StructuredDetails({ detalhes }: { detalhes: Record<string, unknown> | n
   );
 }
 
+function resumoFilho(l: CoffeeLog): string {
+  const d = l.detalhes ?? {};
+  if (l.tipo === "transicao" && l.acao === "classificar")
+    return `${d.anterior ?? "?"} → ${d.novo ?? "?"}`;
+  const partes: string[] = [];
+  if (d.status_http != null) partes.push(String(d.status_http));
+  if (d.tempo_ms != null) partes.push(`${d.tempo_ms}ms`);
+  return partes.join(" · ");
+}
+
 interface LogTableProps {
   logs: CoffeeLog[];
   loading: boolean;
   compact?: boolean;
   onClickNota?: (pk: number) => void;
+  passo?: string;
+  notaRoot?: number;
 }
 
-export function LogTable({ logs, loading, compact, onClickNota }: LogTableProps): React.JSX.Element {
+export function LogTable({ logs, loading, compact, onClickNota, passo = "", notaRoot }: LogTableProps): React.JSX.Element {
+  const { settings } = useSettings();
+  const dev = settings.devLogs;
   const [expanded, setExpanded] = React.useState<Set<number>>(() => new Set());
 
   function toggle(id: number): void {
@@ -163,7 +183,9 @@ export function LogTable({ logs, loading, compact, onClickNota }: LogTableProps)
     );
   }
 
-  if (logs.length === 0) {
+  const grupos = agruparLogs(logs).filter((g) => grupoNoPasso(g, passo));
+
+  if (grupos.length === 0) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
                     color: "var(--text-mute)", fontSize: 13, textAlign: "center", padding: 32 }}>
@@ -172,50 +194,96 @@ export function LogTable({ logs, loading, compact, onClickNota }: LogTableProps)
     );
   }
 
+  const classe = notaRoot !== undefined ? classeAtual(logs) : undefined;
+
   return (
     <div className={`clog-timeline${compact ? " clog-compact" : ""}`}>
       <style>{TIMELINE_STYLE}</style>
-      {logs.map((l) => {
-        const isExpanded = expanded.has(l.id);
+
+      {notaRoot !== undefined && (
+        <div className="clog-root">
+          <span style={{ fontSize: 14 }}>Nota <span className="edp-mono">#{notaRoot}</span></span>
+          {classe && (
+            <span className="clog-tag" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+              {classe}
+            </span>
+          )}
+        </div>
+      )}
+
+      {grupos.map((g) => {
+        const visiveis = [...g.filhos].reverse().filter((f) => dev || f.tipo === "acao_usuario");
         return (
-          <div key={l.id} className="clog-entry">
-            <div className={`clog-dot ${l.sucesso ? "ok" : "fail"}`} />
-            <div className="clog-card" style={{ cursor: l.detalhes ? "pointer" : undefined }}
-                 onClick={() => { if (l.detalhes) toggle(l.id); }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span className="edp-mono" style={{ fontSize: compact ? 10.5 : 11.5, color: "var(--text-mute)" }}
-                      title={l.timestamp}>
-                  {formatRelativeTime(l.timestamp)}
-                </span>
-                <span className={`clog-tag ${TIPO_CLASS[l.tipo] ?? ""}`}>
-                  {TIPO_LABEL[l.tipo] ?? l.tipo}
-                </span>
-                <span style={{ fontWeight: 600, fontSize: compact ? 12 : 13 }}>{l.acao}</span>
-                {!compact && l.nota_pk !== null && (
-                  <span className="edp-mono" style={{ fontSize: 12, fontWeight: 600,
-                    cursor: onClickNota ? "pointer" : undefined,
-                    color: onClickNota ? "var(--accent)" : "var(--text)",
-                    textDecoration: onClickNota ? "underline" : undefined }}
-                    onClick={(e) => { if (onClickNota && l.nota_pk !== null) { e.stopPropagation(); onClickNota(l.nota_pk); } }}>
-                    #{l.nota_pk}
+          <div key={g.chave} className="clog-group"
+               style={{ marginLeft: notaRoot !== undefined ? 16 : 0 }}>
+            <div className="clog-entry">
+              <div className={`clog-dot ${g.cabecalho.sucesso ? "ok" : "fail"}`} />
+              <div className="clog-card" style={{ cursor: g.cabecalho.detalhes ? "pointer" : undefined }}
+                   onClick={() => { if (g.cabecalho.detalhes) toggle(g.cabecalho.id); }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="edp-mono" style={{ fontSize: compact ? 10.5 : 11.5, color: "var(--text-mute)" }}
+                        title={g.cabecalho.timestamp}>
+                    {formatRelativeTime(g.cabecalho.timestamp)}
                   </span>
-                )}
-                {!compact && l.usuario && (
-                  <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
-                    {l.usuario}
+                  <span className={`clog-tag ${TIPO_CLASS[g.cabecalho.tipo] ?? ""}`}>
+                    {TIPO_LABEL[g.cabecalho.tipo] ?? g.cabecalho.tipo}
                   </span>
+                  <span style={{ fontWeight: 600, fontSize: compact ? 12 : 13 }}>{g.cabecalho.acao}</span>
+                  {g.cabecalho.nota_pk !== null && (
+                    <span className="edp-mono" style={{ fontSize: 12, fontWeight: 600,
+                      cursor: onClickNota ? "pointer" : undefined,
+                      color: onClickNota ? "var(--accent)" : "var(--text)",
+                      textDecoration: onClickNota ? "underline" : undefined }}
+                      onClick={(e) => { if (onClickNota && g.cabecalho.nota_pk !== null) { e.stopPropagation(); onClickNota(g.cabecalho.nota_pk); } }}>
+                      #{g.cabecalho.nota_pk}
+                    </span>
+                  )}
+                  {g.transicaoNova && (
+                    <span className="clog-tag" style={{
+                      background: g.transicaoNova === "corrigida" ? "rgba(31,159,214,0.14)" : "rgba(245,158,11,0.16)",
+                      color: g.transicaoNova === "corrigida" ? "#1f9fd6" : "var(--amber)" }}>
+                      → {g.transicaoNova}
+                    </span>
+                  )}
+                  {g.cabecalho.usuario && (
+                    <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                      {g.cabecalho.usuario}
+                    </span>
+                  )}
+                  {!g.cabecalho.sucesso && (
+                    <span style={{ color: "var(--red)", fontSize: 11, fontWeight: 600 }}>FALHA</span>
+                  )}
+                  {g.cabecalho.detalhes && (
+                    <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-mute)" }}>
+                      {expanded.has(g.cabecalho.id) ? "▲" : "▼"}
+                    </span>
+                  )}
+                </div>
+                {expanded.has(g.cabecalho.id) && <StructuredDetails detalhes={g.cabecalho.detalhes} />}
+              </div>
+            </div>
+
+            {visiveis.map((f, i, arr) => (
+              <div key={f.id} className="clog-filho" style={{ paddingLeft: 30, cursor: f.detalhes ? "pointer" : undefined }}
+                   onClick={() => { if (f.detalhes) toggle(f.id); }}>
+                <span className="clog-conector edp-mono">{i === arr.length - 1 ? "└──" : "├──"}</span>
+                <span className={`clog-tag ${TIPO_CLASS[f.tipo] ?? ""}`}>{TIPO_LABEL[f.tipo] ?? f.tipo}</span>
+                <span className="edp-mono" style={{ fontWeight: 600 }}>{f.acao}</span>
+                {f.nota_pk !== null && (
+                  <span className="edp-mono" style={{ color: "var(--text-mute)" }}>#{f.nota_pk}</span>
                 )}
-                {!l.sucesso && (
-                  <span style={{ color: "var(--red)", fontSize: 11, fontWeight: 600 }}>FALHA</span>
-                )}
-                {l.detalhes && (
+                <span className="edp-mono" style={{ color: "var(--text-mute)" }}>{resumoFilho(f)}</span>
+                {!f.sucesso && <span style={{ color: "var(--red)", fontWeight: 600 }}>✗ FALHA</span>}
+                {f.detalhes && (
                   <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-mute)" }}>
-                    {isExpanded ? "▲" : "▼"}
+                    {expanded.has(f.id) ? "▲" : "▼"}
                   </span>
+                )}
+                {expanded.has(f.id) && (
+                  <div style={{ flexBasis: "100%" }}><StructuredDetails detalhes={f.detalhes} /></div>
                 )}
               </div>
-              {isExpanded && <StructuredDetails detalhes={l.detalhes} />}
-            </div>
+            ))}
           </div>
         );
       })}
