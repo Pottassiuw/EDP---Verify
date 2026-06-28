@@ -499,6 +499,38 @@ def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# 2026-06-27 — consulta sincrona para o modal
+# ---------------------------------------------------------------------------
+
+
+def test_rota_consultar_retorna_campos(coffee_cliente, monkeypatch):
+    from coffee_module import client
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "fields": {"id_sap": 17247854, "local_instalacao": "701CF999"}},
+    )
+    r = coffee_cliente.get("/api/coffee/consultar/355617")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["pk"] == 355617
+    assert body["id_sap"] == 17247854
+    assert body["local_instalacao"] == "701CF999"
+    assert body["classificacao"] == "gerada"
+    assert body["arquivado"] is False
+
+
+def test_rota_consultar_falha_502(coffee_cliente, monkeypatch):
+    from coffee_module import client
+
+    def boom(i):
+        raise RuntimeError("falha API")
+
+    monkeypatch.setattr(client, "buscar_nota", boom)
+    assert coffee_cliente.get("/api/coffee/consultar/999").status_code == 502
+
+
+# ---------------------------------------------------------------------------
 # Sub-projeto 4 — status nao_gerada
 # ---------------------------------------------------------------------------
 

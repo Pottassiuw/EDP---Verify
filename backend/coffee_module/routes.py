@@ -80,6 +80,25 @@ def notas(status: Optional[str] = None):
     return {"registros": db.listar_notas(status)}
 
 
+@router.get("/consultar/{id}")
+def consultar(id: int):
+    _garantir_banco()
+    try:
+        nota = client.buscar_nota(id)
+        classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+    except Exception:
+        db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
+        raise HTTPException(status_code=502,
+                            detail="Nao foi possivel consultar a nota na API COFFEE.")
+    return {
+        "pk": nota["pk"],
+        "id_sap": nota["id_sap"],
+        "local_instalacao": nota["fields"].get("local_instalacao"),
+        "classificacao": classe,
+        "arquivado": nota["arquivado"],
+    }
+
+
 @router.post("/sap")
 def sap(pedido: SapPedido):
     client.definir_sap(pedido.id, pedido.sap)
