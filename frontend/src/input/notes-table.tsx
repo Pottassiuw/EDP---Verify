@@ -194,6 +194,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
           cursor: editavel ? "cell" : "default",
           color: alterada ? "var(--accent)" : undefined,
           fontWeight: alterada ? 600 : undefined,
+          borderBottom: "1px solid var(--line)",
         }}
       >
         {c.numeric
@@ -253,7 +254,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               }}
             >
               {selecionados && (
-                <TableCell style={{ textAlign: "center", height: ALTURA_LINHA }}>
+                <TableCell style={{ textAlign: "center", height: ALTURA_LINHA, borderBottom: "1px solid var(--line)" }}>
                   <input
                     type="checkbox"
                     checked={selecionados.has(r.Numero_Nota)}
