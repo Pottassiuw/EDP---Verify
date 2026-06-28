@@ -50,7 +50,9 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     { rodando: false, feitas: 0, total: 0 });
 
   const consultar = React.useCallback((id: number): void => {
-    setRows((rs) => rs.some((r) => r.id === id) ? rs : [...rs, { id, estado: "consultando" }]);
+    setRows((rs) => rs.some((r) => r.id === id)
+      ? rs.map((r) => r.id === id ? { ...r, estado: "consultando", erro: undefined } : r)
+      : [...rs, { id, estado: "consultando" }]);
     EDPApi.consultarNota(id)
       .then((c) => setRows((rs) => rs.map((r) => r.id === id ? {
         ...r, estado: "ok", pk: c.pk, idSap: c.id_sap, classificacao: c.classificacao,
@@ -110,16 +112,21 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   }
 
   function pollJob(jobId: string): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let falhas = 0;
       const tick = (): void => {
         fetch(`${BASE}/coffee/job/${jobId}`, { headers: { Accept: "application/json" } })
-          .then((r) => r.json())
+          .then((r) => { if (!r.ok) throw new Error(`GET /job -> ${r.status}`); return r.json(); })
           .then((j: CoffeeJob) => {
+            falhas = 0;
             setGerando({ rodando: true, feitas: j.feitas, total: j.total });
             if (j.estado === "concluido") resolve();
             else window.setTimeout(tick, 600);
           })
-          .catch(() => window.setTimeout(tick, 600));
+          .catch((e: unknown) => {
+            if (++falhas >= 10) reject(e instanceof Error ? e : new Error(String(e)));
+            else window.setTimeout(tick, 600);
+          });
       };
       tick();
     });
@@ -164,10 +171,11 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
           <input value={input} onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => { if (e.key === "Enter") adicionar(); }}
                  placeholder="Cole ids (espaço, vírgula ou linha)"
+                 disabled={gerando.rodando}
                  style={{ flex: 1, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--line)",
                           background: "var(--surface-2)", color: "var(--text)", fontSize: 13,
                           fontFamily: "var(--font-mono)" }} />
-          <button className="edp-btn sm" onClick={adicionar} disabled={!input.trim()}
+          <button className="edp-btn sm" onClick={adicionar} disabled={!input.trim() || gerando.rodando}
                   style={{ fontWeight: 600 }}>Adicionar</button>
         </div>
 
