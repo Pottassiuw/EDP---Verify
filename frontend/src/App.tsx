@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
+import type { AbaInput } from './input/types';
 import type { TriageHandoff } from './coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { SettingsProvider, useSettings } from './context/settings-context';
@@ -73,6 +74,7 @@ function AppContent(): React.JSX.Element {
   const [section, setSection] = React.useState<AppSection>("coffee");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
+  const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
 
   const accentStyle: CssVars = {
     "--accent": settings.accent[0],
@@ -219,7 +221,7 @@ function AppContent(): React.JSX.Element {
                     coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
-            {section === "input"         ? <InputSection /> :
+            {section === "input"         ? <InputSection sub={inputSub} setSub={setInputSub} /> :
              section === "configuracoes" ? <ConfiguracoesPage /> :
              <CoffeeHub notes={notes} layout={settings.coffeeLayout}
                         sub={coffeeSub} setSub={setCoffeeSub}

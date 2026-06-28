@@ -8,7 +8,7 @@ import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
 
-const ABAS: { id: AbaInput; rotulo: string }[] = [
+export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
   { id: 'gerenciar', rotulo: 'Gerenciar' },
   { id: 'relatorios', rotulo: 'Relatórios' },
@@ -16,8 +16,12 @@ const ABAS: { id: AbaInput; rotulo: string }[] = [
   { id: 'config', rotulo: 'Configurações' },
 ];
 
-export function InputSection(): React.JSX.Element {
-  const [aba, setAba] = React.useState<AbaInput>('visao');
+interface InputSectionProps {
+  sub: AbaInput;
+  setSub: (s: AbaInput) => void;
+}
+
+export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
   const { desatualizado, limpar } = useAvisoSincronizacao(dados?.meta.ultima_alteracao);
@@ -29,8 +33,8 @@ export function InputSection(): React.JSX.Element {
                     padding: '0 22px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
         <strong style={{ fontSize: 14 }}>Gestão de Notas (INPUT)</strong>
         <div className="edp-seg">
-          {ABAS.map((a) => (
-            <button key={a.id} className={aba === a.id ? 'on' : ''} onClick={() => setAba(a.id)}>{a.rotulo}</button>
+          {INPUT_SUBS.map((a) => (
+            <button key={a.id} className={sub === a.id ? 'on' : ''} onClick={() => setSub(a.id)}>{a.rotulo}</button>
           ))}
         </div>
       </div>
@@ -65,11 +69,11 @@ export function InputSection(): React.JSX.Element {
         </div>
       )}
 
-      {dados && aba === 'visao' && <Overview dados={dados} />}
-      {dados && aba === 'gerenciar' && <Manage dados={dados} />}
-      {dados && aba === 'relatorios' && <Reports dados={dados} />}
-      {dados && aba === 'logs' && <Logs />}
-      {dados && aba === 'config' && <Settings dados={dados} />}
+      {dados && sub === 'visao' && <Overview dados={dados} />}
+      {dados && sub === 'gerenciar' && <Manage dados={dados} />}
+      {dados && sub === 'relatorios' && <Reports dados={dados} />}
+      {dados && sub === 'logs' && <Logs />}
+      {dados && sub === 'config' && <Settings dados={dados} />}
     </div>
   );
 }
