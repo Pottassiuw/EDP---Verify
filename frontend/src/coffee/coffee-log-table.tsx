@@ -60,6 +60,70 @@ function formatDetailValue(key: string, val: unknown): string {
   return String(val ?? "—");
 }
 
+export interface Grupo {
+  chave: string;
+  cabecalho: CoffeeLog;
+  filhos: CoffeeLog[];
+  transicaoNova?: "corrigida" | "pendente";
+}
+
+const ACOES_GERAR = new Set([
+  "geracao_lote", "regerar", "geracao_ignorada_sap_real", "geracao_ignorada_arquivada",
+]);
+const ACOES_CONSULTAR = new Set(["busca_lote", "consultar"]);
+
+export const PASSOS = [
+  { value: "", label: "Todos" },
+  { value: "gerar", label: "Gerar" },
+  { value: "consultar", label: "Consultar" },
+  { value: "alterar_local", label: "Alterar local" },
+  { value: "corrigidas", label: "Corrigidas" },
+  { value: "pendentes", label: "Pendentes" },
+] as const;
+
+// Agrupa por trace_id. Cabeçalho = a acao_usuario de lote (nota_pk NULL) se houver,
+// senão a 1ª acao_usuario, senão o 1º log. Demais acao_usuario viram filhos.
+export function agruparLogs(logs: CoffeeLog[]): Grupo[] {
+  const porTrace = new Map<string, CoffeeLog[]>();
+  const ordem: string[] = [];
+  for (const l of logs) {
+    const chave = l.trace_id ?? `__${l.id}`;
+    if (!porTrace.has(chave)) { porTrace.set(chave, []); ordem.push(chave); }
+    porTrace.get(chave)!.push(l);
+  }
+  return ordem.map((chave) => {
+    const itens = porTrace.get(chave)!;
+    const acoes = itens.filter((l) => l.tipo === "acao_usuario");
+    const cabecalho = acoes.find((l) => l.nota_pk === null) ?? acoes[0] ?? itens[0];
+    const filhos = itens.filter((l) => l !== cabecalho);
+    const trans = itens.find(
+      (l) => l.tipo === "transicao" && l.acao === "classificar" &&
+             (l.detalhes?.novo === "corrigida" || l.detalhes?.novo === "pendente"),
+    );
+    return {
+      chave, cabecalho, filhos,
+      transicaoNova: trans?.detalhes?.novo as "corrigida" | "pendente" | undefined,
+    };
+  });
+}
+
+// Classificação atual da nota = o classificar mais recente nos logs (que vêm DESC).
+export function classeAtual(logs: CoffeeLog[]): string | undefined {
+  const t = logs.find((l) => l.tipo === "transicao" && l.acao === "classificar");
+  return t?.detalhes?.novo as string | undefined;
+}
+
+export function grupoNoPasso(g: Grupo, passo: string): boolean {
+  switch (passo) {
+    case "gerar": return ACOES_GERAR.has(g.cabecalho.acao);
+    case "consultar": return ACOES_CONSULTAR.has(g.cabecalho.acao);
+    case "alterar_local": return g.cabecalho.acao === "alterar_local";
+    case "corrigidas": return g.transicaoNova === "corrigida";
+    case "pendentes": return g.transicaoNova === "pendente";
+    default: return true; // "" (Todos) e qualquer valor desconhecido
+  }
+}
+
 function StructuredDetails({ detalhes }: { detalhes: Record<string, unknown> | null }): React.JSX.Element | null {
   if (!detalhes) return null;
   const entries = Object.entries(detalhes).filter(([, v]) => v !== null && v !== undefined);
