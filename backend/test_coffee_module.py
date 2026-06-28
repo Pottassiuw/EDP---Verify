@@ -904,3 +904,20 @@ def test_middleware_carimba_trace_na_requisicao(coffee_cliente):
     coffee_cliente.post("/api/coffee/buscar", json={"ids": ["1"]})
     lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "busca_lote"]
     assert lote and lote[0]["trace_id"] is not None
+
+
+def test_job_geracao_propaga_trace_aos_filhos(coffee_cliente, monkeypatch):
+    from coffee_module import client, db, jobs
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda id: {"pk": int(id), "id_sap": 10000000, "arquivado": False,
+                    "local_instalacao": None, "fields": {"id_sap": 10000000}},
+    )
+    monkeypatch.setattr(client, "definir_sap", lambda i, s: True)
+    r = coffee_cliente.post("/api/coffee/gerar-lote", json={"ids": [355617]})
+    _aguardar_job(jobs, r.json()["job_id"])
+    logs = db.listar_logs()
+    lote = next(l for l in logs if l["acao"] == "geracao_lote")
+    filhos = [l for l in logs if l["acao"] == "buscar_nota"]
+    assert lote["trace_id"] is not None
+    assert filhos and all(f["trace_id"] == lote["trace_id"] for f in filhos)

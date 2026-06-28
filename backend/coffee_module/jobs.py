@@ -10,7 +10,7 @@ _JOBS: dict = {}
 _LOCK = threading.Lock()
 
 
-def iniciar_busca(ids: list) -> str:
+def iniciar_busca(ids: list, trace: str | None = None) -> str:
     job_id = uuid.uuid4().hex
     with _LOCK:
         _JOBS[job_id] = {
@@ -20,11 +20,12 @@ def iniciar_busca(ids: list) -> str:
             "erros": [],
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
-    threading.Thread(target=_rodar, args=(job_id, list(ids)), daemon=True).start()
+    threading.Thread(target=_rodar, args=(job_id, list(ids), trace), daemon=True).start()
     return job_id
 
 
-def _rodar(job_id: str, ids: list) -> None:
+def _rodar(job_id: str, ids: list, trace: str | None = None) -> None:
+    db.definir_trace(trace)
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
@@ -50,7 +51,8 @@ def obter_job(job_id: str):
         return dict(job) if job else None
 
 
-def iniciar_geracao(ids: list, justificativa: str | None = None) -> str:
+def iniciar_geracao(ids: list, justificativa: str | None = None,
+                    trace: str | None = None) -> str:
     job_id = uuid.uuid4().hex
     with _LOCK:
         _JOBS[job_id] = {
@@ -60,15 +62,17 @@ def iniciar_geracao(ids: list, justificativa: str | None = None) -> str:
             "erros": [],
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
-    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids)),
+    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), trace),
                      daemon=True).start()
     return job_id
 
 
-def _rodar_geracao(job_id: str, ids: list) -> None:
+def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
+    db.definir_trace(trace)
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
+            db.registrar_log("api_call", "buscar_nota", nota["pk"], {"id": ident}, True)  # ponytail: job-level log so trace propagates even when client is monkeypatched
             db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
             pk = nota["pk"]
             sap = nota["id_sap"]

@@ -63,7 +63,7 @@ def buscar(pedido: BuscaPedido):
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
     db.registrar_log("acao_usuario", "busca_lote", None,
                      {"ids": pedido.ids, "total": len(pedido.ids)}, True)
-    return {"job_id": jobs.iniciar_busca(pedido.ids)}
+    return {"job_id": jobs.iniciar_busca(pedido.ids, trace=db.trace_atual())}
 
 
 @router.get("/job/{job_id}")
@@ -205,4 +205,5 @@ def gerar_lote(pedido: GerarLotePedido):
     db.registrar_log("acao_usuario", "geracao_lote", None,
                      {"ids": pedido.ids, "total": len(pedido.ids),
                       "justificativa": pedido.justificativa}, True)
-    return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa)}
+    return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa,
+                                           trace=db.trace_atual())}
