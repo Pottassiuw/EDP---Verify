@@ -7,6 +7,7 @@ export interface Settings {
   accent: Accent;
   showKpis: boolean;
   coffeeLayout: CoffeeLayout;
+  devLogs: boolean;
 }
 
 export interface SettingsContextValue {
@@ -21,6 +22,7 @@ const DEFAULTS: Settings = {
   accent: ["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
   showKpis: true,
   coffeeLayout: "composer",
+  devLogs: false,
 };
 
 const STORAGE_KEY = "edp_settings";

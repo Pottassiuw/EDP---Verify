@@ -122,6 +122,24 @@ export function ConfiguracoesPage(): React.JSX.Element {
               </Row>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Logs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <label htmlFor="dev-logs" className="cursor-pointer text-sm text-muted-foreground">
+                  Habilitar logs de Dev
+                </label>
+                <Switch
+                  id="dev-logs"
+                  checked={settings.devLogs}
+                  onCheckedChange={(v) => setSetting("devLogs", v)}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

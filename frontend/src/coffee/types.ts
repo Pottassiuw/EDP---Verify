@@ -27,6 +27,7 @@ export interface CoffeeLog {
   detalhes: Record<string, unknown> | null;
   sucesso: boolean;
   usuario: string | null;
+  trace_id: string | null;
 }
 
 export interface CoffeeConsulta {
