@@ -910,8 +910,11 @@ def test_job_geracao_propaga_trace_aos_filhos(coffee_cliente, monkeypatch):
     from coffee_module import client, db, jobs
     monkeypatch.setattr(
         client, "buscar_nota",
-        lambda id: {"pk": int(id), "id_sap": 10000000, "arquivado": False,
-                    "local_instalacao": None, "fields": {"id_sap": 10000000}},
+        lambda id: (
+            db.registrar_log("api_call", "buscar_nota", int(id), {"id": id}, True),
+            {"pk": int(id), "id_sap": 10000000, "arquivado": False,
+             "local_instalacao": None, "fields": {"id_sap": 10000000}},
+        )[-1],
     )
     monkeypatch.setattr(client, "definir_sap", lambda i, s: True)
     r = coffee_cliente.post("/api/coffee/gerar-lote", json={"ids": [355617]})

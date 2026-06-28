@@ -72,7 +72,6 @@ def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
-            db.registrar_log("api_call", "buscar_nota", nota["pk"], {"id": ident}, True)  # ponytail: job-level log so trace propagates even when client is monkeypatched
             db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
             pk = nota["pk"]
             sap = nota["id_sap"]
