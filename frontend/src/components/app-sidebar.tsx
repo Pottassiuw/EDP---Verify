@@ -10,6 +10,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { COFFEE_SUBS } from '../coffee/coffee-hub';
+// ponytail: import estático de INPUT_SUBS puxa input-section pro bundle do sidebar
+// (mesmo tradeoff do COFFEE_SUBS acima); extrair input/subs.ts se o bundle pesar.
 import { INPUT_SUBS } from '../input/input-section';
 import type { AbaInput } from '../input/types';
 
