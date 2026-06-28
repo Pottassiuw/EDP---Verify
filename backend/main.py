@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from coffee_module import db as _coffee_db
+
 app = FastAPI(title="De olho no Problema")
 
 app.add_middleware(
@@ -19,8 +21,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
-
-from coffee_module import db as _coffee_db
 
 
 @app.middleware("http")

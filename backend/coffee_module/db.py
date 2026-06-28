@@ -27,6 +27,11 @@ def definir_trace(trace_id) -> None:
     """Define o trace_id da operação atual (por requisição / por thread de job)."""
     _trace_atual.set(trace_id)
 
+
+def trace_atual():
+    return _trace_atual.get()
+
+
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem"]
 
