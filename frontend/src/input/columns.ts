@@ -12,6 +12,7 @@ export interface ColunaDef {
 export const COLUNAS: ColunaDef[] = [
   { key: 'Regional', label: 'Regional' },
   { key: 'Numero_Nota', label: 'Nº Nota (ID)', numeric: true, largura: 110 },
+  { key: 'Ordem', label: 'Ordem SAP', largura: 120 },
   { key: 'Status_Obra', label: 'Status Obra', editavel: true },
   { key: 'Conjunto', label: 'Conjunto', editavel: true },
   { key: 'Circuito', label: 'Circuito', editavel: true },
@@ -32,7 +33,6 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'Export_status', label: 'Export Status' },
   { key: 'Status_Final', label: 'Status Final' },
   { key: 'Status_Anterior', label: 'Status Anterior' },
-  { key: 'Ordem', label: 'Ordem' },
   { key: 'Status_Usuário_Ordem', label: 'Status Usuário Ordem' },
   { key: 'Status_Sistema', label: 'Status Sistema' },
   { key: 'Total_planejado_ordem', label: 'Total Planejado Ordem (R$)', numeric: true },
