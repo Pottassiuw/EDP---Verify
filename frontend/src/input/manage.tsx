@@ -9,6 +9,15 @@ import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
 import { IdentityModal } from './identity-modal';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 type Modo = 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 const MODOS: { id: Modo; rotulo: string }[] = [
@@ -155,24 +164,29 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   });
 
   const comSelecao = modo === 'lote' || modo === 'exclusao';
-  const estiloCampo: React.CSSProperties = { padding: '7px 10px', borderRadius: 7,
-    border: '1px solid var(--line)', background: 'var(--bg-2)', color: 'var(--text)' };
+
+  function trocarModo(m: Modo): void {
+    setModo(m); setMsg(null); setSelecionados(new Set());
+  }
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div className="edp-seg">
+        <ToggleGroup type="single" value={modo} variant="outline"
+                     onValueChange={(v) => { if (v) trocarModo(v as Modo); }}>
           {MODOS.map((m) => (
-            <button key={m.id} className={modo === m.id ? 'on' : ''}
-                    onClick={() => { setModo(m.id); setMsg(null); setSelecionados(new Set()); }}>{m.rotulo}</button>
+            <ToggleGroupItem key={m.id} value={m.id}>{m.rotulo}</ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
         <div style={{ flex: 1 }} />
-        <button className="edp-btn ghost sm" disabled={salvando} onClick={desfazer}>↩ Reverter último salvamento</button>
+        <Button variant="ghost" size="sm" disabled={salvando} onClick={desfazer}>
+          ↩ Reverter último salvamento
+        </Button>
       </div>
 
       {msg && (
-        <div style={{ padding: '8px 12px', borderRadius: 8, fontSize: 13,
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13,
+                      borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--amber)'}`,
                       background: msg.tipo === 'ok' ? 'var(--tint-green)' : 'var(--tint-amber)' }}>
           {msg.texto}
         </div>
@@ -180,110 +194,152 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
 
       {(modo === 'rapida' || comSelecao) && (
         <React.Fragment>
-          <Filters registros={dados.registros} registrosFiltrados={filtrados}
-                   estado={estadoFiltros} setEstado={setEstadoFiltros} />
+          <Card>
+            <CardContent className="pt-6">
+              <Filters registros={dados.registros} registrosFiltrados={filtrados}
+                       estado={estadoFiltros} setEstado={setEstadoFiltros} />
+            </CardContent>
+          </Card>
 
           {modo === 'lote' && (
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <select value={loteStatus} onChange={(e) => setLoteStatus(e.target.value)} style={estiloCampo}>
-                <option value="">Status: (manter atual)</option>
-                {dados.meta.status_opcoes.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <select value={lotePrioridade} onChange={(e) => setLotePrioridade(e.target.value)} style={estiloCampo}>
-                <option value="">Prioridade: (manter atual)</option>
-                {dados.meta.prioridade_opcoes.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
-                     onChange={(e) => setLoteMes(e.target.value)} style={estiloCampo} />
-              <button className="edp-btn sm" disabled={salvando} onClick={aplicarLote}
-                      style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' }}>
-                Aplicar e salvar lote ({selecionados.size})
-              </button>
-            </div>
+            <Card>
+              <CardHeader><CardTitle>Edição em lote</CardTitle></CardHeader>
+              <CardContent>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Select value={loteStatus || undefined}
+                          onValueChange={(v) => setLoteStatus(v === '__manter' ? '' : v)}>
+                    <SelectTrigger style={{ width: 220 }}>
+                      <SelectValue placeholder="Status: (manter atual)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__manter">Status: (manter atual)</SelectItem>
+                      {dados.meta.status_opcoes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={lotePrioridade || undefined}
+                          onValueChange={(v) => setLotePrioridade(v === '__manter' ? '' : v)}>
+                    <SelectTrigger style={{ width: 220 }}>
+                      <SelectValue placeholder="Prioridade: (manter atual)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__manter">Prioridade: (manter atual)</SelectItem>
+                      {dados.meta.prioridade_opcoes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
+                         onChange={(e) => setLoteMes(e.target.value)} style={{ width: 240 }} />
+                  <Button disabled={salvando} onClick={aplicarLote}>
+                    Aplicar e salvar lote ({selecionados.size})
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
           {modo === 'exclusao' && (
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-                Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
-              </span>
-              <button className="edp-btn sm" disabled={salvando} onClick={excluirSelecionadas}>🗑 Excluir selecionadas</button>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+                    Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
+                  </span>
+                  <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
+                    🗑 Excluir selecionadas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
           {modo === 'rapida' && (
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-                Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
-              </span>
-              <button className="edp-btn sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}
-                      style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' }}>
-                💾 Salvar edições
-              </button>
-              <button className="edp-btn ghost sm" disabled={edicoes.size === 0}
-                      onClick={() => setEdicoes(new Map())}>❌ Descartar</button>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+                    Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
+                  </span>
+                  <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
+                    💾 Salvar edições
+                  </Button>
+                  <Button variant="ghost" size="sm" disabled={edicoes.size === 0}
+                          onClick={() => setEdicoes(new Map())}>❌ Descartar</Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          <NotesTable registros={filtrados} colunas={COLUNAS}
-                      selecionados={comSelecao ? selecionados : undefined}
-                      onToggleSelecionado={comSelecao ? toggleSelecionado : undefined}
-                      onToggleTodos={comSelecao ? toggleTodos : undefined}
-                      edicoes={modo === 'rapida' ? edicoes : undefined}
-                      onEditar={modo === 'rapida' ? onEditar : undefined}
-                      statusOpcoes={dados.meta.status_opcoes}
-                      prioridadeOpcoes={dados.meta.prioridade_opcoes} />
+          <Card>
+            <CardContent className="pt-6">
+              <NotesTable registros={filtrados} colunas={COLUNAS}
+                          selecionados={comSelecao ? selecionados : undefined}
+                          onToggleSelecionado={comSelecao ? toggleSelecionado : undefined}
+                          onToggleTodos={comSelecao ? toggleTodos : undefined}
+                          edicoes={modo === 'rapida' ? edicoes : undefined}
+                          onEditar={modo === 'rapida' ? onEditar : undefined}
+                          statusOpcoes={dados.meta.status_opcoes}
+                          prioridadeOpcoes={dados.meta.prioridade_opcoes} />
+            </CardContent>
+          </Card>
         </React.Fragment>
       )}
 
       {modo === 'cadastro' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 320px))', gap: 10 }}>
-          {Object.keys(NOTA_VAZIA).map((campo) => (
-            <label key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
-              <span style={{ color: 'var(--text-dim)' }}>{ROTULOS[campo] ?? campo}</span>
-              {campo === 'Status_Nota' || campo === 'Prioridade_Nota' ? (
-                <select value={novaNota[campo]} style={estiloCampo}
-                        onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })}>
-                  {(campo === 'Status_Nota' ? dados.meta.status_opcoes : dados.meta.prioridade_opcoes)
-                    .map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ) : (
-                <input value={novaNota[campo]} style={estiloCampo}
-                       onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })} />
-              )}
-            </label>
-          ))}
-          <div style={{ alignSelf: 'end' }}>
-            <button className="edp-btn sm" disabled={salvando} onClick={cadastrar}
-                    style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' }}>
-              💾 Salvar nova nota
-            </button>
-          </div>
-        </div>
+        <Card>
+          <CardHeader><CardTitle>Cadastrar nota</CardTitle></CardHeader>
+          <CardContent>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 14 }}>
+              {Object.keys(NOTA_VAZIA).map((campo) => (
+                <div key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Label htmlFor={`nova-${campo}`} className="text-muted-foreground">
+                    {ROTULOS[campo] ?? campo}
+                  </Label>
+                  {campo === 'Status_Nota' || campo === 'Prioridade_Nota' ? (
+                    <Select value={novaNota[campo]}
+                            onValueChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}>
+                      <SelectTrigger id={`nova-${campo}`}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(campo === 'Status_Nota' ? dados.meta.status_opcoes : dados.meta.prioridade_opcoes)
+                          .map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input id={`nova-${campo}`} value={novaNota[campo]}
+                           onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <Button disabled={salvando} onClick={cadastrar}>💾 Salvar nova nota</Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {modo === 'colagem' && (
-        <React.Fragment>
-          <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0 }}>
-            Cole aqui as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
-            {COLUNAS_COLAGEM.map((c) => ROTULOS[c] ?? c).join(' · ')}
-          </p>
-          <textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
-                    onChange={(e) => setTextoColagem(e.target.value)}
-                    style={{ ...estiloCampo, fontFamily: 'var(--font-mono)', fontSize: 12 }} />
-          {previewColagem.length > 0 && (
-            <React.Fragment>
-              <span style={{ fontSize: 12.5 }}>{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
-              <NotesTable colunas={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
-                          registros={previewColagem.map((r, i) => ({ ...r, Numero_Nota: Number(r.Numero_Nota) || -(i + 1) })) as NotaInput[]}
-                          altura={240} />
-              <div>
-                <button className="edp-btn sm" disabled={salvando} onClick={salvarColagem}
-                        style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' }}>
-                  💾 Salvar lote ({previewColagem.length})
-                </button>
+        <Card>
+          <CardHeader><CardTitle>Colar planilha</CardTitle></CardHeader>
+          <CardContent>
+            <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 10px' }}>
+              Cole aqui as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
+              {COLUNAS_COLAGEM.map((c) => ROTULOS[c] ?? c).join(' · ')}
+            </p>
+            <Textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
+                      onChange={(e) => setTextoColagem(e.target.value)}
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }} />
+            {previewColagem.length > 0 && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <span style={{ fontSize: 12.5 }}>{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
+                <NotesTable colunas={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
+                            registros={previewColagem.map((r, i) => ({ ...r, Numero_Nota: Number(r.Numero_Nota) || -(i + 1) })) as NotaInput[]}
+                            altura={240} />
+                <div>
+                  <Button disabled={salvando} onClick={salvarColagem}>
+                    💾 Salvar lote ({previewColagem.length})
+                  </Button>
+                </div>
               </div>
-            </React.Fragment>
-          )}
-        </React.Fragment>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <IdentityModal aberto={acaoPendente !== null}
