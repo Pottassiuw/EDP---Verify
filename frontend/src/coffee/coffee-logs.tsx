@@ -1,13 +1,12 @@
 import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
-import { LogTable } from './coffee-log-table';
+import { LogTable, PASSOS } from './coffee-log-table';
 import { BASE as API_BASE } from '../api';
-import { TIPOS } from './coffee-log-drawer';
 
 const LIMITES = [50, 100, 500] as const;
 
 export function CoffeeLogs(): React.JSX.Element {
-  const [tipo, setTipo] = React.useState("");
+  const [passo, setPasso] = React.useState("");
   const [notaPk, setNotaPk] = React.useState("");
   const [limit, setLimit] = React.useState<number>(100);
   const [usuario, setUsuario] = React.useState("");
@@ -21,9 +20,9 @@ export function CoffeeLogs(): React.JSX.Element {
   }, []);
 
   const parsedPk = notaPk.trim() ? Number(notaPk) : undefined;
+  const pkValido = Number.isFinite(parsedPk) ? parsedPk : undefined;
   const { logs, loading } = useCoffeeLogs({
-    tipo: tipo || undefined,
-    nota_pk: Number.isFinite(parsedPk) ? parsedPk : undefined,
+    nota_pk: pkValido,
     usuario: usuario || undefined,
     limit,
   });
@@ -33,10 +32,10 @@ export function CoffeeLogs(): React.JSX.Element {
       <div style={{ flexShrink: 0, padding: "14px 22px 10px", display: "flex", alignItems: "center",
                     gap: 14, flexWrap: "wrap" }}>
         <div className="edp-seg">
-          {TIPOS.map((t) => (
-            <button key={t.value} className={tipo === t.value ? "on" : ""}
-                    onClick={() => setTipo(t.value)}>
-              {t.label}
+          {PASSOS.map((p) => (
+            <button key={p.value} className={passo === p.value ? "on" : ""}
+                    onClick={() => setPasso(p.value)}>
+              {p.label}
             </button>
           ))}
         </div>
@@ -71,7 +70,7 @@ export function CoffeeLogs(): React.JSX.Element {
         </div>
       </div>
 
-      <LogTable logs={logs} loading={loading}
+      <LogTable logs={logs} loading={loading} passo={passo} notaRoot={pkValido}
                 onClickNota={(pk) => setNotaPk(String(pk))} />
     </div>
   );

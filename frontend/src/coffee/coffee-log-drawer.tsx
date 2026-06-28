@@ -1,13 +1,6 @@
 import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
-import { LogTable } from './coffee-log-table';
-
-export const TIPOS = [
-  { value: "", label: "Todos" },
-  { value: "api_call", label: "API" },
-  { value: "transicao", label: "Transicao" },
-  { value: "acao_usuario", label: "Usuario" },
-] as const;
+import { LogTable, PASSOS } from './coffee-log-table';
 
 interface LogDrawerProps {
   notaPk: number;
@@ -16,10 +9,9 @@ interface LogDrawerProps {
 }
 
 export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.Element | null {
-  const [tipo, setTipo] = React.useState("");
+  const [passo, setPasso] = React.useState("");
   const { logs, loading, refresh } = useCoffeeLogs({
     nota_pk: notaPk,
-    tipo: tipo || undefined,
     limit: 50,
   });
 
@@ -62,20 +54,20 @@ export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.
           </button>
         </div>
 
-        {/* filtro tipo */}
+        {/* filtro de passo */}
         <div style={{ flexShrink: 0, padding: "10px 16px 6px", display: "flex", gap: 0 }}>
           <div className="edp-seg" style={{ fontSize: 11 }}>
-            {TIPOS.map((t) => (
-              <button key={t.value} className={tipo === t.value ? "on" : ""}
-                      onClick={() => setTipo(t.value)}>
-                {t.label}
+            {PASSOS.map((p) => (
+              <button key={p.value} className={passo === p.value ? "on" : ""}
+                      onClick={() => setPasso(p.value)}>
+                {p.label}
               </button>
             ))}
           </div>
         </div>
 
         {/* table */}
-        <LogTable logs={logs} loading={loading} compact />
+        <LogTable logs={logs} loading={loading} compact passo={passo} />
       </div>
     </>
   );
