@@ -27,3 +27,11 @@ export interface CoffeeLog {
   sucesso: boolean;
   usuario: string | null;
 }
+
+export interface CoffeeConsulta {
+  pk: number;
+  id_sap: number | null;
+  local_instalacao: string | null;
+  classificacao: string;
+  arquivado: boolean | null;
+}

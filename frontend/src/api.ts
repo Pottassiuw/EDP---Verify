@@ -142,4 +142,10 @@ export async function marcarGerar(id: string, aGerar: boolean): Promise<void> {
   if (!res.ok) throw new Error("POST /marcar-gerar -> " + res.status);
 }
 
-export const EDPApi = { BASE, fetchData, upload, toggleComplete, markDuplicate, marcarGerar, coffeeUrl, mapsUrl, openCoffee };
+export async function consultarNota(id: number): Promise<import('./coffee/types').CoffeeConsulta> {
+  const res = await fetch(BASE + "/coffee/consultar/" + id, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error("GET /consultar -> " + res.status);
+  return res.json();
+}
+
+export const EDPApi = { BASE, fetchData, upload, toggleComplete, markDuplicate, marcarGerar, consultarNota, coffeeUrl, mapsUrl, openCoffee };
