@@ -808,3 +808,24 @@ def test_geracao_nao_sobrescreve_origem_verificar(coffee_tmp, monkeypatch):
     # re-busca com SAP real -> corrigida (origem != avulsa)
     classe = db.upsert_nota(355617, _SAP_REAL(), False, {"id_sap": _SAP_REAL()})
     assert classe == "corrigida"
+
+
+def test_rota_regerar_pula_sap_real(coffee_cliente, monkeypatch):
+    """regerar nao re-define SAP quando a nota ja tem SAP real (nao arquivada)."""
+    from coffee_module import client, db
+    saps = []
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: saps.append((int(i), sap)) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "fields": {"id_sap": 17247854}},
+    )
+    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.marcar_gerar(355617, True)
+    r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert saps == []  # nao definiu SAP
+    assert db.listar_notas("a_gerar") == []  # saiu da fila
+    ignorada = [l for l in db.listar_logs(tipo="acao_usuario")
+                if l["acao"] == "geracao_ignorada_sap_real" and l["nota_pk"] == 355617]
+    assert ignorada
