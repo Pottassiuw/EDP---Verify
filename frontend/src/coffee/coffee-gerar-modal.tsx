@@ -13,6 +13,17 @@ function unmaskLocal(v: string): string {
   return v.toUpperCase().replace(/[^0-9A-Z]/g, "");
 }
 
+const STORAGE_ROWS = "edp_coffee_gerar_rows";
+function lerRows(): Row[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_ROWS);
+    return raw ? (JSON.parse(raw) as Row[]) : [];
+  } catch { return []; }
+}
+function gravarRows(rows: Row[]): void {
+  try { sessionStorage.setItem(STORAGE_ROWS, JSON.stringify(rows)); } catch { /* ignore */ }
+}
+
 interface Row {
   id: number;
   estado: "consultando" | "ok" | "erro";
@@ -66,12 +77,21 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
       } : r)));
   }, []);
 
-  // Ao abrir: zera e consulta os ids iniciais.
+  // Ao abrir: hidrata da sessão, re-consulta linhas interrompidas e soma a fila.
   React.useEffect(() => {
     if (!open) return;
-    setRows([]); setInput(""); setGerando({ rodando: false, feitas: 0, total: 0 });
-    (idsIniciais ?? []).forEach(consultar);
+    setInput(""); setGerando({ rodando: false, feitas: 0, total: 0 });
+    const salvas = lerRows().map((r) => ({ ...r, salvandoLocal: false }));
+    setRows(salvas);
+    salvas.filter((r) => r.estado === "consultando").forEach((r) => consultar(r.id));
+    const existentes = new Set(salvas.map((r) => r.id));
+    (idsIniciais ?? []).filter((id) => !existentes.has(id)).forEach(consultar);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persiste a lista em sessão a cada mudança (enquanto o modal está aberto).
+  React.useEffect(() => {
+    if (open) gravarRows(rows);
+  }, [rows, open]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -94,6 +114,11 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
 
   function removerLinha(id: number): void {
     setRows((rs) => rs.filter((r) => r.id !== id));
+  }
+
+  function limpar(): void {
+    setRows([]);
+    try { sessionStorage.removeItem(STORAGE_ROWS); } catch { /* ignore */ }
   }
 
   function iniciarEdicao(row: Row): void {
@@ -302,6 +327,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <button className="edp-btn sm" onClick={limpar}
+                  disabled={rows.length === 0 || gerando.rodando}>Limpar</button>
           <button className="edp-btn sm" onClick={onClose} disabled={gerando.rodando}>Fechar</button>
           <button className="edp-btn sm" onClick={reconsultarTodas}
                   disabled={rows.length === 0 || gerando.rodando}>Consultar</button>
