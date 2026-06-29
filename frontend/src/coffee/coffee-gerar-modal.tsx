@@ -2,6 +2,7 @@ import React from 'react';
 import type { CoffeeJob } from './types';
 import { EDPApi, BASE } from '../api';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 // ponytail: máscara 3-2-resto; aperta a regra se o formato do local for fixo
 function maskLocal(v: string): string {
@@ -226,8 +227,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                  style={{ flex: 1, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--line)",
                           background: "var(--surface-2)", color: "var(--text)", fontSize: 13,
                           fontFamily: "var(--font-mono)" }} />
-          <button className="edp-btn sm" onClick={adicionar} disabled={!input.trim() || gerando.rodando}
-                  style={{ fontWeight: 600 }}>Adicionar</button>
+          <Button variant="outline" size="sm" onClick={adicionar} disabled={!input.trim() || gerando.rodando}
+                  style={{ fontWeight: 600 }}>Adicionar</Button>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflow: "auto", border: "1px solid var(--line)",
@@ -287,32 +288,32 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                   <td style={td}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {r.estado === "ok" && !r.editando && (
-                        <button className="edp-btn sm" onClick={() => iniciarEdicao(r)}
+                        <Button variant="outline" size="sm" onClick={() => iniciarEdicao(r)}
                                 style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
                           Alterar local
-                        </button>
+                        </Button>
                       )}
                       {r.editando && (
                         <>
-                          <button className="edp-btn sm"
+                          <Button variant="outline" size="sm"
                                   disabled={r.salvandoLocal || unmaskLocal(r.localEditado ?? "") === (r.localAtual ?? "")}
                                   onClick={() => salvarLocal(r)}
                                   style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
                             {r.salvandoLocal ? "…" : "Salvar"}
-                          </button>
-                          <button className="edp-btn sm" disabled={r.salvandoLocal}
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={r.salvandoLocal}
                                   onClick={() => cancelarEdicao(r.id)}
                                   style={{ fontSize: 11, padding: "3px 6px" }}>
                             Cancelar
-                          </button>
+                          </Button>
                         </>
                       )}
                       {!r.editando && (
-                        <button className="edp-btn sm" onClick={() => removerLinha(r.id)}
+                        <Button variant="outline" size="sm" onClick={() => removerLinha(r.id)}
                                 title="Remover da lista"
                                 style={{ fontSize: 11, padding: "3px 6px", color: "var(--red)" }}>
                           ✕
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>
@@ -329,16 +330,16 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button className="edp-btn sm" onClick={limpar}
-                  disabled={rows.length === 0 || gerando.rodando}>Limpar</button>
-          <button className="edp-btn sm" onClick={onClose} disabled={gerando.rodando}>Fechar</button>
-          <button className="edp-btn sm" onClick={reconsultarTodas}
-                  disabled={rows.length === 0 || gerando.rodando}>Consultar</button>
-          <button className="edp-btn sm" onClick={gerar}
+          <Button variant="outline" size="sm" onClick={limpar}
+                  disabled={rows.length === 0 || gerando.rodando}>Limpar</Button>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={gerando.rodando}>Fechar</Button>
+          <Button variant="outline" size="sm" onClick={reconsultarTodas}
+                  disabled={rows.length === 0 || gerando.rodando}>Consultar</Button>
+          <Button variant="outline" size="sm" onClick={gerar}
                   disabled={rows.length === 0 || gerando.rodando}
                   style={{ fontWeight: 600, color: "var(--accent)", borderColor: "var(--accent)" }}>
             Gerar ({rows.length})
-          </button>
+          </Button>
         </div>
       </div>
     </>

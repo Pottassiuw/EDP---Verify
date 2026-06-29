@@ -7,6 +7,7 @@ import { CoffeeCorrigidas } from './coffee-corrigidas';
 import { CoffeePendentes } from './coffee-pendentes';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
   { id: "verificar", label: "Verificar" },
@@ -35,11 +36,12 @@ export function CoffeeHub({ notes, layout, sub, setSub, triage, coffeeReturn, on
       <div style={{ height: 56, flexShrink: 0, display: "flex", alignItems: "center", gap: 16,
                     padding: "0 22px", background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <strong style={{ fontSize: 14 }}>COFFEE</strong>
-        <div className="edp-seg">
+        <ToggleGroup type="single" value={sub} variant="outline"
+                     onValueChange={(v) => { if (v) setSub(v as CoffeeSubPage); }}>
           {COFFEE_SUBS.map((s) => (
-            <button key={s.id} className={sub === s.id ? "on" : ""} onClick={() => setSub(s.id)}>{s.label}</button>
+            <ToggleGroupItem key={s.id} value={s.id}>{s.label}</ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {sub === "abrir" ? (

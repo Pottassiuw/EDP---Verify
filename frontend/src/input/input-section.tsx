@@ -7,6 +7,8 @@ import { Manage } from './manage';
 import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -32,28 +34,29 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
       <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16,
                     padding: '0 22px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
         <strong style={{ fontSize: 14 }}>Gestão de Notas (INPUT)</strong>
-        <div className="edp-seg">
+        <ToggleGroup type="single" value={sub} variant="outline"
+                     onValueChange={(v) => { if (v) setSub(v as AbaInput); }}>
           {INPUT_SUBS.map((a) => (
-            <button key={a.id} className={sub === a.id ? 'on' : ''} onClick={() => setSub(a.id)}>{a.rotulo}</button>
+            <ToggleGroupItem key={a.id} value={a.id}>{a.rotulo}</ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {desatualizado && (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '8px 18px',
                       background: 'var(--tint-amber)', borderBottom: '1px solid rgba(240,169,59,.3)', fontSize: 13 }}>
           <span style={{ flex: 1 }}>Os dados foram atualizados por outro usuário.</span>
-          <button className="edp-btn sm" onClick={() => { limpar(); void recarregar(); }}>Recarregar dados</button>
+          <Button variant="outline" size="sm" onClick={() => { limpar(); void recarregar(); }}>Recarregar dados</Button>
         </div>
       )}
       {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
         <div style={{ padding: '8px 18px', background: 'var(--tint-amber)', fontSize: 13 }}>
           Importação inicial pendente: a rede da EDP estava indisponível.{' '}
-          <button className="edp-btn sm" onClick={() => { void (async () => {
+          <Button variant="outline" size="sm" onClick={() => { void (async () => {
             const { InputApi } = await import('./api');
             try { await InputApi.migrar(); await recarregar(); toast.success('Importação reprocessada'); }
             catch (e) { toast.error('Falha na importação', { description: e instanceof Error ? e.message : String(e) }); }
-          })(); }}>Tentar importar de novo</button>
+          })(); }}>Tentar importar de novo</Button>
         </div>
       )}
       {basesAusentes.length > 0 && (

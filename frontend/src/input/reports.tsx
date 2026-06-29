@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { valoresUnicos } from './lib';
 import type { ColunaDef } from './columns';
 import { NotesTable } from './notes-table';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 /** Cores do "semáforo" (porte de Input/app.py:1132-1139). */
 const CORES_AUDITORIA: Record<string, string> = {
@@ -151,16 +153,17 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, padding: 18, overflow: 'auto' }}>
       <h3 style={{ margin: 0 }}>Auditoria de Prazos (DDPM vs SAP)</h3>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <div className="edp-seg">
+        <ToggleGroup type="single" value={rapido} variant="outline"
+                     onValueChange={(v) => { if (v) setRapido(v as (typeof FILTROS_RAPIDOS)[number]); }}>
           {FILTROS_RAPIDOS.map((f) => (
-            <button key={f} className={rapido === f ? 'on' : ''} onClick={() => setRapido(f)}>{f}</button>
+            <ToggleGroupItem key={f} value={f}>{f}</ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
         {multi('Ano Encerramento (SAP)', anosDisponiveis, fAnos, setFAnos)}
         {multi('Status de Prazo', valoresUnicos(dados.registros, 'Auditoria_Cronograma'), fStatus, setFStatus)}
         {multi('Regional', valoresUnicos(dados.registros, 'Regional'), fRegional, setFRegional)}
-        <button className="edp-btn sm" disabled={exportando || auditadas.length === 0}
-                onClick={() => { void exportar(); }}>⬇ Baixar relatório</button>
+        <Button variant="outline" size="sm" disabled={exportando || auditadas.length === 0}
+                onClick={() => { void exportar(); }}>⬇ Baixar relatório</Button>
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

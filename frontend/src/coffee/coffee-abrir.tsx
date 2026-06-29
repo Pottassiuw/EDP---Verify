@@ -1,6 +1,8 @@
 import React from 'react';
 import type { Note, CoffeeOpenMode } from '../types';
 import { EDPApi } from '../api';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const COFFEE_STYLE = `
   .coffee{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-2)}
@@ -134,8 +136,8 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
       <div className="coffee-input">
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown}
                inputMode="numeric" placeholder="Digite o ID da nota e tecle Enter…" aria-label="ID da nota" />
-        <button className="edp-btn accent-btn" style={{ background: "var(--accent)", borderColor: "var(--accent)", color: "#fff", padding: "0 18px", fontWeight: 700 }}
-                onClick={() => { if (input.trim()) addFromText(input); }}>Adicionar</button>
+        <Button variant="accent" style={{ padding: "0 18px", fontWeight: 700 }}
+                onClick={() => { if (input.trim()) addFromText(input); }}>Adicionar</Button>
       </div>
       <div className="coffee-fb">{feedback}</div>
     </div>
@@ -156,8 +158,8 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
         <span className="edp-eyebrow">restantes</span>
       </div>
       <div style={{ flex: 1 }} />
-      <button className="edp-btn ghost sm" disabled={!ids.length} onClick={() => void copyIds()}>⧉ Copiar IDs</button>
-      <button className="edp-btn ghost sm" disabled={!ids.length} style={{ color: ids.length ? "var(--red)" : undefined }} onClick={clearAll}>Limpar tudo</button>
+      <Button variant="ghost" size="sm" disabled={!ids.length} onClick={() => void copyIds()}>⧉ Copiar IDs</Button>
+      <Button variant="ghost" size="sm" disabled={!ids.length} style={{ color: ids.length ? "var(--red)" : undefined }} onClick={clearAll}>Limpar tudo</Button>
     </div>
   );
 
@@ -181,11 +183,12 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
   );
 
   const modeSeg = (
-    <div className="edp-seg" role="tablist" style={{ alignSelf: "flex-start" }}>
+    <ToggleGroup type="single" value={mode} variant="outline" style={{ alignSelf: "flex-start" }}
+                 onValueChange={(v) => { if (v) setMode(v as CoffeeOpenMode); }}>
       {([["all", "Todas"], ["block", "Em blocos"], ["links", "Lista de links"]] as Array<[CoffeeOpenMode, string]>).map(([m, l]) => (
-        <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => setMode(m)}>{l}</button>
+        <ToggleGroupItem key={m} value={m} role="tab" aria-selected={mode === m}>{l}</ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 
   const actionBody = (() => {
@@ -196,9 +199,9 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
           <p style={{ fontSize: 12.5, color: "var(--text-dim)", margin: 0 }}>
             Abre uma aba por nota ainda não aberta, em ordem decrescente de ID. As abas
             abrem em sequência; agrupar abas em janelas exige uma extensão de navegador.</p>
-          <button className="edp-btn coffee" style={{ alignSelf: "flex-start", padding: "11px 20px", fontWeight: 700, fontSize: 14 }}
+          <Button variant="coffee" style={{ alignSelf: "flex-start", padding: "11px 20px", fontWeight: 700, fontSize: 14 }}
                   disabled={!remaining.length} onClick={() => openList(sortIdsDesc(remaining))}>
-            ☕ Abrir {remaining.length} nota{remaining.length === 1 ? "" : "s"} no COFFEE</button>
+            ☕ Abrir {remaining.length} nota{remaining.length === 1 ? "" : "s"} no COFFEE</Button>
           {!remaining.length && <span className="edp-tag done" style={{ alignSelf: "flex-start" }}><span className="edp-dot" />Todas as notas já foram abertas</span>}
         </div>
       );
@@ -222,8 +225,8 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
                               fontWeight: 600, outline: "none", MozAppearance: "textfield" }} />
               <button aria-label="Aumentar" onClick={() => setBlockClamped(block + 1)}>＋</button>
             </div>
-            <button className="edp-btn coffee" style={{ fontWeight: 700 }} disabled={!next.length} onClick={() => openList(next)}>
-              ☕ Abrir próximas {next.length}</button>
+            <Button variant="coffee" style={{ fontWeight: 700 }} disabled={!next.length} onClick={() => openList(next)}>
+              ☕ Abrir próximas {next.length}</Button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div className="coffee-bar"><div style={{ width: (ids.length ? (opened.size / ids.length) * 100 : 0) + "%" }} /></div>
@@ -248,8 +251,11 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
                         : <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
                 <span className="id" style={{ color: isOpen ? "var(--text-dim)" : "var(--text)" }}>{id}</span>
                 <span className="tn">{n ? n.tipo_nota + " · " + n.referencia : "—"}</span>
-                <a className="edp-btn coffee sm" target="_blank" rel="noopener" href={api.coffeeUrl(id)} onClick={() => markOpened([id])}>
-                  {isOpen ? "↗ Reabrir" : "☕ Abrir"}</a>
+                <Button asChild variant="coffee" size="sm">
+                  <a target="_blank" rel="noopener" href={api.coffeeUrl(id)} onClick={() => markOpened([id])}>
+                    {isOpen ? "↗ Reabrir" : "☕ Abrir"}
+                  </a>
+                </Button>
               </div>
             );
           })}
@@ -275,10 +281,7 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
         <strong className="edp-mono" style={{ fontSize: 13 }}>Nota {coffeeReturn.noteId}</strong>
         {coffeeReturn.noteRef ? <span style={{ color: "var(--text-dim)" }}> · {coffeeReturn.noteRef}</span> : null}
       </span>
-      <button className="edp-btn sm" style={{ background: "var(--accent)", borderColor: "var(--accent)", color: "#fff", fontWeight: 600 }}
-              onClick={onBackToTriagem}>
-        ← Voltar a triagem
-      </button>
+      <Button variant="accent" size="sm" onClick={onBackToTriagem}>← Voltar a triagem</Button>
       <button onClick={onClearReturn}
               style={{ all: "unset", cursor: "pointer", fontSize: 18, lineHeight: 1, color: "var(--text-mute)", padding: "2px 6px" }}
               title="Dispensar" aria-label="Dispensar">x</button>

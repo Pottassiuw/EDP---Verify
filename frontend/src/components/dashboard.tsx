@@ -6,6 +6,7 @@ import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../hooks/use-persisted-state';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -191,20 +192,20 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
                         borderBottom: "1px solid var(--line)", background: "var(--bg-2)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <button className="edp-btn ghost sm" title="Recolher fila" aria-label="Recolher fila"
-                      style={{ padding: "2px 8px", fontSize: 13, lineHeight: 1 }} onClick={toggleQueue}>«</button>
+              <Button variant="ghost" size="sm" title="Recolher fila" aria-label="Recolher fila"
+                      style={{ padding: "2px 8px", fontSize: 13, lineHeight: 1 }} onClick={toggleQueue}>«</Button>
               <span className="edp-eyebrow">Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</span>
             </div>
             {filtered.length > 0 && (
-              <button className="edp-btn ghost sm" style={{ fontSize: 11 }}
-                      onClick={() => setSelBatch(new Set(filtered.map((n) => n.id)))}>Selecionar todas</button>
+              <Button variant="ghost" size="sm" style={{ fontSize: 11 }}
+                      onClick={() => setSelBatch(new Set(filtered.map((n) => n.id)))}>Selecionar todas</Button>
             )}
           </div>
           <div style={{ flex: 1, overflow: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--text-mute)", fontSize: 13 }}>
                 Nenhuma nota com os filtros atuais.<br />
-                <button className="edp-btn sm" style={{ marginTop: 14 }} onClick={clearAll}>Limpar filtros</button>
+                <Button variant="outline" size="sm" style={{ marginTop: 14 }} onClick={clearAll}>Limpar filtros</Button>
               </div>
             ) : filtered.map((n) => {
               const done = completed.has(n.id);
@@ -252,17 +253,17 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                 <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
                   <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
                 {!allDone && (
-                  <button className="edp-btn accent-btn sm" onClick={() => doAction("done")}>
+                  <Button variant="accent" size="sm" onClick={() => doAction("done")}>
                     ✓ {allOpen ? "Concluir" : "Concluir pendentes"}
-                  </button>
+                  </Button>
                 )}
                 {!allOpen && (
-                  <button className="edp-btn ghost sm" onClick={() => doAction("reopen")}>
+                  <Button variant="ghost" size="sm" onClick={() => doAction("reopen")}>
                     ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
-                  </button>
+                  </Button>
                 )}
-                <button className="edp-btn coffee sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</button>
-                <button className="edp-btn ghost sm" onClick={() => setSelBatch(new Set())}>Limpar</button>
+                <Button variant="coffee" size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelBatch(new Set())}>Limpar</Button>
               </div>
             );
           })()}
@@ -331,12 +332,14 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button className="edp-btn coffee sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</button>
-          <button className="edp-btn sm" title={fs ? "Sair da tela cheia" : "Expandir"}
+          <Button variant="coffee" size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</Button>
+          <Button variant="outline" size="sm" title={fs ? "Sair da tela cheia" : "Expandir"}
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
-            {fs ? "⤡ Fechar" : "⤢ Expandir"}</button>
-          <button className={"edp-btn sm" + (done ? "" : " accent-btn")} onClick={() => onToggleDone(sel.id)}>
-            {done ? "↺ Reabrir" : "✓ Concluir"}</button>
+            {fs ? "⤡ Fechar" : "⤢ Expandir"}
+          </Button>
+          <Button variant={done ? "outline" : "accent"} size="sm" onClick={() => onToggleDone(sel.id)}>
+            {done ? "↺ Reabrir" : "✓ Concluir"}
+          </Button>
         </div>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
@@ -369,8 +372,9 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             ))}
           </div>
           {sel.latitude && sel.longitude && (
-            <a className="edp-btn sm" target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}
-               style={{ marginTop: 12, color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>◎ Abrir no Google Maps</a>
+            <Button asChild variant="outline" size="sm" style={{ marginTop: 12, color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>
+              <a target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}>◎ Abrir no Google Maps</a>
+            </Button>
           )}
         </section>
       </div>

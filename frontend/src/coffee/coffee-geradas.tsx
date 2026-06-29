@@ -6,6 +6,7 @@ import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
 import { coffeeUrl, BASE as API_BASE } from '../api';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 type PendingAction =
   | { kind: "remover"; pk: number }
@@ -13,11 +14,9 @@ type PendingAction =
 
 function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
   return (
-    <a className="edp-btn coffee sm" target="_blank" rel="noopener"
-       href={coffeeUrl(String(pk))} title="Abrir no COFFEE"
-       style={{ fontSize: 12, padding: "4px 6px" }}>
-      ☕
-    </a>
+    <Button asChild variant="coffee" size="sm" title="Abrir no COFFEE" style={{ fontSize: 12, padding: "4px 6px" }}>
+      <a target="_blank" rel="noopener" href={coffeeUrl(String(pk))}>☕</a>
+    </Button>
   );
 }
 
@@ -72,7 +71,7 @@ export function CoffeeGeradas(): React.JSX.Element {
     return (
       <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
         <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
-        <button className="edp-btn sm" onClick={refetch}>Tentar de novo</button>
+        <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
   }
@@ -85,9 +84,9 @@ export function CoffeeGeradas(): React.JSX.Element {
       <div style={{ flexShrink: 0, padding: "16px 22px", display: "flex", alignItems: "center", gap: 12,
                     borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 15, fontWeight: 700 }}>Gerar Notas</span>
-        <button className="edp-btn sm" style={{ fontWeight: 600 }} onClick={() => abrirModal(undefined)}>
+        <Button variant="outline" size="sm" style={{ fontWeight: 600 }} onClick={() => abrirModal(undefined)}>
           Gerar / Consultar notas
-        </button>
+        </Button>
       </div>
 
       {/* Zona: A gerar */}
@@ -99,10 +98,10 @@ export function CoffeeGeradas(): React.JSX.Element {
           </span>
         )}
         {aGerar.notas.length > 0 && (
-          <button className="edp-btn sm" style={{ fontWeight: 600 }}
+          <Button variant="outline" size="sm" style={{ fontWeight: 600 }}
                   onClick={() => abrirModal(aGerar.notas.map((n) => n.pk))}>
             Gerar fila ({aGerar.notas.length})
-          </button>
+          </Button>
         )}
       </div>
       {aGerar.notas.length > 0 && (
@@ -113,15 +112,15 @@ export function CoffeeGeradas(): React.JSX.Element {
           actionColumn={(nota) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <AbrirCoffeeBtn pk={nota.pk} />
-              <button className="edp-btn sm"
+              <Button variant="outline" size="sm"
                       onClick={() => setPending({ kind: "remover", pk: nota.pk })}
                       title="Remover da fila" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
                 Remover
-              </button>
-              <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
                       title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
                 Logs
-              </button>
+              </Button>
             </div>
           )}
         />
@@ -145,15 +144,15 @@ export function CoffeeGeradas(): React.JSX.Element {
         actionColumn={(nota) => (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <AbrirCoffeeBtn pk={nota.pk} />
-            <button className="edp-btn sm"
+            <Button variant="outline" size="sm"
                     onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
                     title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
               Arquivar
-            </button>
-            <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
                     title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
               Logs
-            </button>
+            </Button>
           </div>
         )}
       />

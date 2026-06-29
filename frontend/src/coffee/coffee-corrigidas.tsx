@@ -2,6 +2,7 @@ import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
 import { CoffeeNotasTable } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
+import { Button } from '@/components/ui/button';
 
 export function CoffeeCorrigidas(): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("corrigida");
@@ -11,7 +12,7 @@ export function CoffeeCorrigidas(): React.JSX.Element {
     return (
       <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
         <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
-        <button className="edp-btn sm" onClick={refetch}>Tentar de novo</button>
+        <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
   }
@@ -34,10 +35,10 @@ export function CoffeeCorrigidas(): React.JSX.Element {
         isLoading={isLoading}
         emptyMessage="Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."
         actionColumn={(nota) => (
-          <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+          <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
                   title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
             Logs
-          </button>
+          </Button>
         )}
       />
       {drawerPk !== null && (

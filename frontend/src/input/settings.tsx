@@ -4,6 +4,7 @@ import type { InputDataset } from './types';
 import { getUsuario, InputApi, setUsuario } from './api';
 import { toast } from 'sonner';
 import { useRecarregarInput } from './use-input-data';
+import { Button } from '@/components/ui/button';
 
 const estiloCampo: React.CSSProperties = { padding: '6px 10px', borderRadius: 7,
   border: '1px solid var(--line)', background: 'var(--bg-2)', color: 'var(--text)' };
@@ -41,8 +42,8 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
       <Cartao titulo="Seu nome (log de auditoria)">
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={nome} onChange={(e) => setNome(e.target.value)} style={estiloCampo} />
-          <button className="edp-btn sm" disabled={!nome.trim()}
-                  onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); toast.success('Nome atualizado.'); }}>Salvar</button>
+          <Button variant="outline" size="sm" disabled={!nome.trim()}
+                  onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); toast.success('Nome atualizado.'); }}>Salvar</Button>
         </div>
       </Cartao>
 
@@ -53,17 +54,17 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [e.target.value, pessoa]; setLinhasResp(c); }} />
             <input value={pessoa} style={estiloCampo}
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [conjunto, e.target.value]; setLinhasResp(c); }} />
-            <button className="edp-btn ghost sm"
-                    onClick={() => setLinhasResp(linhas.filter((_, j) => j !== i) as [string, string][])}>×</button>
+            <Button variant="ghost" size="sm"
+                    onClick={() => setLinhasResp(linhas.filter((_, j) => j !== i) as [string, string][])}>×</Button>
           </div>
         ))}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="edp-btn ghost sm"
-                  onClick={() => setLinhasResp([...linhas, ['', '']] as [string, string][])}>+ Adicionar</button>
-          <button className="edp-btn sm" onClick={() => { void agir(async () => {
+          <Button variant="ghost" size="sm"
+                  onClick={() => setLinhasResp([...linhas, ['', '']] as [string, string][])}>+ Adicionar</Button>
+          <Button variant="outline" size="sm" onClick={() => { void agir(async () => {
             await InputApi.salvarResponsaveis(Object.fromEntries(linhas.filter(([c]) => c.trim() !== '')));
             await responsaveis.refetch(); setLinhasResp(null);
-          }, 'Responsáveis atualizados.'); }}>Salvar responsáveis</button>
+          }, 'Responsáveis atualizados.'); }}>Salvar responsáveis</Button>
         </div>
       </Cartao>
 
@@ -77,10 +78,10 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
                 {b.encontrada ? '● conectada' : '● indisponível'}
               </span>
               {gerenciavel && b.encontrada && (
-                <a className="edp-btn ghost sm" href={InputApi.urlDownloadBase(b.arquivo)} download>⬇ Baixar atual</a>
+                <Button asChild variant="ghost" size="sm"><a href={InputApi.urlDownloadBase(b.arquivo)} download>⬇ Baixar atual</a></Button>
               )}
               {gerenciavel && (
-                <label className="edp-btn ghost sm" style={{ cursor: 'pointer' }}>
+                <Button asChild variant="ghost" size="sm"><label style={{ cursor: 'pointer' }}>
                   ↑ Substituir…
                   <input type="file" accept=".xlsx" style={{ display: 'none' }}
                          onChange={(e) => {
@@ -93,7 +94,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
                              await recarregar();
                            }, `Base "${b.arquivo}" substituída.`);
                          }} />
-                </label>
+                </label></Button>
               )}
             </div>
           );
@@ -108,7 +109,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
           <div key={b.arquivo} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 6, fontSize: 12.5 }}>
             <span className="edp-mono" style={{ flex: 1 }}>{b.arquivo}</span>
             <span style={{ color: 'var(--text-dim)' }}>{new Date(b.modificado).toLocaleString('pt-BR')} · {b.tamanho_mb} MB</span>
-            <a className="edp-btn ghost sm" href={InputApi.urlDownloadBackup(b.arquivo)} download>⬇ Baixar</a>
+            <Button asChild variant="ghost" size="sm"><a href={InputApi.urlDownloadBackup(b.arquivo)} download>⬇ Baixar</a></Button>
           </div>
         ))}
         {(backups.data?.backups ?? []).length === 0 && (

@@ -9,6 +9,7 @@ import {
   FILTROS_TEXTO,
   ROTULOS,
 } from "./columns";
+import { Button } from "@/components/ui/button";
 
 export interface FiltersState {
   busca: string;
@@ -91,23 +92,18 @@ export function Filters({
             color: "var(--text)",
           }}
         />
-        <button className="edp-btn sm" onClick={() => setAberto(!aberto)}>
+        <Button variant="outline" size="sm" onClick={() => setAberto(!aberto)}>
           🔎 Filtros avançados
           {estado.filtros.length ? ` (${estado.filtros.length})` : ""}
-        </button>
-        <button
-          className="edp-btn sm"
-          onClick={() => setCalcAberta(!calcAberta)}
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setCalcAberta(!calcAberta)}>
           📊 Calculadora
-        </button>
+        </Button>
         {(estado.filtros.length > 0 || estado.busca) && (
-          <button
-            className="edp-btn ghost sm"
-            onClick={() => setEstado({ ...estado, busca: "", filtros: [] })}
-          >
+          <Button variant="ghost" size="sm"
+            onClick={() => setEstado({ ...estado, busca: "", filtros: [] })}>
             🧹 Limpar
-          </button>
+          </Button>
         )}
       </div>
 
@@ -216,8 +212,7 @@ export function Filters({
                   ))}
                 </select>
               )}
-              <button
-                className="edp-btn ghost sm"
+              <Button variant="ghost" size="sm"
                 onClick={() =>
                   setEstado({
                     ...estado,
@@ -226,7 +221,7 @@ export function Filters({
                 }
               >
                 ×
-              </button>
+              </Button>
             </div>
           ))}
           {estado.filtros.length === 0 && (
@@ -250,9 +245,10 @@ export function Filters({
             {Object.entries(COLUNAS_CALCULAVEIS).map(([rotulo, campo]) => {
               const ativo = estado.calcColunas.includes(campo);
               return (
-                <button
+                <Button
                   key={campo}
-                  className={`edp-btn sm${ativo ? "" : " ghost"}`}
+                  variant={ativo ? "outline" : "ghost"}
+                  size="sm"
                   onClick={() =>
                     setEstado({
                       ...estado,
@@ -263,7 +259,7 @@ export function Filters({
                   }
                 >
                   {rotulo}
-                </button>
+                </Button>
               );
             })}
           </div>

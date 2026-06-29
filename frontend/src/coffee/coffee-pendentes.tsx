@@ -6,6 +6,7 @@ import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { toast } from 'sonner';
 import { BASE as API_BASE } from '../api';
+import { Button } from '@/components/ui/button';
 
 type BuscaEstado = "idle" | "rodando" | "concluido";
 
@@ -81,7 +82,7 @@ export function CoffeePendentes(): React.JSX.Element {
     return (
       <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
         <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
-        <button className="edp-btn sm" onClick={refetch}>Tentar de novo</button>
+        <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
   }
@@ -96,11 +97,11 @@ export function CoffeePendentes(): React.JSX.Element {
           </span>
         )}
         <div style={{ flex: 1 }} />
-        <button className="edp-btn sm" style={{ fontWeight: 600 }}
+        <Button variant="outline" size="sm" style={{ fontWeight: 600 }}
                 disabled={buscaEstado === "rodando" || isLoading || notas.length === 0}
                 onClick={iniciarBusca}>
           {buscaEstado === "rodando" ? "Buscando..." : "Atualizar notas"}
-        </button>
+        </Button>
       </div>
 
       {buscaEstado !== "idle" && buscaJob && (
@@ -142,15 +143,15 @@ export function CoffeePendentes(): React.JSX.Element {
         emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
         actionColumn={(nota) => (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button className="edp-btn sm"
+            <Button variant="outline" size="sm"
                     onClick={() => setArquivarPk(nota.pk)}
                     title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
               Arquivar
-            </button>
-            <button className="edp-btn sm" onClick={() => setDrawerPk(nota.pk)}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
                     title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
               Logs
-            </button>
+            </Button>
           </div>
         )}
       />

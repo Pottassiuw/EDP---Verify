@@ -6,6 +6,7 @@ import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { NotesTable } from './notes-table';
+import { Button } from '@/components/ui/button';
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
   let resultado = registros;
@@ -44,9 +45,9 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
           Total de registros: <strong className="edp-mono">{filtrados.length}</strong>
           {filtrados.length !== dados.registros.length ? ` de ${dados.registros.length}` : ''}
         </span>
-        <button className="edp-btn sm" disabled={exportando || filtrados.length === 0} onClick={() => { void exportar(); }}>
+        <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0} onClick={() => { void exportar(); }}>
           {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
-        </button>
+        </Button>
       </div>
       <Filters registros={dados.registros} registrosFiltrados={filtrados} estado={estado} setEstado={setEstado} />
       <NotesTable registros={filtrados} colunas={COLUNAS} />

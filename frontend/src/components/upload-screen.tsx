@@ -3,6 +3,7 @@ import type { UploadScreenProps } from "../types";
 import { EDPApi } from "../api";
 import LOGO_EXCEL from "../../public/assets/logo_excel.svg";
 import { LOGO_DARK, LOGO_LIGHT } from "./shared";
+import { Button } from "@/components/ui/button";
 
 export const UploadScreen: React.FC<UploadScreenProps> = ({
   theme = "dark",
@@ -198,18 +199,9 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         >
           Arraste o arquivo aqui ou clique para selecionar
         </p>
-        <span
-          className="edp-btn accent-btn"
-          style={{
-            background: "var(--accent)",
-            borderColor: "var(--accent)",
-            color: "#fff",
-            padding: "10px 22px",
-            fontWeight: 700,
-          }}
-        >
-          Selecionar arquivo
-        </span>
+        <Button asChild variant="accent" style={{ padding: "10px 22px", fontWeight: 700 }}>
+          <span>Selecionar arquivo</span>
+        </Button>
 
         <div
           style={{

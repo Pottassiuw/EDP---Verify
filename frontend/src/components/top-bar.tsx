@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Source } from '../types';
 import { Logo } from './shared';
+import { Button } from '@/components/ui/button';
 
 interface TopBarProps {
   resolvedTheme: "dark" | "light";
@@ -26,7 +27,7 @@ export function TopBar({ resolvedTheme, file, source, onReset }: TopBarProps): R
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
           {source === "api" ? "API" : "Demo"}
         </span>
-        <button className="edp-btn ghost sm" title="Nova planilha" onClick={onReset}>↑ Nova</button>
+        <Button variant="ghost" size="sm" title="Nova planilha" onClick={onReset}>↑ Nova</Button>
       </div>
     </div>
   );

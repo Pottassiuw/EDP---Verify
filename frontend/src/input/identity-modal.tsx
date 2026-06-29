@@ -1,5 +1,6 @@
 import React from 'react';
 import { setUsuario } from './api';
+import { Button } from '@/components/ui/button';
 
 interface IdentityModalProps {
   aberto: boolean;
@@ -31,11 +32,8 @@ export function IdentityModal({ aberto, onConfirmado, onCancelar }: IdentityModa
                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: 7,
                         border: '1px solid var(--line)', background: 'var(--bg-2)', color: 'var(--text)' }} />
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button className="edp-btn ghost sm" onClick={onCancelar}>Cancelar</button>
-          <button className="edp-btn sm" disabled={!nome.trim()} onClick={confirmar}
-                  style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' }}>
-            Confirmar
-          </button>
+          <Button variant="ghost" size="sm" onClick={onCancelar}>Cancelar</Button>
+          <Button variant="accent" size="sm" disabled={!nome.trim()} onClick={confirmar}>Confirmar</Button>
         </div>
       </div>
     </div>

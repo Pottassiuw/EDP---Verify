@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -60,16 +61,12 @@ export function ConfirmModal({
                            color: "var(--text)", fontSize: 13, fontFamily: "inherit" }} />
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button className="edp-btn sm" onClick={onCancel} disabled={busy}
-                  style={{ fontSize: 13 }}>
-            Cancelar
-          </button>
-          <button className="edp-btn sm" disabled={busy || !justOk}
+          <Button variant="outline" size="sm" onClick={onCancel} disabled={busy}>Cancelar</Button>
+          <Button variant="outline" size="sm" disabled={busy || !justOk}
                   onClick={() => onConfirm(justificativa.trim())}
-                  style={{ fontSize: 13, fontWeight: 600, color: confirmColor,
-                           borderColor: confirmColor }}>
+                  style={{ fontWeight: 600, color: confirmColor, borderColor: confirmColor }}>
             {busy ? "..." : confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </>

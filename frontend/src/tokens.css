@@ -188,27 +188,7 @@
   background: currentColor; opacity: 0.9;
 }
 
-.edp-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  padding: 8px 13px; border-radius: var(--r-sm);
-  border: 1px solid var(--line-2); background: transparent; color: var(--text-dim);
-  cursor: pointer; transition: all .14s ease; white-space: nowrap;
-}
-.edp-btn:hover { color: var(--text); border-color: var(--text-mute); }
-.edp-btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
-.edp-btn.primary:hover { background: var(--green-2); }
-.edp-btn.coffee { background: rgba(111,78,55,0.18); border-color: rgba(190,140,100,0.3); color: #d8a883; }
-.edp-btn.ghost { border-color: transparent; }
-.edp-btn.sm { padding: 5px 9px; font-size: 12px; }
 
-.edp-seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
-.edp-seg button {
-  font-family: var(--font-body); font-size: 12px; font-weight: 600;
-  padding: 5px 11px; border-radius: 5px; border: none; background: transparent;
-  color: var(--text-dim); cursor: pointer; transition: all .12s;
-}
-.edp-seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 
 /* ============================================================
    Reset "preflight-lite" escopado para superfícies shadcn

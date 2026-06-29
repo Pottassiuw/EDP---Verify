@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DuplicateCompareProps, DuplicateField, ComparableFields } from '../types';
 import { EDPApi } from '../api';
+import { Button } from '@/components/ui/button';
 
 const DUPC_STYLE = `
   .dupc-card{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
@@ -81,18 +82,18 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-          <button className="edp-btn coffee sm" onClick={() => api.openCoffee(allIds)}>☕ Abrir todas no COFFEE</button>
+          <Button variant="coffee" size="sm" onClick={() => api.openCoffee(allIds)}>☕ Abrir todas no COFFEE</Button>
           {onSendToCoffee && (
-            <button className="edp-btn sm" style={{ color: "var(--amber)", borderColor: "rgba(240,169,59,.4)" }}
+            <Button variant="outline" size="sm" style={{ color: "var(--amber)", borderColor: "rgba(240,169,59,.4)" }}
                     onClick={() => onSendToCoffee(allIds, note.id)} title="Adiciona as candidatas à fila do COFFEE e navega para lá">
               → Fila COFFEE
-            </button>
+            </Button>
           )}
-          <button className={"edp-btn sm" + (resolved ? "" : " dup-btn")}
+          <Button variant={resolved ? "outline" : "default"} size="sm"
                   style={resolved ? undefined : { background: "var(--indigo)", borderColor: "var(--indigo)", color: "#fff" }}
                   onClick={() => onMarkDuplicate(note.id)}>
             {resolved ? "↺ Reabrir" : "⧉ Marcar como duplicata"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -127,10 +128,13 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 {c.latitude && c.longitude && (
-                  <a className="edp-btn sm" target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}
-                     style={{ color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>◎ Mapa</a>
+                  <Button asChild variant="outline" size="sm" style={{ color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>
+                    <a target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}>◎ Mapa</a>
+                  </Button>
                 )}
-                <a className="edp-btn coffee sm" target="_blank" rel="noopener" href={api.coffeeUrl(c.id)}>☕ COFFEE</a>
+                <Button asChild variant="coffee" size="sm">
+                  <a target="_blank" rel="noopener" href={api.coffeeUrl(c.id)}>☕ COFFEE</a>
+                </Button>
               </div>
             </div>
 

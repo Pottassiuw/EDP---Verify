@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { InputApi } from './api';
 import type { LogArquivo, LogRegistro } from './types';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 type SubAba = 'notas' | 'arquivos' | 'timeline';
 
@@ -38,11 +39,12 @@ export function Logs(): React.JSX.Element {
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12, padding: 18, overflow: 'auto' }}>
-      <div className="edp-seg" style={{ alignSelf: 'flex-start' }}>
-        <button className={sub === 'notas' ? 'on' : ''} onClick={() => setSub('notas')}>Alterações nas Notas</button>
-        <button className={sub === 'arquivos' ? 'on' : ''} onClick={() => setSub('arquivos')}>Bases de Apoio</button>
-        <button className={sub === 'timeline' ? 'on' : ''} onClick={() => setSub('timeline')}>Linha do Tempo</button>
-      </div>
+      <ToggleGroup type="single" value={sub} variant="outline" style={{ alignSelf: 'flex-start' }}
+                   onValueChange={(v) => { if (v) setSub(v as SubAba); }}>
+        <ToggleGroupItem value="notas">Alterações nas Notas</ToggleGroupItem>
+        <ToggleGroupItem value="arquivos">Bases de Apoio</ToggleGroupItem>
+        <ToggleGroupItem value="timeline">Linha do Tempo</ToggleGroupItem>
+      </ToggleGroup>
 
       {sub === 'notas' && (
         <React.Fragment>

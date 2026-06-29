@@ -2,6 +2,7 @@ import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS } from './coffee-log-table';
 import { BASE as API_BASE } from '../api';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const LIMITES = [50, 100, 500] as const;
 
@@ -31,14 +32,12 @@ export function CoffeeLogs(): React.JSX.Element {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flexShrink: 0, padding: "14px 22px 10px", display: "flex", alignItems: "center",
                     gap: 14, flexWrap: "wrap" }}>
-        <div className="edp-seg">
+        <ToggleGroup type="single" value={passo} variant="outline"
+                     onValueChange={(v) => { if (v) setPasso(v); }}>
           {PASSOS.map((p) => (
-            <button key={p.value} className={passo === p.value ? "on" : ""}
-                    onClick={() => setPasso(p.value)}>
-              {p.label}
-            </button>
+            <ToggleGroupItem key={p.value} value={p.value}>{p.label}</ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Nota:</label>
