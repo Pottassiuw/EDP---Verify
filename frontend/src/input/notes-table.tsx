@@ -198,10 +198,9 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
         }}
       >
         {c.numeric
-          ? formatarNumero(
-              v,
-              c.key === "Numero_Nota" || c.key === "ranking" ? 0 : 2,
-            )
+          ? c.key === "Numero_Nota" || c.key === "ranking"
+            ? formatarNumero(v, 0, false) // IDs/ranking: inteiro puro, sem separador de milhar
+            : formatarNumero(v, 2)
           : String(v ?? "")}
       </TableCell>
     );

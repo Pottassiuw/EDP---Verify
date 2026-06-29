@@ -32,6 +32,9 @@
   --line:      rgba(255,255,255,0.07);
   --line-2:    rgba(255,255,255,0.12);
 
+  --scrollbar-thumb:       rgba(255,255,255,0.22);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.36);
+
   --text:      #eef2f8;
   --text-dim:  #9aa9c2;
   --text-mute: #61708c;
@@ -118,6 +121,9 @@
   --line:      rgba(22,30,43,0.09);
   --line-2:    rgba(22,30,43,0.16);
 
+  --scrollbar-thumb:       rgba(22,30,43,0.30);
+  --scrollbar-thumb-hover: rgba(22,30,43,0.46);
+
   --text:      #15203a;
   --text-dim:  #4f6079;
   --text-mute: #8a99b3;
@@ -135,8 +141,15 @@
 
 /* ---- shared atoms ---- */
 .edp * { box-sizing: border-box; }
-.edp ::-webkit-scrollbar { width: 8px; height: 8px; }
-.edp ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; }
+.edp, .edp * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+.edp ::-webkit-scrollbar { width: 10px; height: 10px; }
+.edp ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.edp ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
 .edp ::-webkit-scrollbar-track { background: transparent; }
 
 .edp-eyebrow {
