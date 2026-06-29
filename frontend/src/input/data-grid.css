@@ -1,0 +1,45 @@
+/* react-datasheet-grid — tema EDP via tokens (classes reais confirmadas no
+   dist/style.css do pacote). Como a grade é 100% read-only, TODAS as células
+   são `disabled`; por isso estilizamos também as variantes `*-disabled`, senão
+   o DSG pinta tudo com cara de desabilitado (cinza) e a seleção some.
+   ponytail: !important pontual para vencer o stylesheet do próprio DSG. */
+
+.dsg-container { background: var(--surface); color: var(--text); font-family: var(--font-body); }
+
+/* células (normal + disabled, já que tudo é read-only) */
+.dsg-cell,
+.dsg-cell.dsg-cell-disabled {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+/* cabeçalho */
+.dsg-cell-header,
+.dsg-cell-header-container {
+  background: var(--surface-2) !important;
+  color: var(--text-dim) !important;
+  border-color: var(--line) !important;
+}
+
+/* célula ativa (foco) — chamativa em accent, incl. quando a célula é disabled */
+.dsg-active-cell,
+.dsg-active-cell-disabled {
+  border: 2px solid var(--accent) !important;
+  background: var(--accent-tint) !important;
+}
+
+/* retângulo de seleção (arrasto/Shift) — borda + preenchimento accent */
+.dsg-selection-rect,
+.dsg-selection-rect-disabled {
+  border: 2px solid var(--accent) !important;
+  background: var(--accent-tint) !important;
+}
+
+/* conteúdo read-only */
+.dsg-leitura {
+  padding: 0 8px; line-height: 32px; height: 32px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12.5px;
+}
+.dsg-leitura.is-num { font-family: var(--font-mono); }

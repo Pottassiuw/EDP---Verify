@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
-import { NotesTable } from './notes-table';
+import { DataGrid } from './data-grid';
 import { Button } from '@/components/ui/button';
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
@@ -50,7 +50,7 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
         </Button>
       </div>
       <Filters registros={dados.registros} registrosFiltrados={filtrados} estado={estado} setEstado={setEstado} />
-      <NotesTable registros={filtrados} colunas={COLUNAS} />
+      <DataGrid registros={filtrados} colunas={COLUNAS} />
     </div>
   );
 }
