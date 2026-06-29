@@ -4,15 +4,38 @@ import "react-datasheet-grid/dist/style.css";
 import "./data-grid.css";
 import type { Celula, NotaInput } from "./types";
 import type { ColunaDef } from "./columns";
-import { formatarNumero } from "./lib";
+import { compararDatas, formatarNumero } from "./lib";
 
 const ALTURA_LINHA = 32;
+const LARGURA_PADRAO = 120;
+const LARGURA_MIN = 60;
+const LARGURA_MAX = 600;
+
+type Ordem = { campo: string; asc: boolean };
 
 function textoCelula(v: Celula | undefined, c: ColunaDef): string {
   if (!c.numeric) return String(v ?? "");
   return c.key === "Numero_Nota" || c.key === "ranking"
     ? formatarNumero(v ?? null, 0, false)
     : formatarNumero(v ?? null, 2);
+}
+
+// Medição de texto via canvas (autofit), reaproveitando um contexto único.
+let _ctxMedida: CanvasRenderingContext2D | null = null;
+function medirTexto(texto: string, fonte: string): number {
+  if (!_ctxMedida) _ctxMedida = document.createElement("canvas").getContext("2d");
+  if (!_ctxMedida) return texto.length * 7;
+  _ctxMedida.font = fonte;
+  return _ctxMedida.measureText(texto).width;
+}
+
+/** Largura que comporta cabeçalho + todos os valores da coluna (estilo Excel). */
+function larguraAutofit(c: ColunaDef, registros: NotaInput[]): number {
+  const fonteCelula = `12.5px ${c.numeric ? "'IBM Plex Mono', monospace" : "Inter, system-ui, sans-serif"}`;
+  const fonteHeader = "600 11.5px Inter, system-ui, sans-serif";
+  let max = medirTexto(c.label, fonteHeader);
+  for (const r of registros) max = Math.max(max, medirTexto(textoCelula(r[c.key], c), fonteCelula));
+  return Math.min(LARGURA_MAX, Math.max(LARGURA_MIN, Math.ceil(max) + 28)); // 28 = padding célula + alça + seta
 }
 
 /** Célula só-leitura: exibe o valor formatado conforme a ColunaDef. */
@@ -28,19 +51,76 @@ function CelulaLeitura({ rowData, columnData }: {
   );
 }
 
-function colunaLeitura(c: ColunaDef): Column<NotaInput> {
-  return {
-    // keyColumn liga a coluna à chave do registro; o componente recebe rowData = valor da célula.
-    ...keyColumn<NotaInput, string>(c.key, {
-      component: CelulaLeitura as never,
-      columnData: c as never,
-      disabled: true,
-      // ponytail: copia o valor cru (Excel calcula em cima); o display é que é formatado.
-      copyValue: ({ rowData }) => (rowData == null ? "" : String(rowData)),
-    }),
-    title: c.label,
-    minWidth: c.largura ?? 90,
+function ordenar(registros: NotaInput[], ordem: Ordem | null): NotaInput[] {
+  if (!ordem) return registros;
+  const fator = ordem.asc ? 1 : -1;
+  const copia = [...registros];
+  if (ordem.campo === "Mes_Execucao_Planejado") {
+    copia.sort((a, b) => fator * compararDatas(a[ordem.campo] ?? null, b[ordem.campo] ?? null));
+  } else {
+    copia.sort((a, b) => {
+      const va = a[ordem.campo];
+      const vb = b[ordem.campo];
+      const na = Number(va);
+      const nb = Number(vb);
+      if (Number.isFinite(na) && Number.isFinite(nb)) return fator * (na - nb);
+      return fator * String(va ?? "").localeCompare(String(vb ?? ""), "pt-BR");
+    });
+  }
+  return copia;
+}
+
+/** Cabeçalho custom: ordenação (com seta) + alça de redimensionamento.
+   O DSG só aplica largura na MONTAGEM (não reage a basis depois). Então durante
+   o arrasto só movemos a linha-guia; ao soltar comitamos (remonta a grade).
+   Duplo-clique na alça faz autofit (igual Excel). */
+function CabecalhoColuna({ c, ordem, onSort, onResizeDrag, onResizeCommit, onResizeCancel, onAutofit }: {
+  c: ColunaDef;
+  ordem: Ordem | null;
+  onSort: (campo: string) => void;
+  onResizeDrag: (clientX: number) => void;
+  onResizeCommit: (key: string, largura: number) => void;
+  onResizeCancel: () => void;
+  onAutofit: (key: string) => void;
+}): React.JSX.Element {
+  const ativa = ordem?.campo === c.key;
+
+  const iniciarResize = (e: React.PointerEvent<HTMLSpanElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    const handle = e.currentTarget;
+    const headerEl = handle.closest(".dsg-cell-header") as HTMLElement | null;
+    const startW = headerEl ? headerEl.getBoundingClientRect().width : LARGURA_PADRAO;
+    const startX = e.clientX;
+    let moveu = false;
+    handle.setPointerCapture(e.pointerId);
+    const mover = (ev: PointerEvent): void => { moveu = true; onResizeDrag(ev.clientX); };
+    const soltar = (ev: PointerEvent): void => {
+      handle.releasePointerCapture(e.pointerId);
+      handle.removeEventListener("pointermove", mover);
+      handle.removeEventListener("pointerup", soltar);
+      if (moveu) onResizeCommit(c.key, Math.max(LARGURA_MIN, startW + (ev.clientX - startX)));
+      else onResizeCancel();
+    };
+    handle.addEventListener("pointermove", mover);
+    handle.addEventListener("pointerup", soltar);
   };
+
+  return (
+    <div className="dsg-th-wrap">
+      <button type="button" className="dsg-th" onClick={() => onSort(c.key)} title="Ordenar">
+        <span className="dsg-th-label">{c.label}</span>
+        {ativa && <span className="dsg-th-arrow">{ordem!.asc ? "↑" : "↓"}</span>}
+      </button>
+      <span
+        className="dsg-th-resize"
+        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+        onPointerDown={iniciarResize}
+        onDoubleClick={(e) => { e.stopPropagation(); onAutofit(c.key); }}
+        title="Arrastar para redimensionar · duplo-clique para ajustar"
+      />
+    </div>
+  );
 }
 
 export interface DataGridProps {
@@ -50,16 +130,93 @@ export interface DataGridProps {
 }
 
 export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): React.JSX.Element {
-  const cols = React.useMemo(() => colunas.map(colunaLeitura), [colunas]);
+  const [ordem, setOrdem] = React.useState<Ordem | null>(null);
+  const [larguras, setLarguras] = React.useState<Record<string, number>>({});
+  const [guia, setGuia] = React.useState<number | null>(null);
+  const [remontar, setRemontar] = React.useState(0);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = React.useRef<{ left: number; top: number } | null>(null);
+
+  const alternar = React.useCallback((campo: string) => {
+    setOrdem((o) => (o && o.campo === campo ? { campo, asc: !o.asc } : { campo, asc: true }));
+  }, []);
+
+  const onResizeDrag = React.useCallback((clientX: number) => {
+    const rect = wrapRef.current?.getBoundingClientRect();
+    setGuia(rect ? clientX - rect.left : null);
+  }, []);
+  const onResizeCancel = React.useCallback(() => setGuia(null), []);
+
+  // O DSG só lê basis na montagem → preserva o scroll e remonta com a nova largura.
+  const aplicarLargura = React.useCallback((key: string, largura: number) => {
+    const cont = wrapRef.current?.querySelector(".dsg-container") as HTMLElement | null;
+    scrollRef.current = cont ? { left: cont.scrollLeft, top: cont.scrollTop } : null;
+    setLarguras((prev) => ({ ...prev, [key]: largura }));
+    setRemontar((n) => n + 1);
+    setGuia(null);
+  }, []);
+
+  const onAutofit = React.useCallback((key: string) => {
+    const c = colunas.find((x) => x.key === key);
+    if (c) aplicarLargura(key, larguraAutofit(c, registros));
+  }, [colunas, registros, aplicarLargura]);
+
+  React.useLayoutEffect(() => {
+    if (!scrollRef.current) return;
+    const cont = wrapRef.current?.querySelector(".dsg-container") as HTMLElement | null;
+    if (cont) {
+      cont.scrollLeft = scrollRef.current.left;
+      cont.scrollTop = scrollRef.current.top;
+    }
+    scrollRef.current = null;
+  }, [remontar]);
+
+  const ordenados = React.useMemo(() => ordenar(registros, ordem), [registros, ordem]);
+
+  const cols = React.useMemo(
+    () => colunas.map((c): Column<NotaInput> => {
+      const largura = larguras[c.key] ?? c.largura ?? LARGURA_PADRAO;
+      return {
+        ...keyColumn<NotaInput, string>(c.key, {
+          component: CelulaLeitura as never,
+          columnData: c as never,
+          disabled: true,
+          // ponytail: copia o valor cru (Excel calcula em cima); o display é formatado.
+          copyValue: ({ rowData }) => (rowData == null ? "" : String(rowData)),
+        }),
+        title: (
+          <CabecalhoColuna
+            c={c}
+            ordem={ordem}
+            onSort={alternar}
+            onResizeDrag={onResizeDrag}
+            onResizeCommit={aplicarLargura}
+            onResizeCancel={onResizeCancel}
+            onAutofit={onAutofit}
+          />
+        ),
+        basis: largura,
+        grow: 0,
+        shrink: 0,
+        minWidth: LARGURA_MIN,
+      };
+    }),
+    [colunas, larguras, ordem, alternar, onResizeDrag, aplicarLargura, onResizeCancel, onAutofit],
+  );
+
   return (
-    <DataSheetGrid<NotaInput>
-      value={registros}
-      onChange={() => { /* read-only: todas as colunas disabled */ }}
-      columns={cols}
-      height={altura}
-      rowHeight={ALTURA_LINHA}
-      lockRows
-      disableContextMenu
-    />
+    <div ref={wrapRef} className="dsg-wrap">
+      <DataSheetGrid<NotaInput>
+        key={remontar}
+        value={ordenados}
+        onChange={() => { /* read-only: todas as colunas disabled */ }}
+        columns={cols}
+        height={altura}
+        rowHeight={ALTURA_LINHA}
+        lockRows
+        disableContextMenu
+      />
+      {guia !== null && <div className="dsg-resize-guide" style={{ left: guia }} />}
+    </div>
   );
 }

@@ -36,6 +36,39 @@
   background: var(--accent-tint) !important;
 }
 
+/* cabeçalho custom: ordenação (botão) + alça de redimensionamento.
+   O DSG centraliza o título num container com padding 0 10px e sem altura
+   cheia; forçamos o container a esticar e zeramos o padding pra a alça virar
+   uma faixa de altura inteira colada na borda direita da coluna. */
+.dsg-cell-header .dsg-cell-header-container {
+  padding: 0 !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  display: flex !important;
+}
+.dsg-th-wrap { display: flex; align-items: stretch; width: 100%; height: 100%; }
+.dsg-th {
+  all: unset; cursor: pointer; flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 4px; padding: 0 8px;
+  font-size: 11.5px; font-weight: 600; color: var(--text-dim);
+}
+.dsg-th:hover { color: var(--text); }
+.dsg-th-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsg-th-arrow { flex-shrink: 0; color: var(--accent); font-weight: 700; }
+.dsg-th-resize {
+  width: 8px; cursor: col-resize; align-self: stretch; flex-shrink: 0;
+  border-right: 2px solid transparent;
+  touch-action: none; /* pointer capture: evita o navegador roubar o gesto */
+}
+.dsg-th-resize:hover { border-right-color: var(--accent); background: var(--accent-tint); }
+
+/* wrapper relativo: ancora a linha-guia do resize (e a barra de status na T3) */
+.dsg-wrap { position: relative; }
+.dsg-resize-guide {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--accent); pointer-events: none; z-index: 5;
+}
+
 /* conteúdo read-only */
 .dsg-leitura {
   padding: 0 8px; line-height: 32px; height: 32px;
