@@ -222,7 +222,7 @@ def carregar_dados() -> pd.DataFrame:
                 return "-"
             val_str = str(val).strip()
             try:
-                return pd.to_datetime(val_str, dayfirst=True).strftime('%d/%m/%Y')
+                return pd.to_datetime(val_str, dayfirst=True, format='mixed').strftime('%d/%m/%Y')
             except Exception:
                 try:
                     return pd.to_datetime(val_str).strftime('%d/%m/%Y')
@@ -292,6 +292,42 @@ def carregar_logs() -> pd.DataFrame:
         conn.close()
 
 
+_MESES_PT_REV = {
+    'jan': 1, 'janeiro': 1, 'fev': 2, 'fevereiro': 2,
+    'mar': 3, 'março': 3, 'marco': 3, 'abr': 4, 'abril': 4,
+    'mai': 5, 'maio': 5, 'jun': 6, 'junho': 6,
+    'jul': 7, 'julho': 7, 'ago': 8, 'agosto': 8,
+    'set': 9, 'setembro': 9, 'out': 10, 'outubro': 10,
+    'nov': 11, 'novembro': 11, 'dez': 12, 'dezembro': 12,
+}
+
+
+def converter_para_iso_data(val) -> str:
+    if pd.isna(val) or str(val).strip() in ("", "-", "nan", "None"):
+        return "-"
+    val_str = str(val).strip().lower()
+    try:
+        dt = pd.to_datetime(val_str, errors='coerce', format='mixed')
+        if pd.notna(dt):
+            return dt.strftime('%Y-%m-%d')
+    except Exception:
+        pass
+    parts = re.split(r'[-/\s]+', val_str)
+    if len(parts) == 2:
+        part_m, part_y = parts[0], parts[1]
+        month = int(part_m) if part_m.isdigit() and 1 <= int(part_m) <= 12 else _MESES_PT_REV.get(part_m)
+        year = None
+        if part_y.isdigit():
+            year = (2000 + int(part_y)) if len(part_y) == 2 else (int(part_y) if len(part_y) == 4 else None)
+        if month and year:
+            return f"{year:04d}-{month:02d}-01"
+    elif len(parts) == 1:
+        month = _MESES_PT_REV.get(parts[0])
+        if month:
+            return f"{datetime.datetime.now().year:04d}-{month:02d}-01"
+    return val_str
+
+
 def status_para_int(val):
     if pd.isna(val) or str(val).strip() == "-":
         return None
@@ -303,6 +339,8 @@ def status_para_int(val):
 
     # 2. FALLBACK SEGURO: Caso venha de digitação manual ou logs parciais
     val_upper = val_str.upper()
+    if "SUPR CANC" in val_upper:
+        return 997
     if "SUPR" in val_upper:
         return 998
     if "ENCE EXEC" in val_upper:
@@ -324,6 +362,9 @@ def salvar_em_massa(df: pd.DataFrame) -> None:
         df_salvar['Status_Anterior'] = "-"
     # Garante que a conversão seja aplicada em todos os casos
     df_salvar['Status_Anterior'] = df_salvar['Status_Anterior'].apply(status_para_int)
+
+    if 'Mes_Execucao_Planejado' in df_salvar.columns:
+        df_salvar['Mes_Execucao_Planejado'] = df_salvar['Mes_Execucao_Planejado'].apply(converter_para_iso_data)
 
     if 'Check' not in df_salvar.columns:
         df_salvar['Check'] = "-"

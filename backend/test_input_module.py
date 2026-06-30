@@ -305,6 +305,42 @@ def test_engine_totais_numericos_e_modular(engine_isolado):
     assert float(linha["Total_planejado_modular"]) == 0.0
 
 
+def test_status_map_grupo_c():
+    assert config.STATUS_MAP[53].startswith("53 "), "53 deve ter prefixo numérico"
+    assert 997 in config.STATUS_MAP, "997 (SUPR CANC) ausente do STATUS_MAP"
+    assert config.STATUS_MAP[997] == "SUPR CANC"
+    assert config.INV_STATUS_MAP[config.STATUS_MAP[53]] == 53
+    assert config.INV_STATUS_MAP["SUPR CANC"] == 997
+
+
+def test_status_para_int_grupo_c(banco_temporario):
+    from input_module.db import status_para_int
+    assert status_para_int("53 Programado Execução") == 53
+    assert status_para_int("SUPR CANC") == 997
+    assert status_para_int("SUPR") == 998
+    assert status_para_int("ENCE EXEC") == 999
+
+
+def test_converter_para_iso_data(banco_temporario):
+    from input_module.db import converter_para_iso_data
+    assert converter_para_iso_data("-") == "-"
+    assert converter_para_iso_data("") == "-"
+    assert converter_para_iso_data("jun-2026") == "2026-06-01"
+    assert converter_para_iso_data("junho-2026") == "2026-06-01"
+    assert converter_para_iso_data("2026-06-01") == "2026-06-01"
+    assert converter_para_iso_data("2026-06-01 00:00:00") == "2026-06-01"
+    assert converter_para_iso_data("dez-2025") == "2025-12-01"
+
+
+def test_salvar_em_massa_preserva_mes_iso(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(9900, Mes_Execucao_Planejado="jun-2026")]))
+    conn = db.get_db_connection()
+    row = conn.execute("SELECT Mes_Execucao_Planejado FROM notas WHERE Numero_Nota=9900").fetchone()
+    conn.close()
+    assert row[0] == "2026-06-01", f"DB deve guardar ISO, encontrado: {row[0]}"
+
+
 def test_config_iw66():
     assert hasattr(config, "CAMINHO_BASE_IW66")
     assert "IW66" in config.CAMINHO_BASE_IW66.upper() or "medidas" in config.CAMINHO_BASE_IW66.lower()

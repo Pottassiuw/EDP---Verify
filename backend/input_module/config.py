@@ -84,7 +84,7 @@ STATUS_MAP = {
     47: "47 Enviado Execução",
     51: "51 Ordem Liberada",
     52: "52 ADS e Viabilizado",
-    53: "Programado Execução",
+    53: "53 Programado Execução",
     54: "54 Executado/Energizado",
     55: "55 Cancelado",
     56: "56 Reprogramado Execução",
@@ -95,8 +95,9 @@ STATUS_MAP = {
     61: "61 Reprogramado Estudo Proteção",
     62: "62 Obra Suspensa",
     99: "99 Encerrado",
-    999: "Ence Exec",
+    997: "SUPR CANC",
     998: "SUPR",
+    999: "ENCE EXEC",
 }
 INV_STATUS_MAP = {v: k for k, v in STATUS_MAP.items()}
 
