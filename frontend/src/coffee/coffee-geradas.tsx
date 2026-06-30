@@ -14,7 +14,7 @@ type PendingAction =
 
 function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
   return (
-    <Button asChild variant="coffee" size="sm" title="Abrir no COFFEE" style={{ fontSize: 12, padding: "4px 6px" }}>
+    <Button asChild variant="coffee" size="sm" title="Abrir no COFFEE">
       <a target="_blank" rel="noopener" href={coffeeUrl(String(pk))}>☕</a>
     </Button>
   );
@@ -84,7 +84,7 @@ export function CoffeeGeradas(): React.JSX.Element {
       <div style={{ flexShrink: 0, padding: "16px 22px", display: "flex", alignItems: "center", gap: 12,
                     borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 15, fontWeight: 700 }}>Gerar Notas</span>
-        <Button variant="outline" size="sm" style={{ fontWeight: 600 }} onClick={() => abrirModal(undefined)}>
+        <Button variant="outline" size="sm" onClick={() => abrirModal(undefined)}>
           Gerar / Consultar notas
         </Button>
       </div>
@@ -98,7 +98,7 @@ export function CoffeeGeradas(): React.JSX.Element {
           </span>
         )}
         {aGerar.notas.length > 0 && (
-          <Button variant="outline" size="sm" style={{ fontWeight: 600 }}
+          <Button variant="outline" size="sm"
                   onClick={() => abrirModal(aGerar.notas.map((n) => n.pk))}>
             Gerar fila ({aGerar.notas.length})
           </Button>
@@ -112,13 +112,13 @@ export function CoffeeGeradas(): React.JSX.Element {
           actionColumn={(nota) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <AbrirCoffeeBtn pk={nota.pk} />
-              <Button variant="outline" size="sm"
+              <Button variant="destructive" size="sm"
                       onClick={() => setPending({ kind: "remover", pk: nota.pk })}
-                      title="Remover da fila" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
+                      title="Remover da fila">
                 Remover
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                      title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+              <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
+                      title="Ver logs">
                 Logs
               </Button>
             </div>
@@ -144,13 +144,13 @@ export function CoffeeGeradas(): React.JSX.Element {
         actionColumn={(nota) => (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <AbrirCoffeeBtn pk={nota.pk} />
-            <Button variant="outline" size="sm"
+            <Button variant="destructive" size="sm"
                     onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
-                    title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
+                    title="Arquivar nota">
               Arquivar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                    title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
+                    title="Ver logs">
               Logs
             </Button>
           </div>

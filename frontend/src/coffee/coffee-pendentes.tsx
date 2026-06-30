@@ -97,7 +97,7 @@ export function CoffeePendentes(): React.JSX.Element {
           </span>
         )}
         <div style={{ flex: 1 }} />
-        <Button variant="outline" size="sm" style={{ fontWeight: 600 }}
+        <Button variant="outline" size="sm"
                 disabled={buscaEstado === "rodando" || isLoading || notas.length === 0}
                 onClick={iniciarBusca}>
           {buscaEstado === "rodando" ? "Buscando..." : "Atualizar notas"}
@@ -143,13 +143,13 @@ export function CoffeePendentes(): React.JSX.Element {
         emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
         actionColumn={(nota) => (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Button variant="outline" size="sm"
+            <Button variant="destructive" size="sm"
                     onClick={() => setArquivarPk(nota.pk)}
-                    title="Arquivar nota" style={{ fontSize: 12, padding: "4px 6px", color: "var(--red)" }}>
+                    title="Arquivar nota">
               Arquivar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                    title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
+                    title="Ver logs">
               Logs
             </Button>
           </div>

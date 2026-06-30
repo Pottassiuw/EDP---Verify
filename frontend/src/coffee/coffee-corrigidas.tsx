@@ -35,8 +35,8 @@ export function CoffeeCorrigidas(): React.JSX.Element {
         isLoading={isLoading}
         emptyMessage="Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."
         actionColumn={(nota) => (
-          <Button variant="outline" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                  title="Ver logs" style={{ fontSize: 12, padding: "4px 6px" }}>
+          <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
+                  title="Ver logs">
             Logs
           </Button>
         )}
