@@ -290,6 +290,21 @@ def test_auditoria_cronograma(engine_isolado):
     assert df.iloc[0]["Auditoria_Cronograma"] == "🟢 Adiantado"
 
 
+def test_engine_totais_numericos_e_modular(engine_isolado):
+    from input_module import config, db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
+    _excel_iw28(config.CAMINHO_BASE_IW28)
+    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    df = engine.enriquecer_dados()
+    linha = df[df["Numero_Nota"] == 2000].iloc[0]
+    assert isinstance(linha["Total_planejado_ordem"], (int, float))
+    assert isinstance(linha["Total_real_ordem"], (int, float))
+    assert float(linha["Total_planejado_ordem"]) == 1000.0
+    assert float(linha["Total_real_ordem"]) == 800.0
+    assert "Total_planejado_modular" in df.columns
+    assert float(linha["Total_planejado_modular"]) == 0.0
+
+
 def test_cache_e_invalidacao(engine_isolado):
     from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000)]))

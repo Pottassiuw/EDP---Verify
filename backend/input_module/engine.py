@@ -282,11 +282,11 @@ def enriquecer_dados():
                 df.loc[df['Ordem'] != "Fora SAP", 'Status_Sistema'] = chave_busca_ordem.map(dicionario_status_sistema_sap).fillna("-")
                 df['Status_Sistema'] = df['Status_Sistema'].fillna("-")
 
-                df.loc[df['Ordem'] != "Fora SAP", 'Total_planejado_ordem']  = chave_busca_ordem.map(dicionario_total_planejado_ordem).fillna("0")
-                df['Total_planejado_ordem'] = df['Total_planejado_ordem'].fillna("0")
+                df.loc[df['Ordem'] != "Fora SAP", 'Total_planejado_ordem'] = chave_busca_ordem.map(dicionario_total_planejado_ordem).fillna(0.0)
+                df['Total_planejado_ordem'] = pd.to_numeric(df['Total_planejado_ordem'], errors='coerce').fillna(0.0)
 
-                df.loc[df['Ordem'] != "Fora SAP", 'Total_real_ordem']  = chave_busca_ordem.map(dicionario_total_real_ordem).fillna("0")
-                df['Total_real_ordem'] = df['Total_real_ordem'].fillna("0")
+                df.loc[df['Ordem'] != "Fora SAP", 'Total_real_ordem'] = chave_busca_ordem.map(dicionario_total_real_ordem).fillna(0.0)
+                df['Total_real_ordem'] = pd.to_numeric(df['Total_real_ordem'], errors='coerce').fillna(0.0)
 
                 # Cálculo percentual de avanço financeiro da obra
                 def calcular_exec_percentagem(row):
@@ -321,7 +321,7 @@ def enriquecer_dados():
 
     # --- 3.7. PROCV COMPLEXO: CUSTOS MODULARES, CHI, CI E SAZONALIDADE ---
     # Lê os custos padrão dos conjuntos modulares e multiplica pelo volume planejado (Planejado_DDPM)
-    colunas_modulo_9 = ['Modular', 'CHI', 'CI', 'Ocorrencia', 'DEC_PROG_CHI', 'CHI_Sazonal_2025']
+    colunas_modulo_9 = ['Modular', 'CHI', 'CI', 'Ocorrencia', 'DEC_PROG_CHI', 'CHI_Sazonal_2025', 'Total_planejado_modular']
     for col in colunas_modulo_9: df[col] = 0.0
 
     if os.path.exists(config.CAMINHO_CUSTO_MODULAR):
@@ -364,8 +364,11 @@ def enriquecer_dados():
 
             dict_sazonal = {}
             try:
-                df_sazonal_excel = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares', skiprows=1, nrows=4, usecols="U:AF")
-                dict_sazonal = dict(zip(df_sazonal_excel.iloc[0].astype(int), df_sazonal_excel.iloc[3].astype(float)))
+                df_sazonal_full = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares', skiprows=1, nrows=4)
+                if len(df_sazonal_full.columns) >= 21:
+                    df_sazonal_excel = df_sazonal_full.iloc[:, 20:32]
+                    if not df_sazonal_excel.empty:
+                        dict_sazonal = dict(zip(df_sazonal_excel.iloc[0].astype(int), df_sazonal_excel.iloc[3].astype(float)))
             except Exception as e_saz:
                 print(f"Sazonalidade não carregada: {e_saz}")
 
@@ -375,6 +378,7 @@ def enriquecer_dados():
 
                 # A quantidade planejada atua como multiplicador das métricas unitárias
                 df['Modular'] = chave_busca.map(dict_custo).fillna(0.0)
+                df['Total_planejado_modular'] = df['Modular'] * quantidade_g2
                 df['CHI'] = chave_busca.map(dict_chi).fillna(0.0) * quantidade_g2
                 df['CI'] = chave_busca.map(dict_ci).fillna(0.0) * quantidade_g2
                 df['Ocorrencia'] = chave_busca.map(dict_ocor).fillna(0.0) * quantidade_g2
