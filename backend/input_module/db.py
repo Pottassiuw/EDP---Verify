@@ -275,6 +275,10 @@ def carregar_logs() -> pd.DataFrame:
     conn = get_db_connection()
     try:
         return pd.read_sql("SELECT * FROM log_alteracoes ORDER BY Data_Hora DESC", conn)
+    except Exception:
+        return pd.DataFrame(columns=["ID_Log", "Numero_Nota", "Usuario",
+                                     "Data_Hora", "Campo_Alterado",
+                                     "Valor_Antigo", "Valor_Novo"])
     finally:
         conn.close()
 
@@ -496,6 +500,9 @@ def carregar_log_arquivos() -> pd.DataFrame:
     conn = get_db_connection()
     try:
         return pd.read_sql("SELECT * FROM log_arquivos ORDER BY Data_Hora DESC", conn)
+    except Exception:
+        return pd.DataFrame(columns=["ID_Log", "Nome_Arquivo", "Usuario",
+                                     "Data_Hora", "Acao"])
     finally:
         conn.close()
 

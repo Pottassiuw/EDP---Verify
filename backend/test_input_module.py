@@ -162,6 +162,21 @@ def test_deletar_notas(banco_temporario):
     assert list(db.carregar_dados()["Numero_Nota"]) == [4001]
 
 
+def test_carregar_logs_fallback_em_erro(banco_temporario, monkeypatch):
+    from input_module import db
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("falha simulada de leitura")
+
+    monkeypatch.setattr(db.pd, "read_sql", boom)
+    logs = db.carregar_logs()
+    assert logs.empty
+    assert "Campo_Alterado" in logs.columns
+    arquivos = db.carregar_log_arquivos()
+    assert arquivos.empty
+    assert "Nome_Arquivo" in arquivos.columns
+
+
 def test_deletar_notas_gera_log(banco_temporario):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(4100)]))
