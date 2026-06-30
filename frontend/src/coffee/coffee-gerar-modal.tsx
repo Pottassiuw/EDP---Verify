@@ -211,7 +211,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     <>
       <div onClick={gerando.rodando ? undefined : onClose}
            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }} />
-      <div role="dialog" aria-modal="true"
+      <div role="dialog" aria-modal="true" className="ui-reset"
            style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
                     width: 760, maxWidth: "94vw", maxHeight: "88vh", background: "var(--surface)",
                     border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
