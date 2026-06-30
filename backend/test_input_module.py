@@ -14,7 +14,7 @@ def test_config_dicionarios_completos():
     assert config.MAP_FILTROS["Status"] == "Status_Nota"
     assert config.MAP_ORDEM_EXECUTADA["JAND INVE"] == "SIM"
     assert config.MAP_REGIONAL_CSD["POA"] == "Poa/Suzano"
-    assert len(config.BASES_REDE) == 7
+    assert len(config.BASES_REDE) == 8
     assert len(config.BASES_APOIO) == 5
     assert "Emergente" in config.PRIORIDADES
     assert config.NOMES_AMIGAVEIS["Numero_Nota"] == "Nº Nota (ID)"
@@ -248,7 +248,7 @@ def engine_isolado(banco_temporario, monkeypatch, tmp_path):
     for attr in ["CAMINHO_INDICADOR_CONTINUIDADE", "CAMINHO_BASE_IW28",
                  "CAMINHO_CUSTO_ORD_IW38", "CAMINHO_CLIENTES_CONJUNTO",
                  "CAMINHO_CUSTO_MODULAR", "CAMINHO_GANHOS", "CAMINHO_TABLE1",
-                 "CAMINHO_PROJETO_CONSTRUCAO"]:
+                 "CAMINHO_PROJETO_CONSTRUCAO", "CAMINHO_BASE_IW66"]:
         monkeypatch.setattr(config, attr, str(tmp_path / f"{attr}.xlsx"))
     monkeypatch.setattr(config, "BASES_REDE", {
         "IW28": config.CAMINHO_BASE_IW28, "IW38": config.CAMINHO_CUSTO_ORD_IW38})
@@ -303,6 +303,59 @@ def test_engine_totais_numericos_e_modular(engine_isolado):
     assert float(linha["Total_real_ordem"]) == 800.0
     assert "Total_planejado_modular" in df.columns
     assert float(linha["Total_planejado_modular"]) == 0.0
+
+
+def test_config_iw66():
+    assert hasattr(config, "CAMINHO_BASE_IW66")
+    assert "IW66" in config.CAMINHO_BASE_IW66.upper() or "medidas" in config.CAMINHO_BASE_IW66.lower()
+    assert len(config.BASES_REDE) == 8
+    assert "Medida_SAP" in config.COLUNAS_PAINEL
+    assert "Medida_vs_Planejado" in config.COLUNAS_PAINEL
+    assert "Medida SAP" in config.MAP_FILTROS
+
+
+def _excel_iw66(caminho):
+    pd.DataFrame({
+        "Nota": [2000, 2000, 2000],
+        "Denominação do conjunto": ["REDE", "POSTE", "REDE"],
+        "Texto medida": ["CABO", "POSTE", "CONDUTOR"],
+        "Descrição": ["", "", ""],
+        "Nº de ordenação": [500.0, 2.0, 300.0],
+    }).to_excel(caminho, index=False)
+
+
+def test_engine_medidas_iw66_sem_arquivo(engine_isolado):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    df = engine.enriquecer_dados()
+    assert "Medida_SAP" in df.columns
+    assert "Medida_vs_Planejado" in df.columns
+    assert df.iloc[0]["Medida_SAP"] == "-"
+    assert df.iloc[0]["Medida_vs_Planejado"] == "-"
+
+
+def test_engine_medidas_iw66_com_dados(engine_isolado, monkeypatch):
+    from input_module import config, db, engine
+    monkeypatch.setattr(config, "CAMINHO_BASE_IW66", str(__import__("pathlib").Path(
+        engine_isolado).parent / "IW66.xlsx"))
+    _excel_iw66(config.CAMINHO_BASE_IW66)
+    db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
+    engine.invalidar_cache()
+    df = engine.enriquecer_dados()
+    linha = df[df["Numero_Nota"] == 2000].iloc[0]
+    assert "km" in str(linha["Medida_SAP"])
+    assert "un" in str(linha["Medida_SAP"])
+    assert linha["Medida_vs_Planejado"] in ("Sim", "Não")
+
+
+def test_comparar_medida_planejado():
+    from input_module.engine import _comparar_medida_planejado
+    assert _comparar_medida_planejado("-", 2.0) == "-"
+    assert _comparar_medida_planejado("0.8 km", float("nan")) == "-"
+    assert _comparar_medida_planejado("0.8 km", 800.0) == "Sim"
+    assert _comparar_medida_planejado("0.8 km", 900.0) == "Não"
+    assert _comparar_medida_planejado("2 un", 2.0) == "Sim"
+    assert _comparar_medida_planejado("0.8 km / 2 un", 800.0) == "Sim"
 
 
 def test_cache_e_invalidacao(engine_isolado):

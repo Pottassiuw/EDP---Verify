@@ -28,6 +28,7 @@ CAMINHO_INDICADOR_CONTINUIDADE = (
 )
 CAMINHO_BASE_IW28 = REDE_INPUT_SQL + r"\Gerada_base_IW28.XLSX"
 CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Gerada_custo_ord_IW38.XLSX"
+CAMINHO_BASE_IW66 = REDE_INPUT_SQL + r"\Gerada_medidas_IW66.XLSX"
 CAMINHO_CLIENTES_CONJUNTO = REDE_INPUT_SQL + r"\Clientes_Conjunto.xlsx"
 CAMINHO_CUSTO_MODULAR = REDE_INPUT_SQL + r"\Custo_Modular.xlsx"
 CAMINHO_GANHOS = REDE_INPUT_SQL + r"\Ganhos.xlsx"
@@ -39,6 +40,7 @@ CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
 BASES_REDE = {
     "Extração SAP IW28 (Notas)": CAMINHO_BASE_IW28,
     "Extração SAP IW38 (Ordens)": CAMINHO_CUSTO_ORD_IW38,
+    "Extração SAP IW66 (Medidas)": CAMINHO_BASE_IW66,
     "Indicador de Continuidade (Limite ANEEL)": CAMINHO_INDICADOR_CONTINUIDADE,
     "Clientes por Conjunto": CAMINHO_CLIENTES_CONJUNTO,
     "Custos Modulares e Sazonalidade": CAMINHO_CUSTO_MODULAR,
@@ -272,6 +274,8 @@ MAP_FILTROS = {
     "Ordem Executada": "Ordem_Executada",
     "Modular": "Modular",
     "Total Planejado Modular": "Total_planejado_modular",
+    "Medida SAP": "Medida_SAP",
+    "Medida vs Planejado": "Medida_vs_Planejado",
     "Regional CSD": "Regional_CSD",
     "Nº Clientes Conjunto": "N_Clientes_Conjunto",
     "CHI": "CHI",
@@ -521,4 +525,6 @@ COLUNAS_PAINEL = [
     "CHI_Conjunto",
     "Equipamento_Protecao",
     "DEC_Prog_CHI",
+    "Medida_SAP",
+    "Medida_vs_Planejado",
 ]

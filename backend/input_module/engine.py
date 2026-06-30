@@ -28,6 +28,58 @@ meses_pt_rev = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "maio": 5, "jun": 6,
                 "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
 
 
+def _ler_export_medidas() -> pd.DataFrame | None:
+    caminho = config.CAMINHO_BASE_IW66
+    if not os.path.exists(caminho):
+        return None
+    try:
+        return pd.read_excel(caminho)
+    except Exception as e:
+        print(f"Erro ao ler IW66: {e}")
+        return None
+
+
+def _comparar_medida_planejado(medida_str: str, planejado_val) -> str:
+    medida_str = str(medida_str).strip().replace(",", ".")
+    if pd.isna(planejado_val) or medida_str == "-":
+        return "-"
+    try:
+        planejado_val = float(planejado_val)
+    except (TypeError, ValueError):
+        return "-"
+
+    km_val, un_val = 0.0, 0.0
+    has_km, has_un = False, False
+    m = re.search(r"([\d.]+)\s*km", medida_str.lower())
+    if m:
+        try:
+            km_val = float(m.group(1))
+            has_km = True
+        except ValueError:
+            pass
+    m = re.search(r"([\d.]+)\s*un", medida_str.lower())
+    if m:
+        try:
+            un_val = float(m.group(1))
+            has_un = True
+        except ValueError:
+            pass
+
+    if not has_km and not has_un:
+        return "-"
+
+    match_km = has_km and (
+        abs(km_val * 1000.0 - planejado_val) < 0.1 or abs(km_val - planejado_val) < 0.1
+    )
+    match_un = has_un and abs(un_val - planejado_val) < 0.1
+
+    if has_km and has_un:
+        return "Sim" if (match_km or match_un) else "Não"
+    if has_km:
+        return "Sim" if match_km else "Não"
+    return "Sim" if match_un else "Não"
+
+
 # --- FUNÇÃO DE REGRA DE NEGÓCIO: CONJUNTO CRÍTICO ---
 # Avalia a criticidade do conjunto com base no Delta do Indicador (12 meses)
 def regra_conjunto_critico(valor):
@@ -481,6 +533,79 @@ def enriquecer_dados():
 
     # Atribui diretamente a chave extraída se for um equipamento de proteção, caso contrário "-"
     df['Equipamento_Protecao'] = np.where(equipamento_protecao_direto, chave_protecao, "-")
+
+    # --- 3.12. INTEGRAÇÃO SAP: MEDIDAS IW66 ---
+    df['Medida_SAP'] = "-"
+    df_medidas_raw = _ler_export_medidas()
+    if df_medidas_raw is not None:
+        try:
+            df_m = df_medidas_raw.copy()
+            df_m['Nota'] = df_m['Nota'].dropna().astype(int).astype(str).str.strip()
+
+            _UN_DENOMS = {"POSTE", "TRANSFORMADOR", "TRANSF", "TRAFO", "SUBST", "CHAVE",
+                          "RELIGADOR", "SECCIONALIZADOR", "DISJUNTOR", "DJ", "BF", "LBS",
+                          "MONITORAMENTO", "MANUT. CIRC"}
+            _M_DENOMS = {"REDE", "RDS", "BLINDAGEM", "MELHORIA OPERATIVA"}
+            _UN_KW = {"POSTE", "TRANSF", "TRAFO", "RELIG", "CHAVE", "SECCIONALIZADOR",
+                      "DISJUNTOR", "DJ"}
+            _M_KW = {"CONDUTOR", "CABO", "SPACER", "RECOND", "CONSTR",
+                     "BLINDAR", "EXTENSAO", "REDE"}
+
+            def _classificar(row):
+                denom = str(row.get("Denominação do conjunto", "")).strip().upper()
+                texto = str(row.get("Texto medida", "")).strip().upper()
+                desc = str(row.get("Descrição", "")).strip().upper()
+                try:
+                    val = float(row.get("Nº de ordenação", 0) or 0)
+                except (TypeError, ValueError):
+                    val = 0.0
+                is_un = any(kw in denom for kw in _UN_DENOMS)
+                is_m = any(kw in denom for kw in _M_DENOMS)
+                has_un = any(kw in texto or kw in desc for kw in _UN_KW)
+                has_m = any(kw in texto or kw in desc for kw in _M_KW)
+                if val > 20:
+                    return val, "m"
+                if is_un:
+                    return val, "un"
+                if is_m:
+                    if has_un and not has_m and val <= 20:
+                        return val, "un"
+                    return val, "m"
+                if has_un and not has_m and val <= 20:
+                    return val, "un"
+                if has_m and not has_un:
+                    return val, "m"
+                return val, ("m" if val >= 10 else "un")
+
+            df_m[["val_class", "unit_class"]] = pd.DataFrame(
+                df_m.apply(_classificar, axis=1).tolist(), index=df_m.index
+            )
+            df_m["val_m"] = np.where(df_m["unit_class"] == "m", df_m["val_class"], 0.0)
+            df_m["val_un"] = np.where(df_m["unit_class"] == "un", df_m["val_class"], 0.0)
+            grouped = df_m.groupby("Nota")[["val_m", "val_un"]].sum().reset_index()
+
+            def _format_medida(row):
+                parts = []
+                if row["val_m"] > 0:
+                    km = row["val_m"] / 1000.0
+                    parts.append(f"{km:.3f}".rstrip("0").rstrip(".") + " km")
+                if row["val_un"] > 0:
+                    un = int(row["val_un"]) if float(row["val_un"]).is_integer() else f"{row['val_un']:.1f}"
+                    parts.append(f"{un} un")
+                return " / ".join(parts) if parts else "-"
+
+            grouped["Medida_SAP_Str"] = grouped.apply(_format_medida, axis=1)
+            dict_medidas = dict(zip(grouped["Nota"], grouped["Medida_SAP_Str"]))
+            df["Medida_SAP"] = df["Numero_Nota"].astype(str).str.strip().map(dict_medidas).fillna("-")
+        except Exception as e:
+            print(f"Erro ao processar medidas IW66: {e}")
+            df["Medida_SAP"] = "Erro"
+
+    # --- 3.13. COMPARAÇÃO: MEDIDA VS PLANEJADO ---
+    df["Medida_vs_Planejado"] = df.apply(
+        lambda r: _comparar_medida_planejado(r.get("Medida_SAP", "-"), r.get("Planejado_DDPM")),
+        axis=1,
+    )
 
     df["Auditoria_Cronograma"] = df.apply(avaliar_prazo_sap, axis=1)
     return df
