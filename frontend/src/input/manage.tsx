@@ -170,7 +170,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   }
 
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
+    <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <ToggleGroup type="single" value={modo} variant="outline"
                      onValueChange={(v) => { if (v) trocarModo(v as Modo); }}>

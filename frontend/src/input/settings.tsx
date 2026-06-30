@@ -36,7 +36,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
   }
 
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, padding: 18, overflow: 'auto' }}>
+    <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, padding: 18, overflow: 'auto' }}>
       {msg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--tint-green)', fontSize: 13 }}>{msg}</div>}
 
       <Cartao titulo="Seu nome (log de auditoria)">
