@@ -189,15 +189,15 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             </button>
           )}
           {!queueCollapsed && (<React.Fragment>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
+          <div className="ui-reset" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
                         borderBottom: "1px solid var(--line)", background: "var(--bg-2)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <Button variant="ghost" size="sm" title="Recolher fila" aria-label="Recolher fila"
-                      style={{ padding: "2px 8px", fontSize: 13, lineHeight: 1 }} onClick={toggleQueue}>«</Button>
+              <Button variant="ghost" size="icon-sm" title="Recolher fila" aria-label="Recolher fila"
+                      onClick={toggleQueue}>«</Button>
               <span className="edp-eyebrow">Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</span>
             </div>
             {filtered.length > 0 && (
-              <Button variant="ghost" size="sm" style={{ fontSize: 11 }}
+              <Button variant="ghost" size="sm"
                       onClick={() => setSelBatch(new Set(filtered.map((n) => n.id)))}>Selecionar todas</Button>
             )}
           </div>
@@ -248,7 +248,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             const allOpen = ids.every((id) => !completed.has(id));
             const doAction = (action: "done" | "reopen"): void => { onMarkMany(ids, action); setSelBatch(new Set()); };
             return (
-              <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
+              <div className="ui-reset" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
                             background: "var(--bg-2)", borderTop: "1px solid var(--line-2)", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
                   <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
@@ -331,11 +331,11 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
           <div className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 5 }}>
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <div className="ui-reset" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <Button variant="coffee" size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</Button>
-          <Button variant="outline" size="sm" title={fs ? "Sair da tela cheia" : "Expandir"}
+          <Button variant="outline" size="icon-sm" title={fs ? "Sair da tela cheia" : "Expandir"}
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
-            {fs ? "⤡ Fechar" : "⤢ Expandir"}
+            {fs ? "⤡" : "⤢"}
           </Button>
           <Button variant={done ? "outline" : "accent"} size="sm" onClick={() => onToggleDone(sel.id)}>
             {done ? "↺ Reabrir" : "✓ Concluir"}
