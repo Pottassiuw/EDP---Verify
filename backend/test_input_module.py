@@ -162,6 +162,16 @@ def test_deletar_notas(banco_temporario):
     assert list(db.carregar_dados()["Numero_Nota"]) == [4001]
 
 
+def test_deletar_notas_gera_log(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4100)]))
+    assert db.deletar_notas([4100], usuario="tester") == 1
+    logs = db.carregar_logs()
+    linha = logs[logs["Numero_Nota"] == 4100].iloc[0]
+    assert linha["Campo_Alterado"] == "EXCLUSÃO DE NOTA"
+    assert linha["Usuario"] == "tester"
+
+
 def test_backup_rotativo(banco_temporario):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(5000)]))

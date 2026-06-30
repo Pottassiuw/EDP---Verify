@@ -183,7 +183,7 @@ def criar_lote(pedido: LotePedido, tasks: BackgroundTasks,
 def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
                   usuario: str = Depends(usuario_atual)):
     _garantir_banco()
-    excluidas = db.deletar_notas(pedido.numeros)
+    excluidas = db.deletar_notas(pedido.numeros, usuario=usuario)
     if excluidas:
         _pos_escrita(tasks)
     return {"excluidas": excluidas}

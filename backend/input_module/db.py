@@ -381,8 +381,11 @@ def salvar_log_alteracoes(logs: list) -> None:
         conn.close()
 
 
-def deletar_notas(lista_numeros_nota: list) -> int:
-    """Exclui notas do banco de dados com base em uma lista de 'Numero_Nota'."""
+def deletar_notas(lista_numeros_nota: list, usuario: str = "sistema") -> int:
+    """Exclui notas do banco e registra a exclusão no log de auditoria.
+
+    O log e o DELETE ocorrem na mesma transação.
+    """
     realizar_backup()
     if not lista_numeros_nota:
         return 0
@@ -391,6 +394,17 @@ def deletar_notas(lista_numeros_nota: list) -> int:
     cursor = conn.cursor()
 
     try:
+        data_hora_log = datetime.datetime.now()
+        logs_exclusao = [
+            (int(nota), usuario, data_hora_log,
+             "EXCLUSÃO DE NOTA", "Registro Existente", "Registro Apagado")
+            for nota in lista_numeros_nota
+        ]
+        cursor.executemany('''
+            INSERT INTO log_alteracoes (Numero_Nota, Usuario, Data_Hora, Campo_Alterado, Valor_Antigo, Valor_Novo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', logs_exclusao)
+
         notas_para_deletar = [(int(nota),) for nota in lista_numeros_nota]
         cursor.executemany('DELETE FROM notas WHERE Numero_Nota = ?', notas_para_deletar)
         count = cursor.rowcount
