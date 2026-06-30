@@ -40,6 +40,7 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'Exec_percentagem_ordem', label: 'Exec %', numeric: true },
   { key: 'Ordem_Executada', label: 'Ordem Exec.' },
   { key: 'Modular', label: 'Modular (R$)', numeric: true },
+  { key: 'Total_planejado_modular', label: 'Total Planejado Modular (R$)', numeric: true },
   { key: 'Regional_CSD', label: 'Regional CSD' },
   { key: 'N_Clientes_Conjunto', label: 'Nº Clientes Conjunto', numeric: true },
   { key: 'CHI', label: 'CHI', numeric: true },
@@ -50,6 +51,8 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'CHI_Conj', label: 'CHI Conjunto', numeric: true },
   { key: 'Equipamento_Protecao', label: 'DIS Proteção' },
   { key: 'DEC_PROG_CHI', label: 'DEC Prog. CHI', numeric: true },
+  { key: 'Medida_SAP', label: 'Medida SAP' },
+  { key: 'Medida_vs_Planejado', label: 'Medida vs Planejado' },
 ];
 
 export const ROTULOS: Record<string, string> =
