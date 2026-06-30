@@ -50,6 +50,16 @@ def test_inicializar_banco_cria_tabelas(banco_temporario):
     assert "bloqueios" not in tabelas  # fora do escopo (spec)
 
 
+def test_inicializar_banco_cria_indices(banco_temporario):
+    from input_module import db
+    conn = db.get_db_connection()
+    indices = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='index'").fetchall()}
+    conn.close()
+    assert {"idx_log_alteracoes_nota", "idx_log_alteracoes_data",
+            "idx_log_arquivos_data"} <= indices
+
+
 def test_migracao_copia_banco_da_rede(monkeypatch, tmp_path):
     from input_module import config, db
     # Simula o banco "da rede" como um sqlite real noutro tmp

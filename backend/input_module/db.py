@@ -101,6 +101,11 @@ def inicializar_banco() -> None:
     if "Status_Anterior" not in colunas_existentes:
         cursor.execute('ALTER TABLE notas ADD COLUMN Status_Anterior TEXT DEFAULT "-"')
 
+    # Índices para acelerar auditoria e logs
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_alteracoes_nota ON log_alteracoes(Numero_Nota)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_alteracoes_data ON log_alteracoes(Data_Hora DESC)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_arquivos_data ON log_arquivos(Data_Hora DESC)')
+
     conn.commit()
     conn.close()
 
