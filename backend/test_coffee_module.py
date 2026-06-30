@@ -1,4 +1,4 @@
-"""Testes do módulo COFFEE (backend)."""
+﻿"""Testes do módulo COFFEE (backend)."""
 import time as _time
 
 import pytest
@@ -39,7 +39,7 @@ def coffee_tmp(monkeypatch, tmp_path):
 
 def test_upsert_primeira_busca_pendente(coffee_tmp):
     from coffee_module import db
-    classe = db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    classe = db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
     assert classe == "pendente"
     notas = db.listar_notas("pendente")
     assert len(notas) == 1
@@ -50,15 +50,15 @@ def test_upsert_primeira_busca_pendente(coffee_tmp):
 
 def test_upsert_transicao_corrigida_depois_gerada(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
     # SAP atribuído: 10000000 -> real
-    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     assert classe == "corrigida"
     nota = db.listar_notas("corrigida")[0]
     assert nota["id_sap_anterior"] == 10000000
     assert nota["arquivado"] is False
     # re-busca: transição consumida -> gerada
-    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     assert classe == "gerada"
     assert db.listar_notas("corrigida") == []
     assert len(db.listar_notas("gerada")) == 1
@@ -66,7 +66,7 @@ def test_upsert_transicao_corrigida_depois_gerada(coffee_tmp):
 
 def test_registrar_erro_e_listar_tudo(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(1, 10000000, False, {})
+    db.upsert_nota(1, 10000000, {})
     db.registrar_erro(2, "timeout")
     todas = db.listar_notas()
     assert len(todas) == 2
@@ -130,8 +130,8 @@ def test_registrar_log_nunca_levanta(coffee_tmp):
 
 def test_upsert_registra_transicao_de_classificacao(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})  # pendente (sem anterior)
-    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})   # -> corrigida
+    db.upsert_nota(355617, 10000000, {"id_sap": 10000000})  # pendente (sem anterior)
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})   # -> corrigida
     trans = db.listar_logs(tipo="transicao")
     classif = [t for t in trans if t["acao"] == "classificar"]
     assert len(classif) == 1
@@ -140,18 +140,10 @@ def test_upsert_registra_transicao_de_classificacao(coffee_tmp):
     assert classif[0]["detalhes"]["novo"] == "corrigida"
 
 
-def test_upsert_registra_transicao_de_arquivado(coffee_tmp):
-    from coffee_module import db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})  # arquivado=False
-    db.upsert_nota(355617, 10000000, True, {"id_sap": 10000000})   # -> arquivado=True
-    arq = [t for t in db.listar_logs(tipo="transicao") if t["acao"] == "arquivar_estado"]
-    assert len(arq) == 1
-    assert arq[0]["detalhes"] == {"anterior": False, "novo": True}
-
 
 def test_upsert_primeira_busca_nao_gera_transicao(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
     assert db.listar_logs(tipo="transicao") == []
 
 
@@ -411,7 +403,7 @@ def test_usuario_atual_fallback_nunca_levanta(coffee_tmp, monkeypatch):
 
 def test_marcar_gerar_e_listar(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     assert db.listar_notas("a_gerar") == []
     db.marcar_gerar(355617, True)
     aged = db.listar_notas("a_gerar")
@@ -421,7 +413,7 @@ def test_marcar_gerar_e_listar(coffee_tmp):
 
 def test_marcar_gerar_falso_remove_da_lista(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(1, 17247854, False, {})
+    db.upsert_nota(1, 17247854, {})
     db.marcar_gerar(1, True)
     db.marcar_gerar(1, False)
     assert db.listar_notas("a_gerar") == []
@@ -429,16 +421,16 @@ def test_marcar_gerar_falso_remove_da_lista(coffee_tmp):
 
 def test_a_gerar_preservado_em_refetch(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(1, 10000000, False, {"id_sap": 10000000})
+    db.upsert_nota(1, 10000000, {"id_sap": 10000000})
     db.marcar_gerar(1, True)
-    db.upsert_nota(1, 17247854, False, {"id_sap": 17247854})  # re-busca
+    db.upsert_nota(1, 17247854, {"id_sap": 17247854})  # re-busca
     assert db.listar_notas("a_gerar")[0]["pk"] == 1
 
 
 def test_nota_existe(coffee_tmp):
     from coffee_module import db
     assert db.nota_existe(99) is False
-    db.upsert_nota(99, 10000000, False, {})
+    db.upsert_nota(99, 10000000, {})
     assert db.nota_existe(99) is True
 
 
@@ -449,7 +441,7 @@ def test_nota_existe(coffee_tmp):
 
 def test_rota_marcar_gerar_nota_existente(coffee_cliente):
     from coffee_module import db
-    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
     assert r.status_code == 200 and r.json()["ok"] is True
     assert db.listar_notas("a_gerar")[0]["pk"] == 355617
@@ -484,7 +476,7 @@ def test_rota_marcar_gerar_falha_busca_502(coffee_cliente, monkeypatch):
 
 def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
     from coffee_module import client, db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
     db.marcar_gerar(355617, True)
     monkeypatch.setattr(client, "desarquivar", lambda i: True)
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
@@ -562,7 +554,7 @@ def test_classificacao_nao_gerada():
 
 def test_upsert_nota_sem_sap_classifica_nao_gerada(coffee_tmp):
     from coffee_module import db
-    classe = db.upsert_nota(355617, None, False, {"id_sap": None})
+    classe = db.upsert_nota(355617, None, {"id_sap": None})
     assert classe == "nao_gerada"
     assert db.listar_notas("nao_gerada")[0]["pk"] == 355617
 
@@ -626,7 +618,7 @@ def test_rota_gerar_lote_vazio_400(coffee_cliente):
 
 def test_marcar_gerar_remover_exige_justificativa(coffee_cliente):
     from coffee_module import db
-    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     db.marcar_gerar(355617, True)
     # sem justificativa ao remover → 400
     r = coffee_cliente.post("/api/coffee/marcar-gerar",
@@ -637,7 +629,7 @@ def test_marcar_gerar_remover_exige_justificativa(coffee_cliente):
 
 def test_marcar_gerar_remover_com_justificativa(coffee_cliente):
     from coffee_module import db
-    db.upsert_nota(355617, 17247854, True, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     db.marcar_gerar(355617, True)
     r = coffee_cliente.post("/api/coffee/marcar-gerar",
                             json={"id": 355617, "a_gerar": False,
@@ -677,7 +669,7 @@ def test_geracao_nota_arquivada_remove_da_fila(coffee_tmp, monkeypatch):
     """Nota arquivada deve ter a_gerar desmarcado apos geracao, saindo da fila."""
     from coffee_module import client, db, jobs
 
-    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     db.marcar_gerar(355617, True)
     assert db.listar_notas("a_gerar")[0]["pk"] == 355617  # esta na fila
 
@@ -718,7 +710,7 @@ def test_geracao_busca_antes_de_definir_sap(coffee_tmp, monkeypatch):
 
 def test_diagnosticar_nota_retorna_estado_e_logs(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(356322, 10000000, False, {"id_sap": 10000000})  # pendente
+    db.upsert_nota(356322, 10000000, {"id_sap": 10000000})  # pendente
     diag = db.diagnosticar_nota(356322)
     assert diag["pk"] == 356322
     assert diag["id_sap"] == 10000000
@@ -731,9 +723,9 @@ def test_caracteriza_avulsa_atualmente_vira_corrigida(coffee_tmp):
     """Task 3b: nota avulsa (pendente -> SAP real) com origem='avulsa' é
     rotulada 'gerada', não 'corrigida'."""
     from coffee_module import db
-    db.upsert_nota(355617, 10000000, False, {"id_sap": 10000000})
+    db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
     db.definir_origem(355617, "avulsa")
-    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     assert classe == "gerada"  # após Task 3b: avulsa corretamente vira gerada
 
 
@@ -756,9 +748,9 @@ def test_classificacao_sem_origem_mantem_corrigida():
 
 def test_upsert_avulsa_vira_gerada_apos_pendente(coffee_tmp):
     from coffee_module import db
-    db.upsert_nota(1, 10000000, False, {"id_sap": 10000000})  # pendente
+    db.upsert_nota(1, 10000000, {"id_sap": 10000000})  # pendente
     db.definir_origem(1, "avulsa")
-    classe = db.upsert_nota(1, 17247854, False, {"id_sap": 17247854})
+    classe = db.upsert_nota(1, 17247854, {"id_sap": 17247854})
     assert classe == "gerada"
     assert db.listar_notas("corrigida") == []
 
@@ -776,7 +768,7 @@ def test_geracao_marca_origem_avulsa(coffee_tmp, monkeypatch):
     diag = db.diagnosticar_nota(355617)
     assert diag is not None
     # origem persistida; re-busca com SAP real classifica como gerada
-    classe = db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    classe = db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     assert classe == "gerada"
 
 
@@ -830,7 +822,7 @@ def test_geracao_pula_nota_com_sap_real(coffee_tmp, monkeypatch):
         lambda i: {"pk": int(i), "id_sap": _SAP_REAL(), "arquivado": False,
                    "fields": {"id_sap": _SAP_REAL()}},
     )
-    db.upsert_nota(355617, _SAP_REAL(), False, {"id_sap": _SAP_REAL()})
+    db.upsert_nota(355617, _SAP_REAL(), {"id_sap": _SAP_REAL()})
     db.marcar_gerar(355617, True)
     job_id = jobs.iniciar_geracao([355617])
     _aguardar_job(jobs, job_id)
@@ -850,13 +842,13 @@ def test_geracao_nao_sobrescreve_origem_verificar(coffee_tmp, monkeypatch):
         lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": False,
                    "fields": {"id_sap": config.SAP_PENDENTE}},
     )
-    db.upsert_nota(355617, config.SAP_PENDENTE, False, {"id_sap": config.SAP_PENDENTE})
+    db.upsert_nota(355617, config.SAP_PENDENTE, {"id_sap": config.SAP_PENDENTE})
     db.definir_origem(355617, "verificar")
     job_id = jobs.iniciar_geracao([355617])
     _aguardar_job(jobs, job_id)
     assert db.origem_atual(355617) == "verificar"
     # re-busca com SAP real -> corrigida (origem != avulsa)
-    classe = db.upsert_nota(355617, _SAP_REAL(), False, {"id_sap": _SAP_REAL()})
+    classe = db.upsert_nota(355617, _SAP_REAL(), {"id_sap": _SAP_REAL()})
     assert classe == "corrigida"
 
 
@@ -870,7 +862,7 @@ def test_rota_regerar_pula_sap_real(coffee_cliente, monkeypatch):
         lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
                    "fields": {"id_sap": 17247854}},
     )
-    db.upsert_nota(355617, 17247854, False, {"id_sap": 17247854})
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     db.marcar_gerar(355617, True)
     r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
     assert r.status_code == 200 and r.json()["ok"] is True

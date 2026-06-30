@@ -85,7 +85,7 @@ def consultar(id: int):
     _garantir_banco()
     try:
         nota = client.buscar_nota(id)
-        classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+        classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
     except Exception:
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=502,
@@ -155,12 +155,11 @@ def marcar_gerar(pedido: MarcarGerarPedido):
                             detail="Justificativa obrigatoria para remover da fila.")
     pk = pedido.id
     if pedido.a_gerar:
-        # Resolve o pk real via API (o id de entrada pode != pk do COFFEE).
+        # Resolve o pk real via API e garante nota no DB com arquivado=0.
         try:
             nota = client.buscar_nota(pedido.id)
             pk = nota["pk"]
-            if not db.nota_existe(pk):
-                db.upsert_nota(pk, nota["id_sap"], nota["arquivado"], nota["fields"])
+            db.upsert_nota(pk, nota["id_sap"], nota["fields"])
         except Exception:
             db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
                              {"id": pedido.id, "a_gerar": pedido.a_gerar,
@@ -181,14 +180,18 @@ def regerar(pedido: RegerarPedido):
     try:
         nota = client.buscar_nota(pedido.id)
         if nota["id_sap"] and nota["id_sap"] != config.SAP_PENDENTE and not nota["arquivado"]:
-            db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+            db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
             db.marcar_gerar(nota["pk"], False)
             db.registrar_log("acao_usuario", "geracao_ignorada_sap_real", nota["pk"],
                              {"id_sap": nota["id_sap"]}, True)
             return {"ok": True, "nota": nota}
-        client.definir_sap(pedido.id, config.SAP_PENDENTE)
+        if nota["id_sap"] == config.SAP_PENDENTE and nota["arquivado"]:
+            # SAP=10000000 + arquivada no COFFEE: desarquiva antes de re-gerar.
+            client.desarquivar(pedido.id)
+        else:
+            client.definir_sap(pedido.id, config.SAP_PENDENTE)
         nota = client.buscar_nota(pedido.id)
-        db.upsert_nota(nota["pk"], nota["id_sap"], nota["arquivado"], nota["fields"])
+        db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
     except Exception:
         db.registrar_log("acao_usuario", "regerar", pedido.id,
                          {"id": pedido.id, "origem": "ui",

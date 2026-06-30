@@ -96,40 +96,37 @@ def inicializar_banco() -> None:
     conn.close()
 
 
-def upsert_nota(pk: int, id_sap: int, arquivado: bool, dados_json: dict) -> str:
+def upsert_nota(pk: int, id_sap: int, dados_json: dict) -> str:
+    # ponytail: arquivado intencionalmente excluído — representa ação do usuário no nosso
+    # app (via arquivar_nota), não o estado do COFFEE (que arquiva como workflow normal).
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT id_sap, classificacao, arquivado, origem FROM notas_coffee WHERE pk = ?", (pk,)
+        "SELECT id_sap, classificacao, origem FROM notas_coffee WHERE pk = ?", (pk,)
     ).fetchone()
     id_sap_anterior = row[0] if row is not None else None
     classe_anterior = row[1] if row is not None else None
-    arquivado_anterior = bool(row[2]) if row is not None and row[2] is not None else None
-    origem = row[3] if row is not None else None
+    origem = row[2] if row is not None else None
     classe = classificar(id_sap, id_sap_anterior, origem)
     conn.execute(
         """
         INSERT INTO notas_coffee
             (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json, buscado_em, erro)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+        VALUES (?, ?, ?, 0, ?, ?, ?, NULL)
         ON CONFLICT(pk) DO UPDATE SET
             id_sap=excluded.id_sap, id_sap_anterior=excluded.id_sap_anterior,
-            arquivado=excluded.arquivado, classificacao=excluded.classificacao,
+            classificacao=excluded.classificacao,
             dados_json=excluded.dados_json, buscado_em=excluded.buscado_em, erro=NULL
         """,
-        (pk, id_sap, id_sap_anterior, 1 if arquivado else 0, classe,
+        (pk, id_sap, id_sap_anterior, classe,
          json.dumps(dados_json, ensure_ascii=False),
          datetime.datetime.now().isoformat()),
     )
     conn.commit()
     conn.close()
-    # Transition logs — best-effort, after commit so primary upsert is never affected
     if row is not None and classe_anterior is not None and classe != classe_anterior:
         registrar_log("transicao", "classificar", pk,
                       {"anterior": classe_anterior, "novo": classe,
                        "id_sap_anterior": id_sap_anterior, "id_sap_atual": id_sap}, True)
-    if arquivado_anterior is not None and arquivado_anterior != arquivado:
-        registrar_log("transicao", "arquivar_estado", pk,
-                      {"anterior": arquivado_anterior, "novo": arquivado}, True)
     return classe
 
 
