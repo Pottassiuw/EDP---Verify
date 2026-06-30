@@ -1,8 +1,7 @@
 import type { RuleKey, RuleMeta, FetchResult, Note, NoteError, NoteRaw, NoteStatus, DuplicateCandidate, UploadResult, ToggleResult, DuplicateResult } from './types';
-
 export const BASE: string = localStorage.getItem("edp_api") || "/api";
-
-const COFFEE_BASE = "https://coffee.edp.gpti.com.br/7ff2b230b16cbe2ecdde87a58AppDeOlhoNaRede2/informativo/";
+const hash_api_url = import.meta.env.VITE_HASH_API_URL;
+const COFFEE_BASE = `https://coffee.edp.gpti.com.br/${hash_api_url}/informativo/`;
 export const coffeeUrl = (id: string): string => COFFEE_BASE + encodeURIComponent(id) + "/change/";
 export const mapsUrl = (lat: string, lon: string): string =>
   "https://www.google.com/maps/search/?api=1&query=" + lat + "," + lon;

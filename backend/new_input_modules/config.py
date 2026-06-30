@@ -1,0 +1,407 @@
+# region Chapter 1. PATHS & DIRECTORIES
+import os
+import streamlit as st
+
+# Caminho raiz para a pasta de dados do SQL na rede
+CAMINHO_PASTA_SQL = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM\INPUT SQL"
+CAMINHO_PASTA_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
+# Subpastas reorganizadas na rede para arquivos do SAP
+CAMINHO_INDICADOR_CONTINUIDADE = os.path.join(CAMINHO_PASTA_SQL, "Bases_Apoio", "Indicador base conjunto - Limite Aneel.xlsx")
+CAMINHO_EXPORT_NOTAS = os.path.join(CAMINHO_PASTA_SQL, "Arquivos_SAP", "Gerada_base_IW28.XLSX")
+CAMINHO_EXPORT_ORDEM = os.path.join(CAMINHO_PASTA_SQL, "Arquivos_SAP", "Gerada_custo_ord_IW38.XLSX")
+CAMINHO_EXPORT_MEDIDAS = os.path.join(CAMINHO_PASTA_SQL, "Arquivos_SAP", "Gerada_medidas_IW66.XLSX")
+
+# Outros arquivos principais do sistema e banco de dados
+CAMINHO_BASE_SINCRONIZADA = os.path.join(CAMINHO_PASTA_RAIZ, "Input Nota.xlsx")
+CAMINHO_INPUT_NOTA_XLSM = os.path.join(CAMINHO_PASTA_SQL, "Input Nota.xlsm")
+CAMINHO_DB = os.path.join(CAMINHO_PASTA_SQL, "notas_departamento.db")
+
+# Arquivos de Ramal e bases de apoio associadas
+CAMINHO_PARENT = os.path.dirname(CAMINHO_PASTA_SQL)
+CAMINHO_INPUT_RAMAL = os.path.join(CAMINHO_PARENT, "Input Nota Ramal.xlsx")
+CAMINHO_EXPORT_RAMAL_ORD = os.path.join(CAMINHO_PARENT, "EXPORT_ramal_ord.xlsx")
+CAMINHO_PROSPECTADOS = r"C:\Users\E713105\EDP\O365_Planejamento_Manutencao_EDP_Brasil - Documentos\PLANO RECOMPOSIÇÃO\SP\2026\Planos\Blindagem\Núcleos Prospectados - BT0.xlsx"
+
+# Arquivos de apoio adicionais integrados à configuração
+CAMINHO_CLIENTES_CONJUNTO = os.path.join(CAMINHO_PASTA_SQL, "Bases_Apoio", "Clientes_Conjunto.xlsx")
+CAMINHO_CUSTO_MODULAR = os.path.join(CAMINHO_PASTA_SQL, "Bases_Apoio", "Custo_Modular.xlsx")
+CAMINHO_GANHOS = os.path.join(CAMINHO_PASTA_SQL, "Bases_Apoio", "Ganhos.xlsx")
+CAMINHO_TABLE1 = os.path.join(CAMINHO_PASTA_SQL, "Bases_Apoio", "Table1.xlsx")
+# endregion
+
+# region Chapter 2. STATUS MAPPINGS
+# Dicionário de status para mapeamento de códigos numéricos para descrições textuais
+STATUS_MAP = {
+    0: "00 Pendente", 1: "01 Sem providência", 2: "02 Predição de Sinal", 
+    3: "03 Estudo de Proteção", 7: "07 Em analise", 10: "10 Em planejamento", 11: "11 Em execução",
+    20: "20 Envio Entidade Externa", 21: "21 Pré análise Projetos", 27: "27 Levantamento campo", 28: "28 Desenho",
+    29: "29 Orçamento", 30: "30 Aguardando material", 31: "31 Aguardando equipe", 32: "32 Aguardando terceiros",
+    33: "33 Aguardando aprovação", 34: "34 Aguardando liberação", 35: "35 Aguardando orçamento",
+    36: "36 Aguardando levantamento campo", 37: "37 Aguardando desenho", 38: "38 Aguardando estudo proteção",
+    39: "39 Aguardando predição sinal", 47: "47 Enviado Execução", 51: "51 Ordem Liberada", 52: "52 ADS e Viabilizado", 53: "53 Programado Execução",
+    54: "54 Executado/Energizado", 55: "55 Cancelado", 56: "56 Reprogramado Execução", 57: "57 Reprogramado Planejamento",
+    58: "58 Reprogramado Análise", 59: "59 Reprogramado Levantamento", 60: "60 Reprogramado Desenho",
+    61: "61 Reprogramado Estudo Proteção", 62: "62 Obra Suspensa", 99: "99 Encerrado",
+    999: "ENCE EXEC", 998: "SUPR", 997: "SUPR CANC"}
+INV_STATUS_MAP = {v: k for k, v in STATUS_MAP.items()}
+# endregion
+
+# region Chapter 3. GEOGRAPHIC MAPPINGS
+# Dicionário de Códigos de Local de Instalação para Cidades
+DE_PARA_CIDADES = {
+    "045": "Guarulhos",
+    "130": "Mogi das Cruzes - SP",
+    "150": "Biritiba Mirim",
+    "275": "Salesópolis",
+    "290": "Guararema",
+    "155": "Suzano",
+    "160": "Poá",
+    "165": "Itaquaquecetuba",
+    "170": "Ferraz de Vasconcelos",
+    "270": "Pindamonhangaba - SP",
+    "271": "Moreira César",
+    "295": "Taubaté",
+    "300": "Tremembé",
+    "305": "Lorena",
+    "306": "Canas - SP",
+    "310": "Guaratinguetá",
+    "312": "Potim - SP",
+    "315": "Aparecida - SP",
+    "320": "Roseira",
+    "325": "Cachoeira Paulista - SP",
+    "330": "Cruzeiro",
+    "185": "São Sebastião, Litoral SP",
+    "195": "Caraguatatuba",
+    "175": "São José dos Campos",
+    "190": "Monteiro Lobato",
+    "280": "Santa Branca",
+    "285": "Jacareí",
+    "260": "Caçapava -SP",
+    "265": "Jambeiro - SP",
+    "BIR": "Biritiba Mirim",
+    "GOP": "Guarulhos"
+}
+
+# Dicionário de Códigos de Local de Instalação para Regional
+DE_PARA_REGIONAL = {
+    "045": "Guarulhos",
+    "130": "Mogi das Cruzes",
+    "150": "Mogi das Cruzes",
+    "275": "Mogi das Cruzes",
+    "290": "Mogi das Cruzes",
+    "155": "Mogi das Cruzes",
+    "160": "Mogi das Cruzes",
+    "165": "Mogi das Cruzes",
+    "170": "Mogi das Cruzes",
+    "270": "Guaratinguetá",
+    "271": "Guaratinguetá",
+    "295": "Guaratinguetá",
+    "300": "Guaratinguetá",
+    "305": "Guaratinguetá",
+    "306": "Guaratinguetá",
+    "310": "Guaratinguetá",
+    "312": "Guaratinguetá",
+    "315": "Guaratinguetá",
+    "320": "Guaratinguetá",
+    "325": "Guaratinguetá",
+    "330": "Guaratinguetá",
+    "185": "Litoral Norte",
+    "195": "Litoral Norte",
+    "175": "São José dos Campos",
+    "190": "São José dos Campos",
+    "280": "São José dos Campos",
+    "285": "São José dos Campos",
+    "260": "São José dos Campos",
+    "265": "São José dos Campos",
+    "BIR": "Mogi das Cruzes",
+    "GOP": "Guarulhos"
+}
+
+# Dicionário de Códigos de Circuito ANEEL para Nome Completo
+DE_PARA_CJ_ANEEL = {
+    "ASP": "ALEX SANFORD PETRASOLI",
+    "AVP": "ALTOS DA VILA PAIVA",
+    "APA": "APARECIDA",
+    "ARA": "ARARETAMA",
+    "BRR": "BARREIRO",
+    "BOI": "BOISSUCANGA",
+    "JUQ": "BOISSUCANGA",
+    "MRE": "BOISSUCANGA",
+    "OLR": "BOISSUCANGA",
+    "PNO": "BOISSUCANGA",
+    "SSC": "BOISSUCANGA",
+    "UNA": "BOISSUCANGA",
+    "BON": "BONSUCESSO",
+    "ACT": "BONSUCESSO",
+    "BCU": "BRAS CUBAS",
+    "CAC": "CACAPAVA",
+    "GER": "CACAPAVA",
+    "CPA": "CACHOEIRA PAULISTA",
+    "CAR": "CARAGUATATUBA",
+    "BIR": "CESAR DE SOUZA",
+    "CSO": "CESAR DE SOUZA",
+    "MRM": "CESAR DE SOUZA",
+    "NAG": "CESAR DE SOUZA",
+    "SAL": "CESAR DE SOUZA",
+    "SBR": "CESAR DE SOUZA",
+    "USS": "CESAR DE SOUZA",
+    "AMZ": "COLORADO",
+    "CBR": "COLORADO",
+    "COL": "COLORADO",
+    "CRU": "CRUZEIRO",
+    "DBE": "DONA BENTA",
+    "DUT": "DUTRA",
+    "FER": "FERRAZ",
+    "GOP": "GOPOUVA",
+    "GUE": "GUARAREMA",
+    "INP": "GUARAREMA",
+    "PRT": "GUARAREMA",
+    "GUR": "GUARATINGUETÁ",
+    "GUL": "GUARULHOS",
+    "IPO": "IPORANGA",
+    "ITQ": "ITAQUAQUECETUBA",
+    "JAC": "JACAREI",
+    "JNO": "JOAO NOVAES",
+    "JCE": "JOSE CENTRO",
+    "BVI": "KIDA MACEDO",
+    "KMA": "KIDA MACEDO",
+    "LOR": "LORENA",
+    "MTQ": "MANTIQUEIRA",
+    "MAS": "MASSAGUACU",
+    "MCI": "MOGI CIDADE",
+    "PIL": "PARQUE INDUSTRIAL",
+    "JAM": "PARQUE TECNOLÓGICO",
+    "PTE": "PARQUE TECNOLÓGICO",
+    "MAP": "PEDREIRA",
+    "PED": "PEDREIRA",
+    "PME": "PIMENTAS",
+    "PIC": "PINDAMONHANGABA",
+    "PID": "PINDAMONHANGABA",
+    "POA": "POA",
+    "ROS": "ROSEIRA",
+    "SLZ": "SANTA LUZIA",
+    "SPA": "SANTA PAULA",
+    "SJC": "SAO JOSE DOS CAMPOS",
+    "CMB": "SAO LUIS",
+    "JAR": "SAO LUIS",
+    "SLU": "SAO LUIS",
+    "SAT": "SATÉLITE",
+    "SUZ": "SUZANO",
+    "TAU": "TAUBATÉ",
+    "URB": "URBANOVA",
+    "VSL": "VALE DO SOL",
+    "SKO": "VALTER JOSE DOS SANTOS",
+    "VJS": "VALTER JOSE DOS SANTOS",
+    "VGA": "VILA GALVAO",
+    "VHE": "VILA HERMINIA"
+}
+# endregion
+
+# region Chapter 4. FIELD FILTERS & METADATA
+# Mapeamento amigável das colunas para os filtros do Streamlit
+MAP_FILTROS = {
+    "Status": "Status_Nota",
+    "Regional": "Regional",
+    "Conjunto": "Conjunto",
+    "Local Instalação": "Local_Instalacao",
+    "Planejado DDPM" : "Planejado_DDPM",
+    "Mês Execução Planejado": "Mes_Execucao_Planejado",
+    "Prioridade": "Prioridade_Nota",
+    "Circuito": "Circuito",
+    "Conjunto Crítico": "Conj.critico",
+    "Ranking": "ranking",
+    "Cidade": "Cidade",
+    "CJ Aneel": "CJ_Aneel",
+    "Subestação Conj": "substacao_conjunto",
+    "Export Status": "Export_status",
+    "Status Final": "Status_Final",
+    "Status Anterior": "Status_Anterior",
+    "Centro Responsável": "Centro_Responsavel",
+    "Check Cancelado": "Check_Cancelado",
+    "Ordem": "Ordem",
+    "Status Usuário Ordem": "Status_Usuário_Ordem",
+    "Status Sistema": "Status_Sistema",
+    "Total Planejado Ordem": "Total_planejado_ordem",
+    "Total Real Ordem": "Total_real_ordem",
+    "Exec %": "Exec_percentagem_ordem",
+    "Ordem Executada": "Ordem_Executada",
+    "Modular": "Modular",
+    "Total Planejado Modular": "Total_planejado_modular",
+    "Regional CSD": "Regional_CSD",
+    "Nº Clientes Conjunto": "N_Clientes_Conjunto",
+    "CHI": "CHI",
+    "CIH": "CI",
+    "Ocorrências": "Ocorrencia",
+    "DEC": "DEC",
+    "FEC": "FEC",
+    "CHI Conjunto": "CHI_Conj",
+    "DIS Proteção": "Equipamento_Protecao",
+    "CI-12M": "CI_12M",
+    "CHI-12M": "CHI_12M",
+    "Ocorrências-12M": "OCO_12M",
+    "Ocorrências-3M": "OCO_3M",
+    "DEC Prog. CHI": "DEC_PROG_CHI",
+    "Projeto Construção": "Projeto_Construcao",
+    "Data Envio Projeto": "Data_Envio_Projeto",
+    "Observação": "Observacao",
+    "Medida SAP": "Medida_SAP",
+    "Medida vs Planejado": "Medida_vs_Planejado",
+    "Hierarquia": "Hierarquia"
+}
+# endregion
+
+# region Chapter 5. BUSINESS RULES DICTIONARIES
+# Configurações do comportamento visual das colunas no st.dataframe/st.data_editor
+config_colunas_secundarias = {
+    "Cidade": st.column_config.TextColumn("Cidade", width="medium"),
+    "CJ_Aneel": st.column_config.TextColumn("Cj. Aneel"),
+    "Subestacao": st.column_config.TextColumn("Subestação", width="medium"),
+    "Conj.critico": st.column_config.TextColumn("Conj. Crítico", alignment="left"),
+    "ranking": st.column_config.NumberColumn("Ranking", format="%d", alignment="left"),
+    "Export_status": st.column_config.TextColumn("Export Status"),
+    "Status_Final": st.column_config.TextColumn("Status Final", width="small"),
+    "Status_Anterior": st.column_config.TextColumn("Status Anterior", alignment="left", width="small", disabled=True),
+    "Check_Cancelado": st.column_config.TextColumn("Check Cancelado", alignment="left", width="small", disabled=True),
+    "Ordem": st.column_config.TextColumn("Ordem"),
+    "Centro_Responsavel": st.column_config.TextColumn("Centro de Trabalho Responsável", disabled=True, width="medium"),
+    "Status_Usuário_Ordem" : st.column_config.TextColumn("Status Usuário Ordem", width="medium"),
+    "Status_Sistema": st.column_config.TextColumn("Status Sistema", width="large"),
+    "Total_planejado_ordem": st.column_config.NumberColumn("Total Planejado Ordem (R$)",format = "R$ %,.2f", alignment="left"),
+    "Total_real_ordem": st.column_config.NumberColumn("Total Real Ordem (R$)", format="R$ %,.2f", alignment="left"),
+    "Exec_percentagem_ordem": st.column_config.NumberColumn("Exec %", format="%.2f", alignment="left"),
+    "Ordem_Executada": st.column_config.TextColumn("Ordem Exec."),
+    "Modular": st.column_config.NumberColumn("Modular (R$)", format="R$ %,.2f", alignment="left"),
+    "Total_planejado_modular": st.column_config.NumberColumn("Total Planejado Modular", format="R$ %,.2f",alignment="left"),
+    "Regional_CSD": st.column_config.TextColumn("Regional CSD", width="medium"),
+    "N_Clientes_Conjunto": st.column_config.NumberColumn("Nº Clientes Conjunto", format="%.0f", alignment="left"), 
+    "CHI": st.column_config.NumberColumn("CHI", format="%,.2f", alignment="left"),
+    "CI": st.column_config.NumberColumn("CI", format="%,.2f", alignment="left"),
+    "Ocorrencias": st.column_config.NumberColumn("Ocorrências", format="%d", alignment="left"),
+    "DEC": st.column_config.NumberColumn("DEC", format="%,.5f", alignment="left"),
+    "FEC": st.column_config.NumberColumn("FEC", format="%,.5f", alignment="left"),
+    "CHI_conjunto": st.column_config.NumberColumn("CHI Conjunto", format="%,.5f", alignment="left"),
+    "DIS_Protecao": st.column_config.NumberColumn("DIS Proteção", format="%,.5f", alignment="left"),
+    "CI-12M": st.column_config.NumberColumn("CI-12M", format="%,.5f", alignment="left"),
+    "CHI-12M": st.column_config.NumberColumn("CHI-12M", format="%,.5f", alignment="left"),
+    "Ocorrencias-12M": st.column_config.NumberColumn("Ocorrências-12M", format="%,.5f", alignment="left"),
+    "Ocorrencias-3M": st.column_config.NumberColumn("Ocorrências-3M", format="%,.5f", alignment="left"),
+    "DEC_Prog_CHI": st.column_config.NumberColumn("DEX Prog. CHI", format="%,.4f", alignment="left"),
+    "Grupo": st.column_config.TextColumn("Grupo", width="medium"),
+    "Projeto_Construcao": st.column_config.TextColumn("Projeto Construção", width="medium"),
+    "Medida_SAP": st.column_config.TextColumn("Medida SAP", alignment="center"),
+    "Medida_vs_Planejado": st.column_config.TextColumn("Medida x Planejado", alignment="center"),
+    "Ano": st.column_config.NumberColumn("Ano", format="%d", alignment="left", disabled=True),
+    "Acao": st.column_config.TextColumn("Ação", alignment="center", disabled=True),
+    "Cluster": st.column_config.NumberColumn("Cluster", format="%d", alignment="left", disabled=True),
+    "Coluna1": st.column_config.TextColumn("Classificação Cluster", alignment="left", disabled=True),
+    "Plano": st.column_config.TextColumn("Plano Planilha", alignment="center", disabled=True),
+    "Check_Btzero": st.column_config.TextColumn("Check Btzero", alignment="center", disabled=True),
+    "Extracao_Antiga": st.column_config.TextColumn("Extração Antiga"),
+    "Extracao_SAP_Atual": st.column_config.TextColumn("Extração SAP Atual", disabled=True),
+    "Status": st.column_config.TextColumn("Status", disabled=True),
+    "Conjunto_Exec": st.column_config.TextColumn("Conjunto Exec.", disabled=True)
+}
+
+# Dicionário de Responsáveis Padrão por Regional
+DE_PARA_RESPONSAVEIS_CONJUNTO = {
+    "Poa":"Danilo",
+    "Suzano" : "Danilo",
+    "São José dos Campos": "James",
+    "Guaratinguetá": "Danilo",
+    "Litoral Norte": "Danilo",
+    "Guarulhos": "James",
+    "Mogi das Cruzes": "Fabricio"
+}
+
+# Mapeamento para verificar se a ordem foi executada com base no status do SAP (IW38)
+MAP_ORDEM_EXECUTADA = {
+    "-": "NÃO",
+    "CANC INVE": "NÃO",
+    "CANC INVE BLOQ": "NÃO",
+    "CANC PLAR": "NÃO",
+    "CANC PLAR BLOQ": "NÃO",
+    "CANC VIAB INVE": "NÃO",
+    "CANC VIAB INVE BLOQ": "NÃO",
+    "INVE": "NÃO",
+    "JAND ENER": "SIM",
+    "JAND EXEC": "NÃO",
+    "JAND EXPA": "NÃO",
+    "JAND FISC": "NÃO",
+    "JAND INVE": "SIM",
+    "JAND INVE BLOQ": "SIM",
+    "JAND INVE BLOQ ENTE": "SIM",
+    "JAND INVE PPAG": "SIM",
+    "JAND PLAR": "NÃO",
+    "JAND PLAR BLOQ": "NÃO",
+    "JAND PLAR BLOR": "NÃO",
+    "JAND PLAR BLOR BLOQ": "NÃO",
+    "JAND PPAG": "NÃO",
+    "JAND PRES": "NÃO",
+    "JAND VIAB": "NÃO",
+    "JAND VIAB INVE BLOQ": "NÃO",
+    "JAND PDEV": "NÃO"
+}
+
+# Mapeamento do Conjunto ANEEL para a respectiva Regional CSD
+MAP_REGIONAL_CSD = {
+    "ALEX SANFORD PETRASOLI": "Poa/Suzano",
+    "ALTOS DA VILA PAIVA": "São José dos Campos",
+    "APARECIDA": "Guaratinguetá",
+    "ARARETAMA": "Guaratinguetá",
+    "BARREIRO": "Guaratinguetá",
+    "BOISSUCANGA": "Litoral Norte",
+    "BONSUCESSO": "Guarulhos",
+    "BRAZ CUBAS": "Mogi das Cruzes",
+    "BRAS CUBAS": "Mogi das Cruzes",
+    "CAÇAPAVA": "Guaratinguetá",
+    "CACAPAVA": "Guaratinguetá",
+    "CACHOEIRA PAULISTA": "Guaratinguetá",
+    "CARAGUA": "Litoral Norte",
+    "CARAGUATATUBA": "Litoral Norte",
+    "CESAR DE SOUZA": "Mogi das Cruzes",
+    "COLORADO": "Poa/Suzano",
+    "CRUZEIRO": "Guaratinguetá",
+    "DONA BENTA": "Poa/Suzano",
+    "DUT": "Guarulhos",
+    "DUTRA": "Guarulhos",
+    "FERRAZ DE VASCONCELOS": "Poa/Suzano",
+    "FERRAZ": "Poa/Suzano",
+    "GOPOUVA": "Guarulhos",
+    "GUARAREMA": "São José dos Campos",
+    "GUARATINGUETA": "Guaratinguetá",
+    "GUARATINGUETÁ": "Guaratinguetá",
+    "GUARULHOS": "Guarulhos",
+    "IPORANGA": "Guarulhos",
+    "ITAQUAQUECETUBA": "Poa/Suzano",
+    "JACAREI": "São José dos Campos",
+    "JOAO NOVAES": "São José dos Campos",
+    "JOSE CENTRO": "São José dos Campos",
+    "KIDA MACEDO": "Guarulhos",
+    "LORENA": "Guaratinguetá",
+    "MANTIQUEIRA": "Guaratinguetá",
+    "MASSAGUACU": "Litoral Norte",
+    "MOGI CIDADE": "Mogi das Cruzes",
+    "PARQUE INDUSTRIAL": "São José dos Campos",
+    "PARQUE TECNOLOGICO": "São José dos Campos",
+    "PARQUE TECNOLÓGICO": "São José dos Campos",
+    "PEDREIRA": "Poa/Suzano",
+    "PIMENTAS": "Guarulhos",
+    "PINDAMONHANGABA": "Guaratinguetá",
+    "POA": "Poa/Suzano",
+    "ROSEIRA": "Guaratinguetá",
+    "SANTA LUZIA": "São José dos Campos",
+    "SANTA PAULA": "São José dos Campos",
+    "SAO JOSE DOS CAMPOS": "São José dos Campos",
+    "SAO LUIS": "Guarulhos",
+    "SATELITE": "Guarulhos",
+    "SATÉLITE": "Guarulhos",
+    "SUZANO": "Poa/Suzano",
+    "TAUBATE": "Guaratinguetá",
+    "TAUBATÉ": "Guaratinguetá",
+    "URBANOVA": "São José dos Campos",
+    "VALE DO SOL": "São José dos Campos",
+    "VALTER JOSE DOS SANTOS": "Guarulhos",
+    "VILA GALVAO": "Guarulhos",
+    "VILA HERMINIA": "Guarulhos"
+}
+# endregion
