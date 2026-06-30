@@ -49,7 +49,7 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
           {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
         </Button>
       </div>
-      <Filters registros={dados.registros} registrosFiltrados={filtrados} estado={estado} setEstado={setEstado} />
+      <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />
     </div>
   );

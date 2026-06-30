@@ -58,19 +58,6 @@ export const ROTULOS: Record<string, string> =
 /** Espelho de db.CAMPOS_EDITAVEIS no backend. */
 export const CAMPOS_EDITAVEIS = COLUNAS.filter((c) => c.editavel).map((c) => c.key);
 
-/** Calculadora (Input/app.py:199-204). */
-export const COLUNAS_CALCULAVEIS: Record<string, string> = {
-  'Planejado DDPM': 'Planejado_DDPM',
-  'Total Planejado Ordem': 'Total_planejado_ordem',
-  'Total Real Ordem': 'Total_real_ordem',
-  'Nº Clientes Conjunto': 'N_Clientes_Conjunto',
-  CHI: 'CHI',
-  CIH: 'CI',
-  'Ocorrências': 'Ocorrencia',
-  DEC: 'DEC',
-  FEC: 'FEC',
-};
-
 /** Campos oferecidos nos filtros avançados, por tipo (Input/app.py:216-217). */
 export const FILTROS_TEXTO = ['Local_Instalacao', 'Observacao', 'Ordem',
   'Centro_Responsavel', 'Equipamento_Protecao'];

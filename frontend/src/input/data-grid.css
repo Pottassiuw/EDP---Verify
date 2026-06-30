@@ -62,12 +62,21 @@
 }
 .dsg-th-resize:hover { border-right-color: var(--accent); background: var(--accent-tint); }
 
-/* wrapper relativo: ancora a linha-guia do resize (e a barra de status na T3) */
-.dsg-wrap { position: relative; }
+/* wrapper: ancora a linha-guia do resize e empilha a barra de status */
+.dsg-wrap { position: relative; display: flex; flex-direction: column; }
 .dsg-resize-guide {
   position: absolute; top: 0; bottom: 0; width: 2px;
   background: var(--accent); pointer-events: none; z-index: 5;
 }
+
+/* barra de status com agregação da seleção (Task 3) */
+.dsg-statusbar {
+  flex-shrink: 0; padding: 5px 10px; font-size: 12px; color: var(--text-dim);
+  background: var(--surface-2); border: 1px solid var(--line); border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+.dsg-statusbar b { color: var(--text); font-weight: 600; }
+.dsg-statusbar-dim { color: var(--text-mute); }
 
 /* conteúdo read-only */
 .dsg-leitura {

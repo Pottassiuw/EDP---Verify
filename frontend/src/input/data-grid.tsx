@@ -4,7 +4,7 @@ import "react-datasheet-grid/dist/style.css";
 import "./data-grid.css";
 import type { Celula, NotaInput } from "./types";
 import type { ColunaDef } from "./columns";
-import { compararDatas, formatarNumero } from "./lib";
+import { calcularSelecao, compararDatas, formatarNumero, type ResumoSelecao, type SelecaoRetangulo } from "./lib";
 
 const ALTURA_LINHA = 32;
 const LARGURA_PADRAO = 120;
@@ -134,6 +134,7 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
   const [larguras, setLarguras] = React.useState<Record<string, number>>({});
   const [guia, setGuia] = React.useState<number | null>(null);
   const [remontar, setRemontar] = React.useState(0);
+  const [resumo, setResumo] = React.useState<ResumoSelecao | null>(null);
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const scrollRef = React.useRef<{ left: number; top: number } | null>(null);
 
@@ -172,6 +173,12 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
   }, [remontar]);
 
   const ordenados = React.useMemo(() => ordenar(registros, ordem), [registros, ordem]);
+
+  const aoSelecionar = React.useCallback(
+    (opts: { selection: SelecaoRetangulo | null }) =>
+      setResumo(calcularSelecao(ordenados, colunas, opts.selection)),
+    [ordenados, colunas],
+  );
 
   const cols = React.useMemo(
     () => colunas.map((c): Column<NotaInput> => {
@@ -215,8 +222,20 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
         rowHeight={ALTURA_LINHA}
         lockRows
         disableContextMenu
+        onSelectionChange={aoSelecionar}
       />
       {guia !== null && <div className="dsg-resize-guide" style={{ left: guia }} />}
+      <div className="dsg-statusbar">
+        {resumo && resumo.contagem > 0 ? (
+          <span>
+            Soma <b className="edp-mono">{formatarNumero(resumo.soma)}</b> ·{" "}
+            Média <b className="edp-mono">{formatarNumero(resumo.media)}</b> ·{" "}
+            Contagem <b className="edp-mono">{resumo.contagem}</b>
+          </span>
+        ) : (
+          <span className="dsg-statusbar-dim">Selecione células numéricas para ver soma · média · contagem</span>
+        )}
+      </div>
     </div>
   );
 }

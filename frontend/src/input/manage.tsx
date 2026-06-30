@@ -196,7 +196,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
         <React.Fragment>
           <Card>
             <CardContent className="pt-6">
-              <Filters registros={dados.registros} registrosFiltrados={filtrados}
+              <Filters registros={dados.registros}
                        estado={estadoFiltros} setEstado={setEstadoFiltros} />
             </CardContent>
           </Card>

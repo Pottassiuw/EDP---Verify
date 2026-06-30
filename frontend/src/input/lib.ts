@@ -1,4 +1,5 @@
 import type { Celula, NotaInput } from './types';
+import type { ColunaDef } from './columns';
 
 export const MESES_PT_REV: Record<string, number> = {
   jan: 1, fev: 2, mar: 3, abr: 4, maio: 5, jun: 6,
@@ -75,17 +76,6 @@ export function valoresUnicos(registros: NotaInput[], campo: string): string[] {
     campo === 'Mes_Execucao_Planejado' ? compararDatas(a, b) : a.localeCompare(b, 'pt-BR'));
 }
 
-export interface ResultadoCalculo { coluna: string; soma: number; media: number; contagem: number; }
-
-/** Calculadora de soma/média/contagem (porte de Input/app.py:267-285). */
-export function calcular(registros: NotaInput[], colunas: string[]): ResultadoCalculo[] {
-  return colunas.map((coluna) => {
-    const nums = registros.map((r) => Number(r[coluna])).filter((n) => Number.isFinite(n));
-    const soma = nums.reduce((a, b) => a + b, 0);
-    return { coluna, soma, media: nums.length ? soma / nums.length : 0, contagem: nums.length };
-  });
-}
-
 /** Cola TSV do Excel em registros na ordem fixa de colunas. */
 export function parseColagemTsv(texto: string, colunas: string[]): Partial<NotaInput>[] {
   return texto.split(/\r?\n/)
@@ -107,4 +97,35 @@ export function formatarNumero(v: Celula, casas = 2, agrupar = true): string {
     maximumFractionDigits: casas,
     useGrouping: agrupar,
   });
+}
+
+export interface SelecaoRetangulo {
+  min: { col: number; row: number };
+  max: { col: number; row: number };
+}
+export interface ResumoSelecao { soma: number; media: number; contagem: number; }
+
+/** Agrega as células NUMÉRICAS do retângulo selecionado (estilo Excel). */
+export function calcularSelecao(
+  registros: NotaInput[],
+  colunas: ColunaDef[],
+  sel: SelecaoRetangulo | null,
+): ResumoSelecao | null {
+  if (!sel) return null;
+  const nums: number[] = [];
+  for (let r = sel.min.row; r <= sel.max.row; r++) {
+    const reg = registros[r];
+    if (!reg) continue;
+    for (let ci = sel.min.col; ci <= sel.max.col; ci++) {
+      const col = colunas[ci];
+      if (!col || !col.numeric) continue;
+      const bruto = reg[col.key];
+      if (bruto === null || bruto === undefined || bruto === '') continue;
+      const n = Number(bruto);
+      if (Number.isFinite(n)) nums.push(n);
+    }
+  }
+  if (nums.length === 0) return { soma: 0, media: 0, contagem: 0 };
+  const soma = nums.reduce((a, b) => a + b, 0);
+  return { soma, media: soma / nums.length, contagem: nums.length };
 }

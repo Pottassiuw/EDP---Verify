@@ -1,9 +1,8 @@
 import React from "react";
 import type { NotaInput } from "./types";
-import type { Filtro, ResultadoCalculo } from "./lib";
-import { calcular, formatarNumero, valoresUnicos } from "./lib";
+import type { Filtro } from "./lib";
+import { valoresUnicos } from "./lib";
 import {
-  COLUNAS_CALCULAVEIS,
   FILTROS_FAIXA,
   FILTROS_MULTI,
   FILTROS_TEXTO,
@@ -14,18 +13,15 @@ import { Button } from "@/components/ui/button";
 export interface FiltersState {
   busca: string;
   filtros: Filtro[];
-  calcColunas: string[];
 }
 
 export const FILTROS_INICIAIS: FiltersState = {
   busca: "",
   filtros: [],
-  calcColunas: [],
 };
 
 interface FiltersProps {
-  registros: NotaInput[]; // base (pós-busca) para montar as opções
-  registrosFiltrados: NotaInput[]; // resultado final, para a calculadora
+  registros: NotaInput[];
   estado: FiltersState;
   setEstado: (e: FiltersState) => void;
 }
@@ -38,12 +34,10 @@ function tipoDoCampo(campo: string): Filtro["tipo"] {
 
 export function Filters({
   registros,
-  registrosFiltrados,
   estado,
   setEstado,
 }: FiltersProps): React.JSX.Element {
   const [aberto, setAberto] = React.useState(false);
-  const [calcAberta, setCalcAberta] = React.useState(false);
   const camposDisponiveis = [
     ...FILTROS_MULTI,
     ...FILTROS_TEXTO,
@@ -56,10 +50,6 @@ export function Filters({
     );
     setEstado({ ...estado, filtros });
   }
-
-  const resultados: ResultadoCalculo[] = estado.calcColunas.length
-    ? calcular(registrosFiltrados, estado.calcColunas)
-    : [];
 
   const estiloPainel: React.CSSProperties = {
     border: "1px solid var(--line)",
@@ -95,9 +85,6 @@ export function Filters({
         <Button variant="outline" size="sm" onClick={() => setAberto(!aberto)}>
           🔎 Filtros avançados
           {estado.filtros.length ? ` (${estado.filtros.length})` : ""}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setCalcAberta(!calcAberta)}>
-          📊 Calculadora
         </Button>
         {(estado.filtros.length > 0 || estado.busca) && (
           <Button variant="ghost" size="sm"
@@ -232,65 +219,6 @@ export function Filters({
         </div>
       )}
 
-      {calcAberta && (
-        <div style={estiloPainel}>
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              flexWrap: "wrap",
-              marginBottom: 10,
-            }}
-          >
-            {Object.entries(COLUNAS_CALCULAVEIS).map(([rotulo, campo]) => {
-              const ativo = estado.calcColunas.includes(campo);
-              return (
-                <Button
-                  key={campo}
-                  variant={ativo ? "outline" : "ghost"}
-                  size="sm"
-                  onClick={() =>
-                    setEstado({
-                      ...estado,
-                      calcColunas: ativo
-                        ? estado.calcColunas.filter((c) => c !== campo)
-                        : [...estado.calcColunas, campo],
-                    })
-                  }
-                >
-                  {rotulo}
-                </Button>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {resultados.map((r) => (
-              <div
-                key={r.coluna}
-                style={{
-                  border: "1px solid var(--line)",
-                  borderRadius: 7,
-                  padding: "8px 12px",
-                  fontSize: 12,
-                }}
-              >
-                <strong>{ROTULOS[r.coluna] ?? r.coluna}</strong>
-                <div>
-                  Soma:{" "}
-                  <span className="edp-mono">{formatarNumero(r.soma)}</span>
-                </div>
-                <div>
-                  Média:{" "}
-                  <span className="edp-mono">{formatarNumero(r.media)}</span>
-                </div>
-                <div>
-                  Contagem: <span className="edp-mono">{r.contagem}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
