@@ -162,6 +162,19 @@ def test_deletar_notas(banco_temporario):
     assert list(db.carregar_dados()["Numero_Nota"]) == [4001]
 
 
+def test_carregar_dados_qualidade(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([
+        _nota(4300, Prioridade_Nota="Programavel", Mes_Execucao_Planejado="jun-2026"),
+        _nota(4301, Prioridade_Nota="Prioritario", Mes_Execucao_Planejado="2026-12-01 00:00:00"),
+    ]))
+    df = db.carregar_dados()
+    assert len(df) == 2
+    pri = dict(zip(df["Numero_Nota"], df["Prioridade_Nota"]))
+    assert pri[4300] == "Programável"
+    assert pri[4301] == "Prioritário"
+
+
 def test_carregar_logs_fallback_em_erro(banco_temporario, monkeypatch):
     from input_module import db
 

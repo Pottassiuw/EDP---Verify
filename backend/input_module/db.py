@@ -213,7 +213,7 @@ def carregar_dados() -> pd.DataFrame:
             5: 'maio', 6: 'jun', 7: 'jul', 8: 'ago',
             9: 'set', 10: 'out', 11: 'nov', 12: 'dez'
         }
-        dt_mes = pd.to_datetime(df['Mes_Execucao_Planejado'], errors='coerce')
+        dt_mes = pd.to_datetime(df['Mes_Execucao_Planejado'], errors='coerce', format='mixed')
         mes_ano_formatado = dt_mes.dt.month.map(meses_pt) + '-' + dt_mes.dt.year.fillna(0).astype(int).astype(str)
         df['Mes_Execucao_Planejado'] = mes_ano_formatado.where(dt_mes.notna(), df['Mes_Execucao_Planejado'])
 
@@ -251,6 +251,15 @@ def carregar_dados() -> pd.DataFrame:
                 # Garante que a Observação e o Check também não fiquem com o traço "-" padrão
                 if col in ["Observacao", "Check"]:
                     df[col] = df[col].apply(lambda x: "" if str(x).strip() == "-" else x)
+
+        # Normaliza acentuação de prioridades comuns vindas do banco
+        if 'Prioridade_Nota' in df.columns:
+            df['Prioridade_Nota'] = df['Prioridade_Nota'].astype(str).str.strip()
+            df['Prioridade_Nota'] = df['Prioridade_Nota'].replace({
+                'Programavel': 'Programável', 'programavel': 'Programável',
+                'PROGRAMAVEL': 'Programável', 'Prioritario': 'Prioritário',
+                'prioritario': 'Prioritário', 'PRIORITARIO': 'Prioritário',
+            })
 
     else:
         df = pd.DataFrame(columns=[
