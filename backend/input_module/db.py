@@ -69,6 +69,27 @@ def inicializar_banco() -> None:
     ''')
 
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notas_ramal (
+            Numero_Nota INTEGER PRIMARY KEY,
+            ID_Cronologia INTEGER,
+            Status_Obra TEXT,
+            Conjunto TEXT,
+            Circuito TEXT,
+            Local_Instalacao TEXT,
+            Planejado_DDPM REAL,
+            Mes_Execucao_Planejado TEXT,
+            CenTrab_Respon TEXT,
+            Prioridade_Nota TEXT,
+            Observacao TEXT,
+            Extracao_Antiga TEXT,
+            Status_Nota TEXT,
+            Status_Anterior TEXT,
+            Check_Btzero TEXT,
+            Plano TEXT
+        )
+    ''')
+
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS log_alteracoes (
             ID_Log INTEGER PRIMARY KEY AUTOINCREMENT,
             Numero_Nota INTEGER,
@@ -100,6 +121,8 @@ def inicializar_banco() -> None:
         cursor.execute('ALTER TABLE notas ADD COLUMN "Check" TEXT DEFAULT "-"')
     if "Status_Anterior" not in colunas_existentes:
         cursor.execute('ALTER TABLE notas ADD COLUMN Status_Anterior TEXT DEFAULT "-"')
+    if "Nota_Mae" not in colunas_existentes:
+        cursor.execute("ALTER TABLE notas ADD COLUMN Nota_Mae TEXT DEFAULT '-'")
 
     # Índices para acelerar auditoria e logs
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_alteracoes_nota ON log_alteracoes(Numero_Nota)')
@@ -467,6 +490,145 @@ def deletar_notas(lista_numeros_nota: list, usuario: str = "sistema") -> int:
     except Exception as e:
         print(f"Erro ao deletar notas do banco: {e}")
         raise e
+    finally:
+        conn.close()
+
+
+# ==============================================================================
+# RAMAL — CRUD para a tabela notas_ramal
+# ==============================================================================
+_COLUNAS_RAMAL = [
+    "ID_Cronologia", "Numero_Nota", "Status_Obra", "Conjunto", "Circuito",
+    "Local_Instalacao", "Planejado_DDPM", "Mes_Execucao_Planejado",
+    "CenTrab_Respon", "Prioridade_Nota", "Observacao", "Extracao_Antiga",
+    "Status_Nota", "Status_Anterior", "Check_Btzero", "Plano",
+]
+_COLUNAS_RAMAL_VAZIAS = [
+    "ID_Cronologia", "Numero_Nota", "Status_Obra", "Conjunto", "Circuito",
+    "Local_Instalacao", "Cidade", "Planejado_DDPM", "Mes_Execucao_Planejado",
+    "CenTrab_Respon", "Prioridade_Nota", "Observacao", "Extracao_Antiga",
+    "Status_Nota", "Status_Anterior", "Check_Btzero", "Plano",
+]
+_MESES_PT = {1: 'jan', 2: 'fev', 3: 'mar', 4: 'abr', 5: 'maio', 6: 'jun',
+             7: 'jul', 8: 'ago', 9: 'set', 10: 'out', 11: 'nov', 12: 'dez'}
+
+
+def carregar_dados_ramal() -> pd.DataFrame:
+    conn = get_db_connection()
+    try:
+        df = pd.read_sql("SELECT * FROM notas_ramal ORDER BY ID_Cronologia ASC", conn)
+    except Exception:
+        return pd.DataFrame(columns=_COLUNAS_RAMAL_VAZIAS)
+    finally:
+        conn.close()
+
+    if df.empty:
+        return pd.DataFrame(columns=_COLUNAS_RAMAL_VAZIAS)
+
+    dt_mes = pd.to_datetime(df['Mes_Execucao_Planejado'], errors='coerce', format='mixed')
+    mes_fmt = dt_mes.dt.month.map(_MESES_PT) + '-' + dt_mes.dt.year.fillna(0).astype(int).astype(str)
+    df['Mes_Execucao_Planejado'] = mes_fmt.where(dt_mes.notna(), df['Mes_Execucao_Planejado'])
+
+    df['Cidade'] = df['Local_Instalacao'].astype(str).str[:3].map(DE_PARA_CIDADES)
+
+    texto_cols = ["Observacao", "Check_Btzero", "Status_Obra", "Conjunto", "Circuito",
+                  "Local_Instalacao", "CenTrab_Respon", "Prioridade_Nota", "Extracao_Antiga", "Plano"]
+    for col in df.columns:
+        if df[col].dtype == object or col in texto_cols:
+            df[col] = df[col].fillna("").astype(str)
+            df[col] = df[col].apply(lambda x: "" if x.strip().lower() in ("none", "nan", "null", "<na>") else x)
+    return df
+
+
+def salvar_ramal_em_massa(df: pd.DataFrame) -> None:
+    realizar_backup()
+    df_s = df.copy()
+    for col in _COLUNAS_RAMAL:
+        if col not in df_s.columns:
+            df_s[col] = "-"
+    df_s['Planejado_DDPM'] = pd.to_numeric(df_s['Planejado_DDPM'], errors='coerce').fillna(0.0)
+    if 'Mes_Execucao_Planejado' in df_s.columns:
+        df_s['Mes_Execucao_Planejado'] = df_s['Mes_Execucao_Planejado'].apply(converter_para_iso_data)
+
+    update = ',\n'.join([f'"{c}" = excluded."{c}"' for c in _COLUNAS_RAMAL if c != "Numero_Nota"])
+    sql = f'''
+        INSERT INTO notas_ramal ({', '.join(f'"{c}"' for c in _COLUNAS_RAMAL)})
+        VALUES ({', '.join(['?'] * len(_COLUNAS_RAMAL))})
+        ON CONFLICT(Numero_Nota) DO UPDATE SET {update};
+    '''
+    registros = df_s[_COLUNAS_RAMAL].to_records(index=False).tolist()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.executemany(sql, registros)
+        conn.commit()
+    except Exception as e:
+        print(f"Erro no banco (ramal): {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def deletar_notas_ramal(lista_numeros_nota: list, usuario: str = "sistema") -> int:
+    realizar_backup()
+    if not lista_numeros_nota:
+        return 0
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        data_hora_log = datetime.datetime.now()
+        logs = [
+            (int(n), usuario, data_hora_log, "EXCLUSÃO DE NOTA RAMAL", "Registro Existente", "Registro Apagado")
+            for n in lista_numeros_nota
+        ]
+        cursor.executemany(
+            'INSERT INTO log_alteracoes (Numero_Nota, Usuario, Data_Hora, Campo_Alterado, Valor_Antigo, Valor_Novo) VALUES (?,?,?,?,?,?)',
+            logs,
+        )
+        cursor.executemany('DELETE FROM notas_ramal WHERE Numero_Nota = ?',
+                           [(int(n),) for n in lista_numeros_nota])
+        count = cursor.rowcount
+        conn.commit()
+        return count
+    except Exception as e:
+        print(f"Erro ao deletar notas ramal: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def vincular_nota_mae_lote(dados: dict, usuario: str) -> int:
+    """Vincula notas filhas a uma nota mãe; dados = {nota_mae_str: [filha1, filha2, ...]}."""
+    if not dados:
+        return 0
+    realizar_backup()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        data_hora_log = datetime.datetime.now()
+        logs, updates = [], []
+        for nota_mae, filhas in dados.items():
+            for filha in filhas:
+                filha_int = int(filha)
+                row = cursor.execute(
+                    "SELECT Nota_Mae FROM notas WHERE Numero_Nota = ?", (filha_int,)
+                ).fetchone()
+                valor_antigo = row[0] if row and row[0] else "-"
+                logs.append((filha_int, usuario, data_hora_log,
+                             "VÍNCULO MÃE", str(valor_antigo), str(nota_mae)))
+                updates.append((str(nota_mae), filha_int))
+        if logs:
+            cursor.executemany(
+                'INSERT INTO log_alteracoes (Numero_Nota, Usuario, Data_Hora, Campo_Alterado, Valor_Antigo, Valor_Novo) VALUES (?,?,?,?,?,?)',
+                logs,
+            )
+            cursor.executemany('UPDATE notas SET Nota_Mae = ? WHERE Numero_Nota = ?', updates)
+        conn.commit()
+        return len(updates)
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro em vincular_nota_mae_lote: {e}")
+        raise
     finally:
         conn.close()
 

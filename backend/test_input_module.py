@@ -597,3 +597,100 @@ def test_migrar_endpoint(cliente):
     r = cliente.post("/api/input/migrar", headers=CABECALHO_USER)
     assert r.status_code == 200
     assert r.json()["resultado"] in ("ja-existe", "migrado", "rede-indisponivel")
+
+
+# ── Fase 4 (Grupo D): Ramal + Nota_Mae + Hierarquia ─────────────────────────
+def test_inicializar_banco_cria_notas_ramal(banco_temporario):
+    from input_module import db
+    conn = db.get_db_connection()
+    tabelas = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    colunas_notas = [r[1] for r in conn.execute("PRAGMA table_info(notas)").fetchall()]
+    conn.close()
+    assert "notas_ramal" in tabelas
+    assert "Nota_Mae" in colunas_notas
+
+
+def _nota_ramal(numero=5000, **extras):
+    base = {
+        "ID_Cronologia": 1, "Numero_Nota": numero,
+        "Status_Obra": "-", "Conjunto": "POA", "Circuito": "POA 123",
+        "Local_Instalacao": "045 RL TESTE", "Planejado_DDPM": 1.0,
+        "Mes_Execucao_Planejado": "jun-2026", "CenTrab_Respon": "-",
+        "Prioridade_Nota": "Programável", "Observacao": "",
+        "Extracao_Antiga": "-", "Status_Nota": "00 Pendente",
+        "Status_Anterior": "-", "Check_Btzero": "-", "Plano": "-",
+    }
+    base.update(extras)
+    return base
+
+
+def test_carregar_dados_ramal_vazio(banco_temporario):
+    from input_module import db
+    df = db.carregar_dados_ramal()
+    assert df.empty
+    assert "Numero_Nota" in df.columns
+
+
+def test_salvar_e_carregar_ramal(banco_temporario):
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5001), _nota_ramal(5002)]))
+    df = db.carregar_dados_ramal()
+    assert len(df) == 2
+    assert set(df["Numero_Nota"].tolist()) == {5001, 5002}
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5001, Observacao="atualizada")]))
+    assert len(db.carregar_dados_ramal()) == 2  # upsert, sem duplicata
+
+
+def test_deletar_notas_ramal(banco_temporario):
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5010), _nota_ramal(5011)]))
+    assert db.deletar_notas_ramal([5010], usuario="tester") == 1
+    assert len(db.carregar_dados_ramal()) == 1
+
+
+def test_vincular_nota_mae(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(6001), _nota(6002)]))
+    n = db.vincular_nota_mae_lote({"6001": [6002]}, usuario="tester")
+    assert n >= 1
+    df = db.carregar_dados()
+    assert df[df["Numero_Nota"] == 6002].iloc[0]["Nota_Mae"] == "6001"
+
+
+def test_nota_mae_nao_sobrescrita_por_salvar(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(6010), _nota(6011)]))
+    db.vincular_nota_mae_lote({"6010": [6011]}, usuario="tester")
+    db.salvar_em_massa(pd.DataFrame([_nota(6011, Observacao="editada")]))
+    df = db.carregar_dados()
+    assert df[df["Numero_Nota"] == 6011].iloc[0]["Nota_Mae"] == "6010"
+
+
+def test_api_ramal_crud(cliente):
+    from input_module import db, engine
+    ramal_payload = {"notas": [{"Numero_Nota": 5100, "Conjunto": "POA"}]}
+    r = cliente.post("/api/input/ramal/bulk", headers=CABECALHO_USER, json=ramal_payload)
+    assert r.status_code == 200
+    assert r.json()["inseridas"] == 1
+    r = cliente.get("/api/input/ramal")
+    assert r.status_code == 200
+    assert len(r.json()["registros"]) == 1
+    r = cliente.request("DELETE", "/api/input/ramal", headers=CABECALHO_USER,
+                        json={"numeros": [5100]})
+    assert r.status_code == 200
+    assert r.json()["excluidas"] == 1
+    assert cliente.get("/api/input/ramal").json()["registros"] == []
+
+
+def test_api_hierarquia(cliente):
+    from input_module import db, engine
+    db.salvar_em_massa(pd.DataFrame([_nota(7010), _nota(7011)]))
+    engine.invalidar_cache()
+    r = cliente.post("/api/input/hierarquia", headers=CABECALHO_USER,
+                     json={"dados": {"7010": [7011]}})
+    assert r.status_code == 200
+    assert r.json()["atualizadas"] >= 1
+    r = cliente.get("/api/input/hierarquia/7011")
+    assert r.status_code == 200
+    assert r.json()["nota_mae"] == "7010"

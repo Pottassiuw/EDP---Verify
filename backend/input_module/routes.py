@@ -298,6 +298,94 @@ def baixar_backup(nome: str):
     return FileResponse(str(caminho), filename=nome)
 
 
+# ── Fase 4: Ramal + Hierarquia ────────────────────────────────────────────────
+class RamalNota(BaseModel):
+    Numero_Nota: int
+    Status_Obra: str = "-"
+    Conjunto: str = "-"
+    Circuito: str = "-"
+    Local_Instalacao: str = "-"
+    Planejado_DDPM: float = 0.0
+    Mes_Execucao_Planejado: str = "-"
+    CenTrab_Respon: str = "-"
+    Prioridade_Nota: str = "-"
+    Observacao: str = ""
+    Extracao_Antiga: str = "-"
+    Status_Nota: str = "-"
+    Status_Anterior: str = "-"
+    Check_Btzero: str = "-"
+    Plano: str = "-"
+
+
+class RamalLotePedido(BaseModel):
+    notas: list[RamalNota]
+
+
+class ExclusaoRamalPedido(BaseModel):
+    numeros: list[int]
+
+
+class HierarquiaPedido(BaseModel):
+    dados: dict[str, list[int]]
+
+
+@router.get("/ramal")
+def listar_ramal():
+    _garantir_banco()
+    return {"registros": _df_para_registros(db.carregar_dados_ramal())}
+
+
+@router.post("/ramal/bulk")
+def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
+                   usuario: str = Depends(usuario_atual)):
+    _garantir_banco()
+    if not pedido.notas:
+        raise HTTPException(400, "Lote vazio.")
+    import pandas as pd
+    df = pd.DataFrame([n.model_dump() for n in pedido.notas])
+    df["ID_Cronologia"] = list(range(1, len(df) + 1))
+    db.salvar_ramal_em_massa(df)
+    _pos_escrita(tasks)
+    return {"inseridas": len(df)}
+
+
+@router.delete("/ramal")
+def excluir_ramal(pedido: ExclusaoRamalPedido, tasks: BackgroundTasks,
+                  usuario: str = Depends(usuario_atual)):
+    _garantir_banco()
+    excluidas = db.deletar_notas_ramal(pedido.numeros, usuario=usuario)
+    if excluidas:
+        _pos_escrita(tasks)
+    return {"excluidas": excluidas}
+
+
+@router.post("/hierarquia")
+def vincular_hierarquia(pedido: HierarquiaPedido, tasks: BackgroundTasks,
+                        usuario: str = Depends(usuario_atual)):
+    _garantir_banco()
+    atualizadas = db.vincular_nota_mae_lote(
+        {k: v for k, v in pedido.dados.items()}, usuario=usuario
+    )
+    if atualizadas:
+        engine.invalidar_cache()
+    return {"atualizadas": atualizadas}
+
+
+@router.get("/hierarquia/{numero_nota}")
+def obter_hierarquia(numero_nota: int):
+    _garantir_banco()
+    df = db.carregar_dados()
+    if df.empty or numero_nota not in df["Numero_Nota"].values:
+        raise HTTPException(404, f"Nota {numero_nota} não encontrada.")
+    nota_row = df[df["Numero_Nota"] == numero_nota].iloc[0]
+    nota_mae = str(nota_row.get("Nota_Mae", "-"))
+    filhas_df = df[df["Nota_Mae"].astype(str) == str(numero_nota)]
+    return {
+        "nota_mae": nota_mae,
+        "filhas": _df_para_registros(filhas_df[["Numero_Nota", "Status_Nota", "Conjunto"]]),
+    }
+
+
 @router.post("/migrar")
 def migrar_novamente(usuario: str = Depends(usuario_atual)):
     _migracao["resultado"] = None
