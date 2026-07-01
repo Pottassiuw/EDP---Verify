@@ -223,6 +223,7 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
         lockRows
         disableContextMenu
         onSelectionChange={aoSelecionar}
+        gutterColumn={{ basis: 70, grow: 0 }}
       />
       {guia !== null && <div className="dsg-resize-guide" style={{ left: guia }} />}
       <div className="dsg-statusbar">
