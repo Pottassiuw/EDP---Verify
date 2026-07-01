@@ -106,6 +106,42 @@ export interface SelecaoRetangulo {
 export interface ResumoSelecao { soma: number; media: number; contagem: number; }
 
 /** Agrega as células NUMÉRICAS do retângulo selecionado (estilo Excel). */
+export interface SugestaoDetetive {
+  Nota_Filha_Orfa: number;
+  Possivel_Nota_Mae: string;
+}
+
+const PALAVRAS_PROIBIDAS = ['SUBSTITUIDA', 'SUBSTITUÍDA', 'SUBST.', 'SUBST ', 'CANCELADA'];
+
+export function varrerVinculos(registros: NotaInput[]): SugestaoDetetive[] {
+  const dictConj: Record<string, string> = {};
+  for (const r of registros) {
+    dictConj[String(r.Numero_Nota)] = String(r['Conjunto'] ?? '').trim().toUpperCase();
+  }
+  const orfas = registros.filter((r) => {
+    const mae = String(r['Nota_Mae'] ?? '-').trim();
+    return (mae === '-' || mae === '' || mae === 'None') && Number(r['Planejado_DDPM']) === 0;
+  });
+  const seen = new Set<number>();
+  const sugestoes: SugestaoDetetive[] = [];
+  for (const row of orfas) {
+    const texto = `${String(row['Status_Obra'] ?? '')} ${String(row['Observacao'] ?? '')}`.toUpperCase();
+    if (PALAVRAS_PROIBIDAS.some((p) => texto.includes(p))) continue;
+    const nums = [...texto.matchAll(/\b\d{6,9}\b/g)].map((m) => m[0]);
+    const conjOrfa = String(row['Conjunto'] ?? '').trim().toUpperCase();
+    for (const num of nums) {
+      if (num in dictConj && num !== String(row.Numero_Nota) && dictConj[num] === conjOrfa) {
+        if (!seen.has(row.Numero_Nota)) {
+          seen.add(row.Numero_Nota);
+          sugestoes.push({ Nota_Filha_Orfa: row.Numero_Nota, Possivel_Nota_Mae: num });
+        }
+        break;
+      }
+    }
+  }
+  return sugestoes;
+}
+
 export function calcularSelecao(
   registros: NotaInput[],
   colunas: ColunaDef[],
