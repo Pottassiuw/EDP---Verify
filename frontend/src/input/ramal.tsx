@@ -17,16 +17,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem' | 'hierarquia';
+type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 
 const MODOS: { id: ModoRamal; rotulo: string }[] = [
-  { id: 'visao',      rotulo: 'Visão Geral' },
-  { id: 'rapida',     rotulo: 'Edição Rápida' },
-  { id: 'lote',       rotulo: 'Edição em Lote' },
-  { id: 'exclusao',   rotulo: 'Exclusão' },
-  { id: 'cadastro',   rotulo: 'Cadastrar Nota' },
-  { id: 'colagem',    rotulo: 'Colar Planilha' },
-  { id: 'hierarquia', rotulo: 'Hierarquia' },
+  { id: 'visao',    rotulo: 'Visão Geral' },
+  { id: 'rapida',   rotulo: 'Edição Rápida' },
+  { id: 'lote',     rotulo: 'Edição em Lote' },
+  { id: 'exclusao', rotulo: 'Exclusão' },
+  { id: 'cadastro', rotulo: 'Cadastrar Nota' },
+  { id: 'colagem',  rotulo: 'Colar Planilha' },
 ];
 
 const NOTA_RAMAL_VAZIA: Record<string, string> = {
@@ -53,9 +52,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const [loteMes, setLoteMes] = React.useState('');
   const [novaNota, setNovaNota] = React.useState<Record<string, string>>({ ...NOTA_RAMAL_VAZIA });
   const [textoColagem, setTextoColagem] = React.useState('');
-  const [maeSelecionada, setMaeSelecionada] = React.useState('');
-  const [filhasSelecionadas, setFilhasSelecionadas] = React.useState<Set<number>>(new Set());
-
   const registros = dadosRamal?.registros ?? [];
   const registrosComoNotaInput = registros as unknown as NotaInput[];
 
@@ -98,22 +94,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
 
   function toggleTodos(numeros: number[], marcar: boolean): void {
     setSelecionados((prev) => {
-      const s = new Set(prev);
-      numeros.forEach((n) => { if (marcar) s.add(n); else s.delete(n); });
-      return s;
-    });
-  }
-
-  function toggleFilha(numero: number): void {
-    setFilhasSelecionadas((prev) => {
-      const s = new Set(prev);
-      if (s.has(numero)) s.delete(numero); else s.add(numero);
-      return s;
-    });
-  }
-
-  function toggleTodasFilhas(numeros: number[], marcar: boolean): void {
-    setFilhasSelecionadas((prev) => {
       const s = new Set(prev);
       numeros.forEach((n) => { if (marcar) s.add(n); else s.delete(n); });
       return s;
@@ -176,19 +156,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         Planejado_DDPM: Number(r.Planejado_DDPM) || 0,
       })));
       setTextoColagem('');
-    });
-  };
-
-  const vincularHierarquia = (): void => {
-    const mae = Number(maeSelecionada);
-    if (!mae || filhasSelecionadas.size === 0) {
-      setMsg({ tipo: 'erro', texto: 'Informe a nota mãe e selecione ao menos uma filha.' });
-      return;
-    }
-    void executar(`Hierarquia vinculada: ${filhasSelecionadas.size} nota(s) filha(s).`, async () => {
-      await InputApi.vincularHierarquia({ [String(mae)]: [...filhasSelecionadas] });
-      setMaeSelecionada('');
-      setFilhasSelecionadas(new Set());
     });
   };
 
@@ -402,47 +369,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* HIERARQUIA */}
-      {modo === 'hierarquia' && dadosRamal && (
-        <React.Fragment>
-          <Card>
-            <CardHeader><CardTitle>Vincular Hierarquia — Nota Mãe → Filhas</CardTitle></CardHeader>
-            <CardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <Label>Nota Mãe (Nº da nota principal)</Label>
-                    <Input value={maeSelecionada} placeholder="ex: 100123456"
-                           onChange={(e) => setMaeSelecionada(e.target.value)}
-                           style={{ width: 200 }} />
-                  </div>
-                  <Button
-                    disabled={salvando || !maeSelecionada || filhasSelecionadas.size === 0}
-                    onClick={vincularHierarquia}>
-                    🔗 Vincular ({filhasSelecionadas.size} filha(s))
-                  </Button>
-                </div>
-                <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0 }}>
-                  Selecione as notas ramal filhas na tabela abaixo:
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <NotesTable
-                registros={registrosComoNotaInput}
-                colunas={COLUNAS_RAMAL}
-                selecionados={filhasSelecionadas}
-                onToggleSelecionado={toggleFilha}
-                onToggleTodos={toggleTodasFilhas}
-                statusOpcoes={dadosPrincipais.meta.status_opcoes}
-                prioridadeOpcoes={dadosPrincipais.meta.prioridade_opcoes} />
-            </CardContent>
-          </Card>
-        </React.Fragment>
       )}
 
     </div>
