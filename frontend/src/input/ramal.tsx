@@ -1,13 +1,12 @@
 import React from 'react';
 import type { InputDataset, NotaInput, NotaRamal } from './types';
-import { getUsuario, InputApi } from './api';
+import { InputApi } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
 import { COLUNAS_RAMAL, COLUNAS_COLAGEM_RAMAL, ROTULOS_RAMAL } from './columns-ramal';
 import { useRamalData, useRecarregarRamal } from './use-ramal-data';
 import { DataGrid } from './data-grid';
 import { NotesTable } from './notes-table';
-import { IdentityModal } from './identity-modal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +48,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const [selecionados, setSelecionados] = React.useState<Set<number>>(new Set());
   const [msg, setMsg] = React.useState<Mensagem | null>(null);
   const [salvando, setSalvando] = React.useState(false);
-  const [acaoPendente, setAcaoPendente] = React.useState<(() => void) | null>(null);
   const [loteStatus, setLoteStatus] = React.useState('');
   const [lotePrioridade, setLotePrioridade] = React.useState('');
   const [loteMes, setLoteMes] = React.useState('');
@@ -65,11 +63,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
     () => parseColagemTsv(textoColagem, COLUNAS_COLAGEM_RAMAL),
     [textoColagem],
   );
-
-  function comIdentidade(acao: () => void): void {
-    if (getUsuario()) acao();
-    else setAcaoPendente(() => acao);
-  }
 
   async function executar(rotuloOk: string, fn: () => Promise<unknown>): Promise<void> {
     setSalvando(true); setMsg(null);
@@ -127,15 +120,15 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
     });
   }
 
-  const salvarRapida = (): void => comIdentidade(() => {
+  const salvarRapida = (): void => {
     void executar(`${edicoes.size} nota(s) ramal atualizada(s).`, async () => {
       const notas = [...edicoes.entries()].map(([n, campos]) => ({ Numero_Nota: n, ...campos }));
       await InputApi.importarRamal(notas);
       setEdicoes(new Map());
     });
-  });
+  };
 
-  const aplicarLote = (): void => comIdentidade(() => {
+  const aplicarLote = (): void => {
     const notas = [...selecionados].map((n) => {
       const nota: Partial<NotaRamal> = { Numero_Nota: n };
       if (loteStatus) nota.Status_Nota = loteStatus;
@@ -151,18 +144,18 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       await InputApi.importarRamal(notas);
       setSelecionados(new Set());
     });
-  });
+  };
 
-  const excluirSelecionadas = (): void => comIdentidade(() => {
+  const excluirSelecionadas = (): void => {
     if (selecionados.size === 0) { setMsg({ tipo: 'erro', texto: 'Nenhuma nota selecionada.' }); return; }
     if (!window.confirm(`Excluir ${selecionados.size} nota(s) ramal do banco?`)) return;
     void executar(`${selecionados.size} nota(s) ramal excluída(s).`, async () => {
       await InputApi.excluirRamal([...selecionados]);
       setSelecionados(new Set());
     });
-  });
+  };
 
-  const cadastrar = (): void => comIdentidade(() => {
+  const cadastrar = (): void => {
     if (!/^\d+$/.test(novaNota.Numero_Nota)) { setMsg({ tipo: 'erro', texto: 'Nº da Nota inválido.' }); return; }
     void executar(`Nota ramal ${novaNota.Numero_Nota} cadastrada.`, async () => {
       await InputApi.importarRamal([{
@@ -172,9 +165,9 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       }]);
       setNovaNota({ ...NOTA_RAMAL_VAZIA });
     });
-  });
+  };
 
-  const salvarColagem = (): void => comIdentidade(() => {
+  const salvarColagem = (): void => {
     if (previewColagem.length === 0) { setMsg({ tipo: 'erro', texto: 'Cole os dados antes de salvar.' }); return; }
     void executar(`${previewColagem.length} nota(s) ramal integradas.`, async () => {
       await InputApi.importarRamal(previewColagem.map((r) => ({
@@ -184,9 +177,9 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       })));
       setTextoColagem('');
     });
-  });
+  };
 
-  const vincularHierarquia = (): void => comIdentidade(() => {
+  const vincularHierarquia = (): void => {
     const mae = Number(maeSelecionada);
     if (!mae || filhasSelecionadas.size === 0) {
       setMsg({ tipo: 'erro', texto: 'Informe a nota mãe e selecione ao menos uma filha.' });
@@ -197,7 +190,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       setMaeSelecionada('');
       setFilhasSelecionadas(new Set());
     });
-  });
+  };
 
   function trocarModo(m: ModoRamal): void {
     setModo(m); setMsg(null); setSelecionados(new Set()); setEdicoes(new Map());
@@ -452,9 +445,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         </React.Fragment>
       )}
 
-      <IdentityModal aberto={acaoPendente !== null}
-                     onConfirmado={() => { const acao = acaoPendente; setAcaoPendente(null); acao?.(); }}
-                     onCancelar={() => setAcaoPendente(null)} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import type { Celula, InputDataset, NotaInput } from './types';
-import { getUsuario, InputApi } from './api';
+import { InputApi } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
 import { COLUNAS, COLUNAS_COLAGEM, ROTULOS } from './columns';
@@ -8,7 +8,6 @@ import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
-import { IdentityModal } from './identity-modal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +44,6 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   const [selecionados, setSelecionados] = React.useState<Set<number>>(new Set());
   const [msg, setMsg] = React.useState<Mensagem | null>(null);
   const [salvando, setSalvando] = React.useState(false);
-  const [acaoPendente, setAcaoPendente] = React.useState<(() => void) | null>(null);
   const [loteStatus, setLoteStatus] = React.useState('');
   const [lotePrioridade, setLotePrioridade] = React.useState('');
   const [loteMes, setLoteMes] = React.useState('');
@@ -56,11 +54,6 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
     () => filtrarRegistros(dados.registros, estadoFiltros), [dados.registros, estadoFiltros]);
   const previewColagem = React.useMemo(
     () => parseColagemTsv(textoColagem, COLUNAS_COLAGEM), [textoColagem]);
-
-  function comIdentidade(acao: () => void): void {
-    if (getUsuario()) acao();
-    else setAcaoPendente(() => acao);
-  }
 
   async function executar(rotuloOk: string, fn: () => Promise<unknown>): Promise<void> {
     setSalvando(true); setMsg(null);
@@ -100,15 +93,15 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
     });
   }
 
-  const salvarRapida = (): void => comIdentidade(() => {
+  const salvarRapida = (): void => {
     void executar(`${edicoes.size} nota(s) atualizada(s).`, async () => {
       const linhas = [...edicoes.entries()].map(([n, campos]) => ({ Numero_Nota: n, ...campos }));
       await InputApi.editar(linhas);
       setEdicoes(new Map());
     });
-  });
+  };
 
-  const aplicarLote = (): void => comIdentidade(() => {
+  const aplicarLote = (): void => {
     const linhas = [...selecionados].map((n) => {
       const linha: Partial<NotaInput> = { Numero_Nota: n };
       if (loteStatus) linha.Status_Nota = loteStatus;
@@ -124,35 +117,35 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
       await InputApi.editar(linhas);
       setSelecionados(new Set());
     });
-  });
+  };
 
-  const excluirSelecionadas = (): void => comIdentidade(() => {
+  const excluirSelecionadas = (): void => {
     if (selecionados.size === 0) { setMsg({ tipo: 'erro', texto: 'Nenhuma nota selecionada.' }); return; }
     if (!window.confirm(`Excluir ${selecionados.size} nota(s) do banco? Esta ação não entra no desfazer.`)) return;
     void executar(`${selecionados.size} nota(s) excluída(s).`, async () => {
       await InputApi.excluir([...selecionados]);
       setSelecionados(new Set());
     });
-  });
+  };
 
-  const desfazer = (): void => comIdentidade(() => {
+  const desfazer = (): void => {
     if (!window.confirm('Desfazer a última alteração salva no banco de dados?')) return;
     void executar('Última alteração desfeita.', async () => {
       const r = await InputApi.desfazer();
       if (!r.ok) throw new Error(r.mensagem);
     });
-  });
+  };
 
-  const cadastrar = (): void => comIdentidade(() => {
+  const cadastrar = (): void => {
     if (!/^\d+$/.test(novaNota.Numero_Nota)) { setMsg({ tipo: 'erro', texto: 'Nº da Nota inválido.' }); return; }
     void executar(`Nota ${novaNota.Numero_Nota} cadastrada.`, async () => {
       await InputApi.criar({ ...novaNota, Numero_Nota: Number(novaNota.Numero_Nota),
                              Planejado_DDPM: Number(novaNota.Planejado_DDPM) || 0 });
       setNovaNota({ ...NOTA_VAZIA });
     });
-  });
+  };
 
-  const salvarColagem = (): void => comIdentidade(() => {
+  const salvarColagem = (): void => {
     if (previewColagem.length === 0) { setMsg({ tipo: 'erro', texto: 'Cole os dados antes de salvar.' }); return; }
     void executar(`${previewColagem.length} nota(s) integradas ao banco.`, async () => {
       await InputApi.criarLote(previewColagem.map((r) => ({
@@ -161,7 +154,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
       })));
       setTextoColagem('');
     });
-  });
+  };
 
   const comSelecao = modo === 'lote' || modo === 'exclusao';
 
@@ -341,10 +334,6 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
           </CardContent>
         </Card>
       )}
-
-      <IdentityModal aberto={acaoPendente !== null}
-                     onConfirmado={() => { const acao = acaoPendente; setAcaoPendente(null); acao?.(); }}
-                     onCancelar={() => setAcaoPendente(null)} />
     </div>
   );
 }

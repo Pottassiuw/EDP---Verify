@@ -1,12 +1,11 @@
 ﻿import React from 'react';
 import type { InputDataset, NotaInput } from './types';
-import { getUsuario, InputApi, baixarBlob } from './api';
+import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
 import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { DataGrid } from './data-grid';
-import { IdentityModal } from './identity-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -62,7 +61,6 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
   const [sugestoes, setSugestoes] = React.useState<SugestaoDetetive[] | null>(null);
   const [rodando, setRodando] = React.useState(false);
   const [aplicando, setAplicando] = React.useState(false);
-  const [acaoPendente, setAcaoPendente] = React.useState<(() => void) | null>(null);
   const filtrados = React.useMemo(
     () => filtrarRegistros(dados.registros, estado), [dados.registros, estado]);
 
@@ -93,8 +91,7 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
         })
         .finally(() => setAplicando(false));
     };
-    if (getUsuario()) acao();
-    else setAcaoPendente(() => acao);
+    acao();
   }
 
   async function exportar(): Promise<void> {
@@ -177,10 +174,6 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
         )}
       </Card>
 
-      <IdentityModal
-        aberto={acaoPendente !== null}
-        onConfirmado={() => { const a = acaoPendente; setAcaoPendente(null); a?.(); }}
-        onCancelar={() => setAcaoPendente(null)} />
     </div>
   );
 }
