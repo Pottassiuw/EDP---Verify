@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem' | 'hierarquia' | 'detetive';
+type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem' | 'hierarquia';
 
 const MODOS: { id: ModoRamal; rotulo: string }[] = [
   { id: 'visao',      rotulo: 'Visão Geral' },
@@ -28,55 +28,7 @@ const MODOS: { id: ModoRamal; rotulo: string }[] = [
   { id: 'cadastro',   rotulo: 'Cadastrar Nota' },
   { id: 'colagem',    rotulo: 'Colar Planilha' },
   { id: 'hierarquia', rotulo: 'Hierarquia' },
-  { id: 'detetive',   rotulo: '🕵️ Detetive de Vínculos' },
 ];
-
-interface SugestaoDetetive {
-  Nota_Filha_Orfa: number;
-  Possivel_Nota_Mae: string;
-  Texto_Encontrado: string;
-}
-
-const PALAVRAS_PROIBIDAS = ['SUBSTITUIDA', 'SUBSTITUÍDA', 'SUBST.', 'SUBST ', 'CANCELADA'];
-
-function varrerVinculos(registros: NotaInput[]): SugestaoDetetive[] {
-  const dictConj: Record<string, string> = {};
-  for (const r of registros) {
-    dictConj[String(r.Numero_Nota)] = String(r['Conjunto'] ?? '').trim().toUpperCase();
-  }
-
-  const orfas = registros.filter((r) => {
-    const mae = String(r['Nota_Mae'] ?? '-').trim();
-    return (mae === '-' || mae === '' || mae === 'None') && Number(r['Planejado_DDPM']) === 0;
-  });
-
-  const seen = new Set<number>();
-  const sugestoes: SugestaoDetetive[] = [];
-
-  for (const row of orfas) {
-    const texto = `${String(row['Status_Obra'] ?? '')} ${String(row['Observacao'] ?? '')}`.toUpperCase();
-    if (PALAVRAS_PROIBIDAS.some((p) => texto.includes(p))) continue;
-
-    const nums = [...texto.matchAll(/\b\d{6,9}\b/g)].map((m) => m[0]);
-    const conjOrfa = String(row['Conjunto'] ?? '').trim().toUpperCase();
-
-    for (const num of nums) {
-      if (num in dictConj && num !== String(row.Numero_Nota) && dictConj[num] === conjOrfa) {
-        if (!seen.has(row.Numero_Nota)) {
-          seen.add(row.Numero_Nota);
-          sugestoes.push({
-            Nota_Filha_Orfa: row.Numero_Nota,
-            Possivel_Nota_Mae: num,
-            Texto_Encontrado: texto.slice(0, 100) + '…',
-          });
-        }
-        break;
-      }
-    }
-  }
-
-  return sugestoes;
-}
 
 const NOTA_RAMAL_VAZIA: Record<string, string> = {
   Numero_Nota: '', Status_Nota: '-', Prioridade_Nota: '-',
@@ -105,8 +57,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const [textoColagem, setTextoColagem] = React.useState('');
   const [maeSelecionada, setMaeSelecionada] = React.useState('');
   const [filhasSelecionadas, setFilhasSelecionadas] = React.useState<Set<number>>(new Set());
-  const [sugestoesDetetive, setSugestoesDetetive] = React.useState<SugestaoDetetive[] | null>(null);
-  const [rodandoDetetive, setRodandoDetetive] = React.useState(false);
 
   const registros = dadosRamal?.registros ?? [];
   const registrosComoNotaInput = registros as unknown as NotaInput[];
@@ -246,28 +196,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       await InputApi.vincularHierarquia({ [String(mae)]: [...filhasSelecionadas] });
       setMaeSelecionada('');
       setFilhasSelecionadas(new Set());
-    });
-  });
-
-  const iniciarDetetive = (): void => {
-    setRodandoDetetive(true);
-    setSugestoesDetetive(null);
-    setTimeout(() => {
-      const resultado = varrerVinculos(dadosPrincipais.registros);
-      setSugestoesDetetive(resultado);
-      setRodandoDetetive(false);
-    }, 0);
-  };
-
-  const aplicarSugestoes = (sugestoes: SugestaoDetetive[]): void => comIdentidade(() => {
-    const dados: Record<string, number[]> = {};
-    for (const s of sugestoes) {
-      if (!dados[s.Possivel_Nota_Mae]) dados[s.Possivel_Nota_Mae] = [];
-      dados[s.Possivel_Nota_Mae].push(s.Nota_Filha_Orfa);
-    }
-    void executar(`${sugestoes.length} vínculo(s) aplicado(s).`, async () => {
-      await InputApi.vincularHierarquia(dados);
-      setSugestoesDetetive(null);
     });
   });
 
@@ -521,71 +449,6 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                 prioridadeOpcoes={dadosPrincipais.meta.prioridade_opcoes} />
             </CardContent>
           </Card>
-        </React.Fragment>
-      )}
-
-      {/* DETETIVE DE VÍNCULOS */}
-      {modo === 'detetive' && (
-        <React.Fragment>
-          <Card>
-            <CardHeader><CardTitle>🕵️ Detetive de Vínculos</CardTitle></CardHeader>
-            <CardContent>
-              <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 12px' }}>
-                Varre <strong>Status Obra</strong> e <strong>Observação</strong> das notas órfãs
-                (sem Nota Mãe e Planejado = 0) procurando números de nota do mesmo Conjunto.
-              </p>
-              <Button disabled={rodandoDetetive} onClick={iniciarDetetive}>
-                {rodandoDetetive ? 'Analisando…' : '🔎 Iniciar Varredura'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {sugestoesDetetive !== null && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {sugestoesDetetive.length > 0
-                    ? `${sugestoesDetetive.length} sugestão(ões) encontrada(s)`
-                    : 'Nenhuma sugestão encontrada'}
-                </CardTitle>
-              </CardHeader>
-              {sugestoesDetetive.length > 0 && (
-                <CardContent>
-                  {/* Texto copiável igual ao Streamlit */}
-                  {(() => {
-                    const agrupado = sugestoesDetetive.reduce<Record<string, number[]>>((acc, s) => {
-                      if (!acc[s.Possivel_Nota_Mae]) acc[s.Possivel_Nota_Mae] = [];
-                      acc[s.Possivel_Nota_Mae].push(s.Nota_Filha_Orfa);
-                      return acc;
-                    }, {});
-                    const textoCopia = Object.entries(agrupado)
-                      .map(([mae, filhas]) => `MÃE: ${mae}\nFILHAS: ${filhas.join(', ')}\n${'-'.repeat(30)}`)
-                      .join('\n');
-                    return (
-                      <React.Fragment>
-                        <Textarea
-                          readOnly
-                          value={textoCopia}
-                          rows={Math.min(12, Object.keys(agrupado).length * 3 + 2)}
-                          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 12 }}
-                        />
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Button
-                            disabled={salvando}
-                            onClick={() => aplicarSugestoes(sugestoesDetetive)}>
-                            🔗 Aplicar todos os vínculos ({sugestoesDetetive.length})
-                          </Button>
-                          <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                            Vincula Nota_Mae nas notas filhas via /api/input/hierarquia
-                          </span>
-                        </div>
-                      </React.Fragment>
-                    );
-                  })()}
-                </CardContent>
-              )}
-            </Card>
-          )}
         </React.Fragment>
       )}
 
