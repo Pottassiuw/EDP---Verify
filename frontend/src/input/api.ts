@@ -36,6 +36,7 @@ function escrita(method: string, corpo?: unknown): RequestInit {
 }
 
 export const InputApi = {
+  me: () => req<{ usuario: string }>('/me'),
   dados: () => req<InputDataset>('/notas'),
   sync: () => req<{ ultima_alteracao: string | null }>('/sync'),
 

@@ -1,6 +1,7 @@
 ﻿import React from 'react';
 import type { AbaInput } from './types';
 import { toast } from 'sonner';
+import { getUsuario, setUsuario, InputApi } from './api';
 import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
 import { Manage } from './manage';
@@ -28,6 +29,14 @@ interface InputSectionProps {
 export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
+
+  React.useEffect(() => {
+    if (!getUsuario()) {
+      InputApi.me()
+        .then(({ usuario }) => setUsuario(usuario))
+        .catch(() => setUsuario('sistema'));
+    }
+  }, []);
   const { desatualizado, limpar } = useAvisoSincronizacao(dados?.meta.ultima_alteracao);
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
