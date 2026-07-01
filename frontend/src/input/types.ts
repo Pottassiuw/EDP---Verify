@@ -57,4 +57,32 @@ export interface EdicaoResultado {
   ultima_alteracao: string | null;
 }
 
-export type AbaInput = "visao" | "gerenciar" | "relatorios" | "logs" | "config";
+export interface NotaRamal {
+  Numero_Nota: number;
+  Status_Obra: string;
+  Conjunto: string;
+  Circuito: string;
+  Local_Instalacao: string;
+  Planejado_DDPM: number;
+  Mes_Execucao_Planejado: string;
+  CenTrab_Respon: string;
+  Prioridade_Nota: string;
+  Observacao: string;
+  Extracao_Antiga: string;
+  Status_Nota: string;
+  Status_Anterior: string;
+  Check_Btzero: string;
+  Plano: string;
+  ID_Cronologia: number;
+}
+
+export interface RamalDataset {
+  registros: NotaRamal[];
+}
+
+export interface HierarquiaInfo {
+  nota_mae: string;
+  filhas: Array<{ Numero_Nota: number; Status_Nota: string; Conjunto: string }>;
+}
+
+export type AbaInput = "visao" | "gerenciar" | "relatorios" | "logs" | "config" | "ramal";

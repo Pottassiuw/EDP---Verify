@@ -1,6 +1,6 @@
 import type {
-  BackupInfo, BaseStatus, EdicaoResultado, InputDataset, LogArquivo,
-  LogRegistro, NotaInput,
+  BackupInfo, BaseStatus, EdicaoResultado, HierarquiaInfo, InputDataset, LogArquivo,
+  LogRegistro, NotaInput, NotaRamal, RamalDataset,
 } from './types';
 
 const base = (): string => localStorage.getItem('edp_api') ?? '/api';
@@ -74,6 +74,16 @@ export const InputApi = {
   urlDownloadBackup: (nome: string) => `${base()}/input/backups/${encodeURIComponent(nome)}/download`,
 
   migrar: () => req<{ resultado: string }>('/migrar', escrita('POST')),
+
+  ramal: () => req<RamalDataset>('/ramal'),
+  importarRamal: (notas: Partial<NotaRamal>[]) =>
+    req<{ inseridas: number }>('/ramal/bulk', escrita('POST', { notas })),
+  excluirRamal: (numeros: number[]) =>
+    req<{ excluidas: number }>('/ramal', escrita('DELETE', { numeros })),
+  vincularHierarquia: (dados: Record<string, number[]>) =>
+    req<{ atualizadas: number }>('/hierarquia', escrita('POST', { dados })),
+  obterHierarquia: (numero: number) =>
+    req<HierarquiaInfo>(`/hierarquia/${numero}`),
 
   exportar: async (numeros: number[], colunas: string[]): Promise<Blob> => {
     const r = await fetch(`${base()}/input/export`, {
