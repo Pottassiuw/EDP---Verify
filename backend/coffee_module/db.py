@@ -278,7 +278,8 @@ def diagnosticar_nota(pk: int) -> dict | None:
 
 
 def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
-                limit: int = 100, usuario: str | None = None) -> list:
+                limit: int = 100, usuario: str | None = None,
+                since: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS_LOG)} FROM coffee_logs"
     clausulas: list = []
@@ -296,6 +297,9 @@ def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
     if usuario:
         clausulas.append("usuario = ?")
         params.append(usuario)
+    if since:
+        clausulas.append("timestamp >= ?")
+        params.append(since)
     if clausulas:
         sql += " WHERE " + " AND ".join(clausulas)
     sql += " ORDER BY timestamp DESC, id DESC LIMIT ?"

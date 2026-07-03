@@ -123,9 +123,11 @@ def local_instalacao(pedido: LocalPedido):
 
 @router.get("/logs")
 def logs(nota_pk: Optional[int] = None, tipo: Optional[str] = None,
-         limit: int = 100, usuario: Optional[str] = None):
+         limit: int = 100, usuario: Optional[str] = None,
+         since: Optional[str] = None):
     _garantir_banco()
-    return {"logs": db.listar_logs(nota_pk=nota_pk, tipo=tipo, limit=limit, usuario=usuario)}
+    return {"logs": db.listar_logs(nota_pk=nota_pk, tipo=tipo, limit=limit,
+                                   usuario=usuario, since=since)}
 
 
 @router.get("/logs/usuarios")

@@ -977,3 +977,19 @@ def test_classificacao_em_gravada_e_preservada(coffee_tmp):
     db.upsert_nota(1, 17247854, {})  # pendente -> corrigida
     t2 = db.listar_notas("corrigida")[0]["classificacao_em"]
     assert t2 > t1  # reclassificação atualiza
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — param since em /coffee/logs
+# ---------------------------------------------------------------------------
+
+
+def test_listar_logs_since(coffee_tmp):
+    from coffee_module import db
+    db.registrar_log("acao_usuario", "primeira", None, None, True)
+    _time.sleep(0.01)
+    db.registrar_log("acao_usuario", "segunda", None, None, True)
+    todos = db.listar_logs()
+    corte = todos[0]["timestamp"]  # ordem DESC: [0] é "segunda"
+    filtrados = db.listar_logs(since=corte)
+    assert [l["acao"] for l in filtrados] == ["segunda"]
