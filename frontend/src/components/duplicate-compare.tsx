@@ -2,6 +2,7 @@ import React from 'react';
 import type { DuplicateCompareProps, DuplicateField, ComparableFields } from '../types';
 import { EDPApi } from '../api';
 import { Button } from '@/components/ui/button';
+import { Coffee } from 'lucide-react';
 
 const DUPC_STYLE = `
   .dupc-card{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
@@ -82,7 +83,7 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-          <Button variant="coffee" size="sm" onClick={() => api.openCoffee(allIds)}>☕ Abrir todas no COFFEE</Button>
+          <Button size="sm" onClick={() => api.openCoffee(allIds)}><Coffee /> Abrir todas no COFFEE</Button>
           {onSendToCoffee && (
             <Button variant="outline" size="sm" style={{ color: "var(--amber)", borderColor: "rgba(240,169,59,.4)" }}
                     onClick={() => onSendToCoffee(allIds, note.id)} title="Adiciona as candidatas à fila do COFFEE e navega para lá">
@@ -132,8 +133,8 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                     <a target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}>◎ Mapa</a>
                   </Button>
                 )}
-                <Button asChild variant="coffee" size="sm">
-                  <a target="_blank" rel="noopener" href={api.coffeeUrl(c.id)}>☕ COFFEE</a>
+                <Button asChild size="sm">
+                  <a target="_blank" rel="noopener" href={api.coffeeUrl(c.id)}><Coffee /> COFFEE</a>
                 </Button>
               </div>
             </div>

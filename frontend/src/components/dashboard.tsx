@@ -1,12 +1,13 @@
 ﻿import React from 'react';
 import type { Note, UrgBand, RuleKey } from '../types';
 import { EDPApi, ruleMeta } from '../api';
-import { PriorityChip, StatusTag, Field, ctrlStyle } from './shared';
+import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../hooks/use-persisted-state';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -113,15 +114,13 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           color:var(--text);cursor:pointer}
         .triage .fchip:hover{border-color:var(--red);color:var(--red)}
         .triage select:focus,.triage input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-tint)}
-        .triage .accent-btn{background:var(--accent);border-color:var(--accent);color:#fff}
-        .triage .accent-btn:hover{background:var(--accent-2)}
       `}</style>
 
       <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
           <Field label="Buscar · ID, referência, tipo, setor" grow>
             <div style={{ position: "relative", width: "100%" }}>
-              <input style={{ ...ctrlStyle, paddingRight: q ? 30 : 11 }} value={q}
+              <input className="edp-field" style={{ paddingRight: q ? 30 : 11, width: "100%" }} value={q}
                      onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
               {q && (
                 <button type="button" aria-label="Limpar busca" onClick={() => setQ("")}
@@ -132,23 +131,23 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             </div>
           </Field>
           <Field label="Estado (UF)" accent>
-            <select style={ctrlStyle} value={uf} onChange={(e) => setUf(e.target.value)}>
+            <select className="edp-field" value={uf} onChange={(e) => setUf(e.target.value)}>
               <option value="all">Todos</option>{ufOpts.map((o) => <option key={o} value={o}>{o}</option>)}</select>
           </Field>
           <Field label="Setor" accent>
-            <select style={ctrlStyle} value={setor} onChange={(e) => setSetor(e.target.value)}>
+            <select className="edp-field" value={setor} onChange={(e) => setSetor(e.target.value)}>
               <option value="all">Todos</option>{setorOpts.map((o) => <option key={o} value={o}>{o}</option>)}</select>
           </Field>
           <Field label="Urgência">
-            <select style={ctrlStyle} value={urg} onChange={(e) => setUrg(e.target.value)}>
+            <select className="edp-field" value={urg} onChange={(e) => setUrg(e.target.value)}>
               <option value="all">Todas</option>{Object.entries(URG).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </Field>
           <Field label="Status">
-            <select style={ctrlStyle} value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select className="edp-field" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="all">Todos</option><option value="erro">Com erro</option><option value="ok">Conforme</option></select>
           </Field>
           <Field label="Situação">
-            <select style={ctrlStyle} value={situacao} onChange={(e) => setSituacao(e.target.value)}>
+            <select className="edp-field" value={situacao} onChange={(e) => setSituacao(e.target.value)}>
               <option value="all">Todas</option><option value="pending">Pendentes</option><option value="done">Concluídas</option></select>
           </Field>
         </div>
@@ -229,8 +228,10 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   </div>
                   {flagDup && !isDup && (
                     <button title="Enviar candidatas para a fila COFFEE"
-                            style={{ all: "unset", cursor: "pointer", fontSize: 13, color: "var(--amber)", flexShrink: 0, lineHeight: 1, padding: "2px 4px" }}
-                            onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>→ ☕</button>
+                            style={{ all: "unset", cursor: "pointer", color: "var(--amber)", flexShrink: 0, lineHeight: 1, padding: "2px 4px", display: "inline-flex" }}
+                            onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>
+                      <Coffee size={14} />
+                    </button>
                   )}
                   {isDup ? <span className="edp-tag dup"><span className="edp-dot" />Dup.</span>
                     : done ? <span className="edp-tag done"><span className="edp-dot" />OK</span>
@@ -253,8 +254,8 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                 <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
                   <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
                 {!allDone && (
-                  <Button variant="accent" size="sm" onClick={() => doAction("done")}>
-                    ✓ {allOpen ? "Concluir" : "Concluir pendentes"}
+                  <Button size="sm" onClick={() => doAction("done")}>
+                    <Check /> {allOpen ? "Concluir" : "Concluir pendentes"}
                   </Button>
                 )}
                 {!allOpen && (
@@ -262,7 +263,9 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
                   </Button>
                 )}
-                <Button variant="coffee" size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>☕ COFFEE</Button>
+                <Button size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>
+                  <Coffee /> COFFEE
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSelBatch(new Set())}>Limpar</Button>
               </div>
             );
@@ -324,7 +327,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
                     display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 21, margin: 0, whiteSpace: "nowrap" }}>Nota {sel.id}</h2>
+            <h2 className="edp-title" style={{ fontSize: 21, margin: 0, whiteSpace: "nowrap" }}>Nota {sel.id}</h2>
             <PriorityChip p={sel.prioridade} />
             <StatusTag status={sel.status} done={done} dup={dup} />
           </div>
@@ -332,13 +335,15 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div className="ui-reset" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <Button variant="coffee" size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>☕ COFFEE</Button>
+          <Button size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>
+            <Coffee /> COFFEE
+          </Button>
           <Button variant="outline" size="icon-sm" title={fs ? "Sair da tela cheia" : "Expandir"}
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
-            {fs ? "⤡" : "⤢"}
+            {fs ? <Minimize2 /> : <Maximize2 />}
           </Button>
-          <Button variant={done ? "outline" : "accent"} size="sm" onClick={() => onToggleDone(sel.id)}>
-            {done ? "↺ Reabrir" : "✓ Concluir"}
+          <Button variant={done ? "outline" : "default"} size="sm" onClick={() => onToggleDone(sel.id)}>
+            {done ? <><RotateCcw /> Reabrir</> : <><Check /> Concluir</>}
           </Button>
         </div>
       </div>
@@ -373,7 +378,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
           </div>
           {sel.latitude && sel.longitude && (
             <Button asChild variant="outline" size="sm" style={{ marginTop: 12, color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>
-              <a target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}>◎ Abrir no Google Maps</a>
+              <a target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}><MapPin /> Abrir no Google Maps</a>
             </Button>
           )}
         </section>

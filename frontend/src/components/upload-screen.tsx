@@ -96,9 +96,9 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           <div
             style={{
               fontFamily: "var(--font-display)",
-              fontWeight: 800,
+              fontWeight: 600,
               fontSize: 26,
-              letterSpacing: "-0.02em",
+              letterSpacing: "var(--tracking-display)",
             }}
           >
             To De Olho 👀
@@ -182,7 +182,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         <h2
           style={{
             fontFamily: "var(--font-display)",
-            fontWeight: 700,
+            fontWeight: 600,
             fontSize: 19,
             margin: "0 0 6px",
             letterSpacing: "-0.01em",
@@ -199,7 +199,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         >
           Arraste o arquivo aqui ou clique para selecionar
         </p>
-        <Button asChild variant="accent" style={{ padding: "10px 22px", fontWeight: 700 }}>
+        <Button asChild style={{ padding: "10px 22px" }}>
           <span>Selecionar arquivo</span>
         </Button>
 

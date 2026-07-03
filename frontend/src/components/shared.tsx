@@ -74,15 +74,3 @@ export const Field: React.FC<FieldProps> = ({
     {children}
   </label>
 );
-
-export const ctrlStyle: React.CSSProperties = {
-  background: "var(--bg-2)",
-  border: "1px solid var(--line-2)",
-  color: "var(--text)",
-  padding: "8px 11px",
-  borderRadius: "var(--r-sm)",
-  fontSize: 13,
-  fontFamily: "var(--font-body)",
-  outline: "none",
-  width: "100%",
-};
