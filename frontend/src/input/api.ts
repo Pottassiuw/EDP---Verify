@@ -59,6 +59,7 @@ export const InputApi = {
     req<{ ok: boolean }>('/responsaveis', escrita('PUT', mapa)),
 
   bases: () => req<{ bases: BaseStatus[] }>('/bases'),
+  syncSap: () => req<{ mensagem: string }>('/bases/sync-sap', escrita('POST')),
   urlDownloadBase: (arquivo: string) => `${base()}/input/bases/${encodeURIComponent(arquivo)}/download`,
   substituirBase: async (arquivo: string, f: File): Promise<void> => {
     const usuario = getUsuario();

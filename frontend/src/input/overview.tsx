@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
@@ -45,9 +45,20 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
           Total de registros: <strong className="edp-mono">{filtrados.length}</strong>
           {filtrados.length !== dados.registros.length ? ` de ${dados.registros.length}` : ''}
         </span>
-        <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0} onClick={() => { void exportar(); }}>
-          {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button variant="default" size="sm" onClick={() => {
+            toast.promise(InputApi.syncSap(), {
+              loading: 'Iniciando extração do SAP...',
+              success: 'Sincronização SAP rodando em background!',
+              error: 'Erro ao iniciar SAP'
+            });
+          }}>
+            🔄 Sincronizar SAP
+          </Button>
+          <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0} onClick={() => { void exportar(); }}>
+            {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
+          </Button>
+        </div>
       </div>
       <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />

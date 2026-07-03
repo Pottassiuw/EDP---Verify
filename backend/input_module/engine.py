@@ -20,7 +20,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from input_module import config
+from input_module import config, db
 from input_module.db import carregar_dados, carregar_projeto_construcao
 
 
@@ -29,14 +29,7 @@ meses_pt_rev = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "maio": 5, "jun": 6,
 
 
 def _ler_export_medidas() -> pd.DataFrame | None:
-    caminho = config.CAMINHO_BASE_IW66
-    if not os.path.exists(caminho):
-        return None
-    try:
-        return pd.read_excel(caminho)
-    except Exception as e:
-        print(f"Erro ao ler IW66: {e}")
-        return None
+    return db.carregar_base_dataframe("base_iw66")
 
 
 def _comparar_medida_planejado(medida_str: str, planejado_val) -> str:
@@ -192,10 +185,10 @@ def enriquecer_dados():
     df["substacao_conjunto"] = df['Circuito'].astype(str).str[:3].fillna("Desconhecido") + " - " + df['Conjunto'].astype(str).fillna("Desconhecido")
 
     # --- 3.2. PROCV DO INDICADOR DE CONTINUIDADE (CRITICIDADE E RANKING) ---
-    # Lê a planilha externa da rede e verifica quais conjuntos estão próximos da violação (Limite ANEEL)
-    if os.path.exists(config.CAMINHO_INDICADOR_CONTINUIDADE):
+    # Lê a tabela do banco e verifica quais conjuntos estão próximos da violação (Limite ANEEL)
+    df_hierarquia = db.carregar_base_dataframe("base_indicador_continuidade")
+    if df_hierarquia is not None and not df_hierarquia.empty:
         try:
-            df_hierarquia = pd.read_excel(config.CAMINHO_INDICADOR_CONTINUIDADE)
             df_hierarquia.columns = df_hierarquia.columns.astype(str).str.replace('\n', ' ').str.replace('[', '').str.replace(']', '').str.strip()
 
             col_alvo = 'DELTA_INDICADOR _12MM_CONJUNTO' if 'DELTA_INDICADOR _12MM_CONJUNTO' in df_hierarquia.columns else 'DELTA_INDICADOR_12MM_CONJUNTO'
@@ -240,10 +233,14 @@ def enriquecer_dados():
     # Puxa os dados gerados pelo Robô RPA para atualizar o status final e data de encerramento da nota
     df['Centro_Responsavel_Banco'] = df['Centro_Responsavel'].fillna("-")
 
-    if os.path.exists(config.CAMINHO_BASE_IW28):
+    df_sap = db.carregar_base_dataframe("base_iw28")
+    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data']
+
+    if df_sap is not None and not df_sap.empty:
         try:
-            colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data']
-            df_sap = pd.read_excel(config.CAMINHO_BASE_IW28, usecols=lambda c: c in colunas_esperadas)
+            # Filtra colunas se existirem
+            col_validas = [c for c in colunas_esperadas if c in df_sap.columns]
+            df_sap = df_sap[col_validas].copy()
             df_sap['Nota'] = df_sap['Nota'].dropna().astype(int).astype(str).str.strip()
 
             dicionario_status_sap = dict(zip(df_sap['Nota'], df_sap['Status usuário']))
@@ -288,12 +285,11 @@ def enriquecer_dados():
 
     # --- 3.5. PROCV DA QUANTIDADE DE CLIENTES POR CONJUNTO ---
     # Utilizado mais a frente como denominador para calcular o DEC e FEC
-    if os.path.exists(config.CAMINHO_CLIENTES_CONJUNTO):
+    df_clientes = db.carregar_base_dataframe("base_clientes")
+    if df_clientes is not None and not df_clientes.empty:
         try:
             col_chave_excel = 'CONJUNTO_DESC'
             col_valor_excel = 'QTDE_CONJUNTO'
-
-            df_clientes = pd.read_excel(config.CAMINHO_CLIENTES_CONJUNTO, usecols=[col_chave_excel, col_valor_excel])
             df_clientes[col_chave_excel] = df_clientes[col_chave_excel].astype(str).str.strip().str.upper()
 
             def converter_clientes_inteiro(valor):
@@ -317,9 +313,12 @@ def enriquecer_dados():
 
     # --- 3.6. INTEGRAÇÃO SAP: CUSTO E EXECUÇÃO DE ORDENS (IW38) ---
     # Compara o valor Orçado (Planejado) contra o que realmente foi Gasto (Real)
-    if os.path.exists(config.CAMINHO_CUSTO_ORD_IW38):
+    df_ordem = db.carregar_base_dataframe("base_iw38")
+    if df_ordem is not None and not df_ordem.empty:
         try:
-            df_ordem = pd.read_excel(config.CAMINHO_CUSTO_ORD_IW38, usecols = ['Ordem', 'Status usuário', 'Status do sistema', 'Total planejado','Total real'])
+            colunas_ordem = ['Ordem', 'Status usuário', 'Status do sistema', 'Total planejado','Total real']
+            col_validas = [c for c in colunas_ordem if c in df_ordem.columns]
+            df_ordem = df_ordem[col_validas]
             df_ordem['Ordem'] = df_ordem['Ordem'].dropna().astype(int).astype(str).str.strip()
             dicionario_centro_sap = dict(zip(df_ordem['Ordem'], df_ordem['Status usuário']))
             dicionario_status_sistema_sap = dict(zip(df_ordem['Ordem'], df_ordem['Status do sistema']))
@@ -376,9 +375,11 @@ def enriquecer_dados():
     colunas_modulo_9 = ['Modular', 'CHI', 'CI', 'Ocorrencia', 'DEC_PROG_CHI', 'CHI_Sazonal_2025', 'Total_planejado_modular']
     for col in colunas_modulo_9: df[col] = 0.0
 
-    if os.path.exists(config.CAMINHO_CUSTO_MODULAR):
+    df_custo_raw = db.carregar_base_dataframe("base_custo_modular")
+    df_sazonal_excel = db.carregar_base_dataframe("base_sazonal")
+    
+    if df_custo_raw is not None and not df_custo_raw.empty:
         try:
-            df_custo_raw = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares')
             df_custo_raw.columns = df_custo_raw.columns.astype(str).str.strip()
 
             col_chave_excel = [c for c in df_custo_raw.columns if 'Conjunto' in c][0]
@@ -416,11 +417,10 @@ def enriquecer_dados():
 
             dict_sazonal = {}
             try:
-                df_sazonal_full = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares', skiprows=1, nrows=4)
-                if len(df_sazonal_full.columns) >= 21:
-                    df_sazonal_excel = df_sazonal_full.iloc[:, 20:32]
-                    if not df_sazonal_excel.empty:
-                        dict_sazonal = dict(zip(df_sazonal_excel.iloc[0].astype(int), df_sazonal_excel.iloc[3].astype(float)))
+                if df_sazonal_excel is not None and len(df_sazonal_excel.columns) >= 21:
+                    df_saz = df_sazonal_excel.iloc[:, 20:32]
+                    if not df_saz.empty:
+                        dict_sazonal = dict(zip(df_saz.iloc[0].astype(int), df_saz.iloc[3].astype(float)))
             except Exception as e_saz:
                 print(f"Sazonalidade não carregada: {e_saz}")
 
@@ -467,9 +467,9 @@ def enriquecer_dados():
     # Avaliação de Ganhos utilizando duas colunas como chave (Conjunto + Circuito Aneel)
     df['CHI_Conj'] = 0.0
 
-    if os.path.exists(config.CAMINHO_GANHOS):
+    df_ganhos = db.carregar_base_dataframe("base_ganhos")
+    if df_ganhos is not None and not df_ganhos.empty:
         try:
-            df_ganhos = pd.read_excel(config.CAMINHO_GANHOS, sheet_name='Ganhos')
             df_ganhos.columns = df_ganhos.columns.astype(str).str.strip()
 
             col_c_excel = df_ganhos.columns[2]
@@ -499,9 +499,9 @@ def enriquecer_dados():
     # --- 3.10. PROCV HISTÓRICOS: 12 MESES E 3 MESES ---
     for col in ['CI_12M', 'CHI_12M', 'OCO_12M', 'OCO_3M']: df[col] = "-"
 
-    if os.path.exists(config.CAMINHO_TABLE1):
+    df_t1 = db.carregar_base_dataframe("base_table1")
+    if df_t1 is not None and not df_t1.empty:
         try:
-            df_t1 = pd.read_excel(config.CAMINHO_TABLE1)
             df_t1.columns = df_t1.columns.astype(str).str.strip()
 
             dict_ci12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumCI_12M]']))

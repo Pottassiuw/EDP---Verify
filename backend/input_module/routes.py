@@ -258,6 +258,62 @@ def baixar_base(nome_arquivo: str):
     return FileResponse(caminho, filename=nome_arquivo)
 
 
+def _processar_upload_base(nome_arquivo: str, caminho: str):
+    map_simples = {
+        "Indicador base conjunto - Limite Aneel.xlsx": "base_indicador_continuidade",
+        "Gerada_base_IW28.XLSX": "base_iw28",
+        "Gerada_custo_ord_IW38.XLSX": "base_iw38",
+        "Gerada_medidas_IW66.XLSX": "base_iw66",
+        "Clientes_Conjunto.xlsx": "base_clientes",
+        "Table1.xlsx": "base_table1"
+    }
+    try:
+        if nome_arquivo in map_simples:
+            df = pd.read_excel(caminho)
+            db.salvar_base_dataframe(map_simples[nome_arquivo], df)
+        elif nome_arquivo == "Ganhos.xlsx":
+            df = pd.read_excel(caminho, sheet_name='Ganhos')
+            db.salvar_base_dataframe("base_ganhos", df)
+        elif nome_arquivo == "Custo_Modular.xlsx":
+            df_mod = pd.read_excel(caminho, sheet_name='Modulares')
+            db.salvar_base_dataframe("base_custo_modular", df_mod)
+            df_saz = pd.read_excel(caminho, sheet_name='Modulares', skiprows=1, nrows=4)
+            db.salvar_base_dataframe("base_sazonal", df_saz)
+    except Exception as e:
+        print(f"Aviso: Não foi possível importar {nome_arquivo} para o SQLite nativo: {e}")
+
+
+def _rotina_sap_background():
+    import subprocess
+    import os
+    try:
+        # Chama o robô SAP forçando UTF-8 para evitar crash com emojis no print
+        script_path = str(config.data_dir().parent.parent.parent / "INPUT SQL" / "Sap_Robot.py")
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["INPUT_DB_PATH"] = db.obter_caminho_banco()
+        subprocess.run(["python", script_path], check=True, env=env)
+        
+        # Assim que termina, atualiza o SQLite com os arquivos gerados!
+        _processar_upload_base("Gerada_base_IW28.XLSX", config.CAMINHO_BASE_IW28)
+        _processar_upload_base("Gerada_custo_ord_IW38.XLSX", config.CAMINHO_CUSTO_ORD_IW38)
+        _processar_upload_base("Gerada_medidas_IW66.XLSX", config.CAMINHO_BASE_IW66)
+        
+        engine.invalidar_cache()
+    except Exception as e:
+        print(f"Erro na execução em background do SAP: {e}")
+
+
+from fastapi import Body
+
+@router.post("/bases/sync-sap")
+def sync_sap(tasks: BackgroundTasks, x_user: Optional[str] = Header(default="Sistema", alias="X-User"), payload: dict = Body(None)):
+    """Inicia a extração SAP em background."""
+    _garantir_banco()
+    tasks.add_task(_rotina_sap_background)
+    return {"mensagem": "Sincronização SAP iniciada em background."}
+
+
 @router.post("/bases/{nome_arquivo}")
 def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
                     usuario: str = Depends(usuario_atual)):
@@ -268,6 +324,9 @@ def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
             f.write(arquivo.file.read())
     except OSError as e:
         raise HTTPException(502, f"Erro ao gravar na rede: {e}")
+    
+    _processar_upload_base(nome_arquivo, caminho)
+    
     db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
     engine.invalidar_cache()
     return {"ok": True}

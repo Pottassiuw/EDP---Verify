@@ -21,18 +21,20 @@ def data_dir() -> Path:
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
 REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"
+REDE_ARQUIVOS_SAP = REDE_INPUT_SQL + r"\Arquivos_SAP"
+REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
 
 REDE_DB_ORIGEM = REDE_INPUT_SQL + r"\notas_departamento.db"
 CAMINHO_INDICADOR_CONTINUIDADE = (
-    REDE_INPUT_SQL + r"\Indicador base conjunto - Limite Aneel.xlsx"
+    REDE_BASES_APOIO + r"\Indicador base conjunto - Limite Aneel.xlsx"
 )
-CAMINHO_BASE_IW28 = REDE_INPUT_SQL + r"\Gerada_base_IW28.XLSX"
-CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Gerada_custo_ord_IW38.XLSX"
-CAMINHO_BASE_IW66 = REDE_INPUT_SQL + r"\Gerada_medidas_IW66.XLSX"
-CAMINHO_CLIENTES_CONJUNTO = REDE_INPUT_SQL + r"\Clientes_Conjunto.xlsx"
-CAMINHO_CUSTO_MODULAR = REDE_INPUT_SQL + r"\Custo_Modular.xlsx"
-CAMINHO_GANHOS = REDE_INPUT_SQL + r"\Ganhos.xlsx"
-CAMINHO_TABLE1 = REDE_INPUT_SQL + r"\Table1.xlsx"
+CAMINHO_BASE_IW28 = REDE_ARQUIVOS_SAP + r"\Gerada_base_IW28.XLSX"
+CAMINHO_CUSTO_ORD_IW38 = REDE_ARQUIVOS_SAP + r"\Gerada_custo_ord_IW38.XLSX"
+CAMINHO_BASE_IW66 = REDE_ARQUIVOS_SAP + r"\Gerada_medidas_IW66.XLSX"
+CAMINHO_CLIENTES_CONJUNTO = REDE_BASES_APOIO + r"\Clientes_Conjunto.xlsx"
+CAMINHO_CUSTO_MODULAR = REDE_BASES_APOIO + r"\Custo_Modular.xlsx"
+CAMINHO_GANHOS = REDE_BASES_APOIO + r"\Ganhos.xlsx"
+CAMINHO_TABLE1 = REDE_BASES_APOIO + r"\Table1.xlsx"
 CAMINHO_PROJETO_CONSTRUCAO = REDE_RAIZ + r"\config_projeto_construcao.json"
 CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
 
