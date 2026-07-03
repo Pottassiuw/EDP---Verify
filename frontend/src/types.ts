@@ -7,8 +7,6 @@ export type UrgBand = "high" | "med" | "low";
 export type Source = "demo" | "api";
 export type AppSection = "coffee" | "input" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
-export type CoffeeLayout = "composer" | "split";
-export type CoffeeOpenMode = "all" | "block" | "links";
 
 export interface NoteError {
   rule: RuleKey;

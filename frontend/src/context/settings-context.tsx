@@ -1,12 +1,11 @@
 import React from 'react';
-import type { Theme, Density, CoffeeLayout, Accent } from '../types';
+import type { Theme, Density, Accent } from '../types';
 
 export interface Settings {
   theme: Theme;
   density: Density;
   accent: Accent;
   showKpis: boolean;
-  coffeeLayout: CoffeeLayout;
   devLogs: boolean;
 }
 
@@ -21,7 +20,6 @@ const DEFAULTS: Settings = {
   density: "cozy",
   accent: ["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
   showKpis: true,
-  coffeeLayout: "composer",
   devLogs: false,
 };
 

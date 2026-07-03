@@ -106,25 +106,6 @@ export function ConfiguracoesPage(): React.JSX.Element {
 
           <Card>
             <CardHeader>
-              <CardTitle>Seção COFFEE</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Row label="Layout">
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={settings.coffeeLayout}
-                  onValueChange={(v) => { if (v) setSetting("coffeeLayout", v as typeof settings.coffeeLayout); }}
-                >
-                  <ToggleGroupItem value="composer" aria-label="Composer">Composer</ToggleGroupItem>
-                  <ToggleGroupItem value="split"    aria-label="Split">Split</ToggleGroupItem>
-                </ToggleGroup>
-              </Row>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Logs</CardTitle>
             </CardHeader>
             <CardContent>
