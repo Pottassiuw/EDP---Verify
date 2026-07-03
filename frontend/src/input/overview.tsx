@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
@@ -6,6 +6,9 @@ import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { DataGrid } from './data-grid';
+import { HierarquiaCard } from './hierarquia-card';
+import { useRecarregarInput } from './use-input-data';
+import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
@@ -20,6 +23,8 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
 export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element {
   const [estado, setEstado] = React.useState<FiltersState>(FILTROS_INICIAIS);
   const [exportando, setExportando] = React.useState(false);
+  const recarregar = useRecarregarInput();
+  const { status: vinculoStatus } = useAutoVinculos(dados.registros);
   const filtrados = React.useMemo(
     () => filtrarRegistros(dados.registros, estado), [dados.registros, estado]);
 
@@ -45,23 +50,24 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
           Total de registros: <strong className="edp-mono">{filtrados.length}</strong>
           {filtrados.length !== dados.registros.length ? ` de ${dados.registros.length}` : ''}
         </span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button variant="default" size="sm" onClick={() => {
-            toast.promise(InputApi.syncSap(), {
-              loading: 'Iniciando extração do SAP...',
-              success: 'Sincronização SAP rodando em background!',
-              error: 'Erro ao iniciar SAP'
-            });
-          }}>
-            🔄 Sincronizar SAP
-          </Button>
-          <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0} onClick={() => { void exportar(); }}>
-            {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0}
+          onClick={() => { void exportar(); }}>
+          {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
+        </Button>
       </div>
+
       <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />
+
+      <div style={{ fontSize: 12, color: 'var(--text-dim)', padding: '2px 0' }}>
+        {vinculoStatus === null
+          ? 'Verificando vínculos Nota_Mae…'
+          : vinculoStatus.atualizadas > 0
+            ? `🔗 ${vinculoStatus.atualizadas} vínculo(s) Nota_Mae aplicados às ${vinculoStatus.hora}`
+            : `✓ Nenhum vínculo Nota_Mae pendente (verificado às ${vinculoStatus.hora})`}
+      </div>
+
+      <HierarquiaCard registros={dados.registros} recarregar={recarregar} />
     </div>
   );
 }

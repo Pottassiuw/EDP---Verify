@@ -1,9 +1,11 @@
 ﻿import React from 'react';
 import type { AbaInput } from './types';
 import { toast } from 'sonner';
+import { getUsuario, setUsuario, InputApi } from './api';
 import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
 import { Manage } from './manage';
+import { Ramal } from './ramal';
 import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
@@ -13,6 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
   { id: 'gerenciar', rotulo: 'Gerenciar' },
+  { id: 'ramal', rotulo: 'Ramal' },
   { id: 'relatorios', rotulo: 'Relatórios' },
   { id: 'logs', rotulo: 'Logs' },
   { id: 'config', rotulo: 'Configurações' },
@@ -26,6 +29,14 @@ interface InputSectionProps {
 export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
+
+  React.useEffect(() => {
+    if (!getUsuario()) {
+      InputApi.me()
+        .then(({ usuario }) => setUsuario(usuario))
+        .catch(() => setUsuario('sistema'));
+    }
+  }, []);
   const { desatualizado, limpar } = useAvisoSincronizacao(dados?.meta.ultima_alteracao);
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
@@ -74,6 +85,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
 
       {dados && sub === 'visao' && <Overview dados={dados} />}
       {dados && sub === 'gerenciar' && <Manage dados={dados} />}
+      {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} />}
       {dados && sub === 'relatorios' && <Reports dados={dados} />}
       {dados && sub === 'logs' && <Logs />}
       {dados && sub === 'config' && <Settings dados={dados} />}

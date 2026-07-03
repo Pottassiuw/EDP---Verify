@@ -53,6 +53,7 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'DEC_PROG_CHI', label: 'DEC Prog. CHI', numeric: true },
   { key: 'Medida_SAP', label: 'Medida SAP' },
   { key: 'Medida_vs_Planejado', label: 'Medida vs Planejado' },
+  { key: 'Nota_Mae', label: 'Nota Mãe', numeric: true },
 ];
 
 export const ROTULOS: Record<string, string> =
@@ -66,7 +67,7 @@ export const FILTROS_TEXTO = ['Local_Instalacao', 'Observacao', 'Ordem',
   'Centro_Responsavel', 'Equipamento_Protecao'];
 export const FILTROS_FAIXA = ['Planejado_DDPM', 'ranking', 'Total_planejado_ordem',
   'Total_real_ordem', 'Exec_percentagem_ordem', 'N_Clientes_Conjunto',
-  'CHI', 'CI', 'Ocorrencia', 'DEC', 'FEC'];
+  'CHI', 'CI', 'Ocorrencia', 'DEC', 'FEC', 'Nota_Mae'];
 export const FILTROS_MULTI = ['Status_Nota', 'Regional', 'Mes_Execucao_Planejado',
   'Prioridade_Nota', 'Conjunto', 'Cidade', 'CJ_Aneel', 'Conj.critico',
   'Export_status', 'Status_Final', 'Ordem_Executada', 'Regional_CSD'];

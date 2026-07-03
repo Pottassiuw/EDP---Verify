@@ -34,6 +34,12 @@ def _df_para_registros(df: pd.DataFrame) -> list:
     return json.loads(df.to_json(orient="records", force_ascii=False))
 
 
+@router.get("/me")
+def quem_sou_eu():
+    usuario = os.environ.get("USERNAME") or os.environ.get("USER") or "sistema"
+    return {"usuario": usuario}
+
+
 @router.get("/notas")
 def listar_notas():
     migracao = _garantir_banco()
