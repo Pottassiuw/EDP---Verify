@@ -15,9 +15,9 @@
 - Paleta EDP intacta: verde `#00a859` é o único acento; nunca cores hardcoded — sempre `var(--*)` de `tokens.css`.
 - Nunca usar `any` (use `unknown` ou tipos próprios).
 - Marca "To De Olho 👀" (nome + emoji) fica intacta onde já existe.
-- `src/components/ui/` é vendored: a ÚNICA mudança permitida é remover as variants `coffee` e `accent` de `button.tsx` (adições do projeto, não shadcn) — Task 11.
+- `src/components/ui/` é vendored: a ÚNICA mudança permitida é remover as variants `coffee` e `accent` de `button.tsx` (adições do projeto, não shadcn) — Task 10.
 - Frontend não tem test runner: verificação = `npx tsc -b` (zero erros) + `npx vite build` (sucesso), rodados a partir de `frontend/`. Backend usa pytest a partir de `backend/`.
-- Commits em português, formato `feat(coffee): …` / `refactor(coffee): …`, terminando com `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+- Commits em português, formato `feat(coffee): …` / `refactor(coffee): …`, terminando com `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
 - Ícones: lucide-react (`^1.21.0`, já instalado). Sem emoji como glifo de botão em código novo (exceção: marca "To De Olho 👀").
 - Textos de UI em português.
 
@@ -115,7 +115,7 @@ Expected: teste novo PASS e nenhuma regressão (os testes existentes de upsert c
 git add backend/coffee_module/db.py backend/test_coffee_module.py
 git commit -m "feat(coffee): coluna classificacao_em para idade da pendência
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -128,7 +128,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Test: `backend/test_coffee_module.py` (append)
 
 **Interfaces:**
-- Produces: `db.listar_logs(..., since: str | None = None)` — filtra `timestamp >= since` (ISO local, comparação lexicográfica). Rota: `GET /coffee/logs?since=<iso>`. Task 10 consome via query string.
+- Produces: `db.listar_logs(..., since: str | None = None)` — filtra `timestamp >= since` (ISO local, comparação lexicográfica). Rota: `GET /coffee/logs?since=<iso>`. Task 9 consome via query string.
 
 - [ ] **Step 1: Escrever o teste que falha**
 
@@ -190,7 +190,7 @@ Expected: tudo PASS.
 git add backend/coffee_module/db.py backend/coffee_module/routes.py backend/test_coffee_module.py
 git commit -m "feat(coffee): filtro since em /coffee/logs
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -494,7 +494,7 @@ git commit -m "feat(coffee): Abrir com lista única e layout responsivo
 Funde chips + modo links numa lista só; modos viram ações diretas
 (Abrir todas / Abrir próximas N). Layout único, prop layout removida.
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -559,7 +559,7 @@ Expected: nenhuma ocorrência.
 git add frontend/src/types.ts frontend/src/context/settings-context.tsx frontend/src/pages/configuracoes.tsx
 git commit -m "refactor(coffee): remover setting coffeeLayout e tipos órfãos
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -651,7 +651,7 @@ git commit -m "refactor(coffee): TopBar funde no header do hub
 Arquivo/API/Nova sobem para o header quando a aba é Verificar.
 top-bar.tsx, Logo e LogoProps removidos (sem uso).
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -761,7 +761,7 @@ Expected: nenhuma ocorrência.
 git add frontend/src/components
 git commit -m "refactor(verificar): pele elevada — edp-field, Lucide, tipografia display
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -896,7 +896,7 @@ git commit -m "feat(coffee): Corrigidas com busca, copiar IDs e abrir no COFFEE
 
 AbrirCoffeeBtn promovido a coffee-notas-table (compartilhado).
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1078,7 +1078,7 @@ Expected: zero erros.
 git add frontend/src/coffee/types.ts frontend/src/coffee/coffee-notas-table.tsx frontend/src/coffee/coffee-pendentes.tsx
 git commit -m "feat(coffee): Pendentes com seleção, busca seletiva, arquivar em lote e idade
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1203,7 +1203,7 @@ Expected: zero erros.
 git add frontend/src/coffee/use-coffee-logs.ts frontend/src/coffee/coffee-logs.tsx
 git commit -m "feat(coffee): Logs com período, resumo em tiles e modo ao vivo
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1252,7 +1252,7 @@ git commit -m "refactor(ui): remover variants coffee/accent do button
 Paleta unificada: verde EDP é o único acento; variants eram
 adições do projeto ao arquivo vendored, sem uso restante.
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
 ---
