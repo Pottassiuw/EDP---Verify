@@ -1,24 +1,16 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
-import { coffeeUrl, BASE as API_BASE } from '../api';
+import { BASE as API_BASE } from '../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 type PendingAction =
   | { kind: "remover"; pk: number }
   | { kind: "arquivar"; pk: number };
-
-function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
-  return (
-    <Button asChild variant="coffee" size="sm" title="Abrir no COFFEE">
-      <a target="_blank" rel="noopener" href={coffeeUrl(String(pk))}>☕</a>
-    </Button>
-  );
-}
 
 export function CoffeeGeradas(): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("gerada");

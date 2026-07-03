@@ -1,12 +1,30 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
 
 export function CoffeeCorrigidas(): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("corrigida");
   const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
+  const [busca, setBusca] = React.useState("");
+
+  const filtradas = React.useMemo(() => {
+    const q = busca.trim();
+    if (!q) return notas;
+    return notas.filter((n) => String(n.pk).includes(q) || String(n.id_sap).includes(q));
+  }, [notas, busca]);
+
+  async function copiarIds(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(filtradas.map((n) => n.pk).join("\n"));
+      toast.success(`${filtradas.length} ID(s) copiado(s)`);
+    } catch {
+      toast.error("Não foi possível copiar automaticamente");
+    }
+  }
 
   if (error) {
     return (
@@ -19,26 +37,37 @@ export function CoffeeCorrigidas(): React.JSX.Element {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <span className="edp-title" style={{ fontSize: 16 }}>Notas Corrigidas</span>
         {!isLoading && (
           <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
-            {notas.length} nota{notas.length !== 1 ? "s" : ""}
+            {filtradas.length}{busca.trim() ? ` de ${notas.length}` : ""} nota{filtradas.length !== 1 ? "s" : ""}
           </span>
         )}
+        <div style={{ flex: 1 }} />
+        <input className="edp-field edp-mono" value={busca} placeholder="Buscar ID ou SAP…"
+               style={{ width: 180, height: 30, fontSize: 12 }}
+               onChange={(e) => setBusca(e.target.value)} />
+        <Button variant="outline" size="sm" disabled={filtradas.length === 0} onClick={() => void copiarIds()}>
+          <Copy /> Copiar IDs
+        </Button>
       </div>
       <div style={{ flexShrink: 0, padding: "0 22px 10px", fontSize: 12, color: "var(--text-dim)" }}>
-        Notas que transitaram de pendente para SAP real. Na proxima busca, passam para Geradas.
+        Notas que transitaram de pendente para SAP real. Na próxima busca, passam para Geradas.
       </div>
       <CoffeeNotasTable
-        notas={notas}
+        notas={filtradas}
         isLoading={isLoading}
-        emptyMessage="Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."
+        emptyMessage={busca.trim()
+          ? "Nenhuma nota corrigida bate com a busca."
+          : "Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."}
         actionColumn={(nota) => (
-          <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                  title="Ver logs">
-            Logs
-          </Button>
+          <>
+            <AbrirCoffeeBtn pk={nota.pk} />
+            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)} title="Ver logs">
+              Logs
+            </Button>
+          </>
         )}
       />
       {drawerPk !== null && (

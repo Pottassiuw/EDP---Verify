@@ -3,8 +3,22 @@ import type { CoffeeNota } from './types';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Coffee } from 'lucide-react';
+import { coffeeUrl } from '../api';
 
 const SAP_PENDENTE = 10000000;
+
+/** Botão-âncora "abrir no COFFEE" — compartilhado pelas telas de lista. */
+export function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
+  return (
+    <Button asChild variant="outline" size="sm" title="Abrir no COFFEE">
+      <a target="_blank" rel="noopener" href={coffeeUrl(String(pk))} aria-label={`Abrir nota ${pk} no COFFEE`}>
+        <Coffee />
+      </a>
+    </Button>
+  );
+}
 
 // ponytail: sticky inline — var(--surface) não mapeado em Tailwind config
 const STICKY_TH: React.CSSProperties = {
