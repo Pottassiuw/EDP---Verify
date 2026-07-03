@@ -7,6 +7,7 @@ interface UseCoffeeLogsParams {
   tipo?: string;
   limit?: number;
   usuario?: string;
+  since?: string;
 }
 
 interface UseCoffeeLogsResult {
@@ -32,6 +33,7 @@ export function useCoffeeLogs(params?: UseCoffeeLogsParams): UseCoffeeLogsResult
     if (params?.tipo) qs.set("tipo", params.tipo);
     if (params?.usuario) qs.set("usuario", params.usuario);
     if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+    if (params?.since) qs.set("since", params.since);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
 
     fetch(`${API_BASE}/coffee/logs${suffix}`, { headers: { Accept: "application/json" } })
