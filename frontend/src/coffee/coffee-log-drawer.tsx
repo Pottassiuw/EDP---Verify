@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS } from './coffee-log-table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { SegTabs } from '@/components/branded/section';
 
 interface LogDrawerProps {
   notaPk: number;
@@ -56,13 +56,9 @@ export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.
         </div>
 
         {/* filtro de passo */}
-        <div style={{ flexShrink: 0, padding: "10px 16px 6px", display: "flex", gap: 0 }}>
-          <ToggleGroup type="single" value={passo} variant="outline" style={{ fontSize: 11 }}
-                       onValueChange={(v) => { if (v) setPasso(v); }}>
-            {PASSOS.map((p) => (
-              <ToggleGroupItem key={p.value} value={p.value}>{p.label}</ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+        <div style={{ flexShrink: 0, padding: "10px 16px 6px", display: "flex", flexWrap: "wrap" }}>
+          <SegTabs tabs={PASSOS.map((p) => ({ id: p.value, rotulo: p.label }))}
+                   value={passo} onChange={setPasso} ariaLabel="Filtrar por passo" />
         </div>
 
         {/* table */}

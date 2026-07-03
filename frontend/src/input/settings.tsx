@@ -6,13 +6,10 @@ import { toast } from 'sonner';
 import { useRecarregarInput } from './use-input-data';
 import { Button } from '@/components/ui/button';
 
-const estiloCampo: React.CSSProperties = { padding: '6px 10px', borderRadius: 7,
-  border: '1px solid var(--line)', background: 'var(--bg-2)', color: 'var(--text)' };
-
 function Cartao({ titulo, children }: { titulo: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <section style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 16 }}>
-      <h4 style={{ margin: '0 0 10px' }}>{titulo}</h4>
+    <section className="edp-panel">
+      <h4 className="edp-title" style={{ fontSize: 15, margin: '0 0 12px' }}>{titulo}</h4>
       {children}
     </section>
   );
@@ -36,12 +33,12 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
   }
 
   return (
-    <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, padding: 18, overflow: 'auto' }}>
-      {msg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--tint-green)', fontSize: 13 }}>{msg}</div>}
+    <div className="ui-reset edp-page">
+      {msg && <div className="edp-banner ok">{msg}</div>}
 
       <Cartao titulo="Seu nome (log de auditoria)">
         <div style={{ display: 'flex', gap: 8 }}>
-          <input value={nome} onChange={(e) => setNome(e.target.value)} style={estiloCampo} />
+          <input value={nome} onChange={(e) => setNome(e.target.value)} className="edp-field" />
           <Button variant="outline" size="sm" disabled={!nome.trim()}
                   onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); toast.success('Nome atualizado.'); }}>Salvar</Button>
         </div>
@@ -50,9 +47,9 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
       <Cartao titulo="Responsáveis por Conjunto">
         {linhas.map(([conjunto, pessoa], i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            <input value={conjunto} style={estiloCampo}
+            <input value={conjunto} className="edp-field"
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [e.target.value, pessoa]; setLinhasResp(c); }} />
-            <input value={pessoa} style={estiloCampo}
+            <input value={pessoa} className="edp-field"
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [conjunto, e.target.value]; setLinhasResp(c); }} />
             <Button variant="ghost" size="sm"
                     onClick={() => setLinhasResp(linhas.filter((_, j) => j !== i) as [string, string][])}>×</Button>

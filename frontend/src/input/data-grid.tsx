@@ -32,7 +32,7 @@ function medirTexto(texto: string, fonte: string): number {
 /** Largura que comporta cabeçalho + todos os valores da coluna (estilo Excel). */
 function larguraAutofit(c: ColunaDef, registros: NotaInput[]): number {
   const fonteCelula = `12.5px ${c.numeric ? "'IBM Plex Mono', monospace" : "Inter, system-ui, sans-serif"}`;
-  const fonteHeader = "600 11.5px Inter, system-ui, sans-serif";
+  const fonteHeader = "500 10px 'IBM Plex Mono', monospace";
   let max = medirTexto(c.label, fonteHeader);
   for (const r of registros) max = Math.max(max, medirTexto(textoCelula(r[c.key], c), fonteCelula));
   return Math.min(LARGURA_MAX, Math.max(LARGURA_MIN, Math.ceil(max) + 28)); // 28 = padding célula + alça + seta

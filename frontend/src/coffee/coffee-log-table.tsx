@@ -10,13 +10,13 @@ const TIMELINE_STYLE = `
   .clog-entry:last-child::before{display:none}
   .clog-dot{position:absolute;left:4px;top:14px;width:10px;height:10px;border-radius:50%;border:2px solid var(--line);background:var(--surface);z-index:1}
   .clog-dot.ok{border-color:var(--green);background:var(--tint-green)}
-  .clog-dot.fail{border-color:var(--red);background:rgba(239,68,68,0.15)}
+  .clog-dot.fail{border-color:var(--red);background:var(--tint-red)}
   .clog-card{padding:10px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
   .clog-card:hover{border-color:var(--text-mute)}
   .clog-tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:600;letter-spacing:.03em}
-  .clog-tag.api{background:rgba(59,130,246,0.14);color:#3b82f6}
-  .clog-tag.trans{background:rgba(139,92,246,0.14);color:#8b5cf6}
-  .clog-tag.user{background:rgba(34,197,94,0.14);color:#22c55e}
+  .clog-tag.api{background:var(--tint-blue);color:var(--blue)}
+  .clog-tag.trans{background:var(--tint-indigo);color:var(--indigo)}
+  .clog-tag.user{background:var(--tint-green);color:var(--green)}
   .clog-compact .clog-card{padding:8px 10px}
   .clog-compact .clog-entry{padding-left:22px}
   .clog-compact .clog-dot{left:2px;top:12px;width:8px;height:8px}
@@ -240,8 +240,8 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
                   )}
                   {g.transicaoNova && (
                     <span className="clog-tag" style={{
-                      background: g.transicaoNova === "corrigida" ? "rgba(31,159,214,0.14)" : "rgba(245,158,11,0.16)",
-                      color: g.transicaoNova === "corrigida" ? "#1f9fd6" : "var(--amber)" }}>
+                      background: g.transicaoNova === "corrigida" ? "var(--tint-blue)" : "var(--tint-amber)",
+                      color: g.transicaoNova === "corrigida" ? "var(--blue)" : "var(--amber)" }}>
                       → {g.transicaoNova}
                     </span>
                   )}

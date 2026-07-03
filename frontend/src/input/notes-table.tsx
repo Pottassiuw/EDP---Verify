@@ -109,7 +109,12 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
           cursor: "pointer",
           whiteSpace: "nowrap",
           minWidth: c.largura ?? 90,
-          color: ativa ? "var(--accent)" : undefined,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: ativa ? "var(--accent)" : "var(--text-mute)",
         }}
       >
         {c.label}

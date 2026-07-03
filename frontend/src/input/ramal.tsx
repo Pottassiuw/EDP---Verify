@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { SegTabs, Banner } from '@/components/branded/section';
 
 type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 
@@ -166,14 +166,9 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const comSelecao = modo === 'lote' || modo === 'exclusao';
 
   return (
-    <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
+    <div className="ui-reset edp-page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <ToggleGroup type="single" value={modo} variant="outline"
-                     onValueChange={(v) => { if (v) trocarModo(v as ModoRamal); }}>
-          {MODOS.map((m) => (
-            <ToggleGroupItem key={m.id} value={m.id}>{m.rotulo}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo do ramal" />
       </div>
 
       {isLoading && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Carregando notas ramal…</div>}
@@ -183,20 +178,15 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         </div>
       )}
 
-      {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13,
-                      borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--amber)'}`,
-                      background: msg.tipo === 'ok' ? 'var(--tint-green)' : 'var(--tint-amber)' }}>
-          {msg.texto}
-        </div>
-      )}
+      {msg && <Banner tipo={msg.tipo === 'ok' ? 'ok' : 'err'}>{msg.texto}</Banner>}
 
       {/* VISÃO GERAL — DataGrid com keyboard nav, resize, soma/média */}
       {modo === 'visao' && dadosRamal && (
         <React.Fragment>
-          <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-            Total: <strong className="edp-mono">{registros.length}</strong> notas ramal
-          </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+            <span className="edp-num">{registros.length.toLocaleString('pt-BR')}</span>
+            <span className="edp-eyebrow">notas ramal</span>
+          </div>
           <DataGrid registros={registrosComoNotaInput} colunas={COLUNAS_RAMAL} />
         </React.Fragment>
       )}

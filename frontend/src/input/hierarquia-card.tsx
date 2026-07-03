@@ -77,7 +77,8 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
   return (
     <Card>
       <CardHeader>
-        <CardTitle style={{ fontSize: 14 }}>🔗 Hierarquia Manual</CardTitle>
+        <span className="edp-eyebrow">Hierarquia manual</span>
+        <CardTitle className="edp-title" style={{ fontSize: 15 }}>Vincular nota-mãe</CardTitle>
       </CardHeader>
       <CardContent>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 14 }}>

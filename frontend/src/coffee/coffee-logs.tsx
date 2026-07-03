@@ -2,7 +2,7 @@ import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS } from './coffee-log-table';
 import { BASE as API_BASE } from '../api';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { SegTabs } from '@/components/branded/section';
 
 const LIMITES = [50, 100, 500] as const;
 
@@ -32,28 +32,20 @@ export function CoffeeLogs(): React.JSX.Element {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flexShrink: 0, padding: "14px 22px 10px", display: "flex", alignItems: "center",
                     gap: 14, flexWrap: "wrap" }}>
-        <ToggleGroup type="single" value={passo} variant="outline"
-                     onValueChange={(v) => { if (v) setPasso(v); }}>
-          {PASSOS.map((p) => (
-            <ToggleGroupItem key={p.value} value={p.value}>{p.label}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SegTabs tabs={PASSOS.map((p) => ({ id: p.value, rotulo: p.label }))}
+                 value={passo} onChange={setPasso} ariaLabel="Filtrar por passo" />
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Nota:</label>
-          <input type="number" placeholder="PK" value={notaPk}
+          <input type="number" placeholder="PK" value={notaPk} className="edp-field edp-mono"
                  onChange={(e) => setNotaPk(e.target.value)}
-                 style={{ width: 90, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)",
-                          background: "var(--surface-2)", color: "var(--text)", fontSize: 12,
-                          fontFamily: "var(--font-mono)" }} />
+                 style={{ width: 90, height: 30, fontSize: 12 }} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Usuario:</label>
           <select value={usuario} onChange={(e) => setUsuario(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)",
-                           background: "var(--surface-2)", color: "var(--text)", fontSize: 12,
-                           fontFamily: "var(--font-mono)" }}>
+                  className="edp-field edp-mono" style={{ height: 30, fontSize: 12 }}>
             <option value="">Todos</option>
             {usuarios.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
@@ -62,8 +54,7 @@ export function CoffeeLogs(): React.JSX.Element {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Limite:</label>
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--line)",
-                           background: "var(--surface-2)", color: "var(--text)", fontSize: 12 }}>
+                  className="edp-field" style={{ height: 30, fontSize: 12 }}>
             {LIMITES.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>

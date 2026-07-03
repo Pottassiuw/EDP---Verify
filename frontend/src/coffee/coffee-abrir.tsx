@@ -2,7 +2,7 @@ import React from 'react';
 import type { Note, CoffeeOpenMode } from '../types';
 import { EDPApi } from '../api';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { SegTabs } from '@/components/branded/section';
 
 const COFFEE_STYLE = `
   .coffee{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-2)}
@@ -183,12 +183,9 @@ export function CoffeeAbrir({ notes, layout, coffeeReturn, onClearReturn, onBack
   );
 
   const modeSeg = (
-    <ToggleGroup type="single" value={mode} variant="outline" style={{ alignSelf: "flex-start" }}
-                 onValueChange={(v) => { if (v) setMode(v as CoffeeOpenMode); }}>
-      {([["all", "Todas"], ["block", "Em blocos"], ["links", "Lista de links"]] as Array<[CoffeeOpenMode, string]>).map(([m, l]) => (
-        <ToggleGroupItem key={m} value={m} role="tab" aria-selected={mode === m}>{l}</ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <SegTabs<CoffeeOpenMode>
+      tabs={[{ id: "all", rotulo: "Todas" }, { id: "block", rotulo: "Em blocos" }, { id: "links", rotulo: "Lista de links" }]}
+      value={mode} onChange={setMode} ariaLabel="Modo de abertura" />
   );
 
   const actionBody = (() => {

@@ -43,28 +43,32 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
     }
   }
 
+  const filtrado = filtrados.length !== dados.registros.length;
+
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-          Total de registros: <strong className="edp-mono">{filtrados.length}</strong>
-          {filtrados.length !== dados.registros.length ? ` de ${dados.registros.length}` : ''}
-        </span>
-        <Button variant="outline" size="sm" disabled={exportando || filtrados.length === 0}
+    <div className="edp-page">
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+          <span className="edp-num">{filtrados.length.toLocaleString('pt-BR')}</span>
+          <span className="edp-eyebrow">
+            {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} registros` : 'registros'}
+          </span>
+        </div>
+        <Button disabled={exportando || filtrados.length === 0}
                 onClick={() => { void exportar(); }}>
-          {exportando ? 'Gerando…' : '⬇ Exportar Excel'}
+          {exportando ? 'Gerando…' : 'Exportar Excel'}
         </Button>
       </div>
 
       <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />
 
-      <div style={{ fontSize: 12, color: 'var(--text-dim)', padding: '2px 0' }}>
+      <div className="edp-mono" style={{ fontSize: 11, color: 'var(--text-mute)', padding: '2px 0' }}>
         {vinculoStatus === null
-          ? 'Verificando vínculos Nota_Mae…'
+          ? 'verificando vínculos Nota_Mae…'
           : vinculoStatus.atualizadas > 0
-            ? `🔗 ${vinculoStatus.atualizadas} vínculo(s) Nota_Mae aplicados às ${vinculoStatus.hora}`
-            : `✓ Nenhum vínculo Nota_Mae pendente (verificado às ${vinculoStatus.hora})`}
+            ? `${vinculoStatus.atualizadas} vínculo(s) Nota_Mae aplicados · ${vinculoStatus.hora}`
+            : `✓ nenhum vínculo Nota_Mae pendente · ${vinculoStatus.hora}`}
       </div>
 
       <HierarquiaCard registros={dados.registros} recarregar={recarregar} />

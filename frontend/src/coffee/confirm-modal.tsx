@@ -45,7 +45,7 @@ export function ConfirmModal({
                     border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
                     display: "flex", flexDirection: "column", gap: 12, padding: 20,
                     boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
+        <span className="edp-title" style={{ fontSize: 17 }}>{title}</span>
         {message && <div style={{ fontSize: 13, color: "var(--text-mute)" }}>{message}</div>}
 
         <label style={{ fontSize: 12, color: "var(--text-mute)" }}>

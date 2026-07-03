@@ -73,14 +73,8 @@ export function Filters({
           value={estado.busca}
           placeholder="Buscar notas: 12345, 54321; 678"
           onChange={(e) => setEstado({ ...estado, busca: e.target.value })}
-          style={{
-            width: 260,
-            padding: "7px 10px",
-            borderRadius: 7,
-            border: "1px solid var(--line)",
-            background: "var(--bg-2)",
-            color: "var(--text)",
-          }}
+          className="edp-field"
+          style={{ width: 260 }}
         />
         <Button variant="outline" size="sm" onClick={() => setAberto(!aberto)}>
           🔎 Filtros avançados

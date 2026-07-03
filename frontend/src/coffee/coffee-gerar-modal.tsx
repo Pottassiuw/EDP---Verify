@@ -47,8 +47,8 @@ function parseIds(texto: string): number[] {
 }
 
 const STATUS_COR: Record<string, string> = {
-  gerada: "var(--green)", corrigida: "#1f9fd6",
-  pendente: "var(--amber)", nao_gerada: "#94a3b8",
+  gerada: "var(--green)", corrigida: "var(--blue)",
+  pendente: "var(--amber)", nao_gerada: "var(--text-mute)",
 };
 
 export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
@@ -217,7 +217,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                     border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
                     display: "flex", flexDirection: "column", gap: 12, padding: 20,
                     boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>Gerar / Consultar notas</span>
+        <span className="edp-title" style={{ fontSize: 17 }}>Gerar / Consultar notas</span>
 
         <div style={{ display: "flex", gap: 8 }}>
           <input value={input} onChange={(e) => setInput(e.target.value)}
@@ -335,9 +335,8 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
           <Button variant="outline" size="sm" onClick={onClose} disabled={gerando.rodando}>Fechar</Button>
           <Button variant="outline" size="sm" onClick={reconsultarTodas}
                   disabled={rows.length === 0 || gerando.rodando}>Consultar</Button>
-          <Button variant="outline" size="sm" onClick={gerar}
-                  disabled={rows.length === 0 || gerando.rodando}
-                  style={{ fontWeight: 600, color: "var(--accent)", borderColor: "var(--accent)" }}>
+          <Button size="sm" onClick={gerar}
+                  disabled={rows.length === 0 || gerando.rodando}>
             Gerar ({rows.length})
           </Button>
         </div>

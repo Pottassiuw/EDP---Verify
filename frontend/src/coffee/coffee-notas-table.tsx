@@ -14,9 +14,9 @@ const STICKY_TH: React.CSSProperties = {
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   gerada:     { background: "var(--tint-green)", color: "var(--green)" },
-  corrigida:  { background: "rgba(31,159,214,0.14)", color: "#1f9fd6" },
+  corrigida:  { background: "var(--tint-blue)", color: "var(--blue)" },
   pendente:   { background: "var(--tint-amber)", color: "var(--amber)" },
-  nao_gerada: { background: "rgba(148,163,184,0.16)", color: "#94a3b8" },
+  nao_gerada: { background: "var(--surface-2)", color: "var(--text-mute)" },
 };
 
 function StatusBadge({ classificacao }: { classificacao: string }): React.JSX.Element {

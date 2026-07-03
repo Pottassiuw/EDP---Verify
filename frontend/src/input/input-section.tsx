@@ -10,7 +10,7 @@ import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { SegTabs } from '@/components/branded/section';
 
 export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -42,15 +42,14 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16,
-                    padding: '0 22px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
-        <strong style={{ fontSize: 14 }}>Gestão de Notas (INPUT)</strong>
-        <ToggleGroup type="single" value={sub} variant="outline"
-                     onValueChange={(v) => { if (v) setSub(v as AbaInput); }}>
-          {INPUT_SUBS.map((a) => (
-            <ToggleGroupItem key={a.id} value={a.id}>{a.rotulo}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+      <div style={{ flexShrink: 0, background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ padding: '13px 22px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span className="edp-eyebrow">Módulo Input</span>
+          <strong className="edp-title" style={{ fontSize: 16 }}>Gestão de Notas</strong>
+        </div>
+        <div style={{ padding: '0 22px', borderTop: '1px solid var(--line)' }}>
+          <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
+        </div>
       </div>
 
       {desatualizado && (

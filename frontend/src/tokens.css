@@ -54,6 +54,14 @@
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
+  /* — tracking (escala display "engineered", direção Supabase) — */
+  --tracking-display: -0.03em;
+  --tracking-tight:   -0.015em;
+  --tracking-label:    0.14em;
+
+  /* faixa zebra sutil das tabelas (herda dark/light) */
+  --zebra: rgba(255,255,255,0.02);
+
   /* — geometry — */
   --r-sm: 6px;
   --r:    9px;
@@ -137,6 +145,8 @@
   --shadow-sm: 0 1px 2px rgba(22,30,43,0.07);
   --shadow:    0 8px 24px rgba(22,30,43,0.09);
   --shadow-lg: 0 24px 60px rgba(22,30,43,0.16);
+
+  --zebra: rgba(22,30,43,0.025);
 }
 
 /* ---- shared atoms ---- */
@@ -200,6 +210,73 @@
   content: ""; width: 5px; height: 5px; border-radius: 50%;
   background: currentColor; opacity: 0.9;
 }
+
+/* ============================================================
+   Primitivos "elevados" (direção Supabase) — mesma paleta EDP.
+   Escala de display com tracking negativo, headers mono uppercase,
+   accent verde reservado. Usados por input/ui.tsx e pelas telas
+   do módulo Input. Consumidos via className (não via preflight).
+   ============================================================ */
+
+/* página padrão de subseção (antes: div inline repetida 6×) */
+.edp-page {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  gap: var(--gap); padding: var(--pad); overflow: auto;
+}
+
+/* cabeçalho de seção: eyebrow + título + ação opcional à direita */
+.edp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.edp-head-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.edp-title { font-size: 21px; font-weight: 600; line-height: 1.15; letter-spacing: var(--tracking-display); text-wrap: balance; margin: 0; }
+.edp-sub { font-size: 13px; color: var(--text-dim); margin: 0; }
+
+/* número display (KPIs, contagens) */
+.edp-num { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: var(--tracking-display); font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* tile de KPI */
+.edp-stat { display: flex; flex-direction: column; gap: 7px; padding: 14px 16px; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+
+/* card elevado (superfície + hairline + sombra sutil) */
+.edp-panel { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: var(--pad); box-shadow: var(--shadow-sm); }
+
+/* banner de status ok/erro */
+.edp-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; border-left: 3px solid var(--text-mute); background: var(--surface-2); }
+.edp-banner.ok  { border-left-color: var(--green); background: var(--tint-green); }
+.edp-banner.err { border-left-color: var(--amber); background: var(--tint-amber); }
+
+/* campo de formulário nativo (input/select) — antes: estiloCampo repetido */
+.edp-field { height: 34px; padding: 0 11px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text); font: inherit; font-size: 13px; }
+.edp-field:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* segmented tabs (sublinhado) sobre um ToggleGroup shadcn — mantém a
+   acessibilidade Radix (roving tabindex + setas), troca só a pele:
+   caixa → sublinhado. !important pra vencer as utilities do outline variant. */
+.edp-segtabs { gap: 2px !important; box-shadow: none !important; }
+.edp-segtabs [data-slot="toggle-group-item"] {
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  background: transparent !important;
+  padding: 8px 2px !important; margin: 0 16px 0 0 !important;
+  font-size: 13px; color: var(--text-mute);
+  border-bottom: 2px solid transparent !important;
+}
+.edp-segtabs [data-slot="toggle-group-item"]:hover { color: var(--text-dim); }
+.edp-segtabs [data-slot="toggle-group-item"][data-state="on"] {
+  color: var(--text) !important; border-bottom-color: var(--accent) !important;
+}
+
+/* tabela leve (logs, previews): header mono uppercase + zebra sutil */
+.edp-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.edp-table thead th {
+  text-align: left; padding: 9px 12px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--text-mute); background: var(--bg);
+  border-bottom: 1px solid var(--line-2); white-space: nowrap;
+}
+.edp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.edp-table tbody tr:last-child td { border-bottom: 0; }
+.edp-table tbody tr:nth-child(even) td { background: var(--zebra); }
 
 
 

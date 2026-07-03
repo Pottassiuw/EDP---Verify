@@ -20,7 +20,7 @@ export function CoffeeCorrigidas(): React.JSX.Element {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 15, fontWeight: 700 }}>Notas Corrigidas</span>
+        <span className="edp-title" style={{ fontSize: 16 }}>Notas Corrigidas</span>
         {!isLoading && (
           <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
             {notas.length} nota{notas.length !== 1 ? "s" : ""}

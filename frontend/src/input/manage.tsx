@@ -13,10 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { SegTabs, Banner } from '@/components/branded/section';
 
 type Modo = 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 const MODOS: { id: Modo; rotulo: string }[] = [
@@ -163,27 +163,16 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   }
 
   return (
-    <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 18, overflow: 'auto' }}>
+    <div className="ui-reset edp-page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <ToggleGroup type="single" value={modo} variant="outline"
-                     onValueChange={(v) => { if (v) trocarModo(v as Modo); }}>
-          {MODOS.map((m) => (
-            <ToggleGroupItem key={m.id} value={m.id}>{m.rotulo}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo de edição" />
         <div style={{ flex: 1 }} />
         <Button variant="ghost" size="sm" disabled={salvando} onClick={desfazer}>
           ↩ Reverter último salvamento
         </Button>
       </div>
 
-      {msg && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13,
-                      borderLeft: `3px solid ${msg.tipo === 'ok' ? 'var(--green)' : 'var(--amber)'}`,
-                      background: msg.tipo === 'ok' ? 'var(--tint-green)' : 'var(--tint-amber)' }}>
-          {msg.texto}
-        </div>
-      )}
+      {msg && <Banner tipo={msg.tipo === 'ok' ? 'ok' : 'err'}>{msg.texto}</Banner>}
 
       {(modo === 'rapida' || comSelecao) && (
         <React.Fragment>

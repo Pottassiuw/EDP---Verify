@@ -83,22 +83,23 @@ export function CoffeeGeradas(): React.JSX.Element {
       {/* Cabeçalho: ação principal */}
       <div style={{ flexShrink: 0, padding: "16px 22px", display: "flex", alignItems: "center", gap: 12,
                     borderBottom: "1px solid var(--line)" }}>
-        <span style={{ fontSize: 15, fontWeight: 700 }}>Gerar Notas</span>
-        <Button variant="outline" size="sm" onClick={() => abrirModal(undefined)}>
+        <span className="edp-title" style={{ fontSize: 16 }}>Gerar Notas</span>
+        <div style={{ flex: 1 }} />
+        <Button size="sm" onClick={() => abrirModal(undefined)}>
           Gerar / Consultar notas
         </Button>
       </div>
 
       {/* Zona: A gerar */}
       <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>A gerar</span>
+        <span className="edp-title" style={{ fontSize: 14 }}>A gerar</span>
         {!aGerar.isLoading && (
           <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
             {aGerar.notas.length} nota{aGerar.notas.length !== 1 ? "s" : ""}
           </span>
         )}
         {aGerar.notas.length > 0 && (
-          <Button variant="outline" size="sm"
+          <Button size="sm"
                   onClick={() => abrirModal(aGerar.notas.map((n) => n.pk))}>
             Gerar fila ({aGerar.notas.length})
           </Button>
@@ -128,7 +129,7 @@ export function CoffeeGeradas(): React.JSX.Element {
 
       {/* Zona: Geradas */}
       <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>Notas Geradas</span>
+        <span className="edp-title" style={{ fontSize: 14 }}>Notas Geradas</span>
         {!isLoading && (
           <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
             {notas.length} nota{notas.length !== 1 ? "s" : ""}

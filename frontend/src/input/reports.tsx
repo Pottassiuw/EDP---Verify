@@ -6,7 +6,7 @@ import { valoresUnicos } from './lib';
 import type { ColunaDef } from './columns';
 import { NotesTable } from './notes-table';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { PageHeader, StatTile, SegTabs } from '@/components/branded/section';
 
 /** Cores do "semáforo" (porte de Input/app.py:1132-1139). */
 const CORES_AUDITORIA: Record<string, string> = {
@@ -150,29 +150,29 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
   }
 
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, padding: 18, overflow: 'auto' }}>
-      <h3 style={{ margin: 0 }}>Auditoria de Prazos (DDPM vs SAP)</h3>
+    <div className="edp-page">
+      <PageHeader
+        eyebrow="Relatórios"
+        title="Auditoria de Prazos"
+        subtitle="DDPM vs SAP"
+        action={
+          <Button disabled={exportando || auditadas.length === 0}
+                  onClick={() => { void exportar(); }}>
+            {exportando ? 'Gerando…' : 'Baixar relatório'}
+          </Button>
+        }
+      />
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <ToggleGroup type="single" value={rapido} variant="outline"
-                     onValueChange={(v) => { if (v) setRapido(v as (typeof FILTROS_RAPIDOS)[number]); }}>
-          {FILTROS_RAPIDOS.map((f) => (
-            <ToggleGroupItem key={f} value={f}>{f}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SegTabs tabs={FILTROS_RAPIDOS.map((f) => ({ id: f, rotulo: f }))}
+                 value={rapido} onChange={setRapido} ariaLabel="Filtro rápido de auditoria" />
         {multi('Ano Encerramento (SAP)', anosDisponiveis, fAnos, setFAnos)}
         {multi('Status de Prazo', valoresUnicos(dados.registros, 'Auditoria_Cronograma'), fStatus, setFStatus)}
         {multi('Regional', valoresUnicos(dados.registros, 'Regional'), fRegional, setFRegional)}
-        <Button variant="outline" size="sm" disabled={exportando || auditadas.length === 0}
-                onClick={() => { void exportar(); }}>⬇ Baixar relatório</Button>
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {kpis.map((k) => (
-          <div key={k.rotulo} style={{ border: '1px solid var(--line)', borderRadius: 8,
-                                       padding: '10px 16px', minWidth: 120 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-mute)', textTransform: 'uppercase' }}>{k.rotulo}</div>
-            <div className="edp-mono" style={{ fontSize: 22 }}>{k.valor}</div>
-          </div>
+          <StatTile key={k.rotulo} label={k.rotulo} value={k.valor.toLocaleString('pt-BR')} />
         ))}
       </div>
 
