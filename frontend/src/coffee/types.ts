@@ -6,6 +6,7 @@ export interface CoffeeNota {
   classificacao: string;
   dados_json: Record<string, unknown> | null;
   buscado_em: string;
+  classificacao_em?: string | null;
   erro: string | null;
 }
 

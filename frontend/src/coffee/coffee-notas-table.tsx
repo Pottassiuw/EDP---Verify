@@ -69,11 +69,12 @@ interface CoffeeNotasTableProps {
   selectedPks?: Set<number>;
   onToggleSelect?: (pk: number) => void;
   onToggleAll?: () => void;
+  mostrarIdade?: boolean;
 }
 
 export function CoffeeNotasTable({
   notas, isLoading, emptyMessage, actionColumn,
-  selectable, selectedPks, onToggleSelect, onToggleAll,
+  selectable, selectedPks, onToggleSelect, onToggleAll, mostrarIdade,
 }: CoffeeNotasTableProps): React.JSX.Element {
   if (isLoading) {
     return (
@@ -109,6 +110,7 @@ export function CoffeeNotasTable({
             <TableHead style={STICKY_TH}>ID</TableHead>
             <TableHead style={STICKY_TH}>SAP</TableHead>
             <TableHead style={STICKY_TH}>Status</TableHead>
+            {mostrarIdade && <TableHead style={STICKY_TH}>Pendente há</TableHead>}
             <TableHead style={STICKY_TH}>Última busca</TableHead>
             {actionColumn && <TableHead style={STICKY_TH}>Ações</TableHead>}
           </TableRow>
@@ -135,6 +137,11 @@ export function CoffeeNotasTable({
               <TableCell>
                 <StatusBadge classificacao={n.classificacao} />
               </TableCell>
+              {mostrarIdade && (
+                <TableCell style={{ color: "var(--text-mute)", fontSize: 12 }}>
+                  {n.classificacao_em ? formatRelativeTime(n.classificacao_em) : "—"}
+                </TableCell>
+              )}
               <TableCell style={{ color: "var(--text-mute)", fontSize: 12 }}>
                 {n.buscado_em ? formatRelativeTime(n.buscado_em) : "—"}
               </TableCell>

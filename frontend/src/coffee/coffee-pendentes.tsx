@@ -1,7 +1,7 @@
 ﻿import React from 'react';
 import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { toast } from 'sonner';
@@ -18,19 +18,58 @@ export function CoffeePendentes(): React.JSX.Element {
   const timerRef = React.useRef<number | null>(null);
   const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
   const [arquivarPk, setArquivarPk] = React.useState<number | null>(null);
+  const [arquivarLoteOpen, setArquivarLoteOpen] = React.useState(false);
   const [modalBusy, setModalBusy] = React.useState(false);
+  const [selecionadas, setSelecionadas] = React.useState<Set<number>>(() => new Set());
+
+  const ordenadas = React.useMemo(
+    () => [...notas].sort((a, b) =>
+      (a.classificacao_em ?? "￿").localeCompare(b.classificacao_em ?? "￿")),
+    [notas]);
+
+  function toggleSelecionada(pk: number): void {
+    setSelecionadas((prev) => { const s = new Set(prev); if (s.has(pk)) s.delete(pk); else s.add(pk); return s; });
+  }
+  function toggleTodas(): void {
+    setSelecionadas((prev) => prev.size === ordenadas.length
+      ? new Set() : new Set(ordenadas.map((n) => n.pk)));
+  }
 
   React.useEffect(() => {
     return () => { if (timerRef.current !== null) clearInterval(timerRef.current); };
   }, []);
 
+  async function arquivarLote(justificativa: string): Promise<void> {
+    setModalBusy(true);
+    const pks = [...selecionadas];
+    const falhas: number[] = [];
+    // ponytail: loop sequencial; endpoint de lote se passar de ~50 notas por vez
+    for (const pk of pks) {
+      try {
+        const res = await fetch(`${API_BASE}/coffee/arquivar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: pk, justificativa }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+      } catch { falhas.push(pk); }
+    }
+    setModalBusy(false);
+    setArquivarLoteOpen(false);
+    setSelecionadas(new Set());
+    refetch();
+    if (falhas.length) toast.error(`${falhas.length} de ${pks.length} falharam ao arquivar`, { description: falhas.join(", ") });
+    else toast.success(`${pks.length} nota(s) arquivada(s)`);
+  }
+
   function iniciarBusca(): void {
-    if (notas.length === 0) return;
+    const alvo = selecionadas.size > 0 ? [...selecionadas] : ordenadas.map((n) => n.pk);
+    if (alvo.length === 0) return;
     setBuscaEstado("rodando");
     setBuscaJob(null);
     setBuscaErro(null);
 
-    const ids = notas.map((n) => String(n.pk));
+    const ids = alvo.map(String);
 
     fetch(`${API_BASE}/coffee/buscar`, {
       method: "POST",
@@ -57,6 +96,7 @@ export function CoffeePendentes(): React.JSX.Element {
                 if (timerRef.current !== null) { clearInterval(timerRef.current); timerRef.current = null; }
                 setBuscaEstado("concluido");
                 refetch();
+                setSelecionadas(new Set());
                 toast.success("Busca concluída");
                 setTimeout(() => setBuscaEstado("idle"), 3000);
               }
@@ -96,11 +136,23 @@ export function CoffeePendentes(): React.JSX.Element {
             {notas.length} nota{notas.length !== 1 ? "s" : ""}
           </span>
         )}
+        {selecionadas.size > 0 && (
+          <span className="edp-mono" style={{ fontSize: 12, color: "var(--accent)" }}>
+            {selecionadas.size} selecionada{selecionadas.size !== 1 ? "s" : ""}
+          </span>
+        )}
         <div style={{ flex: 1 }} />
+        {selecionadas.size > 0 && (
+          <Button variant="destructive" size="sm" disabled={buscaEstado === "rodando"}
+                  onClick={() => setArquivarLoteOpen(true)}>
+            Arquivar selecionadas ({selecionadas.size})
+          </Button>
+        )}
         <Button size="sm"
                 disabled={buscaEstado === "rodando" || isLoading || notas.length === 0}
                 onClick={iniciarBusca}>
-          {buscaEstado === "rodando" ? "Buscando..." : "Atualizar notas"}
+          {buscaEstado === "rodando" ? "Buscando..."
+            : selecionadas.size > 0 ? `Atualizar selecionadas (${selecionadas.size})` : "Atualizar todas"}
         </Button>
       </div>
 
@@ -138,21 +190,24 @@ export function CoffeePendentes(): React.JSX.Element {
       )}
 
       <CoffeeNotasTable
-        notas={notas}
+        notas={ordenadas}
         isLoading={isLoading}
+        mostrarIdade
+        selectable
+        selectedPks={selecionadas}
+        onToggleSelect={toggleSelecionada}
+        onToggleAll={toggleTodas}
         emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
         actionColumn={(nota) => (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Button variant="destructive" size="sm"
-                    onClick={() => setArquivarPk(nota.pk)}
-                    title="Arquivar nota">
+          <>
+            <AbrirCoffeeBtn pk={nota.pk} />
+            <Button variant="destructive" size="sm" onClick={() => setArquivarPk(nota.pk)} title="Arquivar nota">
               Arquivar
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                    title="Ver logs">
+            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)} title="Ver logs">
               Logs
             </Button>
-          </div>
+          </>
         )}
       />
       {drawerPk !== null && (
@@ -180,6 +235,17 @@ export function CoffeePendentes(): React.JSX.Element {
             .finally(() => { setModalBusy(false); setArquivarPk(null); });
         }}
         onCancel={() => setArquivarPk(null)}
+      />
+      <ConfirmModal
+        open={arquivarLoteOpen}
+        title={`Arquivar ${selecionadas.size} nota(s)`}
+        message="As notas selecionadas serão arquivadas e não aparecerão mais nas listagens. A justificativa vale para todas."
+        confirmLabel="Arquivar todas"
+        tone="danger"
+        requireJustification
+        busy={modalBusy}
+        onConfirm={(j) => { void arquivarLote(j); }}
+        onCancel={() => setArquivarLoteOpen(false)}
       />
     </div>
   );
