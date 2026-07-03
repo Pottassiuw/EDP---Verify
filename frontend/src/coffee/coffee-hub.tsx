@@ -8,6 +8,7 @@ import { CoffeePendentes } from './coffee-pendentes';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 import { SegTabs } from '@/components/branded/section';
+import { Button } from '@/components/ui/button';
 
 export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
   { id: "verificar", label: "Verificar" },
@@ -33,9 +34,28 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
   return (
     <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
-        <div style={{ padding: "13px 22px 11px", display: "flex", flexDirection: "column", gap: 2 }}>
-          <span className="edp-eyebrow">Módulo COFFEE</span>
-          <strong className="edp-title" style={{ fontSize: 16 }}>Geração de notas</strong>
+        <div style={{ padding: "13px 22px 11px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            <span className="edp-eyebrow">Módulo COFFEE</span>
+            <strong className="edp-title" style={{ fontSize: 16 }}>Geração de notas</strong>
+          </div>
+          {sub === "verificar" && triage.screen === "dashboard" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-mute)", background: "var(--bg-2)",
+                    padding: "5px 10px", borderRadius: 6, border: "1px solid var(--line)" }}>{triage.file}</span>
+              <span title={triage.source === "api" ? "Conectado ao backend" : "Dados de demonstração (offline)"}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5,
+                             fontFamily: "var(--font-mono)", letterSpacing: ".06em", textTransform: "uppercase",
+                             padding: "4px 9px", borderRadius: 999,
+                             color: triage.source === "api" ? "var(--green)" : "var(--amber)",
+                             background: triage.source === "api" ? "var(--tint-green)" : "var(--tint-amber)",
+                             border: "1px solid " + (triage.source === "api" ? "rgba(0,168,89,.3)" : "rgba(240,169,59,.3)") }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                {triage.source === "api" ? "API" : "Demo"}
+              </span>
+              <Button variant="ghost" size="sm" title="Nova planilha" onClick={triage.onReset}>↑ Nova</Button>
+            </div>
+          )}
         </div>
         <div style={{ padding: "0 22px", borderTop: "1px solid var(--line)" }}>
           <SegTabs tabs={COFFEE_SUBS.map((s) => ({ id: s.id, rotulo: s.label }))}

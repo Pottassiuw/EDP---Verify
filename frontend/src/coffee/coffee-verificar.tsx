@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Note, Source } from '../types';
-import { TopBar } from '../components/top-bar';
 import { UploadScreen } from '../components/upload-screen';
 import { Dashboard } from '../components/dashboard';
 
@@ -32,8 +31,6 @@ export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JS
   }
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <TopBar resolvedTheme={triage.resolvedTheme} file={triage.file}
-              source={triage.source} onReset={triage.onReset} />
       <Dashboard showKpis={triage.showKpis} notes={triage.notes} completed={triage.completed}
                  dupResolved={triage.dupResolved}
                  onToggleComplete={triage.onToggleComplete} onMarkMany={triage.onMarkMany}

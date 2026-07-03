@@ -110,10 +110,6 @@ export interface DuplicateResult {
 }
 
 // ── Props dos componentes ────────────────────────────────────────────────
-export interface LogoProps {
-  theme?: Theme;
-  h?: number;
-}
 export interface FieldProps {
   label: string;
   accent?: boolean;

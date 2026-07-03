@@ -1,37 +1,10 @@
 import React from "react";
-import type { LogoProps, FieldProps, NoteStatus } from "../types";
+import type { FieldProps, NoteStatus } from "../types";
 
 export const LOGO_DARK =
   "/assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.png";
 export const LOGO_LIGHT =
   "/assets/RGB/Light/Regular/POS/EDP_Group_MasterLogo_RRGB_Light_POS.png";
-
-export const Logo: React.FC<LogoProps> = ({ theme = "dark", h = 24 }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-    <img
-      src={theme === "light" ? LOGO_LIGHT : LOGO_DARK}
-      alt="EDP"
-      style={{ height: h, width: "auto", display: "block" }}
-    />
-    <div style={{ width: 1, height: h - 4, background: "var(--line-2)" }} />
-    <div style={{ lineHeight: 1.05 }}>
-      <div
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 14.5,
-          letterSpacing: "-0.01em",
-          color: "var(--text)",
-        }}
-      >
-        To De Olho 👀
-      </div>
-      <div className="edp-eyebrow" style={{ fontSize: 8.5, marginTop: 2 }}>
-        SISTEMA DE GERÊNCIA E VISUALIZAÇÃO DE NOTAS
-      </div>
-    </div>
-  </div>
-);
 
 function prioMeta(p: number): [string, string | number] {
   if (p >= 99) return ["none", "—"];
