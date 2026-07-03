@@ -33,7 +33,8 @@ def trace_atual():
 
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
-            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem"]
+            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem",
+            "classificacao_em"]
 
 
 def obter_caminho_banco() -> str:
@@ -69,6 +70,8 @@ def inicializar_banco() -> None:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN a_gerar INTEGER NOT NULL DEFAULT 0")
     if "origem" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN origem TEXT")
+    if "classificacao_em" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN classificacao_em TEXT")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS coffee_logs (
@@ -107,19 +110,24 @@ def upsert_nota(pk: int, id_sap: int, dados_json: dict) -> str:
     classe_anterior = row[1] if row is not None else None
     origem = row[2] if row is not None else None
     classe = classificar(id_sap, id_sap_anterior, origem)
+    agora = datetime.datetime.now().isoformat()
     conn.execute(
         """
         INSERT INTO notas_coffee
-            (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json, buscado_em, erro)
-        VALUES (?, ?, ?, 0, ?, ?, ?, NULL)
+            (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json,
+             buscado_em, erro, classificacao_em)
+        VALUES (?, ?, ?, 0, ?, ?, ?, NULL, ?)
         ON CONFLICT(pk) DO UPDATE SET
             id_sap=excluded.id_sap, id_sap_anterior=excluded.id_sap_anterior,
             classificacao=excluded.classificacao,
-            dados_json=excluded.dados_json, buscado_em=excluded.buscado_em, erro=NULL
+            dados_json=excluded.dados_json, buscado_em=excluded.buscado_em, erro=NULL,
+            classificacao_em=CASE
+                WHEN notas_coffee.classificacao IS excluded.classificacao
+                THEN notas_coffee.classificacao_em
+                ELSE excluded.classificacao_em END
         """,
         (pk, id_sap, id_sap_anterior, classe,
-         json.dumps(dados_json, ensure_ascii=False),
-         datetime.datetime.now().isoformat()),
+         json.dumps(dados_json, ensure_ascii=False), agora, agora),
     )
     conn.commit()
     conn.close()

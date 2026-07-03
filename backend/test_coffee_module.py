@@ -956,3 +956,24 @@ def test_listar_logs_nota_inclui_cabecalho_de_lote(coffee_tmp):
     assert "buscar_nota" in acoes       # filho da nota
     assert "geracao_lote" in acoes      # cabecalho do trace (nota_pk NULL)
     assert "outra" not in acoes         # sem trace, nao relacionado
+
+
+# ---------------------------------------------------------------------------
+# Task 1 — classificacao_em (idade da pendência)
+# ---------------------------------------------------------------------------
+
+
+def test_classificacao_em_gravada_e_preservada(coffee_tmp):
+    from coffee_module import db
+    db.upsert_nota(1, 10000000, {})
+    t1 = db.listar_notas("pendente")[0]["classificacao_em"]
+    assert t1  # gravada no nascimento da linha
+
+    _time.sleep(0.01)
+    db.upsert_nota(1, 10000000, {})  # re-busca, mesma classe
+    assert db.listar_notas("pendente")[0]["classificacao_em"] == t1  # idade preservada
+
+    _time.sleep(0.01)
+    db.upsert_nota(1, 17247854, {})  # pendente -> corrigida
+    t2 = db.listar_notas("corrigida")[0]["classificacao_em"]
+    assert t2 > t1  # reclassificação atualiza
