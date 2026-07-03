@@ -227,7 +227,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     <div style={{ fontSize: 12, color: "var(--text-dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.tipo_nota}</div>
                   </div>
                   {flagDup && !isDup && (
-                    <button title="Enviar candidatas para a fila COFFEE"
+                    <button title="Enviar candidatas para a fila COFFEE" aria-label="Enviar candidatas para a fila COFFEE"
                             style={{ all: "unset", cursor: "pointer", color: "var(--amber)", flexShrink: 0, lineHeight: 1, padding: "2px 4px", display: "inline-flex" }}
                             onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>
                       <Coffee size={14} />
