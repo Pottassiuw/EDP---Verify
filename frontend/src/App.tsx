@@ -224,7 +224,7 @@ function AppContent(): React.JSX.Element {
           <React.Suspense fallback={<SectionLoading />}>
             {section === "input"         ? <InputSection sub={inputSub} setSub={setInputSub} /> :
              section === "configuracoes" ? <ConfiguracoesPage /> :
-             <CoffeeHub notes={notes} layout={settings.coffeeLayout}
+             <CoffeeHub notes={notes}
                         sub={coffeeSub} setSub={setCoffeeSub}
                         triage={triage}
                         coffeeReturn={coffeeReturn}

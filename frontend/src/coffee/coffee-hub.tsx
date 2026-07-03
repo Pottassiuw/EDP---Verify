@@ -20,7 +20,6 @@ export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
 
 interface CoffeeHubProps {
   notes: Note[];
-  layout: "composer" | "split";
   sub: CoffeeSubPage;
   setSub: (s: CoffeeSubPage) => void;
   triage: TriageHandoff;
@@ -29,7 +28,7 @@ interface CoffeeHubProps {
   onBackToTriagem: () => void;
 }
 
-export function CoffeeHub({ notes, layout, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
+export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div className="ui-reset" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -45,7 +44,7 @@ export function CoffeeHub({ notes, layout, sub, setSub, triage, coffeeReturn, on
       </div>
 
       {sub === "abrir" ? (
-        <CoffeeAbrir notes={notes} layout={layout}
+        <CoffeeAbrir notes={notes}
                      coffeeReturn={coffeeReturn} onClearReturn={onClearReturn}
                      onBackToTriagem={onBackToTriagem} />
       ) : sub === "geradas" ? (
