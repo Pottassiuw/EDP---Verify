@@ -719,6 +719,30 @@ def carregar_log_arquivos() -> pd.DataFrame:
         conn.close()
 
 
+def salvar_base_dataframe(nome_tabela: str, df: pd.DataFrame) -> None:
+    """Salva um DataFrame completo em uma tabela SQLite, substituindo-a."""
+    conn = get_db_connection()
+    try:
+        df.to_sql(nome_tabela, conn, if_exists="replace", index=False)
+    except Exception as e:
+        print(f"Erro ao salvar tabela {nome_tabela}: {e}")
+        raise e
+    finally:
+        conn.close()
+
+
+def carregar_base_dataframe(nome_tabela: str) -> pd.DataFrame | None:
+    """Carrega um DataFrame completo a partir de uma tabela SQLite."""
+    conn = get_db_connection()
+    try:
+        return pd.read_sql(f"SELECT * FROM {nome_tabela}", conn)
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+
 # ==============================================================================
 # EDIÇÃO COM DIFF (lógica server-side que substitui a UI do Streamlit)
 # ==============================================================================

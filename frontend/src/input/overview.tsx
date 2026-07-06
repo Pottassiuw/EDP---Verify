@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
@@ -54,10 +54,21 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
             {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} registros` : 'registros'}
           </span>
         </div>
-        <Button disabled={exportando || filtrados.length === 0}
-                onClick={() => { void exportar(); }}>
-          {exportando ? 'Gerando…' : 'Exportar Excel'}
-        </Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="outline" onClick={() => {
+            toast.promise(InputApi.syncSap(), {
+              loading: 'Iniciando extração do SAP...',
+              success: 'Sincronização SAP rodando em background!',
+              error: 'Erro ao iniciar SAP',
+            });
+          }}>
+            Sincronizar SAP
+          </Button>
+          <Button disabled={exportando || filtrados.length === 0}
+                  onClick={() => { void exportar(); }}>
+            {exportando ? 'Gerando…' : 'Exportar Excel'}
+          </Button>
+        </div>
       </div>
 
       <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />

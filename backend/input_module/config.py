@@ -21,6 +21,8 @@ def data_dir() -> Path:
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
 REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"
+REDE_ARQUIVOS_SAP = REDE_INPUT_SQL + r"\Arquivos_SAP"
+REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
 
 REDE_DB_ORIGEM = REDE_INPUT_SQL + r"\notas_departamento.db"
 REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
