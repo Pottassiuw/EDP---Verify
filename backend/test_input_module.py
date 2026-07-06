@@ -241,6 +241,27 @@ def _excel_iw38(caminho):
     }).to_excel(caminho, index=False)
 
 
+# engine.py lê IW28/IW38/IW66 do SQLite nativo (base_iw28/base_iw38/base_iw66),
+# não mais do Excel de rede — os helpers acima continuam servindo test_status_bases
+# (que checa existência do arquivo, não o carregamento dos dados).
+def _sqlite_iw28():
+    from input_module import db
+    db.salvar_base_dataframe("base_iw28", pd.DataFrame({
+        "Nota": [2000], "Status usuário": ["LIBE"],
+        "CenTrabalho princ.": ["CT-01"], "Ordem": [777],
+        "Encerram.por data": [pd.Timestamp("2026-05-10")],
+    }))
+
+
+def _sqlite_iw38():
+    from input_module import db
+    db.salvar_base_dataframe("base_iw38", pd.DataFrame({
+        "Ordem": [777], "Status usuário": ["JAND INVE"],
+        "Status do sistema": ["ENTE"], "Total planejado": [1000.0],
+        "Total real": [800.0],
+    }))
+
+
 @pytest.fixture
 def engine_isolado(banco_temporario, monkeypatch, tmp_path):
     """Banco temporário + caminhos de rede apontando para tmp (inexistentes por padrão)."""
@@ -268,10 +289,10 @@ def test_engine_fallbacks_sem_rede(engine_isolado):
 
 
 def test_engine_cruza_iw28_iw38(engine_isolado):
-    from input_module import config, db, engine
+    from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
-    _excel_iw28(config.CAMINHO_BASE_IW28)
-    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    _sqlite_iw28()
+    _sqlite_iw38()
     df = engine.enriquecer_dados()
     linha = df[df["Numero_Nota"] == 2000].iloc[0]
     assert linha["Export_status"] == "LIBE"
@@ -282,19 +303,19 @@ def test_engine_cruza_iw28_iw38(engine_isolado):
 
 
 def test_auditoria_cronograma(engine_isolado):
-    from input_module import config, db, engine
+    from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
-    _excel_iw28(config.CAMINHO_BASE_IW28)
-    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    _sqlite_iw28()
+    _sqlite_iw38()
     df = engine.enriquecer_dados()
     assert df.iloc[0]["Auditoria_Cronograma"] == "🟢 Adiantado"
 
 
 def test_engine_totais_numericos_e_modular(engine_isolado):
-    from input_module import config, db, engine
+    from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000, Status_Nota="99 Encerrado")]))
-    _excel_iw28(config.CAMINHO_BASE_IW28)
-    _excel_iw38(config.CAMINHO_CUSTO_ORD_IW38)
+    _sqlite_iw28()
+    _sqlite_iw38()
     df = engine.enriquecer_dados()
     linha = df[df["Numero_Nota"] == 2000].iloc[0]
     assert isinstance(linha["Total_planejado_ordem"], (int, float))
@@ -360,6 +381,17 @@ def _excel_iw66(caminho):
     }).to_excel(caminho, index=False)
 
 
+def _sqlite_iw66():
+    from input_module import db
+    db.salvar_base_dataframe("base_iw66", pd.DataFrame({
+        "Nota": [2000, 2000, 2000],
+        "Denominação do conjunto": ["REDE", "POSTE", "REDE"],
+        "Texto medida": ["CABO", "POSTE", "CONDUTOR"],
+        "Descrição": ["", "", ""],
+        "Nº de ordenação": [500.0, 2.0, 300.0],
+    }))
+
+
 def test_engine_medidas_iw66_sem_arquivo(engine_isolado):
     from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
@@ -370,11 +402,9 @@ def test_engine_medidas_iw66_sem_arquivo(engine_isolado):
     assert df.iloc[0]["Medida_vs_Planejado"] == "-"
 
 
-def test_engine_medidas_iw66_com_dados(engine_isolado, monkeypatch):
-    from input_module import config, db, engine
-    monkeypatch.setattr(config, "CAMINHO_BASE_IW66", str(__import__("pathlib").Path(
-        engine_isolado).parent / "IW66.xlsx"))
-    _excel_iw66(config.CAMINHO_BASE_IW66)
+def test_engine_medidas_iw66_com_dados(engine_isolado):
+    from input_module import db, engine
+    _sqlite_iw66()
     db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
     engine.invalidar_cache()
     df = engine.enriquecer_dados()
