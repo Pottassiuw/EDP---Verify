@@ -363,9 +363,9 @@ def test_rota_regerar(coffee_cliente, monkeypatch):
     body = r.json()
     assert body["ok"] is True
     assert body["nota"]["pk"] == 355617
-    # NÃO desarquiva; apenas define SAP=10000000
-    assert ("des", 355617) not in chamadas
+    # define SAP=10000000 E desarquiva: o COFFEE so gera notas desarquivadas
     assert ("sap", 355617, 10000000) in chamadas
+    assert ("des", 355617) in chamadas
     # nota re-buscada com 10000000 fica pendente
     assert db.listar_notas("pendente")[0]["pk"] == 355617
     log = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "regerar"]
@@ -569,6 +569,7 @@ def test_job_geracao_define_sap_e_isola_erro(coffee_tmp, monkeypatch):
     saps = []
     monkeypatch.setattr(client, "definir_sap",
                         lambda i, sap: saps.append((int(i), sap)) or True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
 
     def fake_buscar(id):
         if str(id) == "999":
@@ -593,6 +594,7 @@ def test_job_geracao_define_sap_e_isola_erro(coffee_tmp, monkeypatch):
 def test_rota_gerar_lote(coffee_cliente, monkeypatch):
     from coffee_module import client, db, jobs
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
@@ -689,6 +691,7 @@ def test_geracao_busca_antes_de_definir_sap(coffee_tmp, monkeypatch):
     ordem = []
     monkeypatch.setattr(client, "definir_sap",
                         lambda i, sap: ordem.append("sap") or True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: ordem.append("des") or True)
 
     def fake_buscar(i):
         ordem.append("buscar")
@@ -758,6 +761,7 @@ def test_upsert_avulsa_vira_gerada_apos_pendente(coffee_tmp):
 def test_geracao_marca_origem_avulsa(coffee_tmp, monkeypatch):
     from coffee_module import client, db, jobs
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 10000000, "arquivado": False,
@@ -837,6 +841,7 @@ def test_geracao_nao_sobrescreve_origem_verificar(coffee_tmp, monkeypatch):
     """Nota da Verificar gerada via lote mantem origem='verificar' (-> corrigida)."""
     from coffee_module import client, db, jobs
     monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": False,
@@ -909,6 +914,7 @@ def test_job_geracao_propaga_trace_aos_filhos(coffee_cliente, monkeypatch):
         )[-1],
     )
     monkeypatch.setattr(client, "definir_sap", lambda i, s: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
     r = coffee_cliente.post("/api/coffee/gerar-lote", json={"ids": [355617]})
     _aguardar_job(jobs, r.json()["job_id"])
     logs = db.listar_logs()
@@ -993,3 +999,99 @@ def test_listar_logs_since(coffee_tmp):
     corte = todos[0]["timestamp"]  # ordem DESC: [0] é "segunda"
     filtrados = db.listar_logs(since=corte)
     assert [l["acao"] for l in filtrados] == ["segunda"]
+
+# ---------------------------------------------------------------------------
+# 2026-07-06 — forcar geracao deixa a nota DESARQUIVADA no COFFEE
+# (o COFFEE so gera notas desarquivadas: da o SAP real e arquiva sozinho)
+# ---------------------------------------------------------------------------
+
+
+def test_geracao_desarquiva_pendente_arquivada(coffee_tmp, monkeypatch):
+    """SAP=10000000 + arquivada: define placeholder E desarquiva."""
+    from coffee_module import client, jobs
+    chamadas = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: chamadas.append(("sap", int(i), sap)) or True)
+    monkeypatch.setattr(client, "desarquivar",
+                        lambda i: chamadas.append(("des", int(i))) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": True,
+                   "local_instalacao": None,
+                   "fields": {"id_sap": config.SAP_PENDENTE}},
+    )
+    job_id = jobs.iniciar_geracao([355617])
+    j = _aguardar_job(jobs, job_id)
+    assert ("sap", 355617, config.SAP_PENDENTE) in chamadas
+    assert ("des", 355617) in chamadas
+    assert "arquivadas" not in j  # nao foi pulada
+
+
+def test_geracao_desarquiva_nota_sem_sap_arquivada(coffee_tmp, monkeypatch):
+    """Arquivada SEM SAP nao e 'fora da fila': forca placeholder + desarquiva."""
+    from coffee_module import client, jobs
+    chamadas = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: chamadas.append(("sap", int(i), sap)) or True)
+    monkeypatch.setattr(client, "desarquivar",
+                        lambda i: chamadas.append(("des", int(i))) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": None, "arquivado": True,
+                   "local_instalacao": None, "fields": {"id_sap": None}},
+    )
+    job_id = jobs.iniciar_geracao([355617])
+    j = _aguardar_job(jobs, job_id)
+    assert ("sap", 355617, config.SAP_PENDENTE) in chamadas
+    assert ("des", 355617) in chamadas
+    assert "arquivadas" not in j
+
+
+def test_rota_regerar_arquivada_com_sap_real_desarquiva(coffee_cliente, monkeypatch):
+    """Regerar explicito de nota ja gerada (SAP real + arquivada):
+    volta ao placeholder e desarquiva para o COFFEE re-gerar."""
+    from coffee_module import client
+    chamadas = []
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, sap: chamadas.append(("sap", int(i), sap)) or True)
+    monkeypatch.setattr(client, "desarquivar",
+                        lambda i: chamadas.append(("des", int(i))) or True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": True,
+                   "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert r.status_code == 200
+    assert ("sap", 355617, config.SAP_PENDENTE) in chamadas
+    assert ("des", 355617) in chamadas
+
+
+def test_rota_regerar_grava_origem_avulsa(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": False,
+                   "fields": {"id_sap": config.SAP_PENDENTE}},
+    )
+    coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert db.origem_atual(355617) == "avulsa"
+    # re-busca com SAP real -> classificada como gerada (nao corrigida)
+    assert db.upsert_nota(355617, 17247854, {"id_sap": 17247854}) == "gerada"
+
+
+def test_rota_regerar_preserva_origem_existente(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(client, "definir_sap", lambda i, sap: True)
+    monkeypatch.setattr(client, "desarquivar", lambda i: True)
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": config.SAP_PENDENTE, "arquivado": False,
+                   "fields": {"id_sap": config.SAP_PENDENTE}},
+    )
+    db.upsert_nota(355617, config.SAP_PENDENTE, {"id_sap": config.SAP_PENDENTE})
+    db.definir_origem(355617, "verificar")
+    coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
+    assert db.origem_atual(355617) == "verificar"

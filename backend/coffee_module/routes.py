@@ -187,13 +187,15 @@ def regerar(pedido: RegerarPedido):
             db.registrar_log("acao_usuario", "geracao_ignorada_sap_real", nota["pk"],
                              {"id_sap": nota["id_sap"]}, True)
             return {"ok": True, "nota": nota}
-        if nota["id_sap"] == config.SAP_PENDENTE and nota["arquivado"]:
-            # SAP=10000000 + arquivada no COFFEE: desarquiva antes de re-gerar.
-            client.desarquivar(pedido.id)
-        else:
-            client.definir_sap(pedido.id, config.SAP_PENDENTE)
+        # Define o placeholder e desarquiva: o COFFEE so gera notas
+        # DESARQUIVADAS — ele atribui o SAP real e arquiva sozinho ao
+        # concluir; a nota tem que sair desarquivada daqui.
+        client.definir_sap(pedido.id, config.SAP_PENDENTE)
+        client.desarquivar(pedido.id)
         nota = client.buscar_nota(pedido.id)
         db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
+        if db.origem_atual(nota["pk"]) is None:
+            db.definir_origem(nota["pk"], "avulsa")
     except Exception:
         db.registrar_log("acao_usuario", "regerar", pedido.id,
                          {"id": pedido.id, "origem": "ui",

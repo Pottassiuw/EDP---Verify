@@ -76,8 +76,8 @@ def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
             pk = nota["pk"]
             sap = nota["id_sap"]
             arquivado = nota["arquivado"]
-            if arquivado and sap != config.SAP_PENDENTE:
-                # Arquivada com SAP real (ou sem SAP): pula — não é da nossa fila.
+            if arquivado and sap and sap != config.SAP_PENDENTE:
+                # Arquivada com SAP real: ja foi gerada — pula.
                 local = nota["local_instalacao"]
                 with _LOCK:
                     _JOBS[job_id].setdefault("arquivadas", []).append(
@@ -91,13 +91,11 @@ def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
                                  {"id_sap": sap}, True)
                 db.marcar_gerar(pk, False)
             else:
-                # nao_gerada ou pendente (SAP_PENDENTE), com ou sem arquivado no COFFEE.
-                if arquivado:
-                    # SAP=10000000 + arquivada no COFFEE: desarquiva antes de re-gerar.
-                    client.desarquivar(ident)
-                else:
-                    # Sem SAP ou SAP=10000000 nao arquivada: forca o placeholder.
-                    client.definir_sap(ident, config.SAP_PENDENTE)
+                # Sem SAP ou SAP=10000000: define o placeholder e desarquiva.
+                # O COFFEE so gera notas DESARQUIVADAS — ele atribui o SAP real
+                # e arquiva sozinho ao concluir; a nota tem que sair desarquivada.
+                client.definir_sap(ident, config.SAP_PENDENTE)
+                client.desarquivar(ident)
                 nota = client.buscar_nota(ident)
                 db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
                 db.marcar_gerar(nota["pk"], False)

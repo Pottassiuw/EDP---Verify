@@ -3,6 +3,18 @@
 ## Status
 `nao_gerada` → `pendente` → `gerada` (avulsa) **ou** `pendente` → `corrigida` → `gerada` (erro/Verificar).
 
+## Regra de geração (2026-07-06)
+O COFFEE **só gera notas desarquivadas**: ele atribui o SAP real e **arquiva
+sozinho** ao concluir. Logo, forçar a geração (`POST /regerar` e o lote em
+`jobs._rodar_geracao`) sempre faz `definir_sap(id, 10000000)` **e**
+`desarquivar(id)` — a nota tem que sair desarquivada do nosso fluxo.
+Exceções (não re-gera): SAP real **não arquivada** (transiente, só sai da
+fila) e SAP real **arquivada** no lote (já gerada — pulada; o `regerar`
+unitário, por ser pedido explícito, volta ao placeholder e desarquiva).
+Nota arquivada **sem SAP** não é pulada: entra no caminho de força.
+Tanto o lote quanto o `regerar` unitário marcam `origem='avulsa'` quando a
+nota ainda não tem origem.
+
 ## Regra de classificação (`classify.classificar`)
 - `id_sap` vazio/0 → `nao_gerada`.
 - `id_sap == SAP_PENDENTE (10000000)` → `pendente`.
