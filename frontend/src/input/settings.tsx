@@ -51,7 +51,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [e.target.value, pessoa]; setLinhasResp(c); }} />
             <input value={pessoa} className="edp-field"
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [conjunto, e.target.value]; setLinhasResp(c); }} />
-            <Button variant="ghost" size="sm"
+            <Button variant="ghost" size="sm" aria-label={`Remover responsável ${conjunto || i + 1}`}
                     onClick={() => setLinhasResp(linhas.filter((_, j) => j !== i) as [string, string][])}>×</Button>
           </div>
         ))}

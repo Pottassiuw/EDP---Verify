@@ -140,8 +140,8 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
   function multi(rotulo: string, opcoes: string[], valores: string[], setValores: (v: string[]) => void): React.JSX.Element {
     return (
       <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
-        <span style={{ color: 'var(--text-dim)' }}>{rotulo}</span>
-        <select multiple size={4} value={valores} style={{ minWidth: 180 }}
+        <span className="edp-eyebrow">{rotulo}</span>
+        <select multiple size={4} value={valores} className="edp-field" style={{ minWidth: 180 }}
                 onChange={(e) => setValores([...e.target.selectedOptions].map((o) => o.value))}>
           {opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>

@@ -48,8 +48,8 @@ export function ConfirmModal({
         <span className="edp-title" style={{ fontSize: 17 }}>{title}</span>
         {message && <div style={{ fontSize: 13, color: "var(--text-mute)" }}>{message}</div>}
 
-        <label style={{ fontSize: 12, color: "var(--text-mute)" }}>
-          Justificativa{requireJustification ? " (obrigatoria)" : " (opcional)"}
+        <label style={{ fontSize: 12, color: "var(--text-dim)" }}>
+          Justificativa{requireJustification ? " (obrigatória)" : " (opcional)"}
         </label>
         <textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)}
                   rows={3} autoFocus disabled={busy}

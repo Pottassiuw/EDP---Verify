@@ -3,6 +3,7 @@ import type { CoffeeJob } from './types';
 import { EDPApi, BASE } from '../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Check, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 
 // ponytail: máscara 3-2-resto; aperta a regra se o formato do local for fixo
 function maskLocal(v: string): string {
@@ -50,6 +51,8 @@ const STATUS_COR: Record<string, string> = {
   gerada: "var(--green)", corrigida: "var(--blue)",
   pendente: "var(--amber)", nao_gerada: "var(--text-mute)",
 };
+
+const TH_STICK: React.CSSProperties = { position: "sticky", top: 0, zIndex: 1 };
 
 export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   open: boolean;
@@ -194,9 +197,9 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
         const nArq = job.arquivadas?.length ?? 0;
         if (nErros > 0) {
           toast.error(`${nErros} de ${ids.length} nota(s) falharam`,
-            { description: nArq ? `${nArq} arquivada(s) pulada(s)` : undefined });
+            { description: nArq ? `${nArq} já gerada(s) e arquivada(s), pulada(s)` : undefined });
         } else if (nArq > 0) {
-          toast.success(`${ids.length - nArq} gerada(s), ${nArq} arquivada(s) pulada(s)`);
+          toast.success(`${ids.length - nArq} gerada(s), ${nArq} já gerada(s) e arquivada(s), pulada(s)`);
         } else {
           toast.success(`${ids.length} nota(s) processada(s)`);
         }
@@ -211,72 +214,79 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     <>
       <div onClick={gerando.rodando ? undefined : onClose}
            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }} />
-      <div role="dialog" aria-modal="true" className="ui-reset"
+      <div role="dialog" aria-modal="true" aria-label="Gerar ou consultar notas" className="ui-reset"
            style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
                     width: 760, maxWidth: "94vw", maxHeight: "88vh", background: "var(--surface)",
                     border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
                     display: "flex", flexDirection: "column", gap: 12, padding: 20,
                     boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
-        <span className="edp-title" style={{ fontSize: 17 }}>Gerar / Consultar notas</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="edp-title" style={{ fontSize: 17, flex: 1 }}>Gerar / Consultar notas</span>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} disabled={gerando.rodando}
+                  aria-label="Fechar" title="Fechar (Esc)">
+            <X />
+          </Button>
+        </div>
 
         <div style={{ display: "flex", gap: 8 }}>
           <input value={input} onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => { if (e.key === "Enter") adicionar(); }}
                  placeholder="Cole ids (espaço, vírgula ou linha)"
+                 aria-label="IDs das notas para consultar"
                  disabled={gerando.rodando}
-                 style={{ flex: 1, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--line)",
-                          background: "var(--surface-2)", color: "var(--text)", fontSize: 13,
-                          fontFamily: "var(--font-mono)" }} />
+                 className="edp-field edp-mono"
+                 style={{ flex: 1, fontSize: 13 }} />
           <Button variant="outline" size="sm" onClick={adicionar} disabled={!input.trim() || gerando.rodando}
                   style={{ fontWeight: 600 }}>Adicionar</Button>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflow: "auto", border: "1px solid var(--line)",
                       borderRadius: 8 }}>
-          <table className="cnt-tbl" style={{ width: "100%", borderCollapse: "separate",
-                                              borderSpacing: 0, fontSize: 13 }}>
+          <table className="edp-table">
             <thead>
               <tr>
-                <th style={th}>ID COFFEE</th>
-                <th style={th}>ID SAP</th>
-                <th style={th}>Local de instalação</th>
-                <th style={th}>Status</th>
-                <th style={th}>Ações</th>
+                <th style={TH_STICK}>ID COFFEE</th>
+                <th style={TH_STICK}>ID SAP</th>
+                <th style={TH_STICK}>Local de instalação</th>
+                <th style={TH_STICK}>Status</th>
+                <th style={TH_STICK}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={5} style={{ ...td, color: "var(--text-mute)", textAlign: "center", padding: 24 }}>
+                <tr><td colSpan={5} style={{ color: "var(--text-mute)", textAlign: "center", padding: 24 }}>
                   Adicione ids para consultar.
                 </td></tr>
               )}
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td style={td}><span className="edp-mono" style={{ fontWeight: 600 }}>{r.pk ?? r.id}</span></td>
-                  <td style={td}>
+                  <td><span className="edp-mono" style={{ fontWeight: 600 }}>{r.pk ?? r.id}</span></td>
+                  <td>
                     {r.estado === "consultando" ? "…"
                      : r.estado === "erro" ? <span style={{ color: "var(--red)" }}>erro</span>
                      : <span className="edp-mono">{r.idSap ?? "—"}</span>}
                   </td>
-                  <td style={td}>
+                  <td>
                     {r.editando ? (
                       <input value={r.localEditado ?? ""} autoFocus
+                             aria-label={`Local de instalação da nota ${r.pk ?? r.id}`}
+                             className="edp-field edp-mono"
                              onChange={(e) => {
                                const m = maskLocal(e.target.value);
                                setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, localEditado: m } : x));
                              }}
-                             style={{ width: 150, padding: "4px 8px", borderRadius: 6,
-                                      border: "1px solid var(--line)", background: "var(--surface-2)",
-                                      color: "var(--text)", fontFamily: "var(--font-mono)", fontSize: 12 }} />
+                             onKeyDown={(e) => {
+                               if (e.key === "Enter") salvarLocal(r);
+                               if (e.key === "Escape") cancelarEdicao(r.id);
+                             }}
+                             style={{ width: 150, height: 26, fontSize: 12 }} />
                     ) : r.estado === "ok" ? (
                       <span className="edp-mono">{r.localAtual ? maskLocal(r.localAtual) : "—"}</span>
-                    ) : r.estado === "consultando" ? (
-                      <span style={{ color: "var(--text-mute)" }}>…</span>
                     ) : (
-                      <span style={{ color: "var(--text-mute)" }}>—</span>
+                      <span style={{ color: "var(--text-mute)" }}>{r.estado === "consultando" ? "…" : "—"}</span>
                     )}
                   </td>
-                  <td style={td}>
+                  <td>
                     {r.estado === "erro"
                       ? <span style={{ color: "var(--red)", fontSize: 11 }}>{r.erro}</span>
                       : r.classificacao
@@ -285,34 +295,38 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                           </span>
                         : null}
                   </td>
-                  <td style={td}>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <td>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       {r.estado === "ok" && !r.editando && (
-                        <Button variant="outline" size="sm" onClick={() => iniciarEdicao(r)}
-                                style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
-                          Alterar local
+                        <Button variant="ghost" size="icon-xs" onClick={() => iniciarEdicao(r)}
+                                aria-label={`Alterar local de instalação da nota ${r.pk ?? r.id}`}
+                                title="Alterar local de instalação">
+                          <Pencil />
                         </Button>
                       )}
                       {r.editando && (
                         <>
-                          <Button variant="outline" size="sm"
+                          <Button variant="ghost" size="icon-xs"
                                   disabled={r.salvandoLocal || unmaskLocal(r.localEditado ?? "") === (r.localAtual ?? "")}
                                   onClick={() => salvarLocal(r)}
-                                  style={{ fontSize: 11, padding: "3px 6px", color: "var(--accent)", borderColor: "var(--accent)" }}>
-                            {r.salvandoLocal ? "…" : "Salvar"}
+                                  aria-label="Salvar local de instalação"
+                                  title="Salvar"
+                                  style={{ color: "var(--accent)" }}>
+                            <Check />
                           </Button>
-                          <Button variant="outline" size="sm" disabled={r.salvandoLocal}
+                          <Button variant="ghost" size="icon-xs" disabled={r.salvandoLocal}
                                   onClick={() => cancelarEdicao(r.id)}
-                                  style={{ fontSize: 11, padding: "3px 6px" }}>
-                            Cancelar
+                                  aria-label="Cancelar edição do local" title="Cancelar">
+                            <X />
                           </Button>
                         </>
                       )}
                       {!r.editando && (
-                        <Button variant="outline" size="sm" onClick={() => removerLinha(r.id)}
+                        <Button variant="ghost" size="icon-xs" onClick={() => removerLinha(r.id)}
+                                aria-label={`Remover nota ${r.pk ?? r.id} da lista`}
                                 title="Remover da lista"
-                                style={{ fontSize: 11, padding: "3px 6px", color: "var(--red)" }}>
-                          ✕
+                                style={{ color: "var(--red)" }}>
+                          <Trash2 />
                         </Button>
                       )}
                     </div>
@@ -329,12 +343,14 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
           </span>
         )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <Button variant="outline" size="sm" onClick={limpar}
-                  disabled={rows.length === 0 || gerando.rodando}>Limpar</Button>
-          <Button variant="outline" size="sm" onClick={onClose} disabled={gerando.rodando}>Fechar</Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button variant="ghost" size="sm" onClick={limpar}
+                  disabled={rows.length === 0 || gerando.rodando}>Limpar lista</Button>
+          <div style={{ flex: 1 }} />
           <Button variant="outline" size="sm" onClick={reconsultarTodas}
-                  disabled={rows.length === 0 || gerando.rodando}>Consultar</Button>
+                  disabled={rows.length === 0 || gerando.rodando}>
+            <RefreshCw /> Reconsultar
+          </Button>
           <Button size="sm" onClick={gerar}
                   disabled={rows.length === 0 || gerando.rodando}>
             Gerar ({rows.length})
@@ -344,10 +360,3 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     </>
   );
 }
-
-const th: React.CSSProperties = {
-  position: "sticky", top: 0, background: "var(--surface)", textAlign: "left",
-  padding: "8px 10px", fontSize: 11, fontWeight: 600, letterSpacing: ".04em",
-  textTransform: "uppercase", color: "var(--text-mute)", borderBottom: "2px solid var(--line)",
-};
-const td: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid var(--line)", color: "var(--text)" };

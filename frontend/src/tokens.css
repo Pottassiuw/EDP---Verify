@@ -12,6 +12,11 @@
    continua sobrescrevendo para o tema claro. */
 :root,
 .edp {
+  /* Widgets nativos (select/option, checkbox, scrollbar, date picker)
+     seguem o tema — sem isso o popup do <select> sai branco/preto. */
+  color-scheme: dark;
+  accent-color: var(--accent);
+
   /* — brand spectrum — */
   --green:    #00a859;
   --green-2:  #1dbd6e;
@@ -121,6 +126,7 @@
 
 /* — LIGHT — */
 .edp[data-theme="light"] {
+  color-scheme: light;
   --bg:        #eef1f6;
   --bg-2:      #e6eaf2;
   --surface:   #ffffff;
@@ -248,6 +254,8 @@
 /* campo de formulário nativo (input/select) — antes: estiloCampo repetido */
 .edp-field { height: 34px; padding: 0 11px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text); font: inherit; font-size: 13px; }
 .edp-field:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+select.edp-field[multiple] { height: auto; padding: 6px 8px; }
+select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
 
 /* segmented tabs (sublinhado) sobre um ToggleGroup shadcn — mantém a
    acessibilidade Radix (roving tabindex + setas), troca só a pele:

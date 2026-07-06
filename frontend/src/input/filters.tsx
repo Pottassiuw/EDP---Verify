@@ -92,6 +92,8 @@ export function Filters({
         <div style={estiloPainel}>
           <select
             value=""
+            aria-label="Adicionar campo de filtro"
+            className="edp-field"
             onChange={(e) => {
               if (!e.target.value) return;
               setEstado({
@@ -102,7 +104,7 @@ export function Filters({
                 ],
               });
             }}
-            style={{ marginBottom: 10, padding: 6 }}
+            style={{ marginBottom: 10 }}
           >
             <option value="">+ Adicionar campo de filtro…</option>
             {camposDisponiveis.map((c) => (
@@ -134,10 +136,11 @@ export function Filters({
                 <input
                   value={f.texto ?? ""}
                   placeholder="Contém…"
+                  aria-label={`Filtro de texto: ${ROTULOS[f.campo] ?? f.campo}`}
+                  className="edp-field"
                   onChange={(e) =>
                     atualizarFiltro(i, { texto: e.target.value })
                   }
-                  style={{ padding: 5 }}
                 />
               )}
               {f.tipo === "faixa" && (
@@ -146,7 +149,9 @@ export function Filters({
                     type="number"
                     placeholder="mín"
                     value={f.min ?? ""}
-                    style={{ width: 90, padding: 5 }}
+                    aria-label={`Mínimo: ${ROTULOS[f.campo] ?? f.campo}`}
+                    className="edp-field"
+                    style={{ width: 90 }}
                     onChange={(e) =>
                       atualizarFiltro(i, {
                         min:
@@ -160,7 +165,9 @@ export function Filters({
                     type="number"
                     placeholder="máx"
                     value={f.max ?? ""}
-                    style={{ width: 90, padding: 5 }}
+                    aria-label={`Máximo: ${ROTULOS[f.campo] ?? f.campo}`}
+                    className="edp-field"
+                    style={{ width: 90 }}
                     onChange={(e) =>
                       atualizarFiltro(i, {
                         max:
@@ -177,6 +184,8 @@ export function Filters({
                   multiple
                   value={f.valores ?? []}
                   size={4}
+                  aria-label={`Valores de ${ROTULOS[f.campo] ?? f.campo}`}
+                  className="edp-field"
                   style={{ minWidth: 220 }}
                   onChange={(e) =>
                     atualizarFiltro(i, {

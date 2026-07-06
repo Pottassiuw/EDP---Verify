@@ -83,8 +83,8 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
       <CardContent>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 14 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <Label>Nota Mãe</Label>
-            <Input value={maeInput} placeholder="ex: 100123456"
+            <Label htmlFor="hier-nota-mae">Nota Mãe</Label>
+            <Input id="hier-nota-mae" value={maeInput} placeholder="ex: 100123456"
                    onChange={(e) => setMaeInput(e.target.value)}
                    onKeyDown={(e) => { if (e.key === 'Enter') void buscar(); }}
                    style={{ width: 180 }} />

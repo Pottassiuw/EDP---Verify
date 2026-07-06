@@ -270,7 +270,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 14 }}>
               {Object.keys(NOTA_VAZIA).map((campo) => (
                 <div key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Label htmlFor={`nova-${campo}`} className="text-muted-foreground">
+                  <Label htmlFor={`nova-${campo}`}>
                     {ROTULOS[campo] ?? campo}
                   </Label>
                   {campo === 'Status_Nota' || campo === 'Prioridade_Nota' ? (

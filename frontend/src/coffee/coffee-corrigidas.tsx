@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -64,9 +64,7 @@ export function CoffeeCorrigidas(): React.JSX.Element {
         actionColumn={(nota) => (
           <>
             <AbrirCoffeeBtn pk={nota.pk} />
-            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)} title="Ver logs">
-              Logs
-            </Button>
+            <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
           </>
         )}
       />

@@ -150,9 +150,11 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             <select
               autoFocus
               defaultValue={String(v ?? "")}
+              aria-label={`Editar ${c.label}`}
+              className="edp-field"
               onChange={(e) => confirmar(e.target.value)}
               onBlur={() => setEditando(null)}
-              style={{ width: "100%", height: ALTURA_LINHA - 4 }}
+              style={{ width: "100%", height: ALTURA_LINHA - 4, fontSize: 12.5 }}
             >
               {opcoes.map((o) => (
                 <option key={o} value={o}>
@@ -164,6 +166,8 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             <input
               autoFocus
               defaultValue={String(v ?? "")}
+              aria-label={`Editar ${c.label}`}
+              className="edp-field"
               onBlur={(e) => confirmar(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter")
@@ -173,6 +177,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               style={{
                 width: "100%",
                 height: ALTURA_LINHA - 4,
+                fontSize: 12.5,
                 boxSizing: "border-box",
               }}
             />

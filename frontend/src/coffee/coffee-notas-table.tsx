@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Coffee } from 'lucide-react';
+import { Coffee, ScrollText } from 'lucide-react';
 import { coffeeUrl } from '../api';
 
 const SAP_PENDENTE = 10000000;
@@ -12,10 +12,20 @@ const SAP_PENDENTE = 10000000;
 /** Botão-âncora "abrir no COFFEE" — compartilhado pelas telas de lista. */
 export function AbrirCoffeeBtn({ pk }: { pk: number }): React.JSX.Element {
   return (
-    <Button asChild variant="outline" size="sm" title="Abrir no COFFEE">
+    <Button asChild variant="outline" size="icon-sm" title="Abrir no COFFEE">
       <a target="_blank" rel="noopener" href={coffeeUrl(String(pk))} aria-label={`Abrir nota ${pk} no COFFEE`}>
         <Coffee />
       </a>
+    </Button>
+  );
+}
+
+/** Botão "ver logs" das linhas — compartilhado pelas telas de lista. */
+export function LogsBtn({ pk, onClick }: { pk: number; onClick: () => void }): React.JSX.Element {
+  return (
+    <Button variant="ghost" size="icon-sm" onClick={onClick}
+            aria-label={`Ver logs da nota ${pk}`} title="Ver logs">
+      <ScrollText />
     </Button>
   );
 }

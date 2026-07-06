@@ -1,12 +1,13 @@
 ﻿import React from 'react';
 import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { toast } from 'sonner';
 import { BASE as API_BASE } from '../api';
 import { Button } from '@/components/ui/button';
+import { Archive } from 'lucide-react';
 
 type BuscaEstado = "idle" | "rodando" | "concluido";
 
@@ -201,12 +202,12 @@ export function CoffeePendentes(): React.JSX.Element {
         actionColumn={(nota) => (
           <>
             <AbrirCoffeeBtn pk={nota.pk} />
-            <Button variant="destructive" size="sm" onClick={() => setArquivarPk(nota.pk)} title="Arquivar nota">
-              Arquivar
+            <Button variant="ghost" size="icon-sm" onClick={() => setArquivarPk(nota.pk)}
+                    aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
+                    style={{ color: "var(--red)" }}>
+              <Archive />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)} title="Ver logs">
-              Logs
-            </Button>
+            <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
           </>
         )}
       />

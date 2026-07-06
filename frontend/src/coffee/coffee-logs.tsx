@@ -68,14 +68,14 @@ export function CoffeeLogs(): React.JSX.Element {
                  value={passo} onChange={setPasso} ariaLabel="Filtrar por passo" />
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Nota:</label>
+          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Nota:</label>
           <input type="number" placeholder="PK" value={notaPk} className="edp-field edp-mono"
                  onChange={(e) => setNotaPk(e.target.value)}
                  style={{ width: 90, height: 30, fontSize: 12 }} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Usuario:</label>
+          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Usuario:</label>
           <select value={usuario} onChange={(e) => setUsuario(e.target.value)}
                   className="edp-field edp-mono" style={{ height: 30, fontSize: 12 }}>
             <option value="">Todos</option>
@@ -84,7 +84,7 @@ export function CoffeeLogs(): React.JSX.Element {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Limite:</label>
+          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Limite:</label>
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}
                   className="edp-field" style={{ height: 30, fontSize: 12 }}>
             {LIMITES.map((l) => <option key={l} value={l}>{l}</option>)}
@@ -92,7 +92,7 @@ export function CoffeeLogs(): React.JSX.Element {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-mute)" }}>Período:</label>
+          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Período:</label>
           <select value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}
                   className="edp-field" style={{ height: 30, fontSize: 12 }}>
             {PERIODOS.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}

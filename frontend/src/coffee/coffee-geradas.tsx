@@ -1,12 +1,13 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
 import { BASE as API_BASE } from '../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Archive, ListX } from 'lucide-react';
 
 type PendingAction =
   | { kind: "remover"; pk: number }
@@ -91,7 +92,7 @@ export function CoffeeGeradas(): React.JSX.Element {
           </span>
         )}
         {aGerar.notas.length > 0 && (
-          <Button size="sm"
+          <Button variant="outline" size="sm"
                   onClick={() => abrirModal(aGerar.notas.map((n) => n.pk))}>
             Gerar fila ({aGerar.notas.length})
           </Button>
@@ -105,15 +106,13 @@ export function CoffeeGeradas(): React.JSX.Element {
           actionColumn={(nota) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <AbrirCoffeeBtn pk={nota.pk} />
-              <Button variant="destructive" size="sm"
+              <Button variant="ghost" size="icon-sm"
                       onClick={() => setPending({ kind: "remover", pk: nota.pk })}
-                      title="Remover da fila">
-                Remover
+                      aria-label={`Remover nota ${nota.pk} da fila`} title="Remover da fila"
+                      style={{ color: "var(--red)" }}>
+                <ListX />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                      title="Ver logs">
-                Logs
-              </Button>
+              <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
             </div>
           )}
         />
@@ -137,15 +136,13 @@ export function CoffeeGeradas(): React.JSX.Element {
         actionColumn={(nota) => (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <AbrirCoffeeBtn pk={nota.pk} />
-            <Button variant="destructive" size="sm"
+            <Button variant="ghost" size="icon-sm"
                     onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
-                    title="Arquivar nota">
-              Arquivar
+                    aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
+                    style={{ color: "var(--red)" }}>
+              <Archive />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDrawerPk(nota.pk)}
-                    title="Ver logs">
-              Logs
-            </Button>
+            <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
           </div>
         )}
       />
