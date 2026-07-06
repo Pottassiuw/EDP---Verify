@@ -1,22 +1,21 @@
 ﻿import React from 'react';
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
-import type { AbaInput } from './input/types';
-import type { TriageHandoff } from './coffee/coffee-verificar';
+import type { AbaInput } from './features/input/types';
+import type { TriageHandoff } from './features/coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { SettingsProvider, useSettings } from './context/settings-context';
 import { EDPApi } from './api';
-import { EDP_DEMO } from './data';
 import { AppSidebar } from './components/app-sidebar';
-import { useTriageData } from './hooks/useTriageData';
+import { useTriageData } from './features/verificar/useTriageData';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { toast, Toaster } from 'sonner';
 
 const InputSection = React.lazy(() =>
-  import('./input/input-section').then((m) => ({ default: m.InputSection })));
+  import('./features/input/input-section').then((m) => ({ default: m.InputSection })));
 const CoffeeHub = React.lazy(() =>
-  import('./coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
+  import('./features/coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
 const ConfiguracoesPage = React.lazy(() =>
-  import('./pages/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
+  import('./features/configuracoes/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -70,7 +69,7 @@ function AppContent(): React.JSX.Element {
   const [completed, setCompleted] = React.useState<Set<string>>(() => new Set(_snap?.completed ?? []));
   const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set(_snap?.dupResolved ?? []));
   const [file, setFile] = React.useState(_snap?.file ?? "");
-  const [source, setSource] = React.useState<Source>(_snap?.source ?? "demo");
+  const [source, setSource] = React.useState<Source>(_snap?.source ?? "api");
   const [section, setSection] = React.useState<AppSection>("coffee");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
@@ -96,25 +95,13 @@ function AppContent(): React.JSX.Element {
 
   React.useEffect(() => {
     if (_snap) return;
-    if (!apiData?.notes?.length || screen !== "upload" || source === "demo") return;
+    if (!apiData?.notes?.length || screen !== "upload") return;
     setNotes(apiData.notes);
     setCompleted(apiData.completed);
     setSource("api");
     setFile(localStorage.getItem("edp_file") ?? "planilha carregada");
     setScreen("dashboard");
   }, [apiData]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function loadDemo(name?: string): void {
-    limparFiltrosVerify();
-    limparSnapshot();
-    const savedDone = JSON.parse(localStorage.getItem("edp_demo_done") ?? "null") as string[] | null;
-    const savedDup = JSON.parse(localStorage.getItem("edp_demo_dup") ?? "null") as string[] | null;
-    setNotes(EDP_DEMO.notes);
-    setCompleted(new Set(savedDone ?? EDP_DEMO.defaultDone));
-    setDupResolved(new Set(savedDup ?? EDP_DEMO.defaultDup));
-    setSource("demo"); setFile(name ?? EDP_DEMO.file); setScreen("dashboard");
-    toast("Dados de demonstração carregados");
-  }
 
   async function handleUpload(f: File): Promise<void> {
     limparFiltrosVerify();
@@ -133,14 +120,11 @@ function AppContent(): React.JSX.Element {
     } catch { /* toast já informou o erro */ }
   }
 
-  function persistDone(set: Set<string>): void { if (source === "demo") localStorage.setItem("edp_demo_done", JSON.stringify([...set])); }
-  function persistDup(set: Set<string>): void { if (source === "demo") localStorage.setItem("edp_demo_dup", JSON.stringify([...set])); }
-
   function toggleComplete(id: string): void {
     const reopening = completed.has(id);
     const concluding = !reopening;
-    setCompleted((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); persistDone(s); return s; });
-    if (reopening) setDupResolved((prev) => { const s = new Set(prev); s.delete(id); persistDup(s); return s; });
+    setCompleted((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
+    if (reopening) setDupResolved((prev) => { const s = new Set(prev); s.delete(id); return s; });
 
     const numeric = NUMERIC_ID_RE.test(id);
     const willGenerate = source === "api" && numeric;
@@ -160,7 +144,6 @@ function AppContent(): React.JSX.Element {
     setCompleted((prev) => {
       const s = new Set(prev);
       targets.forEach((id) => { if (marking) s.add(id); else s.delete(id); });
-      persistDone(s);
       return s;
     });
     const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
@@ -191,8 +174,8 @@ function AppContent(): React.JSX.Element {
 
   function markDuplicate(id: string): void {
     const undo = dupResolved.has(id);
-    setDupResolved((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDup(s); return s; });
-    setCompleted((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); persistDone(s); return s; });
+    setDupResolved((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); return s; });
+    setCompleted((prev) => { const s = new Set(prev); if (undo) s.delete(id); else s.add(id); return s; });
     if (source === "api") {
       if (undo) EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao desfazer duplicata", { description: e instanceof Error ? e.message : String(e) }));
       else EDPApi.markDuplicate(id).catch((e) => toast.error("Falha ao marcar duplicata", { description: e instanceof Error ? e.message : String(e) }));
@@ -209,7 +192,6 @@ function AppContent(): React.JSX.Element {
     onMarkDuplicate: markDuplicate,
     onSendToCoffee: sendToCoffeeQueue,
     onUpload: handleUpload,
-    onDemo: loadDemo,
     onReset: () => { setCoffeeReturn(null); limparSnapshot(); setScreen("upload"); },
   };
 

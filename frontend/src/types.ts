@@ -4,7 +4,7 @@ export type NoteStatus = "erro" | "ok";
 export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
-export type Source = "demo" | "api";
+export type Source = "api";
 export type AppSection = "coffee" | "input" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 
@@ -86,12 +86,6 @@ export interface RuleMeta {
 export type Accent = [string, string, string];
 
 // ── Camada de dados / API ────────────────────────────────────────────────
-export interface EdpDemo {
-  notes: Note[];
-  file: string;
-  defaultDone: string[];
-  defaultDup: string[];
-}
 export interface FetchResult {
   notes: Note[];
   completed: Set<string>;
@@ -119,7 +113,6 @@ export interface FieldProps {
 export interface UploadScreenProps {
   theme?: Theme;
   onUpload: (file: File) => Promise<void>;
-  onDemo: (name?: string) => void;
 }
 export interface DuplicateCompareProps {
   note: Note;

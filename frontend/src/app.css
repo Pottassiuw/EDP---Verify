@@ -1,0 +1,413 @@
+/* Tailwind v4 — só theme + utilities (SEM preflight nesta fase).
+   O preflight/reset volta na Fase 4, quando todas as telas estiverem migradas. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Bridge: expõe as vars semânticas (definidas abaixo, dentro de .edp)
+   como cores/raios/fontes utilitárias do Tailwind. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--sh-accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 3px);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+}
+
+
+
+/* ============================================================
+   EDP Verify — elevated token system
+   Brand spectrum pulled from the EDP spiral mark:
+   indigo/violet → blue/cyan → green, on a near-black navy.
+   Scoped to .edp so dark & light instances coexist on one canvas.
+   ============================================================ */
+
+/* :root recebe os mesmos tokens base (tema escuro) para que conteúdo
+   PORTALIZADO pelo Radix (tooltip, dropdown, sheet…) — que renderiza fora
+   do .edp, direto no <body> — também resolva as cores. Não altera as telas
+   dentro do .edp: lá os valores são os mesmos, e .edp[data-theme="light"]
+   continua sobrescrevendo para o tema claro. */
+:root,
+.edp {
+  /* Widgets nativos (select/option, checkbox, scrollbar, date picker)
+     seguem o tema — sem isso o popup do <select> sai branco/preto. */
+  color-scheme: dark;
+  accent-color: var(--accent);
+
+  /* — brand spectrum — */
+  --green:    #00a859;
+  --green-2:  #1dbd6e;
+  --accent:      #00a859;
+  --accent-2:    #1dbd6e;
+  --accent-tint: rgba(0,168,89,0.13);
+  --blue:     #1f9fd6;
+  --indigo:   #6b5ce6;
+  --amber:    #f0a93b;
+  --red:      #f0555c;
+
+  /* — DARK — */
+  --bg:        #161e2b;
+  --bg-2:      #1b2433;
+  --surface:   #212c3e;
+  --surface-2: #283449;
+  --surface-3: #31405a;
+  --line:      rgba(255,255,255,0.07);
+  --line-2:    rgba(255,255,255,0.12);
+
+  --scrollbar-thumb:       rgba(255,255,255,0.22);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.36);
+
+  --text:      #eef2f8;
+  --text-dim:  #9aa9c2;
+  --text-mute: #61708c;
+
+  --tint-green:  rgba(0,168,89,0.12);
+  --tint-blue:   rgba(31,159,214,0.13);
+  --tint-indigo: rgba(107,92,230,0.14);
+  --tint-amber:  rgba(240,169,59,0.13);
+  --tint-red:    rgba(240,85,92,0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow:    0 6px 24px rgba(0,0,0,0.32);
+  --shadow-lg: 0 24px 60px rgba(0,0,0,0.45);
+
+  /* — type — */
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* — tracking (escala display "engineered", direção Supabase) — */
+  --tracking-display: -0.03em;
+  --tracking-tight:   -0.015em;
+  --tracking-label:    0.14em;
+
+  /* faixa zebra sutil das tabelas (herda dark/light) */
+  --zebra: rgba(255,255,255,0.02);
+
+  /* — geometry — */
+  --r-sm: 6px;
+  --r:    9px;
+  --r-md: 11px;
+  --r-lg: 14px;
+
+  /* — density (cozy default) — */
+  --row-py: 13px;
+  --pad: 20px;
+  --gap: 16px;
+  --tile-py: 18px;
+
+  /* — bridge shadcn (mapeado para os tokens EDP; herda dark/light) — */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);            /* marca EDP */
+  --primary-foreground: #fff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-dim);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-mute);
+  --sh-accent: var(--surface-2);       /* hover sutil do shadcn (NÃO é a marca EDP) */
+  --accent-foreground: var(--text);
+  --destructive: var(--red);
+  --destructive-foreground: #fff;
+  --border: var(--line-2);
+  --input: var(--line-2);
+  --ring: var(--accent);
+  --radius: var(--r);
+
+  /* — sidebar shadcn — */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.edp[data-density="compact"] {
+  --row-py: 8px;
+  --pad: 14px;
+  --gap: 11px;
+  --tile-py: 13px;
+}
+
+/* — LIGHT — */
+.edp[data-theme="light"] {
+  color-scheme: light;
+  --bg:        #eef1f6;
+  --bg-2:      #e6eaf2;
+  --surface:   #ffffff;
+  --surface-2: #f4f6fb;
+  --surface-3: #e8ecf4;
+  --line:      rgba(22,30,43,0.09);
+  --line-2:    rgba(22,30,43,0.16);
+
+  --scrollbar-thumb:       rgba(22,30,43,0.30);
+  --scrollbar-thumb-hover: rgba(22,30,43,0.46);
+
+  --text:      #15203a;
+  --text-dim:  #4f6079;
+  --text-mute: #8a99b3;
+
+  --tint-green:  rgba(0,168,89,0.10);
+  --tint-blue:   rgba(31,159,214,0.11);
+  --tint-indigo: rgba(107,92,230,0.11);
+  --tint-amber:  rgba(240,169,59,0.14);
+  --tint-red:    rgba(240,85,92,0.10);
+
+  --shadow-sm: 0 1px 2px rgba(22,30,43,0.07);
+  --shadow:    0 8px 24px rgba(22,30,43,0.09);
+  --shadow-lg: 0 24px 60px rgba(22,30,43,0.16);
+
+  --zebra: rgba(22,30,43,0.025);
+}
+
+/* ---- shared atoms ---- */
+.edp * { box-sizing: border-box; }
+.edp, .edp * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+.edp ::-webkit-scrollbar { width: 10px; height: 10px; }
+.edp ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.edp ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
+.edp ::-webkit-scrollbar-track { background: transparent; }
+
+.edp-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 500;
+}
+.edp-mono { font-family: var(--font-mono); }
+
+.edp-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 5px;
+  white-space: nowrap;
+}
+.edp-tag.ok  { background: var(--tint-green); color: var(--green); }
+.edp-tag.err { background: var(--tint-red);   color: var(--red); }
+.edp-tag.done{ background: var(--tint-indigo); color: var(--indigo); }
+.edp-tag.dup { background: var(--indigo); color: #fff; }
+.edp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.edp-prio {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 26px; padding: 0 7px;
+  border-radius: 7px;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.edp-prio.high { background: var(--tint-red);   color: var(--red);   border-color: rgba(240,85,92,0.3); }
+.edp-prio.med  { background: var(--tint-amber); color: var(--amber); border-color: rgba(240,169,59,0.32); }
+.edp-prio.low  { background: var(--tint-green); color: var(--green); border-color: rgba(0,168,89,0.3); }
+.edp-prio.none { background: var(--surface-2);  color: var(--text-mute); border-color: var(--line); }
+
+.edp-rule {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 500;
+  padding: 3px 9px 3px 7px; border-radius: 999px;
+  background: var(--tint-red); color: var(--red);
+  border: 1px solid rgba(240,85,92,0.22);
+  white-space: nowrap;
+}
+.edp-rule::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; opacity: 0.9;
+}
+
+/* ============================================================
+   Primitivos "elevados" (direção Supabase) — mesma paleta EDP.
+   Escala de display com tracking negativo, headers mono uppercase,
+   accent verde reservado. Usados por input/ui.tsx e pelas telas
+   do módulo Input. Consumidos via className (não via preflight).
+   ============================================================ */
+
+/* página padrão de subseção (antes: div inline repetida 6×) */
+.edp-page {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  gap: var(--gap); padding: var(--pad); overflow: auto;
+}
+
+/* cabeçalho de seção: eyebrow + título + ação opcional à direita */
+.edp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.edp-head-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.edp-title { font-size: 21px; font-weight: 600; line-height: 1.15; letter-spacing: var(--tracking-display); text-wrap: balance; margin: 0; }
+.edp-sub { font-size: 13px; color: var(--text-dim); margin: 0; }
+
+/* número display (KPIs, contagens) */
+.edp-num { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: var(--tracking-display); font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* tile de KPI */
+.edp-stat { display: flex; flex-direction: column; gap: 7px; padding: 14px 16px; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+
+/* card elevado (superfície + hairline + sombra sutil) */
+.edp-panel { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: var(--pad); box-shadow: var(--shadow-sm); }
+
+/* banner de status ok/erro */
+.edp-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; border-left: 3px solid var(--text-mute); background: var(--surface-2); }
+.edp-banner.ok  { border-left-color: var(--green); background: var(--tint-green); }
+.edp-banner.err { border-left-color: var(--amber); background: var(--tint-amber); }
+
+/* campo de formulário nativo (input/select) — antes: estiloCampo repetido */
+.edp-field { height: 34px; padding: 0 11px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text); font: inherit; font-size: 13px; }
+.edp-field:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+select.edp-field[multiple] { height: auto; padding: 6px 8px; }
+select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
+
+/* segmented tabs (sublinhado) sobre um ToggleGroup shadcn — mantém a
+   acessibilidade Radix (roving tabindex + setas), troca só a pele:
+   caixa → sublinhado. !important pra vencer as utilities do outline variant. */
+.edp-segtabs { gap: 2px !important; box-shadow: none !important; }
+.edp-segtabs [data-slot="toggle-group-item"] {
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  background: transparent !important;
+  padding: 8px 2px !important; margin: 0 16px 0 0 !important;
+  font-size: 13px; color: var(--text-mute);
+  border-bottom: 2px solid transparent !important;
+}
+.edp-segtabs [data-slot="toggle-group-item"]:hover { color: var(--text-dim); }
+.edp-segtabs [data-slot="toggle-group-item"][data-state="on"] {
+  color: var(--text) !important; border-bottom-color: var(--accent) !important;
+}
+
+/* tabela leve (logs, previews): header mono uppercase + zebra sutil */
+.edp-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.edp-table thead th {
+  text-align: left; padding: 9px 12px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--text-mute); background: var(--bg);
+  border-bottom: 1px solid var(--line-2); white-space: nowrap;
+}
+.edp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.edp-table tbody tr:last-child td { border-bottom: 0; }
+.edp-table tbody tr:nth-child(even) td { background: var(--zebra); }
+
+
+
+/* ============================================================
+   Reset "preflight-lite" escopado para superfícies shadcn
+   (preflight global ainda OFF — ver topo deste arquivo).
+
+   CRÍTICO: este reset vai na layer `base`. Este arquivo declara
+   `@layer theme, base, components, utilities`, então `base` PERDE
+   para `utilities` — onde vivem todas as classes do Tailwind/shadcn
+   (px-3, border, p-2...). É exatamente o que o preflight do próprio
+   Tailwind faz: reseta os defaults do navegador (bullets, aparência
+   nativa, border-style) mas deixa as utilities vencerem.
+
+   Se este bloco ficasse SEM layer, o CSS unlayered venceria as
+   utilities (regra do cascade: unlayered > layered, independente de
+   especificidade) e zeraria padding/bordas dos componentes.
+
+   Escopos:
+     [data-sidebar="sidebar"]  → subtree da sidebar (desktop+mobile)
+     .ui-reset                 → páginas já migradas (opt-in)
+   ============================================================ */
+@layer base {
+  /* App fullscreen: sem o preflight global, o <body> mantém a margin
+     padrão de 8px do navegador. Isso desalinha a sidebar (position:fixed,
+     relativa à viewport, em x=0) do conteúdo em fluxo (.edp/gap/inset,
+     empurrado 8px), expondo uma faixa do sidebar-gap na borda direita.
+     Zerar a margin do documento alinha tudo e elimina a faixa. */
+  html, body { margin: 0; padding: 0; }
+
+  /* border-width:0 + style:solid reativa as utilities de borda do shadcn
+     (sem preflight, border-style padrão é `none` e nada renderiza). */
+  :where([data-sidebar="sidebar"], .ui-reset) *,
+  :where([data-sidebar="sidebar"], .ui-reset) ::before,
+  :where([data-sidebar="sidebar"], .ui-reset) ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--border, currentColor);
+  }
+  :where([data-sidebar="sidebar"], .ui-reset) :where(ul, ol) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  :where([data-sidebar="sidebar"], .ui-reset) :where(li) {
+    margin: 0;
+  }
+  :where([data-sidebar="sidebar"], .ui-reset) :where(button) {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+/* O container fixo da sidebar (shadcn) tem uma `border-r` que renderiza como
+   uma linha escura na fronteira sidebar↔conteúdo (confirmado por geometria:
+   container=256px, inner=255px → 1px de borda). A separação visual já vem da
+   diferença de cor entre sidebar e conteúdo, então removemos a borda.
+   UNLAYERED de propósito: precisa vencer a utility `border-r` (que está em
+   @layer utilities); CSS sem layer sempre vence CSS com layer. */
+[data-slot="sidebar-container"] {
+  border-right-width: 0;
+  border-left-width: 0;
+}
+
+/* Sonner (toaster) — portaliza no body; herda os tokens via :root.
+   Mapeia as cores base do toast aos tokens EDP. */
+[data-sonner-toaster] {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+}
