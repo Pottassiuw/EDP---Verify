@@ -1,10 +1,10 @@
 ﻿import React from 'react';
-import type { Note, UrgBand, RuleKey } from '../types';
-import { EDPApi, ruleMeta } from '../api';
+import type { Note, UrgBand, RuleKey } from '../../types';
+import { EDPApi, ruleMeta } from '../../api';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
-import { usePersistedState } from '../hooks/use-persisted-state';
+import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';

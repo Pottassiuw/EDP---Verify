@@ -1,6 +1,6 @@
 import React from 'react';
-import type { DuplicateCompareProps, DuplicateField, ComparableFields } from '../types';
-import { EDPApi } from '../api';
+import type { DuplicateCompareProps, DuplicateField, ComparableFields } from '../../types';
+import { EDPApi } from '../../api';
 import { Button } from '@/components/ui/button';
 import { Coffee } from 'lucide-react';
 

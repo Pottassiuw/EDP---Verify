@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS, agruparLogs } from './coffee-log-table';
-import { BASE as API_BASE } from '../api';
+import { BASE as API_BASE } from '../../api';
 import { SegTabs, StatTile } from '@/components/branded/section';
 import { Switch } from '@/components/ui/switch';
 

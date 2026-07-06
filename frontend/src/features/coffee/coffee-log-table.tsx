@@ -1,7 +1,7 @@
 import React from 'react';
 import type { CoffeeLog } from './types';
 import { formatRelativeTime } from './coffee-notas-table';
-import { useSettings } from '../context/settings-context';
+import { useSettings } from '../../context/settings-context';
 
 const TIMELINE_STYLE = `
   .clog-timeline{flex:1;min-height:0;overflow:auto;padding:0 22px 24px}

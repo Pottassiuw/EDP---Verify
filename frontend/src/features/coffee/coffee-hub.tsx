@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Note, CoffeeSubPage } from '../types';
+import type { Note, CoffeeSubPage } from '../../types';
 
 import { CoffeeAbrir } from './coffee-abrir';
 import { CoffeeGeradas } from './coffee-geradas';

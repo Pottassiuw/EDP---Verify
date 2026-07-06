@@ -1,21 +1,21 @@
 ﻿import React from 'react';
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
-import type { AbaInput } from './input/types';
-import type { TriageHandoff } from './coffee/coffee-verificar';
+import type { AbaInput } from './features/input/types';
+import type { TriageHandoff } from './features/coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { SettingsProvider, useSettings } from './context/settings-context';
 import { EDPApi } from './api';
 import { AppSidebar } from './components/app-sidebar';
-import { useTriageData } from './hooks/useTriageData';
+import { useTriageData } from './features/verificar/useTriageData';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { toast, Toaster } from 'sonner';
 
 const InputSection = React.lazy(() =>
-  import('./input/input-section').then((m) => ({ default: m.InputSection })));
+  import('./features/input/input-section').then((m) => ({ default: m.InputSection })));
 const CoffeeHub = React.lazy(() =>
-  import('./coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
+  import('./features/coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
 const ConfiguracoesPage = React.lazy(() =>
-  import('./pages/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
+  import('./features/configuracoes/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 

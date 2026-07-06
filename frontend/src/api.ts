@@ -141,7 +141,7 @@ export async function marcarGerar(id: string, aGerar: boolean): Promise<void> {
   if (!res.ok) throw new Error("POST /marcar-gerar -> " + res.status);
 }
 
-export async function consultarNota(id: number): Promise<import('./coffee/types').CoffeeConsulta> {
+export async function consultarNota(id: number): Promise<import('./features/coffee/types').CoffeeConsulta> {
   const res = await fetch(BASE + "/coffee/consultar/" + id, { headers: { Accept: "application/json" } });
   if (!res.ok) throw new Error("GET /consultar -> " + res.status);
   return res.json();

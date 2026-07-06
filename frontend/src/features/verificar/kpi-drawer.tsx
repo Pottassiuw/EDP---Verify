@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KpiDrawerProps } from '../types';
+import type { KpiDrawerProps } from '../../types';
 
 export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
   const { pct, cTotal, cOk, cErr, cDup, cDone, cVisible, selectedNotes = [], onRemoveSelected } = props;

@@ -1,5 +1,5 @@
 import React from "react";
-import type { FieldProps, NoteStatus } from "../types";
+import type { FieldProps, NoteStatus } from "../../types";
 
 export const LOGO_DARK =
   "/assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.png";

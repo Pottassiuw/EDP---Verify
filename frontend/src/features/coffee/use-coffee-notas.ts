@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeNota } from './types';
-import { BASE as API_BASE } from '../api';
+import { BASE as API_BASE } from '../../api';
 
 interface UseCoffeeNotasResult {
   notas: CoffeeNota[];

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchData } from '../api';
+import { fetchData } from '../../api';
 
 export function useTriageData() {
   return useQuery({

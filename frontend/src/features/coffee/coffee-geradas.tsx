@@ -4,7 +4,7 @@ import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table'
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
-import { BASE as API_BASE } from '../api';
+import { BASE as API_BASE } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Archive, ListX } from 'lucide-react';

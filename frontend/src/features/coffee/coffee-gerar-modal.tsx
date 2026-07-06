@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeJob } from './types';
-import { EDPApi, BASE } from '../api';
+import { EDPApi, BASE } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Check, Pencil, RefreshCw, Trash2, X } from 'lucide-react';

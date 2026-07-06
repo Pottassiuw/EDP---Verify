@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSettings } from '../context/settings-context';
+import { useSettings } from '../../context/settings-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';

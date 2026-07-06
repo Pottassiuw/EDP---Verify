@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Coffee, ScrollText } from 'lucide-react';
-import { coffeeUrl } from '../api';
+import { coffeeUrl } from '../../api';
 
 const SAP_PENDENTE = 10000000;
 

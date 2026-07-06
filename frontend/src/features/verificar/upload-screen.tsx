@@ -1,7 +1,7 @@
 import React from "react";
-import type { UploadScreenProps } from "../types";
-import { EDPApi } from "../api";
-import LOGO_EXCEL from "../../public/assets/logo_excel.svg";
+import type { UploadScreenProps } from "../../types";
+import { EDPApi } from "../../api";
+import LOGO_EXCEL from "../../../public/assets/logo_excel.svg";
 import { LOGO_DARK, LOGO_LIGHT } from "./shared";
 import { Button } from "@/components/ui/button";
 

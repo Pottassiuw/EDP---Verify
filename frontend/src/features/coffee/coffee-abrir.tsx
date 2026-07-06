@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Note } from '../types';
-import { EDPApi } from '../api';
+import type { Note } from '../../types';
+import { EDPApi } from '../../api';
 import { Button } from '@/components/ui/button';
 import { StatTile, Banner } from '@/components/branded/section';
 import { Plus, Coffee, Check, Copy, Trash2, X } from 'lucide-react';

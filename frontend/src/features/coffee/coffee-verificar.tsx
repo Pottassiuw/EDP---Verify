@@ -1,7 +1,7 @@
 import React from 'react';
-import type { Note, Source } from '../types';
-import { UploadScreen } from '../components/upload-screen';
-import { Dashboard } from '../components/dashboard';
+import type { Note, Source } from '../../types';
+import { UploadScreen } from '../verificar/upload-screen';
+import { Dashboard } from '../verificar/dashboard';
 
 export interface TriageHandoff {
   resolvedTheme: "dark" | "light";
