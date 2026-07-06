@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 export const UploadScreen: React.FC<UploadScreenProps> = ({
   theme = "dark",
   onUpload,
-  onDemo,
 }) => {
   const [drag, setDrag] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -31,7 +30,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
       setErr(
         "Não foi possível conectar ao backend (" +
           EDPApi.BASE +
-          "). Verifique se o servidor FastAPI está rodando — ou use a demonstração abaixo.",
+          "). Verifique se o servidor FastAPI está rodando.",
       );
     }
   }
@@ -268,31 +267,6 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           </div>
         )}
       </label>
-
-      <button
-        onClick={() => onDemo()}
-        style={{
-          zIndex: 1,
-          background: "transparent",
-          border: "none",
-          color: "var(--text-mute)",
-          fontSize: 12.5,
-          cursor: "pointer",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        ou{" "}
-        <span
-          style={{
-            color: "var(--accent)",
-            textDecoration: "underline",
-            textUnderlineOffset: 2,
-          }}
-        >
-          ver demonstração
-        </span>{" "}
-        com dados de exemplo
-      </button>
     </div>
   );
 };

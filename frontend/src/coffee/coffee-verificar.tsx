@@ -17,7 +17,6 @@ export interface TriageHandoff {
   onMarkDuplicate: (id: string) => void;
   onSendToCoffee: (ids: string[], sourceId?: string) => void;
   onUpload: (file: File) => Promise<void>;
-  onDemo: (name?: string) => void;
   onReset: () => void;
 }
 
@@ -25,7 +24,7 @@ export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JS
   if (triage.screen === "upload") {
     return (
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <UploadScreen theme={triage.resolvedTheme} onDemo={triage.onDemo} onUpload={triage.onUpload} />
+        <UploadScreen theme={triage.resolvedTheme} onUpload={triage.onUpload} />
       </div>
     );
   }

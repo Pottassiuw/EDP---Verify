@@ -43,15 +43,14 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
               <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-mute)", background: "var(--bg-2)",
                     padding: "5px 10px", borderRadius: 6, border: "1px solid var(--line)" }}>{triage.file}</span>
-              <span title={triage.source === "api" ? "Conectado ao backend" : "Dados de demonstração (offline)"}
+              <span title="Conectado ao backend"
                     style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5,
                              fontFamily: "var(--font-mono)", letterSpacing: ".06em", textTransform: "uppercase",
                              padding: "4px 9px", borderRadius: 999,
-                             color: triage.source === "api" ? "var(--green)" : "var(--amber)",
-                             background: triage.source === "api" ? "var(--tint-green)" : "var(--tint-amber)",
-                             border: "1px solid " + (triage.source === "api" ? "rgba(0,168,89,.3)" : "rgba(240,169,59,.3)") }}>
+                             color: "var(--green)", background: "var(--tint-green)",
+                             border: "1px solid rgba(0,168,89,.3)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
-                {triage.source === "api" ? "API" : "Demo"}
+                API
               </span>
               <Button variant="ghost" size="sm" title="Nova planilha" onClick={triage.onReset}>↑ Nova</Button>
             </div>
