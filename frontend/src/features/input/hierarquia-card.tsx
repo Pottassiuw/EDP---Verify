@@ -78,16 +78,16 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
     <Card>
       <CardHeader>
         <span className="edp-eyebrow">Hierarquia manual</span>
-        <CardTitle className="edp-title" style={{ fontSize: 15 }}>Vincular nota-mãe</CardTitle>
+        <CardTitle className="edp-title text-[15px]">Vincular nota-mãe</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 14 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="flex gap-[10px] items-end mb-[14px]">
+          <div className="flex flex-col gap-[4px]">
             <Label htmlFor="hier-nota-mae">Nota Mãe</Label>
             <Input id="hier-nota-mae" value={maeInput} placeholder="ex: 100123456"
                    onChange={(e) => setMaeInput(e.target.value)}
                    onKeyDown={(e) => { if (e.key === 'Enter') void buscar(); }}
-                   style={{ width: 180 }} />
+                   className="w-[180px]" />
           </div>
           <Button size="sm" variant="outline" disabled={buscando || !maeInput.trim()}
                   onClick={() => void buscar()}>
@@ -96,25 +96,25 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
         </div>
 
         {hierarquia && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="flex flex-col gap-[10px]">
             {hierarquia.filhas.length > 0 && (
-              <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0 }}>
+              <p className="text-[12.5px] text-text-dim m-[0px]">
                 Filhas atuais: {hierarquia.filhas.map((f) => f.Numero_Nota).join(', ')}
               </p>
             )}
             {candidatas.length > 0 ? (
               <React.Fragment>
-                <span style={{ fontSize: 12.5 }}>
+                <span className="text-[12.5px]">
                   {candidatas.length} candidata(s) — mesmo conjunto, órfãs:
                 </span>
-                <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="max-h-[200px] overflow-y-auto flex flex-col gap-[4px]">
                   {candidatas.map((r) => (
                     <label key={r.Numero_Nota}
-                           style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, cursor: 'pointer' }}>
+                           className="flex gap-[8px] items-center text-[12.5px] cursor-pointer">
                       <input type="checkbox" checked={filhasSelecionadas.has(r.Numero_Nota)}
                              onChange={() => toggleFilha(r.Numero_Nota)} />
                       <span className="edp-mono">{r.Numero_Nota}</span>
-                      <span style={{ color: 'var(--text-dim)' }}>
+                      <span className="text-text-dim">
                         {String(r['Status_Nota'] ?? '-')} · {String(r['Conjunto'] ?? '-')}
                       </span>
                     </label>
@@ -128,7 +128,7 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
                 </div>
               </React.Fragment>
             ) : (
-              <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0 }}>
+              <p className="text-[12.5px] text-text-dim m-[0px]">
                 Nenhuma nota órfã candidata no mesmo conjunto.
               </p>
             )}

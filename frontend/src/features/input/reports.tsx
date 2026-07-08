@@ -46,7 +46,7 @@ function Rosca({ fatias }: { fatias: FatiaRosca[] }): React.JSX.Element {
   const R = 70; const C = 2 * Math.PI * R;
   let acumulado = 0;
   return (
-    <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="flex gap-[18px] items-center flex-wrap">
       <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Distribuição por status de prazo">
         {fatias.map((f) => {
           const frac = f.qtd / total;
@@ -58,11 +58,11 @@ function Rosca({ fatias }: { fatias: FatiaRosca[] }): React.JSX.Element {
           );
         })}
       </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+      <div className="flex flex-col gap-[4px] text-[12px]">
         {fatias.map((f) => (
           <span key={f.rotulo}>
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2,
-                           background: f.cor, marginRight: 6 }} />
+            <span className="inline-block w-[10px] h-[10px] rounded-[2px] mr-[6px]"
+                  style={{ background: f.cor }} />
             {f.rotulo}: <strong className="edp-mono">{f.qtd}</strong>
           </span>
         ))}
@@ -139,9 +139,9 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
 
   function multi(rotulo: string, opcoes: string[], valores: string[], setValores: (v: string[]) => void): React.JSX.Element {
     return (
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
+      <label className="flex flex-col gap-[3px] text-[12px]">
         <span className="edp-eyebrow">{rotulo}</span>
-        <select multiple size={4} value={valores} className="edp-field" style={{ minWidth: 180 }}
+        <select multiple size={4} value={valores} className="edp-field min-w-[180px]"
                 onChange={(e) => setValores([...e.target.selectedOptions].map((o) => o.value))}>
           {opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -162,7 +162,7 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
           </Button>
         }
       />
-      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div className="flex gap-[14px] flex-wrap items-start">
         <SegTabs tabs={FILTROS_RAPIDOS.map((f) => ({ id: f, rotulo: f }))}
                  value={rapido} onChange={setRapido} ariaLabel="Filtro rápido de auditoria" />
         {multi('Ano Encerramento (SAP)', anosDisponiveis, fAnos, setFAnos)}
@@ -170,7 +170,7 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
         {multi('Regional', valoresUnicos(dados.registros, 'Regional'), fRegional, setFRegional)}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div className="flex gap-[10px] flex-wrap">
         {kpis.map((k) => (
           <StatTile key={k.rotulo} label={k.rotulo} value={k.valor.toLocaleString('pt-BR')} />
         ))}

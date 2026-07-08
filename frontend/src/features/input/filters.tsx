@@ -51,30 +51,14 @@ export function Filters({
     setEstado({ ...estado, filtros });
   }
 
-  const estiloPainel: React.CSSProperties = {
-    border: "1px solid var(--line)",
-    borderRadius: 8,
-    padding: 12,
-    background: "var(--surface)",
-    marginTop: 8,
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
+    <div className="flex flex-col gap-[4px]">
+      <div className="flex gap-[8px] items-center flex-wrap">
         <input
           value={estado.busca}
           placeholder="Buscar notas: 12345, 54321; 678"
           onChange={(e) => setEstado({ ...estado, busca: e.target.value })}
-          className="edp-field"
-          style={{ width: 260 }}
+          className="edp-field w-[260px]"
         />
         <Button variant="outline" size="sm" onClick={() => setAberto(!aberto)}>
           🔎 Filtros avançados
@@ -89,11 +73,11 @@ export function Filters({
       </div>
 
       {aberto && (
-        <div style={estiloPainel}>
+        <div className="border border-line rounded-[8px] p-[12px] bg-surface mt-[8px]">
           <select
             value=""
             aria-label="Adicionar campo de filtro"
-            className="edp-field"
+            className="edp-field mb-[10px]"
             onChange={(e) => {
               if (!e.target.value) return;
               setEstado({
@@ -104,7 +88,6 @@ export function Filters({
                 ],
               });
             }}
-            style={{ marginBottom: 10 }}
           >
             <option value="">+ Adicionar campo de filtro…</option>
             {camposDisponiveis.map((c) => (
@@ -116,20 +99,9 @@ export function Filters({
           {estado.filtros.map((f, i) => (
             <div
               key={f.campo}
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-                marginBottom: 8,
-              }}
+              className="flex gap-[8px] items-center mb-[8px]"
             >
-              <span
-                style={{
-                  minWidth: 160,
-                  fontSize: 12,
-                  color: "var(--text-dim)",
-                }}
-              >
+              <span className="min-w-[160px] text-[12px] text-text-dim">
                 {ROTULOS[f.campo] ?? f.campo}
               </span>
               {f.tipo === "texto" && (
@@ -150,8 +122,7 @@ export function Filters({
                     placeholder="mín"
                     value={f.min ?? ""}
                     aria-label={`Mínimo: ${ROTULOS[f.campo] ?? f.campo}`}
-                    className="edp-field"
-                    style={{ width: 90 }}
+                    className="edp-field w-[90px]"
                     onChange={(e) =>
                       atualizarFiltro(i, {
                         min:
@@ -166,8 +137,7 @@ export function Filters({
                     placeholder="máx"
                     value={f.max ?? ""}
                     aria-label={`Máximo: ${ROTULOS[f.campo] ?? f.campo}`}
-                    className="edp-field"
-                    style={{ width: 90 }}
+                    className="edp-field w-[90px]"
                     onChange={(e) =>
                       atualizarFiltro(i, {
                         max:
@@ -185,8 +155,7 @@ export function Filters({
                   value={f.valores ?? []}
                   size={4}
                   aria-label={`Valores de ${ROTULOS[f.campo] ?? f.campo}`}
-                  className="edp-field"
-                  style={{ minWidth: 220 }}
+                  className="edp-field min-w-[220px]"
                   onChange={(e) =>
                     atualizarFiltro(i, {
                       valores: [...e.target.selectedOptions].map(
@@ -215,7 +184,7 @@ export function Filters({
             </div>
           ))}
           {estado.filtros.length === 0 && (
-            <div style={{ fontSize: 12, color: "var(--text-mute)" }}>
+            <div className="text-[12px] text-text-mute">
               Nenhum filtro ativo.
             </div>
           )}

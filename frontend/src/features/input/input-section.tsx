@@ -41,26 +41,26 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
   return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ flexShrink: 0, background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
-        <div style={{ padding: '13px 22px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="shrink-0 bg-surface border-b-[1px] border-b-line">
+        <div className="pt-[13px] px-[22px] pb-[11px] flex flex-col gap-[2px]">
           <span className="edp-eyebrow">Módulo Input</span>
-          <strong className="edp-title" style={{ fontSize: 16 }}>Gestão de Notas</strong>
+          <strong className="edp-title text-[16px]">Gestão de Notas</strong>
         </div>
-        <div style={{ padding: '0 22px', borderTop: '1px solid var(--line)' }}>
+        <div className="py-[0px] px-[22px] border-t-[1px] border-t-line">
           <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
         </div>
       </div>
 
       {desatualizado && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '8px 18px',
-                      background: 'var(--tint-amber)', borderBottom: '1px solid rgba(240,169,59,.3)', fontSize: 13 }}>
-          <span style={{ flex: 1 }}>Os dados foram atualizados por outro usuário.</span>
+        <div className="shrink-0 flex items-center gap-[12px] py-[8px] px-[18px] bg-tint-amber text-[13px]"
+             style={{ borderBottom: '1px solid rgba(240,169,59,.3)' }}>
+          <span className="flex-1">Os dados foram atualizados por outro usuário.</span>
           <Button variant="outline" size="sm" onClick={() => { limpar(); void recarregar(); }}>Recarregar dados</Button>
         </div>
       )}
       {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
-        <div style={{ padding: '8px 18px', background: 'var(--tint-amber)', fontSize: 13 }}>
+        <div className="py-[8px] px-[18px] bg-tint-amber text-[13px]">
           Importação inicial pendente: a rede da EDP estava indisponível.{' '}
           <Button variant="outline" size="sm" onClick={() => { void (async () => {
             const { InputApi } = await import('./api');
@@ -70,14 +70,14 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       )}
       {basesAusentes.length > 0 && (
-        <div style={{ padding: '6px 18px', fontSize: 12, color: 'var(--amber)' }}>
+        <div className="py-[6px] px-[18px] text-[12px] text-amber">
           {basesAusentes.length} de {dados!.meta.bases.length} bases da rede indisponíveis — indicadores parciais.
         </div>
       )}
 
-      {isLoading && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Carregando notas…</div>}
+      {isLoading && <div className="p-[24px] text-text-dim">Carregando notas…</div>}
       {error != null && (
-        <div style={{ padding: 24, color: 'var(--red, #dc3545)' }}>
+        <div className="p-[24px]" style={{ color: 'var(--red, #dc3545)' }}>
           Backend indisponível. O módulo Input exige o backend rodando (porta 8000). Detalhe: {String((error as Error).message)}
         </div>
       )}
