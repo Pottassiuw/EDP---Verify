@@ -2,7 +2,7 @@ import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS } from './coffee-log-table';
 import { SegTabs } from '@/components/branded/section';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface LogDrawerProps {
   notaPk: number;
@@ -24,6 +24,10 @@ export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <SheetContent side="right" className="w-[360px] sm:max-w-[360px] gap-0 p-0">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Logs — Nota #{notaPk}</SheetTitle>
+        </SheetHeader>
+
         {/* header */}
         <div className="h-[48px] shrink-0 flex items-center py-0 pl-[16px] pr-[40px] border-b border-b-line gap-[8px]">
           <span className="flex-1 font-bold text-[14px]">
