@@ -50,6 +50,10 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
     asc: boolean;
   } | null>(null);
   const [editando, setEditando] = React.useState<CelulaEditando | null>(null);
+  const selectOpenedRef = React.useRef(false);
+  React.useEffect(() => {
+    selectOpenedRef.current = false;
+  }, [editando]);
 
   const ordenados = React.useMemo(() => {
     if (!ordem) return registros;
@@ -139,9 +143,17 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             <Select
               defaultValue={String(v ?? "")}
               onValueChange={confirmar}
-              onOpenChange={(open) => { if (!open) setEditando(null); }}
+              onOpenChange={(open) => {
+                if (open) { selectOpenedRef.current = true; }
+                else if (selectOpenedRef.current) { setEditando(null); }
+              }}
             >
-              <SelectTrigger autoFocus aria-label={`Editar ${c.label}`} className="edp-field w-full h-[28px] text-[12.5px]">
+              <SelectTrigger
+                autoFocus
+                aria-label={`Editar ${c.label}`}
+                className="edp-field w-full h-[28px] text-[12.5px]"
+                onBlur={() => { if (!selectOpenedRef.current) setEditando(null); }}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
