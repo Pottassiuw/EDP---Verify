@@ -257,32 +257,6 @@
 }
 .edp-mono { font-family: var(--font-mono); }
 
-.edp-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 10.5px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 3px 8px; border-radius: 5px;
-  white-space: nowrap;
-}
-.edp-tag.ok  { background: var(--tint-green); color: var(--green); }
-.edp-tag.err { background: var(--tint-red);   color: var(--red); }
-.edp-tag.done{ background: var(--tint-indigo); color: var(--indigo); }
-.edp-tag.dup { background: var(--indigo); color: #fff; }
-.edp-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-.edp-prio {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 26px; height: 26px; padding: 0 7px;
-  border-radius: 7px;
-  font-family: var(--font-mono); font-size: 13px; font-weight: 600;
-  border: 1px solid transparent;
-}
-.edp-prio.high { background: var(--tint-red);   color: var(--red);   border-color: rgba(240,85,92,0.3); }
-.edp-prio.med  { background: var(--tint-amber); color: var(--amber); border-color: rgba(240,169,59,0.32); }
-.edp-prio.low  { background: var(--tint-green); color: var(--green); border-color: rgba(0,168,89,0.3); }
-.edp-prio.none { background: var(--surface-2);  color: var(--text-mute); border-color: var(--line); }
-
 .edp-rule {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11.5px; font-weight: 500;

@@ -6,6 +6,7 @@ import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';
 
@@ -229,11 +230,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       <Coffee size={14} />
                     </button>
                   )}
-                  {isDup ? <span className="edp-tag dup"><span className="edp-dot" />Dup.</span>
-                    : done ? <span className="edp-tag done"><span className="edp-dot" />OK</span>
+                  {isDup ? <Badge variant="tagDup"><span className="w-[6px] h-[6px] rounded-full bg-current" />Dup.</Badge>
+                    : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>
                     : n.errors.length ? <span className="edp-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
-                    : <span className="edp-tag ok"><span className="edp-dot" />OK</span>}
+                    : <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>}
                 </div>
               );
             })}
@@ -355,7 +356,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
                 </div>
               ))}
             </div>
-          ) : !hasDup ? <span className="edp-tag ok"><span className="edp-dot" />Conforme — nenhuma falha, pronta para o SAP</span>
+          ) : !hasDup ? <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />Conforme — nenhuma falha, pronta para o SAP</Badge>
             : <div className="text-[12.5px] text-text-dim">Sem outras falhas além da duplicata.</div>}
         </section>
         <section>

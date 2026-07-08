@@ -1,4 +1,5 @@
 import React from "react";
+import { Badge } from "@/components/ui/badge";
 import type { FieldProps, NoteStatus } from "../../types";
 
 export const LOGO_DARK =
@@ -6,16 +7,30 @@ export const LOGO_DARK =
 export const LOGO_LIGHT =
   "/assets/RGB/Light/Regular/POS/EDP_Group_MasterLogo_RRGB_Light_POS.png";
 
-function prioMeta(p: number): [string, string | number] {
+const PRIO_BORDER: Record<string, string> = {
+  high: "rgba(240,85,92,0.3)",
+  med: "rgba(240,169,59,0.32)",
+  low: "rgba(0,168,89,0.3)",
+};
+
+function prioMeta(p: number): ["high" | "med" | "low" | "none", string | number] {
   if (p >= 99) return ["none", "—"];
   if (p <= 2) return ["high", p];
   if (p <= 4) return ["med", p];
   return ["low", p];
 }
 
+const PRIO_VARIANT = {
+  high: "prioHigh", med: "prioMed", low: "prioLow", none: "prioNone",
+} as const;
+
 export const PriorityChip: React.FC<{ p: number }> = ({ p }) => {
   const [cls, label] = prioMeta(p);
-  return <span className={"edp-prio " + cls}>{label}</span>;
+  return (
+    <Badge variant={PRIO_VARIANT[cls]} style={cls === "none" ? undefined : { borderColor: PRIO_BORDER[cls] }}>
+      {label}
+    </Badge>
+  );
 };
 
 export const StatusTag: React.FC<{
@@ -25,28 +40,28 @@ export const StatusTag: React.FC<{
 }> = ({ status, done, dup }) => {
   if (dup)
     return (
-      <span className="edp-tag dup">
-        <span className="edp-dot" />
+      <Badge variant="tagDup">
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
         Duplicata
-      </span>
+      </Badge>
     );
   if (done)
     return (
-      <span className="edp-tag done">
-        <span className="edp-dot" />
+      <Badge variant="tagDone">
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
         Concluída
-      </span>
+      </Badge>
     );
   return status === "ok" ? (
-    <span className="edp-tag ok">
-      <span className="edp-dot" />
+    <Badge variant="tagOk">
+      <span className="w-[6px] h-[6px] rounded-full bg-current" />
       Conforme
-    </span>
+    </Badge>
   ) : (
-    <span className="edp-tag err">
-      <span className="edp-dot" />
+    <Badge variant="tagErr">
+      <span className="w-[6px] h-[6px] rounded-full bg-current" />
       Com erro
-    </span>
+    </Badge>
   );
 };
 
