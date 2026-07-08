@@ -1037,10 +1037,10 @@ cd frontend && npx shadcn@latest add dialog
 - [ ] **Step 2: Add the `Dialog`/`DialogContent` import**
 
 ```tsx
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 ```
 
-Add it grouped with the file's other `@/components/ui/*` imports.
+Add it grouped with the file's other `@/components/ui/*` imports. `DialogHeader`/`DialogTitle` are needed for Step 4's accessible-name fix (Radix's `Dialog.Content` requires a `Dialog.Title` in the tree, or it emits a console warning and screen readers get no accessible name for the panel — see the codebase's existing `sr-only` pattern at `frontend/src/components/ui/sidebar.tsx:198-201`, already applied to `LogDrawer` in Task 1).
 
 - [ ] **Step 3: Remove the manual Escape-key `useEffect` and the `if (!open) return null;` guard**
 
@@ -1069,7 +1069,12 @@ to:
         aria-label="Gerar ou consultar notas"
         className="w-[760px] max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>Gerar ou consultar notas</DialogTitle>
+        </DialogHeader>
 ```
+
+`DialogHeader`/`DialogTitle` above are visually hidden (`sr-only`) — they exist only to give Radix's `Dialog.Content` the accessible name it requires; the visible header row (`<div className="flex items-center gap-[8px]">...`, unchanged, immediately follows this block) keeps its own styling untouched.
 
 And change the closing tags at the very end of the returned JSX from:
 ```tsx
