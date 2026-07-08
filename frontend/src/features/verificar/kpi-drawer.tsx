@@ -40,7 +40,8 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
                 className="flex items-center gap-[8px] py-[10px] px-[16px] text-[14px] fixed right-[18px] bottom-[18px] z-[40]
                          border-0 rounded-[999px] cursor-pointer
                          bg-[var(--accent)] text-white [font-family:var(--font-display)]
-                         font-extrabold shadow-[0_4px_14px_rgba(0,0,0,.35)]">
+                         font-extrabold"
+                style={{ boxShadow: "0 4px 14px rgba(0,0,0,.35)" }}>
           <span className="text-[15px] leading-none">⊞</span>{safePct}%
         </button>
       )}
@@ -50,8 +51,9 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
           <aside role="dialog" aria-modal="true" aria-label="Indicadores"
                  className="bg-surface flex flex-col py-[16px] px-[18px] gap-[12px] fixed top-0 right-0 bottom-0 w-[320px] z-[42]
                           border-l-[2px] border-l-[var(--accent)]
-                          shadow-[-8px_0_24px_rgba(0,0,0,.3)] [animation:kpi-slide-in_.2s_ease-out]
-                          overflow-y-auto">
+                          [animation:kpi-slide-in_.2s_ease-out]
+                          overflow-y-auto"
+                 style={{ boxShadow: "-8px 0 24px rgba(0,0,0,.3)" }}>
             <div className="flex items-center justify-between">
               <span className="edp-eyebrow">Indicadores</span>
               <button ref={closeRef} onClick={() => setOpen(false)} title="Fechar" aria-label="Fechar indicadores"

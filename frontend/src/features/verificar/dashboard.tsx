@@ -166,7 +166,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             {chips.map((c, i) => (
               <button key={i} className="fchip" onClick={c.clear}>{c.k}<span className="text-[14px] leading-none">×</span></button>
             ))}
-            <button className="fchip text-red bg-tint-red border-[rgba(240,85,92,.3)]"
+            <button className="fchip text-red bg-tint-red" style={{ borderColor: "rgba(240,85,92,.3)" }}
                     onClick={clearAll}>Limpar tudo</button>
           </div>
         )}
@@ -186,7 +186,6 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           )}
           {!queueCollapsed && (<React.Fragment>
           <div className="flex items-center justify-between py-[9px] px-[15px] bg-bg-2 border-b-[1px] border-b-line">
-
             <div className="flex items-center gap-[9px]">
               <Button variant="ghost" size="icon-sm" title="Recolher fila" aria-label="Recolher fila"
                       onClick={toggleQueue}>«</Button>
@@ -349,7 +348,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
           {otherErrors.length ? (
             <div className="flex flex-col gap-[8px]">
               {otherErrors.map((e) => (
-                <div key={e.rule} className="bg-tint-red rounded-edp-sm py-[11px] px-[14px] border border-[rgba(240,85,92,0.25)] border-l-[3px] border-l-red">
+                <div key={e.rule} className="bg-tint-red rounded-edp-sm py-[11px] px-[14px]" style={{ border: "1px solid rgba(240,85,92,0.25)", borderLeft: "3px solid var(--red)" }}>
                   <div className="edp-mono text-[10.5px] text-red tracking-[.08em]">{e.rule}</div>
                   <div className="text-[14px] font-semibold mt-[2px]">{e.rule_name}</div>
                   <div className="text-[12.5px] text-text-dim mt-[2px]">Valor: {e.value}</div>
@@ -367,7 +366,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             ))}
           </div>
           {sel.latitude && sel.longitude && (
-            <Button asChild variant="outline" size="sm" className="text-blue mt-[12px] border-[rgba(31,159,214,0.4)]">
+            <Button asChild variant="outline" size="sm" className="text-blue mt-[12px]" style={{ borderColor: "rgba(31,159,214,0.4)" }}>
               <a target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}><MapPin /> Abrir no Google Maps</a>
             </Button>
           )}

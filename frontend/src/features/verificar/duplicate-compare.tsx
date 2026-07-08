@@ -85,7 +85,7 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
         <div className="flex gap-[8px] shrink-0 flex-wrap">
           <Button size="sm" onClick={() => api.openCoffee(allIds)}><Coffee /> Abrir todas no COFFEE</Button>
           {onSendToCoffee && (
-            <Button variant="outline" size="sm" className="text-amber border-[rgba(240,169,59,.4)]"
+            <Button variant="outline" size="sm" className="text-amber" style={{ borderColor: "rgba(240,169,59,.4)" }}
                     onClick={() => onSendToCoffee(allIds, note.id)} title="Adiciona as candidatas à fila do COFFEE e navega para lá">
               → Fila COFFEE
             </Button>
@@ -119,14 +119,14 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                     {strong ? "●" : "◐"} {matches}/{DUPC_KEYS.length} campos-chave
                   </span>
                 ) : (
-                  <span className="dupc-badge text-amber bg-tint-amber [border:1px_solid_rgba(240,169,59,.3)]">
+                  <span className="dupc-badge text-amber bg-tint-amber" style={{ border: "1px solid rgba(240,169,59,.3)" }}>
                     ⧉ Externo
                   </span>
                 )}
               </div>
               <div className="flex gap-[8px] shrink-0">
                 {c.latitude && c.longitude && (
-                  <Button asChild variant="outline" size="sm" className="text-blue border-[rgba(31,159,214,0.4)]">
+                  <Button asChild variant="outline" size="sm" className="text-blue" style={{ borderColor: "rgba(31,159,214,0.4)" }}>
                     <a target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}>◎ Mapa</a>
                   </Button>
                 )}

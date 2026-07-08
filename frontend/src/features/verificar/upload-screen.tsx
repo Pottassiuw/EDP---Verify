@@ -55,7 +55,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
       className="flex-1 flex flex-col items-center justify-center gap-[34px] overflow-hidden bg-bg p-[32px] relative"
     >
       <div
-        className="absolute w-[720px] h-[720px] rounded-[50%] pointer-events-none bg-[radial-gradient(circle,rgba(107,92,230,0.14),rgba(31,159,214,0.08)_38%,transparent_66%)]"
+        className="absolute w-[720px] h-[720px] rounded-[50%] pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(107,92,230,0.14), rgba(31,159,214,0.08) 38%, transparent 66%)",
+        }}
       />
 
       <div
@@ -163,7 +167,8 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         )}
         {err && (
           <div
-            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px] mt-[18px] text-left border border-[rgba(240,169,59,0.35)] leading-normal"
+            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px] mt-[18px] text-left border leading-normal"
+            style={{ borderColor: "rgba(240,169,59,0.35)" }}
           >
             {err}
           </div>
