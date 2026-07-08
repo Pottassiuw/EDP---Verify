@@ -2,6 +2,7 @@ import React from 'react';
 import type { Note } from '../../types';
 import { EDPApi } from '../../api';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { StatTile, Banner } from '@/components/branded/section';
 import { Plus, Coffee, Check, Copy, Trash2, X } from 'lucide-react';
 
@@ -13,8 +14,6 @@ const COFFEE_STYLE = `
   .coffee-input input{flex:1;min-width:0;height:40px;font-size:15px;font-family:var(--font-mono);
     letter-spacing:.02em}
   .coffee-fb{font-size:12px;color:var(--text-mute);min-height:16px}
-  .coffee-bar{height:6px;border-radius:999px;background:var(--surface-3);overflow:hidden}
-  .coffee-bar>div{height:100%;background:var(--green);border-radius:999px;transition:width .2s ease}
   .coffee-stepper{display:inline-flex;align-items:center;border:1px solid var(--line-2);
     border-radius:var(--r-sm);overflow:hidden}
   .coffee-stepper button{width:30px;height:30px;border:0;background:var(--surface-2);
@@ -156,9 +155,11 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
             <StatTile label="Abertas" value={opened.size} />
             <StatTile label="Restantes" value={remaining.length} />
             <div className="flex-1 min-w-[220px] flex flex-col justify-center gap-[8px]">
-              <div className="coffee-bar">
-                <div style={{ width: (ids.length ? (opened.size / ids.length) * 100 : 0) + "%" }} />
-              </div>
+              <Progress
+                value={ids.length ? (opened.size / ids.length) * 100 : 0}
+                className="h-[6px] rounded-[999px] bg-surface-3"
+                indicatorClassName="bg-green rounded-[999px]"
+              />
               <div className="flex gap-[8px] items-center">
                 <span className="edp-mono text-[11.5px] text-text-mute flex-1">
                   {opened.size} de {ids.length} abertas</span>
