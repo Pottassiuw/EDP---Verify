@@ -18,9 +18,10 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
    executor, local, tipo, SAP, setor, prioridade) e detecta duplicatas.
 2. **Correção ou fila COFFEE** — notas com erro corrigível ficam
    disponíveis para correção manual na tela; ao marcar uma nota "a
-   gerar", ela entra na fila do COFFEE com `origem` vazia (o
-   `POST /marcar-gerar` do backend grava `origem='verificar'`, ver
-   `backend/coffee_module/routes.py:171`).
+   gerar", o `POST /marcar-gerar` grava `origem='verificar'`
+   (`backend/coffee_module/routes.py:171`). `classify.classificar`
+   trata qualquer `origem` diferente de `'avulsa'` (incluindo
+   `'verificar'` ou `None`) como `corrigida` ao sair de `pendente`.
 3. **Pendente** — a nota aparece no hub COFFEE
    ([`02-frontend-coffee.md`](02-frontend-coffee.md)) com
    `classificacao='pendente'` (`id_sap == SAP_PENDENTE`, isto é
@@ -87,13 +88,16 @@ dados na tela estão obsoletos.
 
 ## Pontos de atenção
 
-- **Nenhum mecanismo central de polling.** Cada feature (upload,
-  geração em lote, busca em lote, logs ao vivo, staleness do Input)
-  implementa seu próprio `setInterval`/`setTimeout` isolado, com
-  valores diferentes escolhidos independentemente. Não há um hook ou
-  utilitário compartilhado — mudar a estratégia de polling (por
-  exemplo trocar por WebSocket) exigiria tocar em cinco arquivos
-  distintos.
+- **Nenhum mecanismo central de polling.** Cada feature com polling
+  real contra o servidor (geração em lote, busca em lote, logs ao
+  vivo, staleness do Input) implementa seu próprio
+  `setInterval`/`setTimeout` isolado, com valores diferentes
+  escolhidos independentemente. Não há um hook ou utilitário
+  compartilhado — mudar a estratégia de polling (por exemplo trocar
+  por WebSocket) exigiria tocar em quatro arquivos distintos
+  (`coffee-gerar-modal.tsx`, `coffee-pendentes.tsx`,
+  `coffee-logs.tsx`, `use-input-data.ts`; o timer de 220ms do upload
+  não conta, é só feedback visual client-side, ver tabela acima).
 - **Retry com limite fixo, sem backoff.** O polling de geração em lote
   (`coffee-gerar-modal.tsx:162-166`) desiste após 10 falhas
   consecutivas, mas sempre no mesmo intervalo de 600ms — não há
