@@ -52,41 +52,27 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
 
   return (
     <div
-      className="flex-1 flex flex-col items-center justify-center gap-[34px] overflow-hidden bg-bg"
-      style={{
-        padding: 32,
-        position: "relative",
-      }}
+      className="flex-1 flex flex-col items-center justify-center gap-[34px] overflow-hidden bg-bg p-[32px] relative"
     >
       <div
-        style={{
-          position: "absolute",
-          width: 720,
-          height: 720,
-          borderRadius: "50%",
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle, rgba(107,92,230,0.14), rgba(31,159,214,0.08) 38%, transparent 66%)",
-        }}
+        className="absolute w-[720px] h-[720px] rounded-[50%] pointer-events-none bg-[radial-gradient(circle,rgba(107,92,230,0.14),rgba(31,159,214,0.08)_38%,transparent_66%)]"
       />
 
       <div
-        className="flex flex-col items-center gap-[14px]"
-        style={{ zIndex: 1 }}
+        className="flex flex-col items-center gap-[14px] z-[1]"
       >
         <img
           src={theme === "light" ? LOGO_LIGHT : LOGO_DARK}
           alt="EDP"
-          style={{ height: 44, width: "auto" }}
+          className="h-[44px] w-auto"
         />
-        <div style={{ textAlign: "center" }}>
+        <div className="text-center">
           <div
-            className="font-semibold text-[26px] tracking-display"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="font-semibold text-[26px] tracking-display [font-family:var(--font-display)]"
           >
             To De Olho 👀
           </div>
-          <div className="edp-eyebrow" style={{ marginTop: 4 }}>
+          <div className="edp-eyebrow mt-[4px]">
             Verificação de notas SAP
           </div>
         </div>
@@ -99,17 +85,10 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         }}
         onDragLeave={() => setDrag(false)}
         onDrop={onDrop}
-        className="bg-surface rounded-edp-lg py-[44px] px-[40px]"
+        className="bg-surface rounded-edp-lg py-[44px] px-[40px] relative z-[1] w-full max-w-[480px] cursor-pointer text-center [transition:all_.16s_ease]"
         style={{
-          position: "relative",
-          zIndex: 1,
-          width: "100%",
-          maxWidth: 480,
-          cursor: "pointer",
           border: "1px solid " + (drag ? "var(--accent)" : "var(--line-2)"),
           boxShadow: drag ? "0 0 0 4px var(--accent-tint)" : "var(--shadow)",
-          textAlign: "center",
-          transition: "all .16s ease",
         }}
       >
         <input
@@ -117,20 +96,15 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           type="file"
           accept=".xlsx,.xls,.csv"
           onChange={onFile}
-          style={{ display: "none" }}
+          className="hidden"
         />
         {corners.map(({ v, h }) => (
           <span
             key={v}
+            className="absolute w-[18px] h-[18px] border-solid border-[var(--accent)] border-0"
             style={{
-              position: "absolute",
               [v]: -1,
               [h]: -1,
-              width: 18,
-              height: 18,
-              borderStyle: "solid",
-              borderColor: "var(--accent)",
-              borderWidth: 0,
               borderTopWidth: v === "top" ? 2 : 0,
               borderBottomWidth: v === "bottom" ? 2 : 0,
               borderLeftWidth: h === "left" ? 2 : 0,
@@ -140,36 +114,21 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         ))}
 
         <div
-          className="flex items-center justify-center text-[26px]"
-          style={{
-            width: 60,
-            height: 60,
-            margin: "0 auto 18px",
-            borderRadius: 16,
-            background: "var(--accent-tint)",
-            border: "1px solid var(--accent)",
-            color: "var(--accent)",
-          }}
+          className="flex items-center justify-center text-[26px] w-[60px] h-[60px] mt-0 mx-auto mb-[18px] rounded-[16px] bg-accent-tint border border-[var(--accent)] text-[var(--accent)]"
         >
           <img
             src={LOGO_EXCEL}
             alt="EDP"
-            style={{ height: 44, width: "auto" }}
+            className="h-[44px] w-auto"
           />
         </div>
         <h2
-          className="font-semibold text-[19px]"
-          style={{
-            fontFamily: "var(--font-display)",
-            margin: "0 0 6px",
-            letterSpacing: "-0.01em",
-          }}
+          className="font-semibold text-[19px] [font-family:var(--font-display)] mt-0 mx-0 mb-[6px] tracking-[-0.01em]"
         >
           Importar planilha
         </h2>
         <p
-          className="text-text-dim text-[13.5px]"
-          style={{ margin: "0 0 20px" }}
+          className="text-text-dim text-[13.5px] mt-0 mx-0 mb-[20px]"
         >
           Arraste o arquivo aqui ou clique para selecionar
         </p>
@@ -178,14 +137,12 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         </Button>
 
         <div
-          className="flex gap-[8px] justify-center"
-          style={{ marginTop: 20 }}
+          className="flex gap-[8px] justify-center mt-[20px]"
         >
           {[".xlsx", ".xls", ".csv"].map((f) => (
             <span
               key={f}
-              className="edp-mono text-[11px] text-text-mute py-[3px] px-[10px] border border-line-2 bg-bg-2"
-              style={{ borderRadius: 5 }}
+              className="edp-mono text-[11px] text-text-mute py-[3px] px-[10px] border border-line-2 bg-bg-2 rounded-[5px]"
             >
               {f}
             </span>
@@ -194,33 +151,19 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
 
         {loading && (
           <div
-            className="bg-bg-2 overflow-hidden"
-            style={{
-              marginTop: 22,
-              height: 3,
-              borderRadius: 3,
-            }}
+            className="bg-bg-2 overflow-hidden mt-[22px] h-[3px] rounded-[3px]"
           >
             <div
+              className="h-full bg-[linear-gradient(90deg,var(--accent),var(--accent-2))] [transition:width_.35s_ease]"
               style={{
                 width: pct + "%",
-                height: "100%",
-                background:
-                  "linear-gradient(90deg,var(--accent),var(--accent-2))",
-                transition: "width .35s ease",
               }}
             />
           </div>
         )}
         {err && (
           <div
-            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px]"
-            style={{
-              marginTop: 18,
-              textAlign: "left",
-              border: "1px solid rgba(240,169,59,0.35)",
-              lineHeight: 1.5,
-            }}
+            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px] mt-[18px] text-left border border-[rgba(240,169,59,0.35)] leading-normal"
           >
             {err}
           </div>

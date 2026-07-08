@@ -37,48 +37,45 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
       <style>{`@keyframes kpi-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
       {!open && (
         <button ref={fabRef} onClick={() => setOpen(true)} title="Indicadores" aria-label="Abrir indicadores"
-                className="flex items-center gap-[8px] py-[10px] px-[16px] text-[14px]"
-                style={{ position: "fixed", right: 18, bottom: 18, zIndex: 40,
-                         border: 0, borderRadius: 999, cursor: "pointer",
-                         background: "var(--accent)", color: "#fff", fontFamily: "var(--font-display)",
-                         fontWeight: 800, boxShadow: "0 4px 14px rgba(0,0,0,.35)" }}>
-          <span className="text-[15px]" style={{ lineHeight: 1 }}>⊞</span>{safePct}%
+                className="flex items-center gap-[8px] py-[10px] px-[16px] text-[14px] fixed right-[18px] bottom-[18px] z-[40]
+                         border-0 rounded-[999px] cursor-pointer
+                         bg-[var(--accent)] text-white [font-family:var(--font-display)]
+                         font-extrabold shadow-[0_4px_14px_rgba(0,0,0,.35)]">
+          <span className="text-[15px] leading-none">⊞</span>{safePct}%
         </button>
       )}
       {open && (
         <React.Fragment>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 41 }} />
+          <div onClick={() => setOpen(false)} className="fixed inset-0 z-[41]" />
           <aside role="dialog" aria-modal="true" aria-label="Indicadores"
-                 className="bg-surface flex flex-col py-[16px] px-[18px] gap-[12px]"
-                 style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 320, zIndex: 42,
-                          borderLeft: "2px solid var(--accent)",
-                          boxShadow: "-8px 0 24px rgba(0,0,0,.3)", animation: "kpi-slide-in .2s ease-out",
-                          overflowY: "auto" }}>
+                 className="bg-surface flex flex-col py-[16px] px-[18px] gap-[12px] fixed top-0 right-0 bottom-0 w-[320px] z-[42]
+                          border-l-[2px] border-l-[var(--accent)]
+                          shadow-[-8px_0_24px_rgba(0,0,0,.3)] [animation:kpi-slide-in_.2s_ease-out]
+                          overflow-y-auto">
             <div className="flex items-center justify-between">
               <span className="edp-eyebrow">Indicadores</span>
               <button ref={closeRef} onClick={() => setOpen(false)} title="Fechar" aria-label="Fechar indicadores"
-                      className="text-[18px] text-text-mute py-[2px] px-[6px]"
-                      style={{ all: "unset", cursor: "pointer", lineHeight: 1 }}>×</button>
+                      className="text-[18px] text-text-mute py-[2px] px-[6px] [all:unset] cursor-pointer leading-none">×</button>
             </div>
             <div className="bg-surface-2 rounded-edp-sm py-[12px] px-[14px]">
               <div className="edp-eyebrow">Conformidade</div>
-              <div className="text-[30px]" style={{ fontFamily: "var(--font-display)", fontWeight: 800, lineHeight: 1.2, color: "var(--accent)" }}>{safePct}%</div>
-              <div className="bg-surface-3 overflow-hidden" style={{ height: 6, borderRadius: 999, margin: "8px 0 6px" }}>
-                <div style={{ width: safePct + "%", height: "100%", background: "var(--accent)", borderRadius: 999 }} />
+              <div className="text-[30px] [font-family:var(--font-display)] font-extrabold leading-[1.2] text-[var(--accent)]">{safePct}%</div>
+              <div className="bg-surface-3 overflow-hidden h-[6px] rounded-[999px] mt-[8px] mx-0 mb-[6px]">
+                <div style={{ width: safePct + "%" }} className="h-full bg-[var(--accent)] rounded-[999px]" />
               </div>
               <span className="edp-mono text-[12px] text-text-dim">{cOk}/{cTotal} prontas para o SAP</span>
             </div>
             {rows.map(([lbl, val, c]) => (
               <div key={lbl} className="flex items-center justify-between bg-surface-2 rounded-edp-sm py-[10px] px-[14px]">
                 <span className="edp-eyebrow">{lbl}</span>
-                <span className="text-[18px]" style={{ fontFamily: "var(--font-display)", fontWeight: 800, lineHeight: 1, color: "var(--" + c + ")" }}>{val}</span>
+                <span className="text-[18px] [font-family:var(--font-display)] font-extrabold leading-none" style={{ color: "var(--" + c + ")" }}>{val}</span>
               </div>
             ))}
             {selectedNotes.length > 0 && (
               <div className="bg-surface-2 rounded-edp-sm py-[10px] px-[14px]">
-                <div className="edp-eyebrow" style={{ marginBottom: 8 }}>
+                <div className="edp-eyebrow mb-[8px]">
                   Notas Selecionadas · {selectedNotes.length}</div>
-                <div className="flex flex-col gap-[6px] overflow-auto" style={{ maxHeight: 220 }}>
+                <div className="flex flex-col gap-[6px] overflow-auto max-h-[220px]">
                   {selectedNotes.map((n) => (
                     <div key={n.id} className="flex items-center gap-[8px]">
                       <span className="edp-mono text-[12px] font-semibold">{n.id}</span>
@@ -86,8 +83,7 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
                         {n.tipo_nota} · {n.uf}/{n.setor}</span>
                       {onRemoveSelected && (
                         <span role="button" aria-label={"Remover " + n.id} onClick={() => onRemoveSelected(n.id)}
-                              className="text-text-mute text-[14px] py-[0px] px-[4px]"
-                              style={{ cursor: "pointer", lineHeight: 1 }}>×</span>
+                              className="text-text-mute text-[14px] py-[0px] px-[4px] cursor-pointer leading-none">×</span>
                       )}
                     </div>
                   ))}

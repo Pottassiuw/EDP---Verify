@@ -73,19 +73,19 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
   return (
     <section>
       <style>{DUPC_STYLE}</style>
-      <div className="flex items-start justify-between gap-[14px] flex-wrap" style={{ marginBottom: 12 }}>
+      <div className="flex items-start justify-between gap-[14px] flex-wrap mb-[12px]">
         <div>
           <div className="edp-eyebrow text-indigo">
             ⚠ Possível duplicata · {cands.length} {cands.length === 1 ? "candidata" : "candidatas"}
           </div>
-          <div className="text-[12.5px] text-text-dim" style={{ marginTop: 5, maxWidth: 440 }}>
+          <div className="text-[12.5px] text-text-dim mt-[5px] max-w-[440px]">
             Compare cada candidata com a nota aberta e confirme direto no COFFEE antes de marcar.
           </div>
         </div>
         <div className="flex gap-[8px] shrink-0 flex-wrap">
           <Button size="sm" onClick={() => api.openCoffee(allIds)}><Coffee /> Abrir todas no COFFEE</Button>
           {onSendToCoffee && (
-            <Button variant="outline" size="sm" className="text-amber" style={{ borderColor: "rgba(240,169,59,.4)" }}
+            <Button variant="outline" size="sm" className="text-amber border-[rgba(240,169,59,.4)]"
                     onClick={() => onSendToCoffee(allIds, note.id)} title="Adiciona as candidatas à fila do COFFEE e navega para lá">
               → Fila COFFEE
             </Button>
@@ -119,16 +119,14 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                     {strong ? "●" : "◐"} {matches}/{DUPC_KEYS.length} campos-chave
                   </span>
                 ) : (
-                  <span className="dupc-badge text-amber bg-tint-amber" style={{
-                    border: "1px solid rgba(240,169,59,.3)",
-                  }}>
+                  <span className="dupc-badge text-amber bg-tint-amber [border:1px_solid_rgba(240,169,59,.3)]">
                     ⧉ Externo
                   </span>
                 )}
               </div>
               <div className="flex gap-[8px] shrink-0">
                 {c.latitude && c.longitude && (
-                  <Button asChild variant="outline" size="sm" className="text-blue" style={{ borderColor: "rgba(31,159,214,0.4)" }}>
+                  <Button asChild variant="outline" size="sm" className="text-blue border-[rgba(31,159,214,0.4)]">
                     <a target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}>◎ Mapa</a>
                   </Button>
                 )}
@@ -153,7 +151,7 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
             ) : (
               <div className="py-[14px] px-[16px]">
                 <div className="dupc-ext">
-                  <span className="text-[16px] shrink-0" style={{ lineHeight: 1 }}>⧉</span>
+                  <span className="text-[16px] shrink-0 leading-none">⧉</span>
                   <div>
                     <strong className="text-text">Nota fora desta planilha</strong><br />
                     Verifique os campos direto no COFFEE. A comparação automática ficará disponível
