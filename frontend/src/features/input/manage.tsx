@@ -163,7 +163,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   }
 
   return (
-    <div className="ui-reset edp-page">
+    <div className="edp-page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo de edição" />
         <div style={{ flex: 1 }} />

@@ -33,7 +33,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
   }
 
   return (
-    <div className="ui-reset edp-page">
+    <div className="edp-page">
       {msg && <div className="edp-banner ok">{msg}</div>}
 
       <Cartao titulo="Seu nome (log de auditoria)">

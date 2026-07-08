@@ -166,7 +166,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const comSelecao = modo === 'lote' || modo === 'exclusao';
 
   return (
-    <div className="ui-reset edp-page">
+    <div className="edp-page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo do ramal" />
       </div>

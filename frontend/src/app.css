@@ -1,8 +1,8 @@
-/* Tailwind v4 — só theme + utilities (SEM preflight nesta fase).
-   O preflight/reset volta na Fase 4, quando todas as telas estiverem migradas. */
+/* Tailwind v4 — theme + preflight + utilities. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -42,6 +42,36 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-mute: var(--text-mute);
+  --color-green: var(--green);
+  --color-green-2: var(--green-2);
+  --color-blue: var(--blue);
+  --color-indigo: var(--indigo);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --color-accent-2: var(--accent-2);
+  --color-accent-tint: var(--accent-tint);
+  --color-tint-green: var(--tint-green);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-indigo: var(--tint-indigo);
+  --color-tint-amber: var(--tint-amber);
+  --color-tint-red: var(--tint-red);
+  --radius-edp-sm: var(--r-sm);
+  --radius-edp: var(--r);
+  --radius-edp-md: var(--r-md);
+  --radius-edp-lg: var(--r-lg);
+  --tracking-display: var(--tracking-display);
+  --tracking-tight: var(--tracking-tight);
+  --tracking-label: var(--tracking-label);
 }
 
 
@@ -216,6 +246,7 @@
 .edp ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
 .edp ::-webkit-scrollbar-track { background: transparent; }
 
+@layer components {
 .edp-eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -333,65 +364,9 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
 .edp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .edp-table tbody tr:last-child td { border-bottom: 0; }
 .edp-table tbody tr:nth-child(even) td { background: var(--zebra); }
-
-
-
-/* ============================================================
-   Reset "preflight-lite" escopado para superfícies shadcn
-   (preflight global ainda OFF — ver topo deste arquivo).
-
-   CRÍTICO: este reset vai na layer `base`. Este arquivo declara
-   `@layer theme, base, components, utilities`, então `base` PERDE
-   para `utilities` — onde vivem todas as classes do Tailwind/shadcn
-   (px-3, border, p-2...). É exatamente o que o preflight do próprio
-   Tailwind faz: reseta os defaults do navegador (bullets, aparência
-   nativa, border-style) mas deixa as utilities vencerem.
-
-   Se este bloco ficasse SEM layer, o CSS unlayered venceria as
-   utilities (regra do cascade: unlayered > layered, independente de
-   especificidade) e zeraria padding/bordas dos componentes.
-
-   Escopos:
-     [data-sidebar="sidebar"]  → subtree da sidebar (desktop+mobile)
-     .ui-reset                 → páginas já migradas (opt-in)
-   ============================================================ */
-@layer base {
-  /* App fullscreen: sem o preflight global, o <body> mantém a margin
-     padrão de 8px do navegador. Isso desalinha a sidebar (position:fixed,
-     relativa à viewport, em x=0) do conteúdo em fluxo (.edp/gap/inset,
-     empurrado 8px), expondo uma faixa do sidebar-gap na borda direita.
-     Zerar a margin do documento alinha tudo e elimina a faixa. */
-  html, body { margin: 0; padding: 0; }
-
-  /* border-width:0 + style:solid reativa as utilities de borda do shadcn
-     (sem preflight, border-style padrão é `none` e nada renderiza). */
-  :where([data-sidebar="sidebar"], .ui-reset) *,
-  :where([data-sidebar="sidebar"], .ui-reset) ::before,
-  :where([data-sidebar="sidebar"], .ui-reset) ::after {
-    box-sizing: border-box;
-    border-width: 0;
-    border-style: solid;
-    border-color: var(--border, currentColor);
-  }
-  :where([data-sidebar="sidebar"], .ui-reset) :where(ul, ol) {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  :where([data-sidebar="sidebar"], .ui-reset) :where(li) {
-    margin: 0;
-  }
-  :where([data-sidebar="sidebar"], .ui-reset) :where(button) {
-    appearance: none;
-    -webkit-appearance: none;
-    background: transparent;
-    margin: 0;
-    padding: 0;
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-  }
 }
+
+
 
 /* O container fixo da sidebar (shadcn) tem uma `border-r` que renderiza como
    uma linha escura na fronteira sidebar↔conteúdo (confirmado por geometria:

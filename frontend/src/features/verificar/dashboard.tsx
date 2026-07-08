@@ -188,7 +188,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             </button>
           )}
           {!queueCollapsed && (<React.Fragment>
-          <div className="ui-reset" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
                         borderBottom: "1px solid var(--line)", background: "var(--bg-2)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <Button variant="ghost" size="icon-sm" title="Recolher fila" aria-label="Recolher fila"
@@ -249,7 +249,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             const allOpen = ids.every((id) => !completed.has(id));
             const doAction = (action: "done" | "reopen"): void => { onMarkMany(ids, action); setSelBatch(new Set()); };
             return (
-              <div className="ui-reset" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
+              <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
                             background: "var(--bg-2)", borderTop: "1px solid var(--line-2)", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
                   <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
@@ -334,7 +334,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
           <div className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 5 }}>
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
-        <div className="ui-reset" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <Button size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>
             <Coffee /> COFFEE
           </Button>
