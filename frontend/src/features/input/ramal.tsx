@@ -173,7 +173,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
 
       {isLoading && <div className="p-[24px] text-text-dim">Carregando notas ramal…</div>}
       {error != null && (
-        <div className="p-[24px]" style={{ color: 'var(--red, #dc3545)' }}>
+        <div className="p-[24px] text-red">
           Erro ao carregar ramal: {String((error as Error).message)}
         </div>
       )}

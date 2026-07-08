@@ -77,7 +77,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
 
       {isLoading && <div className="p-[24px] text-text-dim">Carregando notas…</div>}
       {error != null && (
-        <div className="p-[24px]" style={{ color: 'var(--red, #dc3545)' }}>
+        <div className="p-[24px] text-red">
           Backend indisponível. O módulo Input exige o backend rodando (porta 8000). Detalhe: {String((error as Error).message)}
         </div>
       )}
