@@ -124,15 +124,15 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
       <div className="coffee-wrap">
         <div>
           <h1 className="edp-title">Abrir notas no COFFEE</h1>
-          <p className="edp-sub" style={{ marginTop: 4 }}>
+          <p className="edp-sub mt-[4px]">
             Monte uma lista de notas e abra no COFFEE — todas de uma vez, em blocos ou uma a uma.</p>
         </div>
 
         {coffeeReturn && (
           <Banner tipo="err">
-            <span style={{ flex: 1, minWidth: 0 }}>
+            <span className="flex-1 min-w-0">
               Você estava na <strong className="edp-mono">Nota {coffeeReturn.noteId}</strong>
-              {coffeeReturn.noteRef ? <span style={{ color: "var(--text-dim)" }}> · {coffeeReturn.noteRef}</span> : null}
+              {coffeeReturn.noteRef ? <span className="text-text-dim"> · {coffeeReturn.noteRef}</span> : null}
             </span>
             <Button size="sm" onClick={onBackToTriagem}>Voltar à triagem</Button>
             <Button variant="ghost" size="icon-xs" title="Dispensar" aria-label="Dispensar" onClick={onClearReturn}>
@@ -141,7 +141,7 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
           </Banner>
         )}
 
-        <div className="edp-panel" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="edp-panel flex flex-col gap-[14px]">
           <div className="coffee-input">
             <input className="edp-field" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown}
                    inputMode="numeric" placeholder="Digite ou cole IDs e tecle Enter…" aria-label="ID da nota" />
@@ -151,16 +151,16 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
           </div>
           <div className="coffee-fb">{feedback}</div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
+          <div className="flex gap-[10px] flex-wrap items-stretch">
             <StatTile label="Na lista" value={ids.length} />
             <StatTile label="Abertas" value={opened.size} />
             <StatTile label="Restantes" value={remaining.length} />
-            <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+            <div className="flex-1 min-w-[220px] flex flex-col justify-center gap-[8px]">
               <div className="coffee-bar">
                 <div style={{ width: (ids.length ? (opened.size / ids.length) * 100 : 0) + "%" }} />
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span className="edp-mono" style={{ fontSize: 11.5, color: "var(--text-mute)", flex: 1 }}>
+              <div className="flex gap-[8px] items-center">
+                <span className="edp-mono text-[11.5px] text-text-mute flex-1">
                   {opened.size} de {ids.length} abertas</span>
                 <Button variant="ghost" size="sm" disabled={!ids.length} onClick={() => void copyIds()}>
                   <Copy /> Copiar IDs
@@ -173,12 +173,11 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
-                        borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+          <div className="flex gap-[12px] items-center flex-wrap border-t border-t-line pt-[14px]">
             <Button disabled={!remaining.length} onClick={() => openList(sortIdsDesc(remaining))}>
               <Coffee /> Abrir todas ({remaining.length})
             </Button>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div className="flex gap-[8px] items-center">
               <Button variant="outline" size="sm" disabled={!proximas.length} onClick={() => openList(proximas)}>
                 Abrir próximas {proximas.length}
               </Button>
@@ -189,7 +188,7 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
                 <button aria-label="Aumentar bloco" onClick={() => setBlockClamped(block + 1)}>+</button>
               </div>
             </div>
-            <span style={{ fontSize: 11, color: "var(--text-mute)" }}>
+            <span className="text-[11px] text-text-mute">
               Abre em ordem decrescente, uma aba por nota. Agrupar abas exige extensão de navegador.</span>
           </div>
         </div>
@@ -206,8 +205,8 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
               return (
                 <div key={id} className={"coffee-row" + (isOpen ? " opened" : "")}>
                   {isOpen
-                    ? <Check size={14} style={{ color: "var(--green)", flexShrink: 0 }} aria-label="Aberta" />
-                    : <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
+                    ? <Check size={14} className="text-green shrink-0" aria-label="Aberta" />
+                    : <span aria-hidden className="w-[8px] h-[8px] rounded-[50%] bg-[var(--accent)] shrink-0" />}
                   <span className="id">{id}</span>
                   <span className="tn">{n ? n.tipo_nota + " · " + n.referencia : "—"}</span>
                   <Button asChild variant="outline" size="sm">

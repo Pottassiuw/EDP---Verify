@@ -62,8 +62,8 @@ export function CoffeeGeradas(): React.JSX.Element {
 
   if (error) {
     return (
-      <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
-        <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
+      <div className="p-[24px] flex flex-col items-center gap-[12px] text-text-mute">
+        <span className="text-red">Erro ao carregar notas: {error}</span>
         <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
@@ -72,22 +72,21 @@ export function CoffeeGeradas(): React.JSX.Element {
   const cfg = pending ? modalConfig[pending.kind] : null;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Cabeçalho: ação principal */}
-      <div style={{ flexShrink: 0, padding: "16px 22px", display: "flex", alignItems: "center", gap: 12,
-                    borderBottom: "1px solid var(--line)" }}>
-        <span className="edp-title" style={{ fontSize: 16 }}>Gerar Notas</span>
-        <div style={{ flex: 1 }} />
+      <div className="shrink-0 py-[16px] px-[22px] flex items-center gap-[12px] border-b border-b-line">
+        <span className="edp-title text-[16px]">Gerar Notas</span>
+        <div className="flex-1" />
         <Button size="sm" onClick={() => abrirModal(undefined)}>
           Gerar / Consultar notas
         </Button>
       </div>
 
       {/* Zona: A gerar */}
-      <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
-        <span className="edp-title" style={{ fontSize: 14 }}>A gerar</span>
+      <div className="shrink-0 pt-[14px] px-[22px] pb-0 flex items-center gap-[12px]">
+        <span className="edp-title text-[14px]">A gerar</span>
         {!aGerar.isLoading && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+          <span className="edp-mono text-[12px] text-text-mute">
             {aGerar.notas.length} nota{aGerar.notas.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -104,12 +103,12 @@ export function CoffeeGeradas(): React.JSX.Element {
           isLoading={aGerar.isLoading}
           emptyMessage="Nenhuma nota marcada para gerar."
           actionColumn={(nota) => (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div className="flex items-center gap-[6px]">
               <AbrirCoffeeBtn pk={nota.pk} />
               <Button variant="ghost" size="icon-sm"
                       onClick={() => setPending({ kind: "remover", pk: nota.pk })}
                       aria-label={`Remover nota ${nota.pk} da fila`} title="Remover da fila"
-                      style={{ color: "var(--red)" }}>
+                      className="text-red">
                 <ListX />
               </Button>
               <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
@@ -119,10 +118,10 @@ export function CoffeeGeradas(): React.JSX.Element {
       )}
 
       {/* Zona: Geradas */}
-      <div style={{ flexShrink: 0, padding: "14px 22px 0", display: "flex", alignItems: "center", gap: 12 }}>
-        <span className="edp-title" style={{ fontSize: 14 }}>Notas Geradas</span>
+      <div className="shrink-0 pt-[14px] px-[22px] pb-0 flex items-center gap-[12px]">
+        <span className="edp-title text-[14px]">Notas Geradas</span>
         {!isLoading && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+          <span className="edp-mono text-[12px] text-text-mute">
             {notas.length} nota{notas.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -134,12 +133,12 @@ export function CoffeeGeradas(): React.JSX.Element {
           ? "Nenhuma nota gerada ainda. As notas acima estao aguardando geracao."
           : "Nenhuma nota gerada encontrada. Use o botao acima ou marque notas na Verificar."}
         actionColumn={(nota) => (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="flex items-center gap-[6px]">
             <AbrirCoffeeBtn pk={nota.pk} />
             <Button variant="ghost" size="icon-sm"
                     onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
                     aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
-                    style={{ color: "var(--red)" }}>
+                    className="text-red">
               <Archive />
             </Button>
             <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />

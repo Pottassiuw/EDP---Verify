@@ -61,55 +61,54 @@ export function CoffeeLogs(): React.JSX.Element {
   }, [aoVivo, refresh]);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, padding: "14px 22px 10px", display: "flex", alignItems: "center",
-                    gap: 14, flexWrap: "wrap" }}>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="shrink-0 pt-[14px] px-[22px] pb-[10px] flex items-center gap-[14px] flex-wrap">
         <SegTabs tabs={PASSOS.map((p) => ({ id: p.value, rotulo: p.label }))}
                  value={passo} onChange={setPasso} ariaLabel="Filtrar por passo" />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Nota:</label>
-          <input type="number" placeholder="PK" value={notaPk} className="edp-field edp-mono"
-                 onChange={(e) => setNotaPk(e.target.value)}
-                 style={{ width: 90, height: 30, fontSize: 12 }} />
+        <div className="flex items-center gap-[6px]">
+          <label className="text-[12px] text-text-dim">Nota:</label>
+          <input type="number" placeholder="PK" value={notaPk} className="edp-field edp-mono w-[90px] h-[30px] text-[12px]"
+                 onChange={(e) => setNotaPk(e.target.value)} />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Usuario:</label>
+        <div className="flex items-center gap-[6px]">
+          <label className="text-[12px] text-text-dim">Usuario:</label>
           <select value={usuario} onChange={(e) => setUsuario(e.target.value)}
-                  className="edp-field edp-mono" style={{ height: 30, fontSize: 12 }}>
+                  className="edp-field edp-mono h-[30px] text-[12px]">
             <option value="">Todos</option>
             {usuarios.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Limite:</label>
+        <div className="flex items-center gap-[6px]">
+          <label className="text-[12px] text-text-dim">Limite:</label>
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}
-                  className="edp-field" style={{ height: 30, fontSize: 12 }}>
+                  className="edp-field h-[30px] text-[12px]">
             {LIMITES.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 12, color: "var(--text-dim)" }}>Período:</label>
+        <div className="flex items-center gap-[6px]">
+          <label className="text-[12px] text-text-dim">Período:</label>
           <select value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}
-                  className="edp-field" style={{ height: 30, fontSize: 12 }}>
+                  className="edp-field h-[30px] text-[12px]">
             {PERIODOS.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
           </select>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="flex items-center gap-[8px]">
           <Switch id="logs-ao-vivo" checked={aoVivo} onCheckedChange={setAoVivo} />
-          <label htmlFor="logs-ao-vivo" style={{ fontSize: 12, color: aoVivo ? "var(--green)" : "var(--text-mute)", cursor: "pointer" }}>
+          <label htmlFor="logs-ao-vivo" className="text-[12px] cursor-pointer"
+                 style={{ color: aoVivo ? "var(--green)" : "var(--text-mute)" }}>
             Ao vivo
           </label>
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, padding: "0 22px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+      <div className="shrink-0 pt-0 px-[22px] pb-[12px] flex flex-col gap-[6px]">
         <span className="edp-eyebrow">No período carregado</span>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="flex gap-[10px] flex-wrap">
           <StatTile label="Ações" value={agruparLogs(logs).length} />
           <StatTile label="Falhas" value={logs.filter((l) => !l.sucesso).length} />
           <StatTile label="Notas tocadas" value={new Set(logs.map((l) => l.nota_pk).filter((p) => p !== null)).size} />

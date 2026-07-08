@@ -28,31 +28,30 @@ export function CoffeeCorrigidas(): React.JSX.Element {
 
   if (error) {
     return (
-      <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
-        <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
+      <div className="p-[24px] flex flex-col items-center gap-[12px] text-text-mute">
+        <span className="text-red">Erro ao carregar notas: {error}</span>
         <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span className="edp-title" style={{ fontSize: 16 }}>Notas Corrigidas</span>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="shrink-0 py-[14px] px-[22px] flex items-center gap-[12px] flex-wrap">
+        <span className="edp-title text-[16px]">Notas Corrigidas</span>
         {!isLoading && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+          <span className="edp-mono text-[12px] text-text-mute">
             {filtradas.length}{busca.trim() ? ` de ${notas.length}` : ""} nota{filtradas.length !== 1 ? "s" : ""}
           </span>
         )}
-        <div style={{ flex: 1 }} />
-        <input className="edp-field edp-mono" value={busca} placeholder="Buscar ID ou SAP…"
-               style={{ width: 180, height: 30, fontSize: 12 }}
+        <div className="flex-1" />
+        <input className="edp-field edp-mono w-[180px] h-[30px] text-[12px]" value={busca} placeholder="Buscar ID ou SAP…"
                onChange={(e) => setBusca(e.target.value)} />
         <Button variant="outline" size="sm" disabled={filtradas.length === 0} onClick={() => void copiarIds()}>
           <Copy /> Copiar IDs
         </Button>
       </div>
-      <div style={{ flexShrink: 0, padding: "0 22px 10px", fontSize: 12, color: "var(--text-dim)" }}>
+      <div className="shrink-0 pt-0 px-[22px] pb-[10px] text-[12px] text-text-dim">
         Notas que transitaram de pendente para SAP real. Na próxima busca, passam para Geradas.
       </div>
       <CoffeeNotasTable

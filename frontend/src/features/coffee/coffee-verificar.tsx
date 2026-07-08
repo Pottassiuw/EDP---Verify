@@ -23,13 +23,13 @@ export interface TriageHandoff {
 export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JSX.Element {
   if (triage.screen === "upload") {
     return (
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <UploadScreen theme={triage.resolvedTheme} onUpload={triage.onUpload} />
       </div>
     );
   }
   return (
-    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       <Dashboard showKpis={triage.showKpis} notes={triage.notes} completed={triage.completed}
                  dupResolved={triage.dupResolved}
                  onToggleComplete={triage.onToggleComplete} onMarkMany={triage.onMarkMany}

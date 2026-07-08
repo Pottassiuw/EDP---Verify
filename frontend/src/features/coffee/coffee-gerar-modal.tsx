@@ -213,35 +213,32 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   return (
     <>
       <div onClick={gerando.rodando ? undefined : onClose}
-           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }} />
+           className="fixed inset-0 z-[300]" style={{ background: "rgba(0,0,0,0.4)" }} />
       <div role="dialog" aria-modal="true" aria-label="Gerar ou consultar notas"
-           style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-                    width: 760, maxWidth: "94vw", maxHeight: "88vh", background: "var(--surface)",
-                    border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
-                    display: "flex", flexDirection: "column", gap: 12, padding: 20,
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="edp-title" style={{ fontSize: 17, flex: 1 }}>Gerar / Consultar notas</span>
+           className="fixed top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[760px] max-w-[94vw]
+                      max-h-[88vh] bg-surface border border-line rounded-[12px] z-[301]
+                      flex flex-col gap-[12px] p-[20px]"
+           style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+        <div className="flex items-center gap-[8px]">
+          <span className="edp-title text-[17px] flex-1">Gerar / Consultar notas</span>
           <Button variant="ghost" size="icon-sm" onClick={onClose} disabled={gerando.rodando}
                   aria-label="Fechar" title="Fechar (Esc)">
             <X />
           </Button>
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="flex gap-[8px]">
           <input value={input} onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => { if (e.key === "Enter") adicionar(); }}
                  placeholder="Cole ids (espaço, vírgula ou linha)"
                  aria-label="IDs das notas para consultar"
                  disabled={gerando.rodando}
-                 className="edp-field edp-mono"
-                 style={{ flex: 1, fontSize: 13 }} />
+                 className="edp-field edp-mono flex-1 text-[13px]" />
           <Button variant="outline" size="sm" onClick={adicionar} disabled={!input.trim() || gerando.rodando}
-                  style={{ fontWeight: 600 }}>Adicionar</Button>
+                  className="font-semibold">Adicionar</Button>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflow: "auto", border: "1px solid var(--line)",
-                      borderRadius: 8 }}>
+        <div className="flex-1 min-h-0 overflow-auto border border-line rounded-[8px]">
           <table className="edp-table">
             <thead>
               <tr>
@@ -254,23 +251,23 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={5} style={{ color: "var(--text-mute)", textAlign: "center", padding: 24 }}>
+                <tr><td colSpan={5} className="text-text-mute text-center p-[24px]">
                   Adicione ids para consultar.
                 </td></tr>
               )}
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td><span className="edp-mono" style={{ fontWeight: 600 }}>{r.pk ?? r.id}</span></td>
+                  <td><span className="edp-mono font-semibold">{r.pk ?? r.id}</span></td>
                   <td>
                     {r.estado === "consultando" ? "…"
-                     : r.estado === "erro" ? <span style={{ color: "var(--red)" }}>erro</span>
+                     : r.estado === "erro" ? <span className="text-red">erro</span>
                      : <span className="edp-mono">{r.idSap ?? "—"}</span>}
                   </td>
                   <td>
                     {r.editando ? (
                       <input value={r.localEditado ?? ""} autoFocus
                              aria-label={`Local de instalação da nota ${r.pk ?? r.id}`}
-                             className="edp-field edp-mono"
+                             className="edp-field edp-mono w-[150px] h-[26px] text-[12px]"
                              onChange={(e) => {
                                const m = maskLocal(e.target.value);
                                setRows((rs) => rs.map((x) => x.id === r.id ? { ...x, localEditado: m } : x));
@@ -278,25 +275,24 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                              onKeyDown={(e) => {
                                if (e.key === "Enter") salvarLocal(r);
                                if (e.key === "Escape") cancelarEdicao(r.id);
-                             }}
-                             style={{ width: 150, height: 26, fontSize: 12 }} />
+                             }} />
                     ) : r.estado === "ok" ? (
                       <span className="edp-mono">{r.localAtual ? maskLocal(r.localAtual) : "—"}</span>
                     ) : (
-                      <span style={{ color: "var(--text-mute)" }}>{r.estado === "consultando" ? "…" : "—"}</span>
+                      <span className="text-text-mute">{r.estado === "consultando" ? "…" : "—"}</span>
                     )}
                   </td>
                   <td>
                     {r.estado === "erro"
-                      ? <span style={{ color: "var(--red)", fontSize: 11 }}>{r.erro}</span>
+                      ? <span className="text-red text-[11px]">{r.erro}</span>
                       : r.classificacao
-                        ? <span style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)", fontWeight: 600 }}>
+                        ? <span className="font-semibold" style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)" }}>
                             {r.arquivado ? "arquivada" : r.classificacao}
                           </span>
                         : null}
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                    <div className="flex gap-[4px] items-center">
                       {r.estado === "ok" && !r.editando && (
                         <Button variant="ghost" size="icon-xs" onClick={() => iniciarEdicao(r)}
                                 aria-label={`Alterar local de instalação da nota ${r.pk ?? r.id}`}
@@ -311,7 +307,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                                   onClick={() => salvarLocal(r)}
                                   aria-label="Salvar local de instalação"
                                   title="Salvar"
-                                  style={{ color: "var(--accent)" }}>
+                                  className="text-[var(--accent)]">
                             <Check />
                           </Button>
                           <Button variant="ghost" size="icon-xs" disabled={r.salvandoLocal}
@@ -325,7 +321,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                         <Button variant="ghost" size="icon-xs" onClick={() => removerLinha(r.id)}
                                 aria-label={`Remover nota ${r.pk ?? r.id} da lista`}
                                 title="Remover da lista"
-                                style={{ color: "var(--red)" }}>
+                                className="text-red">
                           <Trash2 />
                         </Button>
                       )}
@@ -338,15 +334,15 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
         </div>
 
         {gerando.rodando && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+          <span className="edp-mono text-[12px] text-text-mute">
             Gerando {gerando.feitas}/{gerando.total}…
           </span>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="flex items-center gap-[8px]">
           <Button variant="ghost" size="sm" onClick={limpar}
                   disabled={rows.length === 0 || gerando.rodando}>Limpar lista</Button>
-          <div style={{ flex: 1 }} />
+          <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={reconsultarTodas}
                   disabled={rows.length === 0 || gerando.rodando}>
             <RefreshCw /> Reconsultar

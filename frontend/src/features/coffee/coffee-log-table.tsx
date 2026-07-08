@@ -135,7 +135,7 @@ function StructuredDetails({ detalhes }: { detalhes: Record<string, unknown> | n
   const entries = Object.entries(detalhes).filter(([, v]) => v !== null && v !== undefined);
   if (entries.length === 0) return null;
   return (
-    <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+    <div className="mt-[6px] flex flex-col gap-[2px]">
       {entries.map(([k, v]) => (
         <div key={k} className="clog-detail-row">
           <span className="clog-detail-key">{DETAIL_LABELS[k] ?? k}:</span>
@@ -176,8 +176,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
 
   if (loading) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--text-mute)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+      <div className="flex-1 flex items-center justify-center text-text-mute font-mono text-[13px]">
         Carregando logs...
       </div>
     );
@@ -187,8 +186,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
 
   if (grupos.length === 0) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--text-mute)", fontSize: 13, textAlign: "center", padding: 32 }}>
+      <div className="flex-1 flex items-center justify-center text-text-mute text-[13px] text-center p-[32px]">
         Nenhum log encontrado.
       </div>
     );
@@ -202,9 +200,9 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
 
       {notaRoot !== undefined && (
         <div className="clog-root">
-          <span style={{ fontSize: 14 }}>Nota <span className="edp-mono">#{notaRoot}</span></span>
+          <span className="text-[14px]">Nota <span className="edp-mono">#{notaRoot}</span></span>
           {classe && (
-            <span className="clog-tag" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+            <span className="clog-tag bg-surface-2 text-text">
               {classe}
             </span>
           )}
@@ -220,20 +218,21 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
               <div className={`clog-dot ${g.cabecalho.sucesso ? "ok" : "fail"}`} />
               <div className="clog-card" style={{ cursor: g.cabecalho.detalhes ? "pointer" : undefined }}
                    onClick={() => { if (g.cabecalho.detalhes) toggle(g.cabecalho.id); }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span className="edp-mono" style={{ fontSize: compact ? 10.5 : 11.5, color: "var(--text-mute)" }}
+                <div className="flex items-center gap-[8px] flex-wrap">
+                  <span className="edp-mono text-text-mute" style={{ fontSize: compact ? 10.5 : 11.5 }}
                         title={g.cabecalho.timestamp}>
                     {formatRelativeTime(g.cabecalho.timestamp)}
                   </span>
                   <span className={`clog-tag ${TIPO_CLASS[g.cabecalho.tipo] ?? ""}`}>
                     {TIPO_LABEL[g.cabecalho.tipo] ?? g.cabecalho.tipo}
                   </span>
-                  <span style={{ fontWeight: 600, fontSize: compact ? 12 : 13 }}>{g.cabecalho.acao}</span>
+                  <span className="font-semibold" style={{ fontSize: compact ? 12 : 13 }}>{g.cabecalho.acao}</span>
                   {g.cabecalho.nota_pk !== null && (
-                    <span className="edp-mono" style={{ fontSize: 12, fontWeight: 600,
-                      cursor: onClickNota ? "pointer" : undefined,
-                      color: onClickNota ? "var(--accent)" : "var(--text)",
-                      textDecoration: onClickNota ? "underline" : undefined }}
+                    <span className="edp-mono text-[12px] font-semibold"
+                      style={{
+                        cursor: onClickNota ? "pointer" : undefined,
+                        color: onClickNota ? "var(--accent)" : "var(--text)",
+                        textDecoration: onClickNota ? "underline" : undefined }}
                       onClick={(e) => { if (onClickNota && g.cabecalho.nota_pk !== null) { e.stopPropagation(); onClickNota(g.cabecalho.nota_pk); } }}>
                       #{g.cabecalho.nota_pk}
                     </span>
@@ -246,15 +245,15 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
                     </span>
                   )}
                   {g.cabecalho.usuario && (
-                    <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                    <span className="edp-mono text-[11px] text-text-dim">
                       {g.cabecalho.usuario}
                     </span>
                   )}
                   {!g.cabecalho.sucesso && (
-                    <span style={{ color: "var(--red)", fontSize: 11, fontWeight: 600 }}>FALHA</span>
+                    <span className="text-red text-[11px] font-semibold">FALHA</span>
                   )}
                   {g.cabecalho.detalhes && (
-                    <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-mute)" }}>
+                    <span className="ml-auto text-[10px] text-text-mute">
                       {expanded.has(g.cabecalho.id) ? "▲" : "▼"}
                     </span>
                   )}
@@ -264,23 +263,23 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "", nota
             </div>
 
             {visiveis.map((f, i, arr) => (
-              <div key={f.id} className="clog-filho" style={{ paddingLeft: 30, cursor: f.detalhes ? "pointer" : undefined }}
+              <div key={f.id} className="clog-filho pl-[30px]" style={{ cursor: f.detalhes ? "pointer" : undefined }}
                    onClick={() => { if (f.detalhes) toggle(f.id); }}>
                 <span className="clog-conector edp-mono">{i === arr.length - 1 ? "└──" : "├──"}</span>
                 <span className={`clog-tag ${TIPO_CLASS[f.tipo] ?? ""}`}>{TIPO_LABEL[f.tipo] ?? f.tipo}</span>
-                <span className="edp-mono" style={{ fontWeight: 600 }}>{f.acao}</span>
+                <span className="edp-mono font-semibold">{f.acao}</span>
                 {f.nota_pk !== null && (
-                  <span className="edp-mono" style={{ color: "var(--text-mute)" }}>#{f.nota_pk}</span>
+                  <span className="edp-mono text-text-mute">#{f.nota_pk}</span>
                 )}
-                <span className="edp-mono" style={{ color: "var(--text-mute)" }}>{resumoFilho(f)}</span>
-                {!f.sucesso && <span style={{ color: "var(--red)", fontWeight: 600 }}>✗ FALHA</span>}
+                <span className="edp-mono text-text-mute">{resumoFilho(f)}</span>
+                {!f.sucesso && <span className="text-red font-semibold">✗ FALHA</span>}
                 {f.detalhes && (
-                  <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-mute)" }}>
+                  <span className="ml-auto text-[10px] text-text-mute">
                     {expanded.has(f.id) ? "▲" : "▼"}
                   </span>
                 )}
                 {expanded.has(f.id) && (
-                  <div style={{ flexBasis: "100%" }}><StructuredDetails detalhes={f.detalhes} /></div>
+                  <div className="basis-full"><StructuredDetails detalhes={f.detalhes} /></div>
                 )}
               </div>
             ))}

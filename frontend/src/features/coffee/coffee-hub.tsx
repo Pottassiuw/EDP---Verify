@@ -32,31 +32,31 @@ interface CoffeeHubProps {
 export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
 
   return (
-    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
-        <div style={{ padding: "13px 22px 11px", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="shrink-0 bg-surface border-b border-b-line">
+        <div className="pt-[13px] px-[22px] pb-[11px] flex items-center gap-[12px]">
+          <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
             <span className="edp-eyebrow">Módulo COFFEE</span>
-            <strong className="edp-title" style={{ fontSize: 16 }}>Geração de notas</strong>
+            <strong className="edp-title text-[16px]">Geração de notas</strong>
           </div>
           {sub === "verificar" && triage.screen === "dashboard" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-              <span className="edp-mono" style={{ fontSize: 11, color: "var(--text-mute)", background: "var(--bg-2)",
-                    padding: "5px 10px", borderRadius: 6, border: "1px solid var(--line)" }}>{triage.file}</span>
+            <div className="flex items-center gap-[12px] shrink-0">
+              <span className="edp-mono text-[11px] text-text-mute bg-bg-2
+                    py-[5px] px-[10px] rounded-[6px] border border-line">{triage.file}</span>
               <span title="Conectado ao backend"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5,
-                             fontFamily: "var(--font-mono)", letterSpacing: ".06em", textTransform: "uppercase",
-                             padding: "4px 9px", borderRadius: 999,
-                             color: "var(--green)", background: "var(--tint-green)",
-                             border: "1px solid rgba(0,168,89,.3)" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                    className="inline-flex items-center gap-[6px] text-[10.5px]
+                             font-mono tracking-[.06em] uppercase
+                             py-[4px] px-[9px] rounded-[999px]
+                             text-green bg-tint-green"
+                    style={{ border: "1px solid rgba(0,168,89,.3)" }}>
+                <span className="w-[6px] h-[6px] rounded-[50%] bg-[currentColor]" />
                 API
               </span>
               <Button variant="ghost" size="sm" title="Nova planilha" onClick={triage.onReset}>↑ Nova</Button>
             </div>
           )}
         </div>
-        <div style={{ padding: "0 22px", borderTop: "1px solid var(--line)" }}>
+        <div className="py-0 px-[22px] border-t border-t-line">
           <SegTabs tabs={COFFEE_SUBS.map((s) => ({ id: s.id, rotulo: s.label }))}
                    value={sub} onChange={setSub} ariaLabel="Seções do módulo COFFEE" />
         </div>

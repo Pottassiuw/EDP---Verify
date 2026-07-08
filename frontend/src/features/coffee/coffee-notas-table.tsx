@@ -45,11 +45,8 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
 
 function StatusBadge({ classificacao }: { classificacao: string }): React.JSX.Element {
   return (
-    <span style={{
-      display: "inline-block", padding: "2px 8px", borderRadius: 999,
-      fontSize: 11, fontWeight: 600, letterSpacing: ".03em",
-      ...STATUS_STYLE[classificacao],
-    }}>
+    <span className="inline-block py-[2px] px-[8px] rounded-[999px] text-[11px] font-semibold tracking-[.03em]"
+          style={STATUS_STYLE[classificacao]}>
       {classificacao}
     </span>
   );
@@ -88,8 +85,7 @@ export function CoffeeNotasTable({
 }: CoffeeNotasTableProps): React.JSX.Element {
   if (isLoading) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--text-mute)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+      <div className="flex-1 flex items-center justify-center text-text-mute font-mono text-[13px]">
         Carregando notas...
       </div>
     );
@@ -97,8 +93,7 @@ export function CoffeeNotasTable({
 
   if (notas.length === 0) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--text-mute)", fontSize: 13, textAlign: "center", padding: 32 }}>
+      <div className="flex-1 flex items-center justify-center text-text-mute text-[13px] text-center p-[32px]">
         {emptyMessage ?? "Nenhuma nota encontrada."}
       </div>
     );
@@ -107,12 +102,12 @@ export function CoffeeNotasTable({
   const allSelected = notas.length > 0 && selectedPks?.size === notas.length;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "0 22px 24px" }}>
+    <div className="flex-1 min-h-0 overflow-auto pt-0 px-[22px] pb-[24px]">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent border-b-2">
             {selectable && (
-              <TableHead style={{ ...STICKY_TH, width: 36, textAlign: "center" }}>
+              <TableHead className="w-[36px] text-center" style={STICKY_TH}>
                 <input type="checkbox" aria-label="Selecionar todas"
                        checked={allSelected} onChange={() => onToggleAll?.()} />
               </TableHead>
@@ -129,35 +124,35 @@ export function CoffeeNotasTable({
           {notas.map((n) => (
             <TableRow key={n.pk}>
               {selectable && (
-                <TableCell style={{ textAlign: "center" }}>
+                <TableCell className="text-center">
                   <input type="checkbox" aria-label={`Selecionar nota ${n.pk}`}
                          checked={selectedPks?.has(n.pk) ?? false}
                          onChange={() => onToggleSelect?.(n.pk)} />
                 </TableCell>
               )}
               <TableCell>
-                <span className="edp-mono" style={{ fontWeight: 600 }}>{n.pk}</span>
+                <span className="edp-mono font-semibold">{n.pk}</span>
               </TableCell>
               <TableCell>
                 <span className="edp-mono">{n.id_sap}</span>
                 {n.id_sap === SAP_PENDENTE && (
-                  <span style={{ marginLeft: 8 }}><StatusBadge classificacao="pendente" /></span>
+                  <span className="ml-[8px]"><StatusBadge classificacao="pendente" /></span>
                 )}
               </TableCell>
               <TableCell>
                 <StatusBadge classificacao={n.classificacao} />
               </TableCell>
               {mostrarIdade && (
-                <TableCell style={{ color: "var(--text-mute)", fontSize: 12 }}>
+                <TableCell className="text-text-mute text-[12px]">
                   {n.classificacao_em ? formatRelativeTime(n.classificacao_em) : "—"}
                 </TableCell>
               )}
-              <TableCell style={{ color: "var(--text-mute)", fontSize: 12 }}>
+              <TableCell className="text-text-mute text-[12px]">
                 {n.buscado_em ? formatRelativeTime(n.buscado_em) : "—"}
               </TableCell>
               {actionColumn && (
                 <TableCell>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div className="flex items-center gap-[6px]">
                     {actionColumn(n)}
                   </div>
                 </TableCell>
