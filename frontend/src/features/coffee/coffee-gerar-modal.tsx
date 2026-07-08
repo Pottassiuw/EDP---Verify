@@ -3,6 +3,7 @@ import type { CoffeeJob } from './types';
 import { EDPApi, BASE } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Check, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 
 // ponytail: máscara 3-2-resto; aperta a regra se o formato do local for fixo
@@ -96,15 +97,6 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   React.useEffect(() => {
     if (open) gravarRows(rows);
   }, [rows, open]);
-
-  React.useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent): void { if (e.key === "Escape") onClose(); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
 
   function adicionar(): void {
     parseIds(input).forEach(consultar);
@@ -211,14 +203,15 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   }
 
   return (
-    <>
-      <div onClick={gerando.rodando ? undefined : onClose}
-           className="fixed inset-0 z-[300]" style={{ background: "rgba(0,0,0,0.4)" }} />
-      <div role="dialog" aria-modal="true" aria-label="Gerar ou consultar notas"
-           className="fixed top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[760px] max-w-[94vw]
-                      max-h-[88vh] bg-surface border border-line rounded-[12px] z-[301]
-                      flex flex-col gap-[12px] p-[20px]"
-           style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next && !gerando.rodando) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        aria-label="Gerar ou consultar notas"
+        className="w-[760px] max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
+      >
+        <DialogHeader className="sr-only">
+          <DialogTitle>Gerar ou consultar notas</DialogTitle>
+        </DialogHeader>
         <div className="flex items-center gap-[8px]">
           <span className="edp-title text-[17px] flex-1">Gerar / Consultar notas</span>
           <Button variant="ghost" size="icon-sm" onClick={onClose} disabled={gerando.rodando}
@@ -352,7 +345,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
             Gerar ({rows.length})
           </Button>
         </div>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
