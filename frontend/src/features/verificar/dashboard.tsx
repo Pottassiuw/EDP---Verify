@@ -177,7 +177,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         <div className="flex flex-col overflow-hidden bg-surface border-r-[1px] border-r-line">
           {queueCollapsed && (
             <button onClick={toggleQueue} title="Expandir fila" aria-label="Expandir fila"
-                    className="flex flex-col items-center gap-[16px] py-[12px] px-[0px] [all:unset] box-border cursor-pointer h-full w-full">
+                    className="flex flex-col items-center gap-[16px] py-[12px] px-[0px] box-border cursor-pointer h-full w-full">
               <span className="text-[15px] text-text-dim">»</span>
               <span className="font-mono text-[10.5px] text-text-mute whitespace-nowrap
                     [writing-mode:vertical-rl] [transform:rotate(180deg)] tracking-[.16em] uppercase">
@@ -224,7 +224,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   </div>
                   {flagDup && !isDup && (
                     <button title="Enviar candidatas para a fila COFFEE" aria-label="Enviar candidatas para a fila COFFEE"
-                            className="text-amber shrink-0 py-[2px] px-[4px] [all:unset] cursor-pointer leading-none inline-flex"
+                            className="text-amber shrink-0 py-[2px] px-[4px] cursor-pointer leading-none inline-flex"
                             onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>
                       <Coffee size={14} />
                     </button>

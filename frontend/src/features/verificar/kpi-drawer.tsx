@@ -57,7 +57,7 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
             <div className="flex items-center justify-between">
               <span className="edp-eyebrow">Indicadores</span>
               <button ref={closeRef} onClick={() => setOpen(false)} title="Fechar" aria-label="Fechar indicadores"
-                      className="text-[18px] text-text-mute py-[2px] px-[6px] [all:unset] cursor-pointer leading-none">×</button>
+                      className="text-[18px] text-text-mute py-[2px] px-[6px] cursor-pointer leading-none">×</button>
             </div>
             <div className="bg-surface-2 rounded-edp-sm py-[12px] px-[14px]">
               <div className="edp-eyebrow">Conformidade</div>
