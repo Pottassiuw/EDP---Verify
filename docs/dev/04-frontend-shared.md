@@ -89,10 +89,11 @@ manual:
   para os 8 call sites conhecidos em `shared.tsx` e `dashboard.tsx`.
 - **`progress.tsx`** — a prop `indicatorClassName`
   (`progress.tsx:9,25`) não existe no output padrão do CLI; foi
-  adicionada no SP2b para que cada um dos 4 call sites (barras de
-  progresso com cor condicional, ex. verde quando concluído vs. accent
-  enquanto rodando) possa colorir o indicador via `className` em vez de
-  cor hardcoded no componente.
+  adicionada no SP2b para que os 4 call sites de barra de progresso possam
+  colorir o indicador via `className` em vez de cor hardcoded. Apenas um deles
+  (`coffee-pendentes.tsx:164`) usa cor condicional (verde quando concluído vs. accent
+  enquanto rodando); os outros três (`upload-screen.tsx`, `kpi-drawer.tsx`,
+  `coffee-abrir.tsx`) usam uma cor fixa.
 
 Os demais componentes lidos para esta doc — `select.tsx`, `sheet.tsx`,
 `dialog.tsx`, `alert-dialog.tsx` — são majoritariamente stock: mesma
@@ -192,13 +193,13 @@ depender do elemento `.edp[data-theme="light"]` estar como ancestral.
   desses três botões é só o outline nativo do browser, diferente de
   todo o resto da tela que usa `ToggleGroup`/`Switch` com foco
   consistente.
-- `settings-context.tsx:31,37` — `loadSettings`/`saveSettings` engolem
+- `settings-context.tsx:32,37` — `loadSettings`/`saveSettings` engolem
   qualquer exceção de `localStorage` (`catch { /* ignore */ }`) sem
   logar nem avisar o usuário; se `localStorage` estiver indisponível
   (modo privado restrito, quota cheia), a preferência silenciosamente
   para de persistir e o usuário não tem indicação de que suas escolhas
   de tema/densidade não vão sobreviver a um reload.
-- `app.css:198-203` vs. `app.css:68-71` — `--pad`/`--gap`/`--row-py`/
+- `app.css:198-203` — `--pad`/`--gap`/`--row-py`/
   `--tile-py` ficam fora do bridge `@theme inline` por design (ver
   seção acima), mas isso significa que qualquer novo componente que
   precise desses valores como className Tailwind não tem como — só
