@@ -37,56 +37,57 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
       <style>{`@keyframes kpi-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
       {!open && (
         <button ref={fabRef} onClick={() => setOpen(true)} title="Indicadores" aria-label="Abrir indicadores"
-                style={{ position: "fixed", right: 18, bottom: 18, zIndex: 40, display: "flex", alignItems: "center", gap: 8,
-                         padding: "10px 16px", border: 0, borderRadius: 999, cursor: "pointer",
+                className="flex items-center gap-[8px] py-[10px] px-[16px] text-[14px]"
+                style={{ position: "fixed", right: 18, bottom: 18, zIndex: 40,
+                         border: 0, borderRadius: 999, cursor: "pointer",
                          background: "var(--accent)", color: "#fff", fontFamily: "var(--font-display)",
-                         fontWeight: 800, fontSize: 14, boxShadow: "0 4px 14px rgba(0,0,0,.35)" }}>
-          <span style={{ fontSize: 15, lineHeight: 1 }}>⊞</span>{safePct}%
+                         fontWeight: 800, boxShadow: "0 4px 14px rgba(0,0,0,.35)" }}>
+          <span className="text-[15px]" style={{ lineHeight: 1 }}>⊞</span>{safePct}%
         </button>
       )}
       {open && (
         <React.Fragment>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 41 }} />
           <aside role="dialog" aria-modal="true" aria-label="Indicadores"
+                 className="bg-surface flex flex-col py-[16px] px-[18px] gap-[12px]"
                  style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 320, zIndex: 42,
-                          background: "var(--surface)", borderLeft: "2px solid var(--accent)",
-                          boxShadow: "-8px 0 24px rgba(0,0,0,.3)", display: "flex", flexDirection: "column",
-                          padding: "16px 18px", gap: 12, animation: "kpi-slide-in .2s ease-out",
+                          borderLeft: "2px solid var(--accent)",
+                          boxShadow: "-8px 0 24px rgba(0,0,0,.3)", animation: "kpi-slide-in .2s ease-out",
                           overflowY: "auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="flex items-center justify-between">
               <span className="edp-eyebrow">Indicadores</span>
               <button ref={closeRef} onClick={() => setOpen(false)} title="Fechar" aria-label="Fechar indicadores"
-                      style={{ all: "unset", cursor: "pointer", fontSize: 18, lineHeight: 1, color: "var(--text-mute)", padding: "2px 6px" }}>×</button>
+                      className="text-[18px] text-text-mute py-[2px] px-[6px]"
+                      style={{ all: "unset", cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ background: "var(--surface-2)", borderRadius: "var(--r-sm)", padding: "12px 14px" }}>
+            <div className="bg-surface-2 rounded-edp-sm py-[12px] px-[14px]">
               <div className="edp-eyebrow">Conformidade</div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 30, lineHeight: 1.2, color: "var(--accent)" }}>{safePct}%</div>
-              <div style={{ height: 6, borderRadius: 999, background: "var(--surface-3)", overflow: "hidden", margin: "8px 0 6px" }}>
+              <div className="text-[30px]" style={{ fontFamily: "var(--font-display)", fontWeight: 800, lineHeight: 1.2, color: "var(--accent)" }}>{safePct}%</div>
+              <div className="bg-surface-3 overflow-hidden" style={{ height: 6, borderRadius: 999, margin: "8px 0 6px" }}>
                 <div style={{ width: safePct + "%", height: "100%", background: "var(--accent)", borderRadius: 999 }} />
               </div>
-              <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-dim)" }}>{cOk}/{cTotal} prontas para o SAP</span>
+              <span className="edp-mono text-[12px] text-text-dim">{cOk}/{cTotal} prontas para o SAP</span>
             </div>
             {rows.map(([lbl, val, c]) => (
-              <div key={lbl} style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-                                      background: "var(--surface-2)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+              <div key={lbl} className="flex items-center justify-between bg-surface-2 rounded-edp-sm py-[10px] px-[14px]">
                 <span className="edp-eyebrow">{lbl}</span>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 18, lineHeight: 1, color: "var(--" + c + ")" }}>{val}</span>
+                <span className="text-[18px]" style={{ fontFamily: "var(--font-display)", fontWeight: 800, lineHeight: 1, color: "var(--" + c + ")" }}>{val}</span>
               </div>
             ))}
             {selectedNotes.length > 0 && (
-              <div style={{ background: "var(--surface-2)", borderRadius: "var(--r-sm)", padding: "10px 14px" }}>
+              <div className="bg-surface-2 rounded-edp-sm py-[10px] px-[14px]">
                 <div className="edp-eyebrow" style={{ marginBottom: 8 }}>
                   Notas Selecionadas · {selectedNotes.length}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflow: "auto" }}>
+                <div className="flex flex-col gap-[6px] overflow-auto" style={{ maxHeight: 220 }}>
                   {selectedNotes.map((n) => (
-                    <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span className="edp-mono" style={{ fontSize: 12, fontWeight: 600 }}>{n.id}</span>
-                      <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: "var(--text-mute)",
-                                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div key={n.id} className="flex items-center gap-[8px]">
+                      <span className="edp-mono text-[12px] font-semibold">{n.id}</span>
+                      <span className="flex-1 min-w-0 text-[11px] text-text-mute overflow-hidden text-ellipsis whitespace-nowrap">
                         {n.tipo_nota} · {n.uf}/{n.setor}</span>
                       {onRemoveSelected && (
                         <span role="button" aria-label={"Remover " + n.id} onClick={() => onRemoveSelected(n.id)}
-                              style={{ cursor: "pointer", color: "var(--text-mute)", fontSize: 14, lineHeight: 1, padding: "0 4px" }}>×</span>
+                              className="text-text-mute text-[14px] py-[0px] px-[4px]"
+                              style={{ cursor: "pointer", lineHeight: 1 }}>×</span>
                       )}
                     </div>
                   ))}

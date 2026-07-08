@@ -52,17 +52,10 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
 
   return (
     <div
+      className="flex-1 flex flex-col items-center justify-center gap-[34px] overflow-hidden bg-bg"
       style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 34,
         padding: 32,
         position: "relative",
-        overflow: "hidden",
-        background: "var(--bg)",
       }}
     >
       <div
@@ -78,13 +71,8 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
       />
 
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 14,
-          zIndex: 1,
-        }}
+        className="flex flex-col items-center gap-[14px]"
+        style={{ zIndex: 1 }}
       >
         <img
           src={theme === "light" ? LOGO_LIGHT : LOGO_DARK}
@@ -93,12 +81,8 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         />
         <div style={{ textAlign: "center" }}>
           <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              fontSize: 26,
-              letterSpacing: "var(--tracking-display)",
-            }}
+            className="font-semibold text-[26px] tracking-display"
+            style={{ fontFamily: "var(--font-display)" }}
           >
             To De Olho 👀
           </div>
@@ -115,17 +99,15 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         }}
         onDragLeave={() => setDrag(false)}
         onDrop={onDrop}
+        className="bg-surface rounded-edp-lg py-[44px] px-[40px]"
         style={{
           position: "relative",
           zIndex: 1,
           width: "100%",
           maxWidth: 480,
           cursor: "pointer",
-          background: "var(--surface)",
           border: "1px solid " + (drag ? "var(--accent)" : "var(--line-2)"),
           boxShadow: drag ? "0 0 0 4px var(--accent-tint)" : "var(--shadow)",
-          borderRadius: "var(--r-lg)",
-          padding: "44px 40px",
           textAlign: "center",
           transition: "all .16s ease",
         }}
@@ -158,18 +140,15 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         ))}
 
         <div
+          className="flex items-center justify-center text-[26px]"
           style={{
             width: 60,
             height: 60,
             margin: "0 auto 18px",
             borderRadius: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             background: "var(--accent-tint)",
             border: "1px solid var(--accent)",
             color: "var(--accent)",
-            fontSize: 26,
           }}
         >
           <img
@@ -179,10 +158,9 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           />
         </div>
         <h2
+          className="font-semibold text-[19px]"
           style={{
             fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            fontSize: 19,
             margin: "0 0 6px",
             letterSpacing: "-0.01em",
           }}
@@ -190,38 +168,24 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           Importar planilha
         </h2>
         <p
-          style={{
-            color: "var(--text-dim)",
-            fontSize: 13.5,
-            margin: "0 0 20px",
-          }}
+          className="text-text-dim text-[13.5px]"
+          style={{ margin: "0 0 20px" }}
         >
           Arraste o arquivo aqui ou clique para selecionar
         </p>
-        <Button asChild style={{ padding: "10px 22px" }}>
+        <Button asChild className="py-[10px] px-[22px]">
           <span>Selecionar arquivo</span>
         </Button>
 
         <div
-          style={{
-            display: "flex",
-            gap: 8,
-            justifyContent: "center",
-            marginTop: 20,
-          }}
+          className="flex gap-[8px] justify-center"
+          style={{ marginTop: 20 }}
         >
           {[".xlsx", ".xls", ".csv"].map((f) => (
             <span
               key={f}
-              className="edp-mono"
-              style={{
-                fontSize: 11,
-                color: "var(--text-mute)",
-                padding: "3px 10px",
-                border: "1px solid var(--line-2)",
-                borderRadius: 5,
-                background: "var(--bg-2)",
-              }}
+              className="edp-mono text-[11px] text-text-mute py-[3px] px-[10px] border border-line-2 bg-bg-2"
+              style={{ borderRadius: 5 }}
             >
               {f}
             </span>
@@ -230,12 +194,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
 
         {loading && (
           <div
+            className="bg-bg-2 overflow-hidden"
             style={{
               marginTop: 22,
               height: 3,
-              background: "var(--bg-2)",
               borderRadius: 3,
-              overflow: "hidden",
             }}
           >
             <div
@@ -251,15 +214,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         )}
         {err && (
           <div
+            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px]"
             style={{
               marginTop: 18,
-              padding: "11px 14px",
-              borderRadius: "var(--r-sm)",
               textAlign: "left",
-              background: "var(--tint-amber)",
               border: "1px solid rgba(240,169,59,0.35)",
-              color: "var(--amber)",
-              fontSize: 12,
               lineHeight: 1.5,
             }}
           >
