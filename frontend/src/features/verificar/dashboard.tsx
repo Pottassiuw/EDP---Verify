@@ -6,7 +6,9 @@ import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
 import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
@@ -131,24 +133,61 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             </div>
           </Field>
           <Field label="Estado (UF)" accent>
-            <select className="edp-field" value={uf} onChange={(e) => setUf(e.target.value)}>
-              <option value="all">Todos</option>{ufOpts.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <Select value={uf} onValueChange={setUf}>
+              <SelectTrigger className="edp-field w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {ufOpts.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Setor" accent>
-            <select className="edp-field" value={setor} onChange={(e) => setSetor(e.target.value)}>
-              <option value="all">Todos</option>{setorOpts.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <Select value={setor} onValueChange={setSetor}>
+              <SelectTrigger className="edp-field w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {setorOpts.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Urgência">
-            <select className="edp-field" value={urg} onChange={(e) => setUrg(e.target.value)}>
-              <option value="all">Todas</option>{Object.entries(URG).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+            <Select value={urg} onValueChange={setUrg}>
+              <SelectTrigger className="edp-field w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {Object.entries(URG).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Status">
-            <select className="edp-field" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="all">Todos</option><option value="erro">Com erro</option><option value="ok">Conforme</option></select>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="edp-field w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="erro">Com erro</SelectItem>
+                <SelectItem value="ok">Conforme</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Situação">
-            <select className="edp-field" value={situacao} onChange={(e) => setSituacao(e.target.value)}>
-              <option value="all">Todas</option><option value="pending">Pendentes</option><option value="done">Concluídas</option></select>
+            <Select value={situacao} onValueChange={setSituacao}>
+              <SelectTrigger className="edp-field w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pending">Pendentes</SelectItem>
+                <SelectItem value="done">Concluídas</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
         </div>
 
@@ -229,11 +268,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       <Coffee size={14} />
                     </button>
                   )}
-                  {isDup ? <span className="edp-tag dup"><span className="edp-dot" />Dup.</span>
-                    : done ? <span className="edp-tag done"><span className="edp-dot" />OK</span>
+                  {isDup ? <Badge variant="tagDup"><span className="w-[6px] h-[6px] rounded-full bg-current" />Dup.</Badge>
+                    : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>
                     : n.errors.length ? <span className="edp-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
-                    : <span className="edp-tag ok"><span className="edp-dot" />OK</span>}
+                    : <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>}
                 </div>
               );
             })}
@@ -355,7 +394,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
                 </div>
               ))}
             </div>
-          ) : !hasDup ? <span className="edp-tag ok"><span className="edp-dot" />Conforme — nenhuma falha, pronta para o SAP</span>
+          ) : !hasDup ? <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />Conforme — nenhuma falha, pronta para o SAP</Badge>
             : <div className="text-[12.5px] text-text-dim">Sem outras falhas além da duplicata.</div>}
         </section>
         <section>

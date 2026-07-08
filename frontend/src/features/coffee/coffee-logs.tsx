@@ -4,6 +4,7 @@ import { LogTable, PASSOS, agruparLogs } from './coffee-log-table';
 import { BASE as API_BASE } from '../../api';
 import { SegTabs, StatTile } from '@/components/branded/section';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const LIMITES = [50, 100, 500] as const;
 
@@ -74,27 +75,39 @@ export function CoffeeLogs(): React.JSX.Element {
 
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Usuario:</label>
-          <select value={usuario} onChange={(e) => setUsuario(e.target.value)}
-                  className="edp-field edp-mono h-[30px] text-[12px]">
-            <option value="">Todos</option>
-            {usuarios.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+          <Select value={usuario || "__todos"} onValueChange={(v) => setUsuario(v === "__todos" ? "" : v)}>
+            <SelectTrigger className="edp-field edp-mono h-[30px] text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__todos">Todos</SelectItem>
+              {usuarios.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Limite:</label>
-          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}
-                  className="edp-field h-[30px] text-[12px]">
-            {LIMITES.map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
+          <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+            <SelectTrigger className="edp-field h-[30px] text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LIMITES.map((l) => <SelectItem key={l} value={String(l)}>{l}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Período:</label>
-          <select value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}
-                  className="edp-field h-[30px] text-[12px]">
-            {PERIODOS.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
-          </select>
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
+            <SelectTrigger className="edp-field h-[30px] text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODOS.map((p) => <SelectItem key={p.id} value={p.id}>{p.rotulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-[8px]">

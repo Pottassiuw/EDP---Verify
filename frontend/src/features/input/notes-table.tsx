@@ -5,6 +5,7 @@ import { compararDatas, formatarNumero } from "./lib";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ALTURA_LINHA = 32;
 
@@ -49,6 +50,10 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
     asc: boolean;
   } | null>(null);
   const [editando, setEditando] = React.useState<CelulaEditando | null>(null);
+  const selectOpenedRef = React.useRef(false);
+  React.useEffect(() => {
+    selectOpenedRef.current = false;
+  }, [editando]);
 
   const ordenados = React.useMemo(() => {
     if (!ordem) return registros;
@@ -135,20 +140,30 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
       return (
         <TableCell key={c.key} className="p-[0px] h-[32px]">
           {opcoes ? (
-            <select
-              autoFocus
+            <Select
               defaultValue={String(v ?? "")}
-              aria-label={`Editar ${c.label}`}
-              className="edp-field w-[100%] h-[28px] text-[12.5px]"
-              onChange={(e) => confirmar(e.target.value)}
-              onBlur={() => setEditando(null)}
+              onValueChange={confirmar}
+              onOpenChange={(open) => {
+                if (open) { selectOpenedRef.current = true; }
+                else if (selectOpenedRef.current) { setEditando(null); }
+              }}
             >
-              {opcoes.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                autoFocus
+                aria-label={`Editar ${c.label}`}
+                className="edp-field w-full h-[28px] text-[12.5px]"
+                onBlur={() => { if (!selectOpenedRef.current) setEditando(null); }}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {opcoes.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <input
               autoFocus
