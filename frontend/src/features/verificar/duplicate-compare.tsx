@@ -73,19 +73,19 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
   return (
     <section>
       <style>{DUPC_STYLE}</style>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
+      <div className="flex items-start justify-between gap-[14px] flex-wrap mb-[12px]">
         <div>
-          <div className="edp-eyebrow" style={{ color: "var(--indigo)" }}>
+          <div className="edp-eyebrow text-indigo">
             ⚠ Possível duplicata · {cands.length} {cands.length === 1 ? "candidata" : "candidatas"}
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--text-dim)", marginTop: 5, maxWidth: 440 }}>
+          <div className="text-[12.5px] text-text-dim mt-[5px] max-w-[440px]">
             Compare cada candidata com a nota aberta e confirme direto no COFFEE antes de marcar.
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+        <div className="flex gap-[8px] shrink-0 flex-wrap">
           <Button size="sm" onClick={() => api.openCoffee(allIds)}><Coffee /> Abrir todas no COFFEE</Button>
           {onSendToCoffee && (
-            <Button variant="outline" size="sm" style={{ color: "var(--amber)", borderColor: "rgba(240,169,59,.4)" }}
+            <Button variant="outline" size="sm" className="text-amber" style={{ borderColor: "rgba(240,169,59,.4)" }}
                     onClick={() => onSendToCoffee(allIds, note.id)} title="Adiciona as candidatas à fila do COFFEE e navega para lá">
               → Fila COFFEE
             </Button>
@@ -108,8 +108,8 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
         return (
           <div key={c.id} className="dupc-card">
             <div className="dupc-hd">
-              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                <span className="edp-mono" style={{ fontSize: 13, fontWeight: 600 }}>{c.id}</span>
+              <div className="flex items-center gap-[10px] min-w-0">
+                <span className="edp-mono text-[13px] font-semibold">{c.id}</span>
                 {inSheet ? (
                   <span className="dupc-badge" style={{
                     color: strong ? "var(--green)" : "var(--amber)",
@@ -119,17 +119,14 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                     {strong ? "●" : "◐"} {matches}/{DUPC_KEYS.length} campos-chave
                   </span>
                 ) : (
-                  <span className="dupc-badge" style={{
-                    color: "var(--amber)", background: "var(--tint-amber)",
-                    border: "1px solid rgba(240,169,59,.3)",
-                  }}>
+                  <span className="dupc-badge text-amber bg-tint-amber" style={{ border: "1px solid rgba(240,169,59,.3)" }}>
                     ⧉ Externo
                   </span>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <div className="flex gap-[8px] shrink-0">
                 {c.latitude && c.longitude && (
-                  <Button asChild variant="outline" size="sm" style={{ color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>
+                  <Button asChild variant="outline" size="sm" className="text-blue" style={{ borderColor: "rgba(31,159,214,0.4)" }}>
                     <a target="_blank" rel="noopener" href={api.mapsUrl(String(c.latitude), String(c.longitude))}>◎ Mapa</a>
                   </Button>
                 )}
@@ -152,11 +149,11 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                 ))}
               </div>
             ) : (
-              <div style={{ padding: "14px 16px" }}>
+              <div className="py-[14px] px-[16px]">
                 <div className="dupc-ext">
-                  <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>⧉</span>
+                  <span className="text-[16px] shrink-0 leading-none">⧉</span>
                   <div>
-                    <strong style={{ color: "var(--text)" }}>Nota fora desta planilha</strong><br />
+                    <strong className="text-text">Nota fora desta planilha</strong><br />
                     Verifique os campos direto no COFFEE. A comparação automática ficará disponível
                     após a integração com o BI.
                   </div>

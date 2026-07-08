@@ -116,17 +116,17 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         .triage select:focus,.triage input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-tint)}
       `}</style>
 
-      <div style={{ flexShrink: 0, background: "var(--surface)", borderBottom: "1px solid var(--line)" }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", padding: "12px 22px", flexWrap: "wrap" }}>
+      <div className="shrink-0 bg-surface border-b-[1px] border-b-line">
+        <div className="flex gap-[12px] items-end py-[12px] px-[22px] flex-wrap">
           <Field label="Buscar · ID, referência, tipo, setor" grow>
-            <div style={{ position: "relative", width: "100%" }}>
-              <input className="edp-field" style={{ paddingRight: q ? 30 : 11, width: "100%" }} value={q}
+            <div className="relative w-full">
+              <input className="edp-field w-full" style={{ paddingRight: q ? 30 : 11 }} value={q}
                      onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
               {q && (
                 <button type="button" aria-label="Limpar busca" onClick={() => setQ("")}
-                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
-                                 border: 0, background: "transparent", color: "var(--text-mute)", cursor: "pointer",
-                                 fontSize: 16, lineHeight: 1, padding: "2px 4px" }}>×</button>
+                        className="text-text-mute text-[16px] py-[2px] px-[4px] absolute right-[6px] top-[50%] [transform:translateY(-50%)]
+                                 border-0 bg-transparent cursor-pointer
+                                 leading-none">×</button>
               )}
             </div>
           </Field>
@@ -152,8 +152,8 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "0 22px 13px", flexWrap: "wrap" }}>
-          <span className="edp-eyebrow" style={{ marginRight: 2 }}>Bloqueio</span>
+        <div className="flex items-center gap-[9px] flex-wrap pt-0 px-[22px] pb-[13px]">
+          <span className="edp-eyebrow mr-[2px]">Bloqueio</span>
           {Object.entries(ruleStats).sort((a, b) => b[1] - a[1]).map(([r, n]) => (
             <button key={r} className={"rchip" + (rules.has(r) ? " on" : "")} onClick={() => toggleRule(r)}>
               {ruleMeta(r).label}<span className="c">{n}</span></button>
@@ -161,36 +161,32 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         </div>
 
         {chips.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 22px 13px", flexWrap: "wrap" }}>
-            <span className="edp-eyebrow" style={{ marginRight: 2 }}>Ativos</span>
+          <div className="flex items-center gap-[8px] flex-wrap pt-0 px-[22px] pb-[13px]">
+            <span className="edp-eyebrow mr-[2px]">Ativos</span>
             {chips.map((c, i) => (
-              <button key={i} className="fchip" onClick={c.clear}>{c.k}<span style={{ fontSize: 14, lineHeight: 1 }}>×</span></button>
+              <button key={i} className="fchip" onClick={c.clear}>{c.k}<span className="text-[14px] leading-none">×</span></button>
             ))}
-            <button className="fchip" style={{ color: "var(--red)", borderColor: "rgba(240,85,92,.3)", background: "var(--tint-red)" }}
+            <button className="fchip text-red bg-tint-red" style={{ borderColor: "rgba(240,85,92,.3)" }}
                     onClick={clearAll}>Limpar tudo</button>
           </div>
         )}
       </div>
 
-      <div style={{ flex: 1, display: "grid",
-                    gridTemplateColumns: queueCollapsed ? "46px 1fr" : "minmax(430px,1fr) 1.2fr",
-                    overflow: "hidden" }}>
-        <div style={{ display: "flex", flexDirection: "column", borderRight: "1px solid var(--line)", overflow: "hidden", background: "var(--surface)" }}>
+      <div className="flex-1 overflow-hidden grid" style={{
+                    gridTemplateColumns: queueCollapsed ? "46px 1fr" : "minmax(430px,1fr) 1.2fr" }}>
+        <div className="flex flex-col overflow-hidden bg-surface border-r-[1px] border-r-line">
           {queueCollapsed && (
             <button onClick={toggleQueue} title="Expandir fila" aria-label="Expandir fila"
-                    style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", height: "100%", width: "100%",
-                             display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "12px 0" }}>
-              <span style={{ fontSize: 15, color: "var(--text-dim)" }}>»</span>
-              <span style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontFamily: "var(--font-mono)",
-                             fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text-mute)",
-                             whiteSpace: "nowrap" }}>
+                    className="flex flex-col items-center gap-[16px] py-[12px] px-[0px] box-border cursor-pointer h-full w-full">
+              <span className="text-[15px] text-text-dim">»</span>
+              <span className="font-mono text-[10.5px] text-text-mute whitespace-nowrap
+                    [writing-mode:vertical-rl] [transform:rotate(180deg)] tracking-[.16em] uppercase">
                 Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</span>
             </button>
           )}
           {!queueCollapsed && (<React.Fragment>
-          <div className="ui-reset" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 15px",
-                        borderBottom: "1px solid var(--line)", background: "var(--bg-2)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div className="flex items-center justify-between py-[9px] px-[15px] bg-bg-2 border-b-[1px] border-b-line">
+            <div className="flex items-center gap-[9px]">
               <Button variant="ghost" size="icon-sm" title="Recolher fila" aria-label="Recolher fila"
                       onClick={toggleQueue}>«</Button>
               <span className="edp-eyebrow">Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</span>
@@ -200,11 +196,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       onClick={() => setSelBatch(new Set(filtered.map((n) => n.id)))}>Selecionar todas</Button>
             )}
           </div>
-          <div style={{ flex: 1, overflow: "auto" }}>
+          <div className="flex-1 overflow-auto">
             {filtered.length === 0 ? (
-              <div style={{ padding: "48px 20px", textAlign: "center", color: "var(--text-mute)", fontSize: 13 }}>
+              <div className="py-[48px] px-[20px] text-text-mute text-[13px] text-center">
                 Nenhuma nota com os filtros atuais.<br />
-                <Button variant="outline" size="sm" style={{ marginTop: 14 }} onClick={clearAll}>Limpar filtros</Button>
+                <Button variant="outline" size="sm" className="mt-[14px]" onClick={clearAll}>Limpar filtros</Button>
               </div>
             ) : filtered.map((n) => {
               const done = completed.has(n.id);
@@ -216,26 +212,26 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                      onClick={() => setSelId(n.id)}>
                   <input type="checkbox" checked={isSel} onClick={(e) => e.stopPropagation()}
                          onChange={() => toggleBatch(n.id)}
-                         style={{ width: 16, height: 16, accentColor: "var(--accent)", cursor: "pointer", flexShrink: 0 }} />
+                         className="shrink-0 w-[16px] h-[16px] [accent-color:var(--accent)] cursor-pointer" />
                   <PriorityChip p={n.prioridade} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span className="edp-mono" style={{ fontSize: 13, fontWeight: 600 }}>{n.id}</span>
-                      {flagDup && <span title="Possível duplicata" style={{ color: "var(--indigo)", fontSize: 13 }}>⧉</span>}
-                      <span style={{ fontSize: 11, color: "var(--text-mute)" }}>· {n.uf}/{n.setor}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-[8px]">
+                      <span className="edp-mono text-[13px] font-semibold">{n.id}</span>
+                      {flagDup && <span title="Possível duplicata" className="text-indigo text-[13px]">⧉</span>}
+                      <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--text-dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.tipo_nota}</div>
+                    <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>
                   </div>
                   {flagDup && !isDup && (
                     <button title="Enviar candidatas para a fila COFFEE" aria-label="Enviar candidatas para a fila COFFEE"
-                            style={{ all: "unset", cursor: "pointer", color: "var(--amber)", flexShrink: 0, lineHeight: 1, padding: "2px 4px", display: "inline-flex" }}
+                            className="text-amber shrink-0 py-[2px] px-[4px] cursor-pointer leading-none inline-flex"
                             onClick={(e) => { e.stopPropagation(); onSendToCoffee(n.duplicates.map((d) => d.id), n.id); }}>
                       <Coffee size={14} />
                     </button>
                   )}
                   {isDup ? <span className="edp-tag dup"><span className="edp-dot" />Dup.</span>
                     : done ? <span className="edp-tag done"><span className="edp-dot" />OK</span>
-                    : n.errors.length ? <span className="edp-mono" style={{ fontSize: 11, color: "var(--red)", fontWeight: 600, flexShrink: 0 }}>
+                    : n.errors.length ? <span className="edp-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
                     : <span className="edp-tag ok"><span className="edp-dot" />OK</span>}
                 </div>
@@ -249,10 +245,9 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             const allOpen = ids.every((id) => !completed.has(id));
             const doAction = (action: "done" | "reopen"): void => { onMarkMany(ids, action); setSelBatch(new Set()); };
             return (
-              <div className="ui-reset" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "10px 15px",
-                            background: "var(--bg-2)", borderTop: "1px solid var(--line-2)", flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, color: "var(--text-dim)", marginRight: 2 }}>
-                  <strong style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontSize: 15 }}>{selBatch.size}</strong> selec.</span>
+              <div className="shrink-0 flex items-center gap-[10px] py-[10px] px-[15px] bg-bg-2 flex-wrap border-t-[1px] border-t-line-2">
+                <span className="text-[13px] text-text-dim mr-[2px]">
+                  <strong className="text-[15px] text-[var(--accent)] [font-family:var(--font-display)]">{selBatch.size}</strong> selec.</span>
                 {!allDone && (
                   <Button size="sm" onClick={() => doAction("done")}>
                     <Check /> {allOpen ? "Concluir" : "Concluir pendentes"}
@@ -304,7 +299,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [fs]);
-  if (!sel) return <div style={{ background: "var(--bg-2)" }} />;
+  if (!sel) return <div className="bg-bg-2" />;
   const v = (x: string | number | null | undefined, fb = "—"): string => {
     const s = x == null ? "" : String(x);
     return s === "" || s === "-" ? fb : s;
@@ -319,22 +314,18 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
   const otherErrors = sel.errors.filter((e) => e.rule !== "chk_duplicata");
   const hasDup = sel.duplicates.length > 0;
   return (
-    <div style={fs
-      ? { position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column",
-          overflow: "hidden", background: "var(--bg-2)" }
-      : { display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-2)" }}>
-      <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface)",
-                    display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexShrink: 0 }}>
+    <div className={"flex flex-col overflow-hidden bg-bg-2" + (fs ? " fixed inset-0 z-[60]" : "")}>
+      <div className="py-[15px] px-[24px] bg-surface flex items-start justify-between gap-[16px] shrink-0 border-b-[1px] border-b-line">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h2 className="edp-title" style={{ fontSize: 21, margin: 0, whiteSpace: "nowrap" }}>Nota {sel.id}</h2>
+          <div className="flex items-center gap-[10px]">
+            <h2 className="edp-title text-[21px] whitespace-nowrap m-0">Nota {sel.id}</h2>
             <PriorityChip p={sel.prioridade} />
             <StatusTag status={sel.status} done={done} dup={dup} />
           </div>
-          <div className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 5 }}>
+          <div className="edp-mono text-[12px] text-text-mute mt-[5px]">
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
-        <div className="ui-reset" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <div className="flex gap-[8px] shrink-0">
           <Button size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(sel.id); }}>
             <Coffee /> COFFEE
           </Button>
@@ -347,37 +338,35 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
           </Button>
         </div>
       </div>
-      <div style={{ flex: 1, overflow: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
+      <div className="flex-1 overflow-auto flex flex-col gap-[22px] p-[24px]">
         {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />}
 
         <section>
-          <div className="edp-eyebrow" style={{ marginBottom: 11 }}>
+          <div className="edp-eyebrow mb-[11px]">
             {otherErrors.length ? `⚠ Falhas encontradas (${otherErrors.length})`
               : hasDup ? "Outras falhas" : "Status"}</div>
           {otherErrors.length ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="flex flex-col gap-[8px]">
               {otherErrors.map((e) => (
-                <div key={e.rule} style={{ background: "var(--tint-red)", border: "1px solid rgba(240,85,92,0.25)",
-                     borderLeft: "3px solid var(--red)", borderRadius: "var(--r-sm)", padding: "11px 14px" }}>
-                  <div className="edp-mono" style={{ fontSize: 10.5, color: "var(--red)", letterSpacing: ".08em" }}>{e.rule}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 2 }}>{e.rule_name}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-dim)", marginTop: 2 }}>Valor: {e.value}</div>
+                <div key={e.rule} className="bg-tint-red rounded-edp-sm py-[11px] px-[14px]" style={{ border: "1px solid rgba(240,85,92,0.25)", borderLeft: "3px solid var(--red)" }}>
+                  <div className="edp-mono text-[10.5px] text-red tracking-[.08em]">{e.rule}</div>
+                  <div className="text-[14px] font-semibold mt-[2px]">{e.rule_name}</div>
+                  <div className="text-[12.5px] text-text-dim mt-[2px]">Valor: {e.value}</div>
                 </div>
               ))}
             </div>
           ) : !hasDup ? <span className="edp-tag ok"><span className="edp-dot" />Conforme — nenhuma falha, pronta para o SAP</span>
-            : <div style={{ fontSize: 12.5, color: "var(--text-dim)" }}>Sem outras falhas além da duplicata.</div>}
+            : <div className="text-[12.5px] text-text-dim">Sem outras falhas além da duplicata.</div>}
         </section>
         <section>
-          <div className="edp-eyebrow" style={{ marginBottom: 11 }}>Identificação & localização</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: "var(--line)",
-                        borderRadius: "var(--r-sm)", overflow: "hidden", border: "1px solid var(--line)" }}>
+          <div className="edp-eyebrow mb-[11px]">Identificação & localização</div>
+          <div className="gap-[1px] rounded-edp-sm overflow-hidden border border-line grid [grid-template-columns:repeat(3,1fr)] bg-line">
             {fields.map(([k, val]) => (
-              <div key={k} className="kv"><small>{k}</small><div className="edp-mono" style={{ fontSize: 12.5 }}>{val}</div></div>
+              <div key={k} className="kv"><small>{k}</small><div className="edp-mono text-[12.5px]">{val}</div></div>
             ))}
           </div>
           {sel.latitude && sel.longitude && (
-            <Button asChild variant="outline" size="sm" style={{ marginTop: 12, color: "var(--blue)", borderColor: "rgba(31,159,214,0.4)" }}>
+            <Button asChild variant="outline" size="sm" className="text-blue mt-[12px]" style={{ borderColor: "rgba(31,159,214,0.4)" }}>
               <a target="_blank" rel="noopener" href={EDPApi.mapsUrl(sel.latitude, sel.longitude)}><MapPin /> Abrir no Google Maps</a>
             </Button>
           )}

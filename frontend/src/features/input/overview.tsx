@@ -47,14 +47,14 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
 
   return (
     <div className="edp-page">
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+      <div className="flex items-end justify-between gap-[16px] flex-wrap">
+        <div className="flex items-baseline gap-[9px]">
           <span className="edp-num">{filtrados.length.toLocaleString('pt-BR')}</span>
           <span className="edp-eyebrow">
             {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} registros` : 'registros'}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-[8px]">
           <Button variant="outline" onClick={() => {
             toast.promise(InputApi.syncSap(), {
               loading: 'Iniciando extração do SAP...',
@@ -74,7 +74,7 @@ export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element 
       <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />
 
-      <div className="edp-mono" style={{ fontSize: 11, color: 'var(--text-mute)', padding: '2px 0' }}>
+      <div className="edp-mono text-[11px] text-text-mute py-[2px] px-[0px]">
         {vinculoStatus === null
           ? 'verificando vínculos Nota_Mae…'
           : vinculoStatus.atualizadas > 0

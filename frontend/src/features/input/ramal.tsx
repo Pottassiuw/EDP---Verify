@@ -166,14 +166,14 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const comSelecao = modo === 'lote' || modo === 'exclusao';
 
   return (
-    <div className="ui-reset edp-page">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+    <div className="edp-page">
+      <div className="flex items-center gap-[12px] flex-wrap">
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo do ramal" />
       </div>
 
-      {isLoading && <div style={{ padding: 24, color: 'var(--text-dim)' }}>Carregando notas ramal…</div>}
+      {isLoading && <div className="p-[24px] text-text-dim">Carregando notas ramal…</div>}
       {error != null && (
-        <div style={{ padding: 24, color: 'var(--red, #dc3545)' }}>
+        <div className="p-[24px] text-red">
           Erro ao carregar ramal: {String((error as Error).message)}
         </div>
       )}
@@ -183,7 +183,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
       {/* VISÃO GERAL — DataGrid com keyboard nav, resize, soma/média */}
       {modo === 'visao' && dadosRamal && (
         <React.Fragment>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+          <div className="flex items-baseline gap-[9px]">
             <span className="edp-num">{registros.length.toLocaleString('pt-BR')}</span>
             <span className="edp-eyebrow">notas ramal</span>
           </div>
@@ -196,8 +196,8 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         <React.Fragment>
           <Card>
             <CardContent className="pt-6">
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+              <div className="flex gap-[12px] items-center flex-wrap">
+                <span className="text-[12.5px] text-text-dim">
                   Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
                 </span>
                 <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
@@ -229,10 +229,10 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
             <Card>
               <CardHeader><CardTitle>Edição em lote — Ramal</CardTitle></CardHeader>
               <CardContent>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="flex gap-[10px] items-center flex-wrap">
                   <Select value={loteStatus || undefined}
                           onValueChange={(v) => setLoteStatus(v === '__manter' ? '' : v)}>
-                    <SelectTrigger style={{ width: 220 }}>
+                    <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Status: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -242,7 +242,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                   </Select>
                   <Select value={lotePrioridade || undefined}
                           onValueChange={(v) => setLotePrioridade(v === '__manter' ? '' : v)}>
-                    <SelectTrigger style={{ width: 220 }}>
+                    <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Prioridade: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,7 +251,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                     </SelectContent>
                   </Select>
                   <Input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
-                         onChange={(e) => setLoteMes(e.target.value)} style={{ width: 240 }} />
+                         onChange={(e) => setLoteMes(e.target.value)} className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
@@ -262,8 +262,8 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
           {modo === 'exclusao' && (
             <Card>
               <CardContent className="pt-6">
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+                <div className="flex gap-[12px] items-center flex-wrap">
+                  <span className="text-[12.5px] text-text-dim">
                     Marque as notas ramal e confirme a exclusão. {selecionados.size} selecionada(s).
                   </span>
                   <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
@@ -293,9 +293,9 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         <Card>
           <CardHeader><CardTitle>Cadastrar nota ramal</CardTitle></CardHeader>
           <CardContent>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 14 }}>
+            <div className="grid grid-cols-[repeat(3,minmax(180px,1fr))] gap-[14px]">
               {Object.keys(NOTA_RAMAL_VAZIA).map((campo) => (
-                <div key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div key={campo} className="flex flex-col gap-[6px]">
                   <Label htmlFor={`nova-ramal-${campo}`} className="text-muted-foreground">
                     {ROTULOS_RAMAL[campo] ?? campo}
                   </Label>
@@ -322,7 +322,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 16 }}>
+            <div className="mt-[16px]">
               <Button disabled={salvando} onClick={cadastrar}>💾 Salvar nota ramal</Button>
             </div>
           </CardContent>
@@ -334,16 +334,16 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
         <Card>
           <CardHeader><CardTitle>Colar planilha ramal</CardTitle></CardHeader>
           <CardContent>
-            <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 10px' }}>
+            <p className="text-[12.5px] text-text-dim mt-[0px] mx-[0px] mb-[10px]">
               Cole as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
               {COLUNAS_COLAGEM_RAMAL.map((c) => ROTULOS_RAMAL[c] ?? c).join(' · ')}
             </p>
             <Textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
                       onChange={(e) => setTextoColagem(e.target.value)}
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }} />
+                      className="font-mono text-[12px]" />
             {previewColagem.length > 0 && (
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span style={{ fontSize: 12.5 }}>{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
+              <div className="mt-[12px] flex flex-col gap-[10px]">
+                <span className="text-[12.5px]">{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
                 <NotesTable
                   colunas={COLUNAS_RAMAL.filter((c) => COLUNAS_COLAGEM_RAMAL.includes(c.key))}
                   registros={previewColagem.map((r, i) => ({

@@ -23,7 +23,7 @@ export function ConfiguracoesPage(): React.JSX.Element {
   const { settings, setSetting } = useSettings();
 
   return (
-    <div className="ui-reset h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-2xl px-6 py-8 md:px-8">
         <header className="mb-6">
           <h1 className="text-xl font-bold text-foreground">Configurações</h1>

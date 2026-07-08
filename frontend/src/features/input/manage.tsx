@@ -163,10 +163,10 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   }
 
   return (
-    <div className="ui-reset edp-page">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+    <div className="edp-page">
+      <div className="flex items-center gap-[12px] flex-wrap">
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo de edição" />
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
         <Button variant="ghost" size="sm" disabled={salvando} onClick={desfazer}>
           ↩ Reverter último salvamento
         </Button>
@@ -187,10 +187,10 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
             <Card>
               <CardHeader><CardTitle>Edição em lote</CardTitle></CardHeader>
               <CardContent>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="flex gap-[10px] items-center flex-wrap">
                   <Select value={loteStatus || undefined}
                           onValueChange={(v) => setLoteStatus(v === '__manter' ? '' : v)}>
-                    <SelectTrigger style={{ width: 220 }}>
+                    <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Status: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -200,7 +200,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                   </Select>
                   <Select value={lotePrioridade || undefined}
                           onValueChange={(v) => setLotePrioridade(v === '__manter' ? '' : v)}>
-                    <SelectTrigger style={{ width: 220 }}>
+                    <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Prioridade: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -209,7 +209,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     </SelectContent>
                   </Select>
                   <Input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
-                         onChange={(e) => setLoteMes(e.target.value)} style={{ width: 240 }} />
+                         onChange={(e) => setLoteMes(e.target.value)} className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
@@ -220,8 +220,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
           {modo === 'exclusao' && (
             <Card>
               <CardContent className="pt-6">
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+                <div className="flex gap-[12px] items-center flex-wrap">
+                  <span className="text-[12.5px] text-text-dim">
                     Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
                   </span>
                   <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
@@ -234,8 +234,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
           {modo === 'rapida' && (
             <Card>
               <CardContent className="pt-6">
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
+                <div className="flex gap-[12px] items-center flex-wrap">
+                  <span className="text-[12.5px] text-text-dim">
                     Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
                   </span>
                   <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
@@ -267,9 +267,9 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
         <Card>
           <CardHeader><CardTitle>Cadastrar nota</CardTitle></CardHeader>
           <CardContent>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 14 }}>
+            <div className="grid grid-cols-[repeat(3,minmax(180px,1fr))] gap-[14px]">
               {Object.keys(NOTA_VAZIA).map((campo) => (
-                <div key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div key={campo} className="flex flex-col gap-[6px]">
                   <Label htmlFor={`nova-${campo}`}>
                     {ROTULOS[campo] ?? campo}
                   </Label>
@@ -289,7 +289,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 16 }}>
+            <div className="mt-[16px]">
               <Button disabled={salvando} onClick={cadastrar}>💾 Salvar nova nota</Button>
             </div>
           </CardContent>
@@ -300,16 +300,16 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
         <Card>
           <CardHeader><CardTitle>Colar planilha</CardTitle></CardHeader>
           <CardContent>
-            <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: '0 0 10px' }}>
+            <p className="text-[12.5px] text-text-dim mt-[0px] mx-[0px] mb-[10px]">
               Cole aqui as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
               {COLUNAS_COLAGEM.map((c) => ROTULOS[c] ?? c).join(' · ')}
             </p>
             <Textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
                       onChange={(e) => setTextoColagem(e.target.value)}
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }} />
+                      className="font-mono text-[12px]" />
             {previewColagem.length > 0 && (
-              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span style={{ fontSize: 12.5 }}>{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
+              <div className="mt-[12px] flex flex-col gap-[10px]">
+                <span className="text-[12.5px]">{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
                 <NotesTable colunas={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
                             registros={previewColagem.map((r, i) => ({ ...r, Numero_Nota: Number(r.Numero_Nota) || -(i + 1) })) as NotaInput[]}
                             altura={240} />

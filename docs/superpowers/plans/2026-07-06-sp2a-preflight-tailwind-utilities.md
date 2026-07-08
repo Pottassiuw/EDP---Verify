@@ -207,6 +207,33 @@ win when combined on the same element."
 | `letterSpacing: "var(--tracking-tight)"` | `tracking-tight` |
 | `letterSpacing: "var(--tracking-label)"` | `tracking-label` |
 | `fontFamily: "var(--font-mono)"` | `font-mono` |
+| `position: "relative"` / `"absolute"` / `"fixed"` / `"sticky"` | `relative` / `absolute` / `fixed` / `sticky` |
+| `top`/`right`/`bottom`/`left: N` (px) | `top-[Npx]` / `right-[Npx]` / `bottom-[Npx]` / `left-[Npx]` |
+| `width: N` (px) / `"N%"` | `w-[Npx]` / `w-[N%]` |
+| `height: N` (px) / `"N%"` | `h-[Npx]` / `h-[N%]` |
+| `margin: N` (px, single value, all sides) | `m-[Npx]` |
+| `marginTop`/`marginRight`/`marginBottom`/`marginLeft: N` | `mt-[Npx]` / `mr-[Npx]` / `mb-[Npx]` / `ml-[Npx]` |
+| `padding: N` (single number, all sides) | `p-[Npx]` |
+| `padding: "Ya Xb Zc"` (3-value shorthand: top, left/right, bottom) | `pt-[Yapx] px-[Xbpx] pb-[Zcpx]` |
+| `boxShadow: "var(--shadow-sm)"` / `"var(--shadow)"` / `"var(--shadow-lg)"` | `shadow-[var(--shadow-sm)]` / `shadow-[var(--shadow)]` / `shadow-[var(--shadow-lg)]` (Tailwind v4 arbitrary value, references the same CSS var — no new bridge token needed) |
+| `borderLeft`/`borderRight`/`borderTop`/`borderBottom: "Npx solid var(--x)"` | `border-l-[Npx] border-l-{token}` (same pattern for r/t/b; `{token}` per the color table above, e.g. `border-l-line`) |
+| `borderColor: "var(--x)"` (no matching `border` shorthand entry above) | `border-{token}` |
+| `zIndex: N` | `z-[N]` |
+| `display: "grid"` | `grid` |
+| `display: "none"` | `hidden` |
+| `display: "inline-flex"` | `inline-flex` |
+| `display: "inline-block"` | `inline-block` |
+| `display: "block"` | `block` |
+| `fontWeight: 800` | `font-extrabold` |
+| `fontWeight: 400` | `font-normal` |
+| `letterSpacing: "Nem"` / `"Npx"` (literal, not a `var(--tracking-*)`) | `tracking-[Nem]` / `tracking-[Npx]` |
+| `borderRadius: N` (px, literal, not a `var(--r*)`) | `rounded-[Npx]` |
+| `background: "var(--line)"` | `bg-line` |
+| `background: "var(--accent-tint)"` | `bg-accent-tint` |
+| `background: "var(--accent)"` or `"var(--accent-2)"` | `bg-[var(--accent)]` / `bg-[var(--accent-2)]` (arbitrary value — `--color-accent` in the bridge is the shadcn slot, not the EDP brand accent; don't use the bare `bg-accent` utility for this) |
+| `accentColor: "var(--accent)"` | `[accent-color:var(--accent)]` (Tailwind v4 arbitrary-property syntax) |
+| any other static, literal CSS value not listed above **that is not a color** | Tailwind v4 arbitrary-value/arbitrary-property syntax: a bracketed value on the closest matching utility prefix (`w-[..]`, `h-[..]`, `top-[..]`) or, if no utility prefix exists for the CSS property at all, the full arbitrary-property form `[css-property:value]`. Do not invent new `@theme` tokens or edit `app.css` to cover a one-off value. |
+| any static color value (`rgba(...)`, `#hex`) not backed by a `var(--token)` and not in the color table above | **Leave inline.** Per CLAUDE.md ("never use arbitrary colors in Tailwind — design tokens only"), a raw rgba/hex literal must not become a Tailwind arbitrary-value className (`border-[rgba(...)]` etc.) even when relocating a pre-existing value — it stays in `style={{}}` exactly as before. Only colors already expressed as `var(--token)` convert. |
 
 **Leave inline** (do not touch): any property whose value is a variable, prop, computed expression, ternary, template literal, or `var(--pad)`/`var(--gap)`/`var(--row-py)`/`var(--tile-py)` (density-reactive, per Global Constraints).
 

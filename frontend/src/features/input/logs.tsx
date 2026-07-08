@@ -44,7 +44,7 @@ export function Logs(): React.JSX.Element {
 
       {sub === 'notas' && (
         <React.Fragment>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="flex gap-[10px]">
             <input value={filtroNota} placeholder="Filtrar por nº da nota" className="edp-field"
                    onChange={(e) => setFiltroNota(e.target.value)} />
             <select value={filtroUsuario} className="edp-field"
@@ -71,7 +71,7 @@ export function Logs(): React.JSX.Element {
               ))}
             </tbody>
           </table>
-          {registros.length === 0 && <span style={{ color: 'var(--text-mute)' }}>Nenhum registro encontrado.</span>}
+          {registros.length === 0 && <span className="text-text-mute">Nenhum registro encontrado.</span>}
         </React.Fragment>
       )}
 
@@ -93,21 +93,20 @@ export function Logs(): React.JSX.Element {
 
       {sub === 'timeline' && (
         <React.Fragment>
-          <input value={notaTimeline} placeholder="Digite o nº da nota" className="edp-field"
-                 style={{ width: 220 }}
+          <input value={notaTimeline} placeholder="Digite o nº da nota" className="edp-field w-[220px]"
                  onChange={(e) => setNotaTimeline(e.target.value)} />
           {(timeline.data?.registros ?? []).map((r) => (
-            <div key={r.ID_Log} style={{ border: '1px solid var(--line)', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            <div key={r.ID_Log} className="border border-line rounded-[8px] py-[10px] px-[14px]">
+              <div className="text-[12px] text-text-dim">
                 <strong>{formatarDataHora(r.Data_Hora)}</strong> · por <code>{r.Usuario}</code>
               </div>
-              <div style={{ fontSize: 13 }}>
+              <div className="text-[13px]">
                 Alterou <strong>{r.Campo_Alterado}</strong> de <code>{r.Valor_Antigo || '—'}</code> para <code>{r.Valor_Novo || '—'}</code>
               </div>
             </div>
           ))}
           {numeroTimeline !== null && timeline.data?.registros.length === 0 && (
-            <span style={{ color: 'var(--text-mute)' }}>Nenhum histórico para a nota {numeroTimeline}.</span>
+            <span className="text-text-mute">Nenhum histórico para a nota {numeroTimeline}.</span>
           )}
         </React.Fragment>
       )}

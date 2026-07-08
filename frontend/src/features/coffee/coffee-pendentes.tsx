@@ -121,28 +121,28 @@ export function CoffeePendentes(): React.JSX.Element {
 
   if (error) {
     return (
-      <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "var(--text-mute)" }}>
-        <span style={{ color: "var(--red)" }}>Erro ao carregar notas: {error}</span>
+      <div className="p-[24px] flex flex-col items-center gap-[12px] text-text-mute">
+        <span className="text-red">Erro ao carregar notas: {error}</span>
         <Button variant="outline" size="sm" onClick={refetch}>Tentar de novo</Button>
       </div>
     );
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flexShrink: 0, padding: "14px 22px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span className="edp-title" style={{ fontSize: 16 }}>Notas Pendentes</span>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="shrink-0 py-[14px] px-[22px] flex items-center gap-[12px] flex-wrap">
+        <span className="edp-title text-[16px]">Notas Pendentes</span>
         {!isLoading && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+          <span className="edp-mono text-[12px] text-text-mute">
             {notas.length} nota{notas.length !== 1 ? "s" : ""}
           </span>
         )}
         {selecionadas.size > 0 && (
-          <span className="edp-mono" style={{ fontSize: 12, color: "var(--accent)" }}>
+          <span className="edp-mono text-[12px] text-[var(--accent)]">
             {selecionadas.size} selecionada{selecionadas.size !== 1 ? "s" : ""}
           </span>
         )}
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
         {selecionadas.size > 0 && (
           <Button variant="destructive" size="sm" disabled={buscaEstado === "rodando"}
                   onClick={() => setArquivarLoteOpen(true)}>
@@ -158,23 +158,23 @@ export function CoffeePendentes(): React.JSX.Element {
       </div>
 
       {buscaEstado !== "idle" && buscaJob && (
-        <div style={{ flexShrink: 0, padding: "0 22px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ height: 6, borderRadius: 999, background: "var(--surface-3)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: pct + "%", borderRadius: 999,
-                          background: concluido ? "var(--green)" : "var(--accent)",
+        <div className="shrink-0 pt-0 px-[22px] pb-[12px] flex flex-col gap-[6px]">
+          <div className="h-[6px] rounded-[999px] bg-surface-3 overflow-hidden">
+            <div className="h-full rounded-[999px]"
+                 style={{ width: pct + "%", background: concluido ? "var(--green)" : "var(--accent)",
                           transition: "width .3s ease, background .3s ease" }} />
           </div>
-          <span className="edp-mono" style={{ fontSize: 11.5, color: concluido ? "var(--green)" : "var(--text-mute)" }}>
+          <span className="edp-mono text-[11.5px]" style={{ color: concluido ? "var(--green)" : "var(--text-mute)" }}>
             {concluido
               ? "Concluido"
               : `${pct}% · Buscando nota ${buscaJob.feitas} de ${buscaJob.total}...`}
           </span>
           {concluido && buscaJob.erros.length > 0 && (
-            <details style={{ fontSize: 12, color: "var(--text-dim)" }}>
-              <summary style={{ cursor: "pointer", color: "var(--amber)" }}>
+            <details className="text-[12px] text-text-dim">
+              <summary className="cursor-pointer text-amber">
                 {buscaJob.erros.length} erro{buscaJob.erros.length !== 1 ? "s" : ""} durante a busca
               </summary>
-              <ul style={{ margin: "6px 0 0", paddingLeft: 20 }}>
+              <ul className="mt-[6px] mx-0 mb-0 pl-[20px]">
                 {buscaJob.erros.map((e, i) => (
                   <li key={i}><span className="edp-mono">{e.pk}</span>: {e.msg}</li>
                 ))}
@@ -185,7 +185,7 @@ export function CoffeePendentes(): React.JSX.Element {
       )}
 
       {buscaErro && (
-        <div style={{ flexShrink: 0, padding: "8px 22px", fontSize: 12, color: "var(--red)" }}>
+        <div className="shrink-0 py-[8px] px-[22px] text-[12px] text-red">
           Erro na busca: {buscaErro}
         </div>
       )}
@@ -204,7 +204,7 @@ export function CoffeePendentes(): React.JSX.Element {
             <AbrirCoffeeBtn pk={nota.pk} />
             <Button variant="ghost" size="icon-sm" onClick={() => setArquivarPk(nota.pk)}
                     aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
-                    style={{ color: "var(--red)" }}>
+                    className="text-red">
               <Archive />
             </Button>
             <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />

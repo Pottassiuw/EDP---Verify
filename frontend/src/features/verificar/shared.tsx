@@ -57,10 +57,8 @@ export const Field: React.FC<FieldProps> = ({
   grow,
 }) => (
   <label
+    className="flex flex-col gap-[5px]"
     style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 5,
       flex: grow ? 1 : "none",
       minWidth: grow ? 150 : 0,
     }}

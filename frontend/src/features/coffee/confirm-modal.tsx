@@ -38,17 +38,15 @@ export function ConfirmModal({
   return (
     <>
       <div onClick={busy ? undefined : onCancel}
-           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }} />
+           className="fixed inset-0 z-[300]" style={{ background: "rgba(0,0,0,0.4)" }} />
       <div role="dialog" aria-modal="true"
-           style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-                    width: 420, maxWidth: "92vw", background: "var(--surface)",
-                    border: "1px solid var(--line)", borderRadius: 12, zIndex: 301,
-                    display: "flex", flexDirection: "column", gap: 12, padding: 20,
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
-        <span className="edp-title" style={{ fontSize: 17 }}>{title}</span>
-        {message && <div style={{ fontSize: 13, color: "var(--text-mute)" }}>{message}</div>}
+           className="fixed top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[92vw]
+                      bg-surface border border-line rounded-[12px] z-[301] flex flex-col gap-[12px] p-[20px]"
+           style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+        <span className="edp-title text-[17px]">{title}</span>
+        {message && <div className="text-[13px] text-text-mute">{message}</div>}
 
-        <label style={{ fontSize: 12, color: "var(--text-dim)" }}>
+        <label className="text-[12px] text-text-dim">
           Justificativa{requireJustification ? " (obrigatória)" : " (opcional)"}
         </label>
         <textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)}
@@ -56,15 +54,14 @@ export function ConfirmModal({
                   placeholder={requireJustification
                     ? "Explique o motivo desta acao..."
                     : "Opcional: registre um motivo..."}
-                  style={{ resize: "vertical", padding: "8px 10px", borderRadius: 8,
-                           border: "1px solid var(--line)", background: "var(--surface-2)",
-                           color: "var(--text)", fontSize: 13, fontFamily: "inherit" }} />
+                  className="resize-y py-[8px] px-[10px] rounded-[8px] border border-line bg-surface-2
+                             text-text text-[13px] [font-family:inherit]" />
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+        <div className="flex justify-end gap-[8px] mt-[4px]">
           <Button variant="outline" size="sm" onClick={onCancel} disabled={busy}>Cancelar</Button>
           <Button variant="outline" size="sm" disabled={busy || !justOk}
                   onClick={() => onConfirm(justificativa.trim())}
-                  style={{ fontWeight: 600, color: confirmColor, borderColor: confirmColor }}>
+                  className="font-semibold" style={{ color: confirmColor, borderColor: confirmColor }}>
             {busy ? "..." : confirmLabel}
           </Button>
         </div>

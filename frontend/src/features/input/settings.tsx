@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 function Cartao({ titulo, children }: { titulo: string; children: React.ReactNode }): React.JSX.Element {
   return (
     <section className="edp-panel">
-      <h4 className="edp-title" style={{ fontSize: 15, margin: '0 0 12px' }}>{titulo}</h4>
+      <h4 className="edp-title text-[15px] mt-[0px] mx-[0px] mb-[12px]">{titulo}</h4>
       {children}
     </section>
   );
@@ -33,11 +33,11 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
   }
 
   return (
-    <div className="ui-reset edp-page">
+    <div className="edp-page">
       {msg && <div className="edp-banner ok">{msg}</div>}
 
       <Cartao titulo="Seu nome (log de auditoria)">
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-[8px]">
           <input value={nome} onChange={(e) => setNome(e.target.value)} className="edp-field" />
           <Button variant="outline" size="sm" disabled={!nome.trim()}
                   onClick={() => { setUsuario(nome); setMsg('Nome atualizado.'); toast.success('Nome atualizado.'); }}>Salvar</Button>
@@ -46,7 +46,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
 
       <Cartao titulo="Responsáveis por Conjunto">
         {linhas.map(([conjunto, pessoa], i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+          <div key={i} className="flex gap-[8px] mb-[6px]">
             <input value={conjunto} className="edp-field"
                    onChange={(e) => { const c = [...linhas] as [string, string][]; c[i] = [e.target.value, pessoa]; setLinhasResp(c); }} />
             <input value={pessoa} className="edp-field"
@@ -55,7 +55,7 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
                     onClick={() => setLinhasResp(linhas.filter((_, j) => j !== i) as [string, string][])}>×</Button>
           </div>
         ))}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-[8px]">
           <Button variant="ghost" size="sm"
                   onClick={() => setLinhasResp([...linhas, ['', '']] as [string, string][])}>+ Adicionar</Button>
           <Button variant="outline" size="sm" onClick={() => { void agir(async () => {
@@ -69,18 +69,18 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
         {dados.meta.bases.map((b) => {
           const gerenciavel = !b.arquivo.startsWith('Gerada_');
           return (
-            <div key={b.arquivo} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ minWidth: 280, fontSize: 13 }}>{b.nome}</span>
-              <span style={{ fontSize: 11, color: b.encontrada ? 'var(--green)' : 'var(--red, #dc3545)' }}>
+            <div key={b.arquivo} className="flex gap-[10px] items-center mb-[8px] flex-wrap">
+              <span className="min-w-[280px] text-[13px]">{b.nome}</span>
+              <span className="text-[11px]" style={{ color: b.encontrada ? 'var(--green)' : 'var(--red, #dc3545)' }}>
                 {b.encontrada ? '● conectada' : '● indisponível'}
               </span>
               {gerenciavel && b.encontrada && (
                 <Button asChild variant="ghost" size="sm"><a href={InputApi.urlDownloadBase(b.arquivo)} download>⬇ Baixar atual</a></Button>
               )}
               {gerenciavel && (
-                <Button asChild variant="ghost" size="sm"><label style={{ cursor: 'pointer' }}>
+                <Button asChild variant="ghost" size="sm"><label className="cursor-pointer">
                   ↑ Substituir…
-                  <input type="file" accept=".xlsx" style={{ display: 'none' }}
+                  <input type="file" accept=".xlsx" className="hidden"
                          onChange={(e) => {
                            const f = e.target.files?.[0];
                            if (!f) return;
@@ -96,21 +96,21 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
             </div>
           );
         })}
-        <p style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>
+        <p className="text-[11.5px] text-text-mute">
           Não altere o nome das abas nem os cabeçalhos das planilhas — o sistema os procura exatamente como estão.
         </p>
       </Cartao>
 
       <Cartao titulo="Backups do banco (locais, rotativos)">
         {(backups.data?.backups ?? []).map((b) => (
-          <div key={b.arquivo} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 6, fontSize: 12.5 }}>
-            <span className="edp-mono" style={{ flex: 1 }}>{b.arquivo}</span>
-            <span style={{ color: 'var(--text-dim)' }}>{new Date(b.modificado).toLocaleString('pt-BR')} · {b.tamanho_mb} MB</span>
+          <div key={b.arquivo} className="flex gap-[12px] items-center mb-[6px] text-[12.5px]">
+            <span className="edp-mono flex-1">{b.arquivo}</span>
+            <span className="text-text-dim">{new Date(b.modificado).toLocaleString('pt-BR')} · {b.tamanho_mb} MB</span>
             <Button asChild variant="ghost" size="sm"><a href={InputApi.urlDownloadBackup(b.arquivo)} download>⬇ Baixar</a></Button>
           </div>
         ))}
         {(backups.data?.backups ?? []).length === 0 && (
-          <span style={{ fontSize: 12.5, color: 'var(--text-mute)' }}>
+          <span className="text-[12.5px] text-text-mute">
             Nenhum backup ainda — o primeiro é criado automaticamente no próximo salvamento.
           </span>
         )}

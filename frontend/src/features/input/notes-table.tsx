@@ -28,13 +28,8 @@ interface CelulaEditando {
   campo: string;
 }
 
-const HEADER_STICKY: React.CSSProperties = {
-  position: "sticky",
-  top: 0,
-  zIndex: 1,
-  background: "var(--surface)",
-  boxShadow: "inset 0 -1px 0 var(--line)",
-};
+const HEADER_STICKY_CLASS =
+  "sticky top-[0px] z-[1] bg-surface shadow-[inset_0_-1px_0_var(--line)]";
 
 export function NotesTable(props: NotesTableProps): React.JSX.Element {
   const {
@@ -104,16 +99,9 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
         onClick={() =>
           setOrdem({ campo: c.key, asc: ativa ? !ordem!.asc : true })
         }
+        className={`${HEADER_STICKY_CLASS} cursor-pointer whitespace-nowrap font-mono text-[10px] font-medium tracking-[0.14em] uppercase`}
         style={{
-          ...HEADER_STICKY,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
           minWidth: c.largura ?? 90,
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           color: ativa ? "var(--accent)" : "var(--text-mute)",
         }}
       >
@@ -145,16 +133,15 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             ? prioridadeOpcoes
             : null;
       return (
-        <TableCell key={c.key} style={{ padding: 0, height: ALTURA_LINHA }}>
+        <TableCell key={c.key} className="p-[0px] h-[32px]">
           {opcoes ? (
             <select
               autoFocus
               defaultValue={String(v ?? "")}
               aria-label={`Editar ${c.label}`}
-              className="edp-field"
+              className="edp-field w-[100%] h-[28px] text-[12.5px]"
               onChange={(e) => confirmar(e.target.value)}
               onBlur={() => setEditando(null)}
-              style={{ width: "100%", height: ALTURA_LINHA - 4, fontSize: 12.5 }}
             >
               {opcoes.map((o) => (
                 <option key={o} value={o}>
@@ -167,18 +154,12 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               autoFocus
               defaultValue={String(v ?? "")}
               aria-label={`Editar ${c.label}`}
-              className="edp-field"
+              className="edp-field w-[100%] h-[28px] text-[12.5px] box-border"
               onBlur={(e) => confirmar(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter")
                   confirmar((e.target as HTMLInputElement).value);
                 if (e.key === "Escape") setEditando(null);
-              }}
-              style={{
-                width: "100%",
-                height: ALTURA_LINHA - 4,
-                fontSize: 12.5,
-                boxSizing: "border-box",
               }}
             />
           )}
@@ -194,17 +175,11 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
             ? () => setEditando({ numero: r.Numero_Nota, campo: c.key })
             : undefined
         }
+        className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[320px] h-[32px] text-[12.5px] border-b-[1px] border-b-line"
         style={{
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          maxWidth: 320,
-          height: ALTURA_LINHA,
-          fontSize: 12.5,
           cursor: editavel ? "cell" : "default",
           color: alterada ? "var(--accent)" : undefined,
           fontWeight: alterada ? 600 : undefined,
-          borderBottom: "1px solid var(--line)",
         }}
       >
         {c.numeric
@@ -220,18 +195,14 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
   return (
     <div
       onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
-      style={{
-        height: altura,
-        overflow: "auto",
-        border: "1px solid var(--line)",
-        borderRadius: 8,
-      }}
+      className="overflow-auto border border-line rounded-[8px]"
+      style={{ height: altura }}
     >
-      <Table style={{ borderCollapse: "collapse" }}>
+      <Table className="border-collapse">
         <TableHeader>
           <TableRow>
             {selecionados && (
-              <TableHead style={{ ...HEADER_STICKY, width: 36, textAlign: "center" }}>
+              <TableHead className={`${HEADER_STICKY_CLASS} w-[36px] text-center`}>
                 <input
                   type="checkbox"
                   checked={
@@ -250,7 +221,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
         <TableBody>
           {espacoTopo > 0 && (
             <tr style={{ height: espacoTopo }}>
-              <td colSpan={totalColunas} style={{ padding: 0, border: 0 }} />
+              <td colSpan={totalColunas} className="p-[0px] border-0" />
             </tr>
           )}
           {fatia.map((r) => (
@@ -263,7 +234,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               }}
             >
               {selecionados && (
-                <TableCell style={{ textAlign: "center", height: ALTURA_LINHA, borderBottom: "1px solid var(--line)" }}>
+                <TableCell className="text-center h-[32px] border-b-[1px] border-b-line">
                   <input
                     type="checkbox"
                     checked={selecionados.has(r.Numero_Nota)}
@@ -276,7 +247,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
           ))}
           {espacoFundo > 0 && (
             <tr style={{ height: espacoFundo }}>
-              <td colSpan={totalColunas} style={{ padding: 0, border: 0 }} />
+              <td colSpan={totalColunas} className="p-[0px] border-0" />
             </tr>
           )}
         </TableBody>

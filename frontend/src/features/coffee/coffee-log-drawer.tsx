@@ -33,30 +33,27 @@ export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.
     <>
       {/* overlay */}
       <div onClick={onClose}
-           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 200 }} />
+           className="fixed inset-0 z-[200]" style={{ background: "rgba(0,0,0,0.3)" }} />
 
       {/* panel */}
-      <div style={{ position: "fixed", top: 0, right: 0, width: 360, height: "100vh",
-                    background: "var(--surface)", borderLeft: "1px solid var(--line)",
-                    zIndex: 201, display: "flex", flexDirection: "column",
-                    animation: "clog-slide-in 150ms ease" }}>
+      <div className="fixed top-0 right-0 w-[360px] h-[100vh] bg-surface border-l border-l-line
+                      z-[201] flex flex-col [animation:clog-slide-in_150ms_ease]">
         <style>{`@keyframes clog-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
 
         {/* header */}
-        <div style={{ height: 48, flexShrink: 0, display: "flex", alignItems: "center",
-                      padding: "0 16px", borderBottom: "1px solid var(--line)", gap: 8 }}>
-          <span style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>
+        <div className="h-[48px] shrink-0 flex items-center py-0 px-[16px] border-b border-b-line gap-[8px]">
+          <span className="flex-1 font-bold text-[14px]">
             Logs — Nota <span className="edp-mono">#{notaPk}</span>
           </span>
           <button aria-label="Fechar" onClick={onClose}
-                  style={{ width: 28, height: 28, border: 0, borderRadius: 6, cursor: "pointer",
-                           background: "var(--surface-2)", color: "var(--text-mute)", fontSize: 14 }}>
+                  className="w-[28px] h-[28px] border-0 rounded-[6px] cursor-pointer
+                             bg-surface-2 text-text-mute text-[14px]">
             ✕
           </button>
         </div>
 
         {/* filtro de passo */}
-        <div style={{ flexShrink: 0, padding: "10px 16px 6px", display: "flex", flexWrap: "wrap" }}>
+        <div className="shrink-0 pt-[10px] px-[16px] pb-[6px] flex flex-wrap">
           <SegTabs tabs={PASSOS.map((p) => ({ id: p.value, rotulo: p.label }))}
                    value={passo} onChange={setPasso} ariaLabel="Filtrar por passo" />
         </div>
