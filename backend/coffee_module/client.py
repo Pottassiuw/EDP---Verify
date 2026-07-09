@@ -9,6 +9,14 @@ from coffee_module import config, db
 _TIMEOUT = 120
 
 
+class NotaNaoEncontradaErro(Exception):
+    """json_all respondeu 200 com lista vazia: o id nao existe no COFFEE."""
+
+    def __init__(self, id):
+        super().__init__(f"Nota {id} nao encontrada no COFFEE.")
+        self.id = id
+
+
 def _status_de(exc: Exception):
     resp = getattr(exc, "response", None)
     return getattr(resp, "status_code", None)
@@ -39,6 +47,8 @@ def buscar_nota(id) -> dict:
         bruto = resp.json()
         if isinstance(bruto, str):
             bruto = json.loads(bruto)
+        if not bruto:
+            raise NotaNaoEncontradaErro(id)
         registro = bruto[0]
         fields = registro.get("fields", {})
         tempo_ms = round((time.perf_counter() - inicio) * 1000)

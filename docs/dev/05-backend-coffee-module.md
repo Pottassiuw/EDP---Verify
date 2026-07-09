@@ -27,25 +27,28 @@ Todas as chamadas usam `httpx` síncrono contra `config.base_url()`
 timeout de 120s, e cada chamada é logada em `coffee_logs` via
 `db.registrar_log("api_call", ...)`, sucesso ou falha.
 
-- `buscar_nota(id)` (`client.py:33`) — `GET json_all/{id}`. A API COFFEE
+- `buscar_nota(id)` (`client.py:41`) — `GET json_all/{id}`. A API COFFEE
   devolve uma string JSON duplamente codificada (`json.loads` sobre o
   corpo já decodificado pelo `httpx`), de onde é extraído o primeiro
-  registro (`bruto[0]`). Retorna um dict com `pk`, `id_sap`, `arquivado`,
-  `local_instalacao` (montado por `compor_local_instalacao`) e os
-  `fields` brutos.
-- `compor_local_instalacao(fields)` (`client.py:17`) — a API não devolve
+  registro (`bruto[0]`). Para um id inexistente a API responde 200 com
+  lista vazia; nesse caso `buscar_nota` levanta
+  `NotaNaoEncontradaErro` (`client.py:12`), que as rotas `/consultar` e
+  `/marcar-gerar` convertem em 404 (qualquer outra exceção vira 502).
+  Retorna um dict com `pk`, `id_sap`, `arquivado`, `local_instalacao`
+  (montado por `compor_local_instalacao`) e os `fields` brutos.
+- `compor_local_instalacao(fields)` (`client.py:25`) — a API não devolve
   um campo pronto de local de instalação: ele é montado a partir de
   `cidade` (3 dígitos, zero-padded) + `tipo_local_instalacao` (2 letras) +
   `local_instalacao_numero` (8 dígitos, zero-padded). Retorna `None` se
   faltar qualquer componente.
-- `definir_sap(id, sap)` (`client.py:79`) — `GET sap/{id}/{sap}`, atribui
+- `definir_sap(id, sap)` (`client.py:89`) — `GET sap/{id}/{sap}`, atribui
   (ou reseta, com `SAP_PENDENTE`) o campo `id_sap` da nota no COFFEE.
-- `desarquivar(id)` (`client.py:83`) — `GET desarquivar/{id}`.
-- `alterar_local(id, local)` (`client.py:87`) — `GET
+- `desarquivar(id)` (`client.py:93`) — `GET desarquivar/{id}`.
+- `alterar_local(id, local)` (`client.py:97`) — `GET
   local_instalacao/{id}/{local}`.
 
 As três escritas (`definir_sap`, `desarquivar`, `alterar_local`)
-compartilham o helper interno `_get_logado()` (`client.py:62`), que faz o
+compartilham o helper interno `_get_logado()` (`client.py:72`), que faz o
 GET, loga e propaga a exceção em caso de erro — não há retry.
 
 ## jobs.py — geração em background
@@ -123,14 +126,14 @@ Router `/api/coffee` (prefixo). Mapeamento para o frontend
 | `POST /buscar` | Dispara `jobs.iniciar_busca` para uma lista de IDs. | `coffee-pendentes.tsx` |
 | `GET /job/{job_id}` | Consulta estado de um job (busca ou geração). | `coffee-pendentes.tsx`, `coffee-gerar-modal.tsx` |
 | `GET /notas` | Lista notas, filtrável por `status` (`pendente`/`gerada`/`a_gerar`/...). | `coffee-geradas.tsx`, `coffee-corrigidas.tsx`, `coffee-pendentes.tsx` |
-| `GET /consultar/{id}` | Busca síncrona de uma nota (sem job) para o modal. | `coffee-gerar-modal.tsx` (`EDPApi.consultarNota`) |
+| `GET /consultar/{id}` | Busca síncrona de uma nota (sem job) para o modal. 404 se o id não existe no COFFEE, 502 para falha real da API. | `coffee-gerar-modal.tsx` (`EDPApi.consultarNota`) |
 | `POST /sap` | Define `id_sap` de uma nota diretamente. | uso interno/manual |
 | `POST /desarquivar` | Desarquiva uma nota diretamente. | uso interno/manual |
 | `POST /local-instalacao` | Corrige o local de instalação de uma nota. | `coffee-gerar-modal.tsx` |
 | `GET /logs` | Lista logs, filtrável por `nota_pk`/`tipo`/`usuario`/`since`/`limit`. | `coffee-logs.tsx`, `coffee-log-drawer.tsx` |
 | `GET /logs/usuarios` | Lista usuários distintos que aparecem nos logs. | `coffee-logs.tsx` |
 | `POST /arquivar` | Arquiva uma nota (exige justificativa). | `coffee-pendentes.tsx`, `coffee-geradas.tsx` |
-| `POST /marcar-gerar` | Liga/desliga a flag `a_gerar` (fila); resolve o `pk` real via `client.buscar_nota` ao adicionar, exige justificativa para remover. | `coffee-geradas.tsx` |
+| `POST /marcar-gerar` | Liga/desliga a flag `a_gerar` (fila); resolve o `pk` real via `client.buscar_nota` ao adicionar (404 se o id não existe, 502 para falha real da API), exige justificativa para remover. | `coffee-geradas.tsx`; Verificar via `EDPApi.marcarGerar` (`App.tsx` — concluir adiciona, reabrir remove com justificativa automática) |
 | `POST /regerar` | Força a geração de uma única nota (mesma regra desarquivar+SAP de `jobs.py`, sem passar por um job). | `coffee-geradas.tsx`, `coffee-gerar-modal.tsx` |
 | `POST /gerar-lote` | Dispara `jobs.iniciar_geracao` para uma lista de IDs. | `coffee-gerar-modal.tsx` |
 
@@ -141,7 +144,7 @@ carimba cada requisição com um `trace_id` propagado às chamadas filhas de
 
 ## Pontos de atenção
 
-- `coffee_module/routes.py:103-112` — `POST /sap` e `POST /desarquivar`
+- `coffee_module/routes.py:107-116` — `POST /sap` e `POST /desarquivar`
   chamam `client.definir_sap`/`client.desarquivar` isoladamente, sem
   passar pela regra de "sempre os dois juntos" de `jobs.py`/`regerar`; são
   rotas de uso manual/interno e não têm proteção contra deixar uma nota

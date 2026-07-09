@@ -19,9 +19,13 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
 2. **Correção ou fila COFFEE** — notas com erro corrigível ficam
    disponíveis para correção manual na tela; ao marcar uma nota "a
    gerar", o `POST /marcar-gerar` grava `origem='verificar'`
-   (`backend/coffee_module/routes.py:171`). `classify.classificar`
+   (`backend/coffee_module/routes.py:179`). `classify.classificar`
    trata qualquer `origem` diferente de `'avulsa'` (incluindo
    `'verificar'` ou `None`) como `corrigida` ao sair de `pendente`.
+   Reabrir a nota na Verificar remove-a da fila: o frontend envia
+   `a_gerar=false` com a justificativa automática "Nota reaberta na
+   Verificar" (`frontend/src/App.tsx:133`), que a rota exige para
+   qualquer remoção da fila.
 3. **Pendente** — a nota aparece no hub COFFEE
    ([`02-frontend-coffee.md`](02-frontend-coffee.md)) com
    `classificacao='pendente'` (`id_sap == SAP_PENDENTE`, isto é
@@ -44,7 +48,7 @@ O COFFEE só gera notas que estejam **desarquivadas** — é ele quem
 atribui o SAP real e arquiva a nota sozinho ao concluir. Por isso,
 tanto a geração em lote (`jobs._rodar_geracao`,
 `backend/coffee_module/jobs.py:97-98`) quanto o `POST /regerar`
-unitário (`backend/coffee_module/routes.py:193-194`) sempre chamam
+unitário (`backend/coffee_module/routes.py:201-202`) sempre chamam
 `client.definir_sap(ident, SAP_PENDENTE)` **e**
 `client.desarquivar(ident)` juntos, nunca só um: uma nota arquivada com
 SAP pendente fica presa até ser desarquivada. As exceções de
@@ -106,7 +110,7 @@ dados na tela estão obsoletos.
 - **Regra de desarquivar duplicada em dois lugares.** A sequência
   `definir_sap(SAP_PENDENTE)` + `desarquivar()` está implementada tanto
   em `jobs._rodar_geracao` (`backend/coffee_module/jobs.py:97-98`)
-  quanto em `routes.regerar` (`backend/coffee_module/routes.py:193-194`),
+  quanto em `routes.regerar` (`backend/coffee_module/routes.py:201-202`),
   com o mesmo comentário copiado nos dois lugares — uma mudança na
   regra (por exemplo, um novo status intermediário) precisa ser
   aplicada nos dois pontos manualmente.

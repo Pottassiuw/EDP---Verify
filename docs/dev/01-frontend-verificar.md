@@ -52,7 +52,11 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)
   para `App.tsx`, que atualiza o estado e, quando `source === "api"`,
   replica a mudança no backend (`EDPApi.toggleComplete`,
-  `EDPApi.marcarGerar`, `EDPApi.markDuplicate`).
+  `EDPApi.marcarGerar`, `EDPApi.markDuplicate`). Concluir uma nota de id
+  numérico a marca na fila de geração do COFFEE (`a_gerar=true`);
+  reabrir a desmarca, enviando a justificativa automática "Nota reaberta
+  na Verificar" exigida pelo `POST /marcar-gerar` para remoções da fila
+  (`App.tsx:133`, `App.tsx:153`).
 - **`duplicate-compare.tsx`**: renderizado dentro do painel de detalhe do
   `Dashboard` (`Detail`) quando `sel.duplicates.length > 0`; consome a
   nota selecionada (`note`) e o estado `resolved` (via `dupResolved`) só

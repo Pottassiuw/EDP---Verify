@@ -30,7 +30,7 @@ resolve `"system"` para `"dark"`/`"light"` e é o valor exposto pelo
 contexto — nenhum consumidor downstream precisa saber sobre
 `"system"`.
 
-A aplicação de fato acontece em `App.tsx:199`: o elemento raiz recebe
+A aplicação de fato acontece em `App.tsx:201`: o elemento raiz recebe
 `className="edp triage"` mais `data-theme={resolvedTheme}` e
 `data-density={settings.density}`. Esses dois atributos são os
 seletores que o sistema de tokens em `app.css` observa (`.edp[data-theme="light"]`,
