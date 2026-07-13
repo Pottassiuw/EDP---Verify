@@ -7,10 +7,12 @@ import { COLUNAS_RAMAL, COLUNAS_COLAGEM_RAMAL, ROTULOS_RAMAL } from './columns-r
 import { useRamalData, useRecarregarRamal } from './use-ramal-data';
 import { DataGrid } from './data-grid';
 import { NotesTable } from './notes-table';
+import { MesExecucaoPicker } from './mes-execucao-picker';
+import { ColagemPlanilha } from './colagem-planilha';
+import { CLASSE_SELECT_MONO } from './ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -235,7 +237,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                     <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Status: (manter atual)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={CLASSE_SELECT_MONO}>
                       <SelectItem value="__manter">Status: (manter atual)</SelectItem>
                       {dadosPrincipais.meta.status_opcoes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
@@ -245,13 +247,14 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                     <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Prioridade: (manter atual)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={CLASSE_SELECT_MONO}>
                       <SelectItem value="__manter">Prioridade: (manter atual)</SelectItem>
                       {dadosPrincipais.meta.prioridade_opcoes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
-                         onChange={(e) => setLoteMes(e.target.value)} className="w-[240px]" />
+                  <MesExecucaoPicker value={loteMes} onChange={setLoteMes}
+                                     valorNeutro="" rotuloNeutro="Mês: (manter atual)"
+                                     className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
@@ -303,7 +306,7 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                     <Select value={novaNota[campo]}
                             onValueChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}>
                       <SelectTrigger id={`nova-ramal-${campo}`}><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={CLASSE_SELECT_MONO}>
                         {dadosPrincipais.meta.status_opcoes.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -311,10 +314,15 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
                     <Select value={novaNota[campo]}
                             onValueChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}>
                       <SelectTrigger id={`nova-ramal-${campo}`}><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={CLASSE_SELECT_MONO}>
                         {dadosPrincipais.meta.prioridade_opcoes.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  ) : campo === 'Mes_Execucao_Planejado' ? (
+                    <MesExecucaoPicker id={`nova-ramal-${campo}`}
+                                       value={novaNota[campo]}
+                                       onChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}
+                                       valorNeutro="-" rotuloNeutro="—" />
                   ) : (
                     <Input id={`nova-ramal-${campo}`} value={novaNota[campo]}
                            onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })} />
@@ -331,34 +339,17 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
 
       {/* COLAR PLANILHA */}
       {modo === 'colagem' && (
-        <Card>
-          <CardHeader><CardTitle>Colar planilha ramal</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-[12.5px] text-text-dim mt-[0px] mx-[0px] mb-[10px]">
-              Cole as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
-              {COLUNAS_COLAGEM_RAMAL.map((c) => ROTULOS_RAMAL[c] ?? c).join(' · ')}
-            </p>
-            <Textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
-                      onChange={(e) => setTextoColagem(e.target.value)}
-                      className="font-mono text-[12px]" />
-            {previewColagem.length > 0 && (
-              <div className="mt-[12px] flex flex-col gap-[10px]">
-                <span className="text-[12.5px]">{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
-                <NotesTable
-                  colunas={COLUNAS_RAMAL.filter((c) => COLUNAS_COLAGEM_RAMAL.includes(c.key))}
-                  registros={previewColagem.map((r, i) => ({
-                    ...r, Numero_Nota: Number(r.Numero_Nota) || -(i + 1),
-                  })) as unknown as NotaInput[]}
-                  altura={240} />
-                <div>
-                  <Button disabled={salvando} onClick={salvarColagem}>
-                    💾 Salvar lote ramal ({previewColagem.length})
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ColagemPlanilha
+          titulo="Colar planilha ramal"
+          colunasColagem={COLUNAS_COLAGEM_RAMAL}
+          colunasPreview={COLUNAS_RAMAL.filter((c) => COLUNAS_COLAGEM_RAMAL.includes(c.key))}
+          rotulos={ROTULOS_RAMAL}
+          texto={textoColagem}
+          setTexto={setTextoColagem}
+          preview={previewColagem}
+          salvando={salvando}
+          rotuloSalvar={`Salvar lote ramal (${previewColagem.length})`}
+          onSalvar={salvarColagem} />
       )}
 
     </div>
