@@ -86,6 +86,9 @@ def consultar(id: int):
     try:
         nota = client.buscar_nota(id)
         classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
+    except client.NotaNaoEncontradaErro as exc:
+        db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
+        raise HTTPException(status_code=404, detail=str(exc))
     except Exception:
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=502,
@@ -162,6 +165,11 @@ def marcar_gerar(pedido: MarcarGerarPedido):
             nota = client.buscar_nota(pedido.id)
             pk = nota["pk"]
             db.upsert_nota(pk, nota["id_sap"], nota["fields"])
+        except client.NotaNaoEncontradaErro as exc:
+            db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
+                             {"id": pedido.id, "a_gerar": pedido.a_gerar,
+                              "justificativa": pedido.justificativa}, False)
+            raise HTTPException(status_code=404, detail=str(exc))
         except Exception:
             db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
                              {"id": pedido.id, "a_gerar": pedido.a_gerar,

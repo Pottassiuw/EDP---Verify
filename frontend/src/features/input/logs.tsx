@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { InputApi } from './api';
 import type { LogArquivo, LogRegistro } from './types';
 import { SegTabs, type SegTab } from '@/components/branded/section';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type SubAba = 'notas' | 'arquivos' | 'timeline';
 
@@ -47,11 +48,15 @@ export function Logs(): React.JSX.Element {
           <div className="flex gap-[10px]">
             <input value={filtroNota} placeholder="Filtrar por nº da nota" className="edp-field"
                    onChange={(e) => setFiltroNota(e.target.value)} />
-            <select value={filtroUsuario} className="edp-field"
-                    onChange={(e) => setFiltroUsuario(e.target.value)}>
-              <option value="">Todos os usuários</option>
-              {usuarios.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
+            <Select value={filtroUsuario || "__todos"} onValueChange={(v) => setFiltroUsuario(v === "__todos" ? "" : v)}>
+              <SelectTrigger className="edp-field">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todos">Todos os usuários</SelectItem>
+                {usuarios.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <table className="edp-table">
             <thead><tr>

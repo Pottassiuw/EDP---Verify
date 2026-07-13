@@ -4,6 +4,7 @@ import { EDPApi } from "../../api";
 import LOGO_EXCEL from "../../../public/assets/logo_excel.svg";
 import { LOGO_DARK, LOGO_LIGHT } from "./shared";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 export const UploadScreen: React.FC<UploadScreenProps> = ({
   theme = "dark",
@@ -154,16 +155,11 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         </div>
 
         {loading && (
-          <div
-            className="bg-bg-2 overflow-hidden mt-[22px] h-[3px] rounded-[3px]"
-          >
-            <div
-              className="h-full bg-[linear-gradient(90deg,var(--accent),var(--accent-2))] [transition:width_.35s_ease]"
-              style={{
-                width: pct + "%",
-              }}
-            />
-          </div>
+          <Progress
+            value={pct}
+            className="bg-bg-2 mt-[22px] h-[3px] rounded-[3px]"
+            indicatorClassName="bg-[linear-gradient(90deg,var(--accent),var(--accent-2))] [transition:width_.35s_ease]"
+          />
         )}
         {err && (
           <div

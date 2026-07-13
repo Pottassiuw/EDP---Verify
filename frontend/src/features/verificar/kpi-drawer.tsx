@@ -1,4 +1,5 @@
 import React from 'react';
+import { Progress } from '@/components/ui/progress';
 import type { KpiDrawerProps } from '../../types';
 
 export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
@@ -62,9 +63,11 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
             <div className="bg-surface-2 rounded-edp-sm py-[12px] px-[14px]">
               <div className="edp-eyebrow">Conformidade</div>
               <div className="text-[30px] [font-family:var(--font-display)] font-extrabold leading-[1.2] text-[var(--accent)]">{safePct}%</div>
-              <div className="bg-surface-3 overflow-hidden h-[6px] rounded-[999px] mt-[8px] mx-0 mb-[6px]">
-                <div style={{ width: safePct + "%" }} className="h-full bg-[var(--accent)] rounded-[999px]" />
-              </div>
+              <Progress
+                value={safePct}
+                className="bg-surface-3 h-[6px] rounded-[999px] mt-[8px] mx-0 mb-[6px]"
+                indicatorClassName="bg-[var(--accent)] rounded-[999px]"
+              />
               <span className="edp-mono text-[12px] text-text-dim">{cOk}/{cTotal} prontas para o SAP</span>
             </div>
             {rows.map(([lbl, val, c]) => (

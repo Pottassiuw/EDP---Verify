@@ -208,6 +208,18 @@ def test_buscar_nota_propaga_erro_http(coffee_tmp, monkeypatch):
     assert logs[0]["detalhes"]["status_http"] == 500
 
 
+def test_buscar_nota_inexistente_erro_claro(coffee_tmp, monkeypatch):
+    # json_all devolve 200 com lista vazia quando o id nao existe no COFFEE
+    monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
+    monkeypatch.setattr(httpx, "get", lambda url, timeout=None: _FakeResp(payload="[]"))
+    from coffee_module import client, db
+    with pytest.raises(client.NotaNaoEncontradaErro):
+        client.buscar_nota(999)
+    logs = db.listar_logs(tipo="api_call")
+    assert len(logs) == 1 and logs[0]["sucesso"] is False
+    assert "999" in logs[0]["detalhes"]["erro"]
+
+
 def test_escritas_montam_url(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     urls = []
@@ -474,6 +486,29 @@ def test_rota_marcar_gerar_falha_busca_502(coffee_cliente, monkeypatch):
                for l in db.listar_logs(tipo="acao_usuario"))
 
 
+def test_rota_marcar_gerar_nota_inexistente_404(coffee_cliente, monkeypatch):
+    from coffee_module import client
+
+    def nao_encontrada(i):
+        raise client.NotaNaoEncontradaErro(i)
+
+    monkeypatch.setattr(client, "buscar_nota", nao_encontrada)
+    r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 999, "a_gerar": True})
+    assert r.status_code == 404
+    assert "999" in r.json()["detail"]
+
+
+def test_rota_marcar_gerar_false_com_justificativa_tira_da_fila(coffee_cliente):
+    from coffee_module import db
+    db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
+    db.marcar_gerar(355617, True)
+    r = coffee_cliente.post("/api/coffee/marcar-gerar",
+                            json={"id": 355617, "a_gerar": False,
+                                  "justificativa": "Nota reaberta na Verificar"})
+    assert r.status_code == 200
+    assert db.listar_notas("a_gerar") == []
+
+
 def test_rota_regerar_limpa_a_gerar(coffee_cliente, monkeypatch):
     from coffee_module import client, db
     db.upsert_nota(355617, 10000000, {"id_sap": 10000000})
@@ -526,6 +561,18 @@ def test_compor_local_instalacao():
     # falta componente -> None
     assert client.compor_local_instalacao({"cidade": "718", "tipo_local_instalacao": "ET"}) is None
     assert client.compor_local_instalacao({}) is None
+
+
+def test_rota_consultar_nota_inexistente_404(coffee_cliente, monkeypatch):
+    from coffee_module import client
+
+    def nao_encontrada(i):
+        raise client.NotaNaoEncontradaErro(i)
+
+    monkeypatch.setattr(client, "buscar_nota", nao_encontrada)
+    r = coffee_cliente.get("/api/coffee/consultar/999")
+    assert r.status_code == 404
+    assert "999" in r.json()["detail"]
 
 
 def test_rota_consultar_falha_502(coffee_cliente, monkeypatch):

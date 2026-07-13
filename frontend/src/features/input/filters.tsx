@@ -9,6 +9,13 @@ import {
   ROTULOS,
 } from "./columns";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface FiltersState {
   busca: string;
@@ -74,28 +81,28 @@ export function Filters({
 
       {aberto && (
         <div className="border border-line rounded-[8px] p-[12px] bg-surface mt-[8px]">
-          <select
-            value=""
-            aria-label="Adicionar campo de filtro"
-            className="edp-field mb-[10px]"
-            onChange={(e) => {
-              if (!e.target.value) return;
+          <Select
+            onValueChange={(v) => {
               setEstado({
                 ...estado,
                 filtros: [
                   ...estado.filtros,
-                  { campo: e.target.value, tipo: tipoDoCampo(e.target.value) },
+                  { campo: v, tipo: tipoDoCampo(v) },
                 ],
               });
             }}
           >
-            <option value="">+ Adicionar campo de filtro…</option>
-            {camposDisponiveis.map((c) => (
-              <option key={c} value={c}>
-                {ROTULOS[c] ?? c}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="Adicionar campo de filtro" className="edp-field mb-[10px] w-full">
+              <SelectValue placeholder="+ Adicionar campo de filtro…" />
+            </SelectTrigger>
+            <SelectContent>
+              {camposDisponiveis.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {ROTULOS[c] ?? c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {estado.filtros.map((f, i) => (
             <div
               key={f.campo}

@@ -7,6 +7,7 @@ import { ConfirmModal } from './confirm-modal';
 import { toast } from 'sonner';
 import { BASE as API_BASE } from '../../api';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Archive } from 'lucide-react';
 
 type BuscaEstado = "idle" | "rodando" | "concluido";
@@ -159,11 +160,13 @@ export function CoffeePendentes(): React.JSX.Element {
 
       {buscaEstado !== "idle" && buscaJob && (
         <div className="shrink-0 pt-0 px-[22px] pb-[12px] flex flex-col gap-[6px]">
-          <div className="h-[6px] rounded-[999px] bg-surface-3 overflow-hidden">
-            <div className="h-full rounded-[999px]"
-                 style={{ width: pct + "%", background: concluido ? "var(--green)" : "var(--accent)",
-                          transition: "width .3s ease, background .3s ease" }} />
-          </div>
+          <Progress
+            value={pct}
+            className="h-[6px] rounded-[999px] bg-surface-3"
+            indicatorClassName={
+              (concluido ? "bg-green" : "bg-[var(--accent)]") + " rounded-[999px] [transition:width_.3s_ease,background_.3s_ease]"
+            }
+          />
           <span className="edp-mono text-[11.5px]" style={{ color: concluido ? "var(--green)" : "var(--text-mute)" }}>
             {concluido
               ? "Concluido"

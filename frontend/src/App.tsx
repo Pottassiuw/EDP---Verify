@@ -130,7 +130,8 @@ function AppContent(): React.JSX.Element {
     const willGenerate = source === "api" && numeric;
     if (source === "api") {
       EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao atualizar nota", { description: e instanceof Error ? e.message : String(e) }));
-      if (numeric) EDPApi.marcarGerar(id, concluding).catch((e) => toast.error("Falha ao marcar para gerar", { description: e instanceof Error ? e.message : String(e) }));
+      if (numeric) EDPApi.marcarGerar(id, concluding, concluding ? undefined : "Nota reaberta na Verificar")
+        .catch((e) => toast.error(concluding ? "Falha ao marcar para gerar" : "Falha ao tirar da fila de geração", { description: e instanceof Error ? e.message : String(e) }));
     }
     toast.success(
       concluding ? `Nota ${id} concluída` : `Nota ${id} reaberta`,
@@ -149,7 +150,8 @@ function AppContent(): React.JSX.Element {
     const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
     if (source === "api") {
       targets.forEach((id) => EDPApi.toggleComplete(id).catch((e) => toast.error("Falha ao atualizar nota", { description: e instanceof Error ? e.message : String(e) })));
-      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking).catch((e) => toast.error("Falha ao marcar para gerar", { description: e instanceof Error ? e.message : String(e) })));
+      numericTargets.forEach((id) => EDPApi.marcarGerar(id, marking, marking ? undefined : "Nota reaberta na Verificar")
+        .catch((e) => toast.error(marking ? "Falha ao marcar para gerar" : "Falha ao tirar da fila de geração", { description: e instanceof Error ? e.message : String(e) })));
     }
     if (targets.length === 0) return;
     const gerarInfo = source === "api" && numericTargets.length > 0

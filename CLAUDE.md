@@ -436,6 +436,11 @@ Update relevant documentation.
 
 Do not let docs drift from implementation.
 
+Every code change must also update the developer manual (`docs/dev/`).
+
+If a change touches a feature or module covered there, update the
+corresponding doc in the same commit/PR — not as a follow-up.
+
 ---
 
 # Specs

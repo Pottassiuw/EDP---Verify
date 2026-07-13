@@ -145,6 +145,11 @@ export async function fetchData(): Promise<FetchResult> {
   return normalize((await res.json()) as ApiData);
 }
 
+async function erroComDetail(res: Response, fallback: string): Promise<Error> {
+  const e = await res.json().catch(() => ({})) as { detail?: string };
+  return new Error(e.detail ?? (fallback + " -> " + res.status));
+}
+
 export async function upload(file: File): Promise<UploadResult> {
   const fd = new FormData();
   fd.append("file", file);
@@ -172,13 +177,13 @@ export async function markDuplicate(id: string): Promise<DuplicateResult> {
   return res.json() as Promise<DuplicateResult>;
 }
 
-export async function marcarGerar(id: string, aGerar: boolean): Promise<void> {
+export async function marcarGerar(id: string, aGerar: boolean, justificativa?: string): Promise<void> {
   const res = await fetch(BASE + "/coffee/marcar-gerar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: Number(id), a_gerar: aGerar }),
+    body: JSON.stringify({ id: Number(id), a_gerar: aGerar, justificativa }),
   });
-  if (!res.ok) throw new Error("POST /marcar-gerar -> " + res.status);
+  if (!res.ok) throw await erroComDetail(res, "POST /marcar-gerar");
 }
 
 export async function consultarNota(
