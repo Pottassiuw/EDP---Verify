@@ -8,10 +8,12 @@ import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
+import { MesExecucaoPicker } from './mes-execucao-picker';
+import { ColagemPlanilha } from './colagem-planilha';
+import { CLASSE_SELECT_MONO } from './ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -193,7 +195,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Status: (manter atual)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={CLASSE_SELECT_MONO}>
                       <SelectItem value="__manter">Status: (manter atual)</SelectItem>
                       {dados.meta.status_opcoes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
@@ -203,13 +205,14 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     <SelectTrigger className="w-[220px]">
                       <SelectValue placeholder="Prioridade: (manter atual)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={CLASSE_SELECT_MONO}>
                       <SelectItem value="__manter">Prioridade: (manter atual)</SelectItem>
                       {dados.meta.prioridade_opcoes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Input value={loteMes} placeholder="Novo mês execução (ex: jun-2026)"
-                         onChange={(e) => setLoteMes(e.target.value)} className="w-[240px]" />
+                  <MesExecucaoPicker value={loteMes} onChange={setLoteMes}
+                                     valorNeutro="" rotuloNeutro="Mês: (manter atual)"
+                                     className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
@@ -277,11 +280,16 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     <Select value={novaNota[campo]}
                             onValueChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}>
                       <SelectTrigger id={`nova-${campo}`}><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={CLASSE_SELECT_MONO}>
                         {(campo === 'Status_Nota' ? dados.meta.status_opcoes : dados.meta.prioridade_opcoes)
                           .map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  ) : campo === 'Mes_Execucao_Planejado' ? (
+                    <MesExecucaoPicker id={`nova-${campo}`}
+                                       value={novaNota[campo]}
+                                       onChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}
+                                       valorNeutro="-" rotuloNeutro="—" />
                   ) : (
                     <Input id={`nova-${campo}`} value={novaNota[campo]}
                            onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })} />
@@ -297,31 +305,17 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
       )}
 
       {modo === 'colagem' && (
-        <Card>
-          <CardHeader><CardTitle>Colar planilha</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-[12.5px] text-text-dim mt-[0px] mx-[0px] mb-[10px]">
-              Cole aqui as linhas copiadas do Excel (sem cabeçalho). Ordem das colunas:{' '}
-              {COLUNAS_COLAGEM.map((c) => ROTULOS[c] ?? c).join(' · ')}
-            </p>
-            <Textarea value={textoColagem} rows={8} placeholder="Ctrl+V com as linhas do Excel…"
-                      onChange={(e) => setTextoColagem(e.target.value)}
-                      className="font-mono text-[12px]" />
-            {previewColagem.length > 0 && (
-              <div className="mt-[12px] flex flex-col gap-[10px]">
-                <span className="text-[12.5px]">{previewColagem.length} linha(s) reconhecida(s) — confira antes de salvar:</span>
-                <NotesTable colunas={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
-                            registros={previewColagem.map((r, i) => ({ ...r, Numero_Nota: Number(r.Numero_Nota) || -(i + 1) })) as NotaInput[]}
-                            altura={240} />
-                <div>
-                  <Button disabled={salvando} onClick={salvarColagem}>
-                    💾 Salvar lote ({previewColagem.length})
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ColagemPlanilha
+          titulo="Colar planilha"
+          colunasColagem={COLUNAS_COLAGEM}
+          colunasPreview={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
+          rotulos={ROTULOS}
+          texto={textoColagem}
+          setTexto={setTextoColagem}
+          preview={previewColagem}
+          salvando={salvando}
+          rotuloSalvar={`Salvar lote (${previewColagem.length})`}
+          onSalvar={salvarColagem} />
       )}
     </div>
   );

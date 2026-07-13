@@ -13,7 +13,7 @@ interface ColagemPlanilhaProps {
   rotulos: Record<string, string>;
   texto: string;
   setTexto: (v: string) => void;
-  preview: Array<Record<string, string>>;
+  preview: Array<Partial<NotaInput>>;
   salvando: boolean;
   rotuloSalvar: string;
   onSalvar: () => void;
