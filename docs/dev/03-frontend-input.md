@@ -26,6 +26,9 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
 | `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query), `useRecarregarInput` (invalidação) e `useAvisoSincronizacao` (polling que detecta alteração feita em outra sessão). |
+| `frontend/src/features/input/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", usado nos modos Cadastrar Nota e Edição em Lote de `manage.tsx`/`ramal.tsx`. Substitui o antigo campo de texto livre. |
+| `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
+| `frontend/src/features/input/ui.ts` | `CLASSE_SELECT_MONO`: className compartilhada que aplica `var(--font-mono)` ao conteúdo (portalado) dos `Select` do módulo Input. |
 
 ## Fluxo: Overview e sub-navegação
 
@@ -60,17 +63,41 @@ mais abaixo (`manage.tsx:251-262`) — a mesma tabela também atende o
 modo "Edição Rápida" trocando essas props pelas de edição inline
 (`edicoes`/`onEditar`), nunca as duas ao mesmo tempo.
 
-No modo "Edição em Lote" (`manage.tsx:186-219`), dois `Select`
-(status e prioridade) e um `Input` de texto (mês de execução) definem
-os novos valores; como o primitivo `Select` do shadcn/Radix não aceita
-`value=""`, "manter valor atual" é representado por um valor sentinela
-`"__manter"` que é convertido de volta para string vazia em
-`onValueChange` (`manage.tsx:191-210`). `aplicarLote`
+No modo "Edição em Lote" (`manage.tsx:186-221`), dois `Select`
+(status e prioridade) e um `MesExecucaoPicker` (mês de execução)
+definem os novos valores; como o primitivo `Select` do shadcn/Radix
+não aceita `value=""`, "manter valor atual" é representado por um
+valor sentinela `"__manter"` que é convertido de volta para string
+vazia em `onValueChange` (`manage.tsx:191-210`). `aplicarLote`
 (`manage.tsx:104-120`) monta uma linha por nota selecionada só com os
 campos preenchidos e recusa a operação (mensagem de erro) se nenhuma
 nota estiver selecionada ou nenhum campo tiver sido escolhido. O
 `Select` customizado em si (`@/components/ui/select`) não tem doc
 próprio ainda — não está documentado em `04-frontend-shared.md`.
+
+### Registro de notas — `MesExecucaoPicker` e `ColagemPlanilha`
+
+`MesExecucaoPicker` (`mes-execucao-picker.tsx`) resolve o campo "Mês
+de Execução Planejado" como dropdown em vez de texto livre, gravando
+sempre `MMM-YYYY` minúsculo. `construirOpcoesMes(anoAtual)`
+(`mes-execucao-picker.tsx`) gera os 12 meses do ano corrente (ano via
+`new Date().getFullYear()`, nunca hardcoded) mais dois futuros fixos —
+`jan-<anoAtual+1>` e `jan-2050` — sempre em janeiro. O componente
+recebe `valorNeutro`/`rotuloNeutro` porque o significado de "nenhum
+mês" muda por modo: no Cadastrar Nota é `'-'` (o default de
+`NOTA_VAZIA`/`NOTA_RAMAL_VAZIA`); na Edição em Lote é `''` ("manter
+atual", mesma convenção do sentinela `"__manter"` dos `Select` de
+status/prioridade). Usado em `manage.tsx:213,289` e
+`ramal.tsx:255,322`.
+
+`ColagemPlanilha` (`colagem-planilha.tsx`) substitui o antigo bloco
+"Colar Planilha" (`Card` + `Textarea` cru) por um container com uma
+linha de cabeçalho fixa mostrando os rótulos das colunas esperadas
+(mesmo estilo mono/uppercase do header da `NotesTable`) *antes* de
+colar qualquer coisa — o formato esperado fica visível de antemão. É
+puramente presentacional: recebe texto/preview/callbacks do pai
+(`manage.tsx:308`, `ramal.tsx:342`) e não guarda estado próprio nem
+chama a API diretamente.
 
 ## Fluxo: Filtros (filters.tsx)
 
@@ -153,3 +180,13 @@ sido sincronizada em outra aba/sessão). Esse flag alimenta o banner em
   intermitente) enquanto o carregamento principal continua ok, o
   usuário não tem nenhuma indicação de que a checagem de
   desatualização parou de funcionar.
+- `app.css` (bloco `.input-scope`) — os cards do módulo Input usam a
+  borda `--line` (hairline discreto) em vez de `--line-2` (usada em
+  todo o resto do app), e os `Select` internos renderizam em
+  `var(--font-mono)`. Escopado via classe `input-scope` na raiz de
+  `input-section.tsx` para não vazar para Coffee/Verificar. O mono nos
+  `Select` é um desvio deliberado do `DESIGN.md` (que reserva mono
+  para código) — decisão explícita para casar com a estética "grade de
+  dados" do Input; qualquer novo `SelectContent` do módulo precisa
+  lembrar de aplicar `CLASSE_SELECT_MONO` manualmente, pois o
+  conteúdo é portalado para fora de `.input-scope`.

@@ -8,6 +8,7 @@ import {
   FILTROS_TEXTO,
   ROTULOS,
 } from "./columns";
+import { CLASSE_SELECT_MONO } from "./ui";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -95,7 +96,7 @@ export function Filters({
             <SelectTrigger aria-label="Adicionar campo de filtro" className="edp-field mb-[10px] w-full">
               <SelectValue placeholder="+ Adicionar campo de filtro…" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={CLASSE_SELECT_MONO}>
               {camposDisponiveis.map((c) => (
                 <SelectItem key={c} value={c}>
                   {ROTULOS[c] ?? c}
