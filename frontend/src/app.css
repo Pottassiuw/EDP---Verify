@@ -363,6 +363,13 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
   border-left-width: 0;
 }
 
+/* Modais (Dialog/AlertDialog) — sombra de elevação com o token EDP.
+   Feito em CSS porque `shadow-[var(--shadow-lg)]` do Tailwind não resolve
+   um CSS var ambíguo (cor vs sombra) e some. O box-shadow precisa da var
+   para acompanhar o tema claro/escuro. */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] { box-shadow: var(--shadow-lg); }
+
 /* Sonner (toaster) — portaliza no body; herda os tokens via :root.
    Mapeia as cores base do toast aos tokens EDP. */
 [data-sonner-toaster] {

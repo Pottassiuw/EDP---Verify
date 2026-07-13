@@ -207,7 +207,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
       <DialogContent
         showCloseButton={false}
         aria-label="Gerar ou consultar notas"
-        className="w-[760px] max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
+        className="w-[clamp(560px,72vw,1120px)] max-w-[94vw] sm:max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Gerar ou consultar notas</DialogTitle>
@@ -279,7 +279,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
                     {r.estado === "erro"
                       ? <span className="text-red text-[11px]">{r.erro}</span>
                       : r.classificacao
-                        ? <span className="font-semibold" style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)" }}>
+                        ? <span className="edp-mono font-semibold" style={{ color: STATUS_COR[r.classificacao] ?? "var(--text-mute)" }}>
                             {r.arquivado ? "arquivada" : r.classificacao}
                           </span>
                         : null}

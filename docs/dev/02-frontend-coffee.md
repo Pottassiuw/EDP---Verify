@@ -55,6 +55,18 @@ Cada sub-aba mostra:
 
 ## Fluxo: Gerar / Consultar notas
 
+**Aparência do modal**: o `DialogContent` compartilhado
+(`components/ui/dialog.tsx`) foi ajustado para o sistema do `DESIGN.md`
+— superfície elevada (`bg-surface` em vez de `bg-background`), borda
+hairline (`--line` em vez do anel `--line-2`), raio `--r-lg` e sombra
+`--shadow-lg`. O mesmo ajuste vale para o `AlertDialogContent`
+(`components/ui/alert-dialog.tsx`, usado pelo `ConfirmModal`), então os
+dois modais coffee ficam consistentes. A largura do modal de geração é
+fluida (`w-[clamp(560px,72vw,1120px)]`, `coffee-gerar-modal.tsx:210`) em
+vez de fixa, com `sm:max-w-[94vw]` para vencer o cap `sm:max-w-lg` do
+primitivo. Tipografia segue a regra do módulo: dados/máquina em mono
+(IDs, SAP, local, **status**) e texto humano (título, botões) em Inter.
+
 `coffee-gerar-modal.tsx` é aberto a partir de `coffee-geradas.tsx` (botão
 "Gerar / Consultar notas" ou "Gerar fila (N)"). O usuário cola IDs no
 campo de texto (espaço, vírgula ou quebra de linha aceitos como
