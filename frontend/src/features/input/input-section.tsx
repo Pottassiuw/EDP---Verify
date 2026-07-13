@@ -41,7 +41,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+    <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden">
       <div className="shrink-0 bg-surface border-b-[1px] border-b-line">
         <div className="pt-[13px] px-[22px] pb-[11px] flex flex-col gap-[2px]">
           <span className="edp-eyebrow">Módulo Input</span>

@@ -338,6 +338,16 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
 .edp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .edp-table tbody tr:last-child td { border-bottom: 0; }
 .edp-table tbody tr:nth-child(even) td { background: var(--zebra); }
+
+/* ============================================================
+   Escopo do módulo Input — hairline discreto nos cards e
+   fonte mono nos selects (casa com a grade de dados).
+   Só afeta telas dentro de .input-scope; Coffee/Verificar
+   permanecem inalterados.
+   ============================================================ */
+.input-scope [data-slot="card"] { border-color: var(--line); }
+.input-scope [data-slot="select-trigger"],
+.input-scope select.edp-field { font-family: var(--font-mono); }
 }
 
 
