@@ -55,8 +55,9 @@ faltar ou vier com formato inesperado:
   `CI`/`N_Clientes_Conjunto`), sem base externa.
 - **Ganhos** (`base_ganhos`) — chave composta `Conjunto + "_" + CJ_Aneel`
   para `CHI_Conj`.
-- **Históricos 12M/3M** (`base_table1`) — chave `CE`, colunas
-  `CI_12M`/`CHI_12M`/`OCO_12M`/`OCO_3M`.
+- **Históricos 12M/3M** — descontinuado (fonte Table1 fora de uso);
+  colunas `CI_12M`/`CHI_12M`/`OCO_12M`/`OCO_3M` seguem no schema,
+  sempre `"-"`.
 - **IW66** (`_ler_export_medidas()` → `db.carregar_base_dataframe("base_iw66")`)
   — agrupa medidas por `Nota`, classifica cada linha em metros ou
   unidades (`_classificar`, `engine.py:554`) e monta `Medida_SAP`

@@ -34,7 +34,6 @@ CAMINHO_INDICADOR_CONTINUIDADE = REDE_BASES_APOIO + r"\Indicador base conjunto -
 CAMINHO_CLIENTES_CONJUNTO = REDE_BASES_APOIO + r"\Clientes_Conjunto.xlsx"
 CAMINHO_CUSTO_MODULAR = REDE_BASES_APOIO + r"\Custo_Modular.xlsx"
 CAMINHO_GANHOS = REDE_BASES_APOIO + r"\Ganhos.xlsx"
-CAMINHO_TABLE1 = REDE_BASES_APOIO + r"\Table1.xlsx"
 CAMINHO_PROJETO_CONSTRUCAO = REDE_RAIZ + r"\config_projeto_construcao.json"
 CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
 
@@ -47,7 +46,6 @@ BASES_REDE = {
     "Clientes por Conjunto": CAMINHO_CLIENTES_CONJUNTO,
     "Custos Modulares e Sazonalidade": CAMINHO_CUSTO_MODULAR,
     "Ganhos (CHI-Conjunto)": CAMINHO_GANHOS,
-    "Históricos (Table1)": CAMINHO_TABLE1,
 }
 
 # Bases gerenciáveis pela aba Configurações (download/upload) — Input/app.py:792-798
@@ -56,7 +54,6 @@ BASES_APOIO = {
     "Clientes por Conjunto": CAMINHO_CLIENTES_CONJUNTO,
     "Custos Modulares e Sazonalidade": CAMINHO_CUSTO_MODULAR,
     "Ganhos (CHI-Conjunto)": CAMINHO_GANHOS,
-    "Históricos (Table1 - 12M e 3M)": CAMINHO_TABLE1,
 }
 
 # ── Dicionários de domínio (porte literal de Input/config.py) ────────────

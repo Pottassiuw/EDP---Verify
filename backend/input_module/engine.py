@@ -496,29 +496,8 @@ def enriquecer_dados():
         except Exception as e:
             print(f"Erro ao ler planilha de Ganhos: {e}")
 
-    # --- 3.10. PROCV HISTÓRICOS: 12 MESES E 3 MESES ---
+    # --- 3.10. HISTÓRICOS: 12 MESES E 3 MESES (fonte Table1 descontinuada) ---
     for col in ['CI_12M', 'CHI_12M', 'OCO_12M', 'OCO_3M']: df[col] = "-"
-
-    df_t1 = db.carregar_base_dataframe("base_table1")
-    if df_t1 is not None and not df_t1.empty:
-        try:
-            df_t1.columns = df_t1.columns.astype(str).str.strip()
-
-            dict_ci12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumCI_12M]']))
-            dict_chi12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumCHI_12M]']))
-            dict_oco12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumEventos_12M]']))
-            dict_oco3 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumEventos_3M]']))
-
-            col_chave_ce = 'CE'
-            if col_chave_ce in df.columns:
-                chave_busca_ce = df[col_chave_ce].astype(str).str.strip().str.upper()
-                df['CI_12M'] = chave_busca_ce.map(dict_ci12).fillna("-")
-                df['CHI_12M'] = chave_busca_ce.map(dict_chi12).fillna("-")
-                df['OCO_12M'] = chave_busca_ce.map(dict_oco12).fillna("-")
-                df['OCO_3M'] = chave_busca_ce.map(dict_oco3).fillna("-")
-
-        except Exception as e:
-            print(f"Erro ao processar históricos da Table1: {e}")
 
     # --- 3.11. LÓGICA DE TOPOLOGIA DE PROTEÇÃO ---
     # O código da topologia está embutido (escondido) dentro do nome do Local de Instalação.

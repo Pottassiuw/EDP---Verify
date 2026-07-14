@@ -271,7 +271,6 @@ def _processar_upload_base(nome_arquivo: str, caminho: str):
         "Gerada_custo_ord_IW38.XLSX": "base_iw38",
         "Gerada_medidas_IW66.XLSX": "base_iw66",
         "Clientes_Conjunto.xlsx": "base_clientes",
-        "Table1.xlsx": "base_table1"
     }
     try:
         if nome_arquivo in map_simples:

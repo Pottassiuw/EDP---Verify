@@ -14,8 +14,8 @@ def test_config_dicionarios_completos():
     assert config.MAP_FILTROS["Status"] == "Status_Nota"
     assert config.MAP_ORDEM_EXECUTADA["JAND INVE"] == "SIM"
     assert config.MAP_REGIONAL_CSD["POA"] == "Poa/Suzano"
-    assert len(config.BASES_REDE) == 8
-    assert len(config.BASES_APOIO) == 5
+    assert len(config.BASES_REDE) == 7
+    assert len(config.BASES_APOIO) == 4
     assert "Emergente" in config.PRIORIDADES
     assert config.NOMES_AMIGAVEIS["Numero_Nota"] == "Nº Nota (ID)"
     assert "Numero_Nota" in config.COLUNAS_PAINEL
@@ -268,7 +268,7 @@ def engine_isolado(banco_temporario, monkeypatch, tmp_path):
     from input_module import config, engine
     for attr in ["CAMINHO_INDICADOR_CONTINUIDADE", "CAMINHO_BASE_IW28",
                  "CAMINHO_CUSTO_ORD_IW38", "CAMINHO_CLIENTES_CONJUNTO",
-                 "CAMINHO_CUSTO_MODULAR", "CAMINHO_GANHOS", "CAMINHO_TABLE1",
+                 "CAMINHO_CUSTO_MODULAR", "CAMINHO_GANHOS",
                  "CAMINHO_PROJETO_CONSTRUCAO", "CAMINHO_BASE_IW66"]:
         monkeypatch.setattr(config, attr, str(tmp_path / f"{attr}.xlsx"))
     monkeypatch.setattr(config, "BASES_REDE", {
@@ -365,7 +365,7 @@ def test_salvar_em_massa_preserva_mes_iso(banco_temporario):
 def test_config_iw66():
     assert hasattr(config, "CAMINHO_BASE_IW66")
     assert "IW66" in config.CAMINHO_BASE_IW66.upper() or "medidas" in config.CAMINHO_BASE_IW66.lower()
-    assert len(config.BASES_REDE) == 8
+    assert len(config.BASES_REDE) == 7
     assert "Medida_SAP" in config.COLUNAS_PAINEL
     assert "Medida_vs_Planejado" in config.COLUNAS_PAINEL
     assert "Medida SAP" in config.MAP_FILTROS
