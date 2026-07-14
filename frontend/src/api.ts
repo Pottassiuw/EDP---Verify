@@ -196,6 +196,24 @@ export async function consultarNota(
   return res.json();
 }
 
+export interface CorrigirLocalItemApi {
+  id: number;
+  local: string;
+}
+
+export async function corrigirLocalLote(
+  itens: CorrigirLocalItemApi[],
+  gerarApos: boolean,
+): Promise<{ job_id: string }> {
+  const res = await fetch(BASE + "/coffee/corrigir-local-lote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itens, gerar_apos: gerarApos }),
+  });
+  if (!res.ok) throw await erroComDetail(res, "POST /corrigir-local-lote");
+  return res.json() as Promise<{ job_id: string }>;
+}
+
 export const EDPApi = {
   BASE,
   fetchData,
