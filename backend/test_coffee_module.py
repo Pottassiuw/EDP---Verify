@@ -1253,3 +1253,38 @@ def test_job_correcao_local_gerar_apos_ignora_sap_real(coffee_tmp, monkeypatch):
     assert j["corrigidas"] == [1]
     assert j["geradas"] == []
     assert chamadas == []
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — Rota /corrigir-local-lote
+# ---------------------------------------------------------------------------
+
+
+def test_rota_corrigir_local_lote_validacoes(coffee_cliente):
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": []})
+    assert r.status_code == 400
+
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": [{"id": 1, "local": "curto"}]})
+    assert r.status_code == 400
+    assert "13" in r.json()["detail"]
+
+
+def test_rota_corrigir_local_lote_dispara_job(coffee_cliente, monkeypatch):
+    from coffee_module import client, db, jobs
+
+    monkeypatch.setattr(client, "buscar_nota",
+                        lambda i: _nota_fake(i, "718ET000267739"))
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": [{"id": 1, "local": "718ET00026773"}],
+                                  "gerar_apos": False})
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    j = _aguardar_job(jobs, job_id)
+    assert j["corrigidas"] == [1]
+
+    logs = db.listar_logs(tipo="acao_usuario")
+    assert any(l["acao"] == "correcao_local_lote" for l in logs)

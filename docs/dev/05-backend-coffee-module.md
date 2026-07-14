@@ -53,12 +53,16 @@ GET, loga e propaga a exceção em caso de erro — não há retry.
 
 ## jobs.py — geração em background
 
-Dois jobs in-process, guardados num dict em memória (`_JOBS`, protegido
+Três jobs in-process, guardados num dict em memória (`_JOBS`, protegido
 por `threading.Lock`) e identificados por `job_id` (`uuid4().hex`):
 `iniciar_busca()` (`jobs.py:13`) roda `client.buscar_nota` +
 `db.upsert_nota` para cada ID, sem alterar nada no COFFEE. `iniciar_geracao()`
 (`jobs.py:54`) é o caminho de "forçar geração": para cada ID, decide entre
 pular (já tem SAP real) ou forçar via placeholder + desarquivamento.
+`iniciar_correcao_local()` (`jobs.py:115`) é a malha fina: corrige em lote
+locais de instalação com "9" extra — confirma o local atual via `buscar_nota`
+antes de alterar (já corrigido → `ja_corrigidas`; diferente de esperado →
+`divergentes`, nunca altera; senão `alterar_local` → `corrigidas`).
 
 A regra central de `_rodar_geracao()` (`jobs.py:70-110`) é: **o COFFEE só
 processa notas desarquivadas** — ele atribui o SAP real e arquiva sozinho
@@ -71,14 +75,19 @@ completo da regra, das exceções e do histórico do bug de classificação
 associado (nota 356322) em
 [`docs/coffee/fluxo-transicao-notas.md`](../coffee/fluxo-transicao-notas.md).
 
-Um job é disparado pelas rotas `POST /api/coffee/buscar` e `POST
-/api/coffee/gerar-lote` (ver routes.py abaixo), que retornam um `job_id`
-imediatamente; o estado (`estado`/`total`/`feitas`/`erros`) é consultado
-por polling em `GET /api/coffee/job/{job_id}` (`obter_job()`,
+Um job é disparado pelas rotas `POST /api/coffee/buscar`, `POST
+/api/coffee/gerar-lote` e `POST /api/coffee/corrigir-local-lote` (ver
+routes.py abaixo), que retornam um `job_id` imediatamente; o estado
+(`estado`/`total`/`feitas`/`erros`/`corrigidas`/`ja_corrigidas`/`divergentes`/`geradas`)
+é consultado por polling em `GET /api/coffee/job/{job_id}` (`obter_job()`,
 `jobs.py:48`). No frontend, `coffee-pendentes.tsx` faz esse polling a cada
 `2000ms` para a busca em lote, e `coffee-gerar-modal.tsx` (`pollJob`) a
 cada `600ms` para a geração em lote (desistindo após 10 falhas
-consecutivas) — ambos documentados em `02-frontend-coffee.md`.
+consecutivas) — ambos documentados em `02-frontend-coffee.md`. Com
+`gerar_apos=true` na correção de local, o job encadeia a geração apenas
+para os locais corrigidos, seguindo a mesma regra de `_rodar_geracao`
+(placeholder + desarquivamento para SAP ausente ou `SAP_PENDENTE`; pula
+notas com SAP real).
 
 ## classify.py
 
@@ -136,6 +145,7 @@ Router `/api/coffee` (prefixo). Mapeamento para o frontend
 | `POST /marcar-gerar` | Liga/desliga a flag `a_gerar` (fila); resolve o `pk` real via `client.buscar_nota` ao adicionar (404 se o id não existe, 502 para falha real da API), exige justificativa para remover. | `coffee-geradas.tsx`; Verificar via `EDPApi.marcarGerar` (`App.tsx` — concluir adiciona, reabrir remove com justificativa automática) |
 | `POST /regerar` | Força a geração de uma única nota (mesma regra desarquivar+SAP de `jobs.py`, sem passar por um job). | `coffee-geradas.tsx`, `coffee-gerar-modal.tsx` |
 | `POST /gerar-lote` | Dispara `jobs.iniciar_geracao` para uma lista de IDs. | `coffee-gerar-modal.tsx` |
+| `POST /corrigir-local-lote` | Malha fina: corrige em lote locais de instalação com "9" extra. Body `{itens: [{id, local}], gerar_apos}`; `local` é o proposto (13 chars). Devolve `{job_id}` (polling via `GET /job/{job_id}`). O job confirma o local atual via `buscar_nota` antes de alterar: igual ao proposto → `ja_corrigidas`; diferente de `local+"9"` → `divergentes` (nunca altera); senão `alterar_local` → `corrigidas`. Com `gerar_apos=true`, encadeia a geração (placeholder SAP + desarquivar, mesma sequência do gerar-lote) apenas para os corrigidos — relatório em `geradas`. | futuro frontend malha fina |
 
 Um middleware de trace (não neste arquivo, mas exercitado pelas rotas)
 carimba cada requisição com um `trace_id` propagado às chamadas filhas de
