@@ -20,6 +20,8 @@ carregado.
 | `frontend/src/features/verificar/duplicate-compare.tsx` | Comparação campo a campo entre a nota aberta e cada candidata a duplicata, com indicação de campos-chave iguais/diferentes e ação de marcar/desmarcar duplicata. |
 | `frontend/src/features/verificar/shared.tsx` | Componentes e constantes compartilhados da feature: `PriorityChip` (com `prioMeta()`), `StatusTag`, `Field`, e os caminhos dos logos EDP dark/light. |
 | `frontend/src/features/verificar/useTriageData.ts` | Hook de React Query que busca os dados de triagem (`fetchData` da API) sob a chave `['triage']`. |
+| `frontend/src/features/verificar/malha-fina.ts` | `detectarNoveExtra(notes)`: função pura que agrupa locais de instalação com um "9" extra no final (candidatos a correção em massa). |
+| `frontend/src/features/verificar/malha-fina-panel.tsx` | Painel colapsável "Malha fina", montado logo abaixo dos filtros do `Dashboard`; lista os grupos detectados e dispara a correção em lote no COFFEE. |
 
 ## Fluxo de dados
 
@@ -109,6 +111,32 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   `dashboard.tsx:83-84`: termos de busca (IDs) não geram chips em
   "Ativos" porque, com muitos IDs, a barra estourava (um chip por nota,
   sem scroll); o gerenciamento desses termos é feito direto na search bar.
+
+## Malha fina (local com 9 extra)
+
+- **`malha-fina.ts` — `detectarNoveExtra(notes)`** — função pura, sem
+  efeitos colaterais: agrupa notas por `local_instalacao` e considera
+  candidato a correção todo local de 14 caracteres terminado em "9" cujo
+  prefixo de 13 caracteres (o tamanho válido: cidade 3 + tipo 2 + número
+  8) existe em outra nota da mesma planilha — essa outra nota é a prova
+  de que o local sem o "9" é real. Notas sem id numérico (`/^\d+$/`) são
+  contadas em `ignoradasSemId` mas ficam fora de `notasAfetadas`, porque
+  o COFFEE é chaveado por id numérico. É estado derivado
+  (`React.useMemo(() => detectarNoveExtra(notes), [notes])` em
+  `dashboard.tsx`); nada é persistido.
+- **`malha-fina-panel.tsx` — `<MalhaFinaPanel grupos={...} />`** —
+  painel colapsável renderizado logo abaixo do bloco de filtros do
+  `Dashboard`, retorna um fragment vazio (invisível) quando não há
+  grupos, sem condicional adicional no `Dashboard`. Permite selecionar
+  grupos individualmente ou todos de uma vez, uma switch "Gerar após
+  corrigir", e confirma a ação via `AlertDialog` antes de disparar
+  `POST /coffee/corrigir-local-lote` (`corrigirLocalLote` em `api.ts`).
+  O progresso é acompanhado por polling de `GET /coffee/job/{id}`
+  (mesmo padrão de `pollJob` usado em `coffee-gerar-modal.tsx`), com uma
+  barra `Progress` enquanto roda e chips de resultado ao concluir
+  (corrigidas / já corrigidas / divergentes / geradas / erros). Grupos
+  corrigidos com sucesso somem da lista (`tratados`), sem precisar
+  recarregar a planilha.
 
 ## Timings
 
