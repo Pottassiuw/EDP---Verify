@@ -4,6 +4,8 @@ import { EDPApi, ruleMeta } from '../../api';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { KpiDrawer } from './kpi-drawer';
+import { detectarNoveExtra } from './malha-fina';
+import { MalhaFinaPanel } from './malha-fina-panel';
 import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +50,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const setorOpts = [...new Set(notes.map((n) => n.setor).filter(Boolean))].sort();
   const ruleStats: Record<RuleKey, number> = {};
   notes.forEach((n) => n.errors.forEach((e) => { ruleStats[e.rule] = (ruleStats[e.rule] ?? 0) + 1; }));
+  const gruposNoveExtra = React.useMemo(() => detectarNoveExtra(notes), [notes]);
 
   const terms = q.toLowerCase().split(/[\s,;]+/).filter(Boolean);
   function matches(n: Note): boolean {
@@ -210,6 +213,8 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </div>
         )}
       </div>
+
+      <MalhaFinaPanel grupos={gruposNoveExtra} />
 
       <div className="flex-1 overflow-hidden grid" style={{
                     gridTemplateColumns: queueCollapsed ? "46px 1fr" : "minmax(430px,1fr) 1.2fr" }}>

@@ -56,6 +56,16 @@ class GerarLotePedido(BaseModel):
     justificativa: Optional[str] = None
 
 
+class CorrigirLocalItem(BaseModel):
+    id: int
+    local: str
+
+
+class CorrigirLocalPedido(BaseModel):
+    itens: list[CorrigirLocalItem]
+    gerar_apos: bool = False
+
+
 @router.post("/buscar")
 def buscar(pedido: BuscaPedido):
     _garantir_banco()
@@ -226,3 +236,21 @@ def gerar_lote(pedido: GerarLotePedido):
                       "justificativa": pedido.justificativa}, True)
     return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa,
                                            trace=db.trace_atual())}
+
+
+@router.post("/corrigir-local-lote")
+def corrigir_local_lote(pedido: CorrigirLocalPedido):
+    _garantir_banco()
+    if not pedido.itens:
+        raise HTTPException(status_code=400, detail="Lista de itens vazia.")
+    invalidos = [item.id for item in pedido.itens if len(item.local) != 13]
+    if invalidos:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Local proposto deve ter 13 caracteres (ids: {invalidos}).")
+    db.registrar_log("acao_usuario", "correcao_local_lote", None,
+                     {"total": len(pedido.itens),
+                      "gerar_apos": pedido.gerar_apos}, True)
+    return {"job_id": jobs.iniciar_correcao_local(
+        [item.model_dump() for item in pedido.itens],
+        pedido.gerar_apos, trace=db.trace_atual())}

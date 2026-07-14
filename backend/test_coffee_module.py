@@ -1151,3 +1151,172 @@ def test_rota_regerar_preserva_origem_existente(coffee_cliente, monkeypatch):
     db.definir_origem(355617, "verificar")
     coffee_cliente.post("/api/coffee/regerar", json={"id": 355617})
     assert db.origem_atual(355617) == "verificar"
+
+
+# ---------------------------------------------------------------------------
+# Malha fina — job de correção de local com 9 extra
+# ---------------------------------------------------------------------------
+
+def _nota_fake(pk, local, id_sap=None, arquivado=False):
+    return {"pk": int(pk), "id_sap": id_sap, "arquivado": arquivado,
+            "local_instalacao": local, "fields": {"id_sap": id_sap}}
+
+
+def test_job_correcao_local_corrige_e_pula(coffee_tmp, monkeypatch):
+    """Corrige quem tem 9 extra; pula ja_corrigidas e divergentes."""
+    from coffee_module import client, jobs
+
+    locais = {1: "718ET000267739",   # errado -> corrige
+              2: "718ET00026773",    # já é o proposto -> ja_corrigidas
+              3: "718XX99999999"}    # nem errado nem proposto -> divergente
+    alterados = []
+    monkeypatch.setattr(client, "buscar_nota", lambda i: _nota_fake(i, locais[int(i)]))
+    monkeypatch.setattr(client, "alterar_local",
+                        lambda i, l: alterados.append((int(i), l)) or True)
+
+    itens = [{"id": 1, "local": "718ET00026773"},
+             {"id": 2, "local": "718ET00026773"},
+             {"id": 3, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens))
+
+    assert j["total"] == 3 and j["feitas"] == 3
+    assert alterados == [(1, "718ET00026773")]
+    assert j["corrigidas"] == [1]
+    assert j["ja_corrigidas"] == [2]
+    assert j["divergentes"] == [{"id": 3, "local_atual": "718XX99999999"}]
+    assert j["geradas"] == [] and j["erros"] == []
+
+
+def test_job_correcao_local_erro_isolado_nao_derruba_lote(coffee_tmp, monkeypatch):
+    from coffee_module import client, jobs
+
+    def fake_buscar(i):
+        if int(i) == 99:
+            raise RuntimeError("timeout")
+        return _nota_fake(i, "718ET000267739")
+
+    alterados = []
+    monkeypatch.setattr(client, "buscar_nota", fake_buscar)
+    monkeypatch.setattr(client, "alterar_local",
+                        lambda i, l: alterados.append(int(i)) or True)
+
+    itens = [{"id": 1, "local": "718ET00026773"},
+             {"id": 99, "local": "718ET00026773"},
+             {"id": 2, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens))
+
+    assert j["feitas"] == 3
+    assert j["corrigidas"] == [1, 2]
+    assert len(j["erros"]) == 1 and j["erros"][0]["pk"] == 99
+
+
+def test_job_correcao_local_gerar_apos_encadeia_so_corrigidas(coffee_tmp, monkeypatch):
+    """gerar_apos: SAP placeholder + desarquivar só para quem foi corrigido."""
+    from coffee_module import client, config, jobs
+
+    locais = {1: "718ET000267739", 2: "718ET00026773"}
+    chamadas = []
+
+    def fake_buscar(i):
+        # Após alterar_local, a re-busca devolve o local corrigido.
+        corrigido = ("alterar", int(i)) in [c[:2] for c in chamadas]
+        local = "718ET00026773" if corrigido else locais[int(i)]
+        return _nota_fake(i, local)
+
+    monkeypatch.setattr(client, "buscar_nota", fake_buscar)
+    monkeypatch.setattr(client, "alterar_local",
+                        lambda i, l: chamadas.append(("alterar", int(i), l)) or True)
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, s: chamadas.append(("sap", int(i), s)) or True)
+    monkeypatch.setattr(client, "desarquivar",
+                        lambda i: chamadas.append(("desarq", int(i))) or True)
+
+    itens = [{"id": 1, "local": "718ET00026773"},
+             {"id": 2, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens, gerar_apos=True))
+
+    assert j["corrigidas"] == [1] and j["ja_corrigidas"] == [2]
+    assert j["geradas"] == [1]
+    assert ("sap", 1, config.SAP_PENDENTE) in chamadas
+    assert ("desarq", 1) in chamadas
+    # nota 2 não entrou na geração
+    assert ("sap", 2, config.SAP_PENDENTE) not in chamadas
+
+
+def test_job_correcao_local_gerar_apos_ignora_sap_real(coffee_tmp, monkeypatch):
+    """Corrigida mas com SAP real: não re-gera (loga geracao_ignorada_sap_real)."""
+    from coffee_module import client, config, jobs
+
+    chamadas = []
+    monkeypatch.setattr(client, "buscar_nota",
+                        lambda i: _nota_fake(i, "718ET000267739", id_sap=17247854))
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+    monkeypatch.setattr(client, "definir_sap",
+                        lambda i, s: chamadas.append(("sap", int(i))) or True)
+    monkeypatch.setattr(client, "desarquivar",
+                        lambda i: chamadas.append(("desarq", int(i))) or True)
+
+    itens = [{"id": 1, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens, gerar_apos=True))
+
+    assert j["corrigidas"] == [1]
+    assert j["geradas"] == []
+    assert chamadas == []
+
+
+def test_job_correcao_local_gerar_apos_falha_registra_corrigida_e_erro(coffee_tmp, monkeypatch):
+    """Se _gerar_apos_correcao falha, a nota fica em corrigidas E erros, com contexto."""
+    from coffee_module import client, jobs
+
+    monkeypatch.setattr(client, "buscar_nota",
+                        lambda i: _nota_fake(i, "718ET000267739"))
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+
+    def fake_definir_sap(i, s):
+        raise RuntimeError("falha ao definir sap")
+
+    monkeypatch.setattr(client, "definir_sap", fake_definir_sap)
+
+    itens = [{"id": 1, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens, gerar_apos=True))
+
+    assert j["corrigidas"] == [1]
+    assert j["geradas"] == []
+    assert len(j["erros"]) == 1
+    assert j["erros"][0]["pk"] == 1
+    assert "gera" in j["erros"][0]["msg"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — Rota /corrigir-local-lote
+# ---------------------------------------------------------------------------
+
+
+def test_rota_corrigir_local_lote_validacoes(coffee_cliente):
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": []})
+    assert r.status_code == 400
+
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": [{"id": 1, "local": "curto"}]})
+    assert r.status_code == 400
+    assert "13" in r.json()["detail"]
+
+
+def test_rota_corrigir_local_lote_dispara_job(coffee_cliente, monkeypatch):
+    from coffee_module import client, db, jobs
+
+    monkeypatch.setattr(client, "buscar_nota",
+                        lambda i: _nota_fake(i, "718ET000267739"))
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+
+    r = coffee_cliente.post("/api/coffee/corrigir-local-lote",
+                            json={"itens": [{"id": 1, "local": "718ET00026773"}],
+                                  "gerar_apos": False})
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    j = _aguardar_job(jobs, job_id)
+    assert j["corrigidas"] == [1]
+
+    logs = db.listar_logs(tipo="acao_usuario")
+    assert any(l["acao"] == "correcao_local_lote" for l in logs)
