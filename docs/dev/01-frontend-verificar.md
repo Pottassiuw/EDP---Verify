@@ -115,13 +115,18 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
 ## Malha fina (local com 9 extra)
 
 - **`malha-fina.ts` — `detectarNoveExtra(notes)`** — função pura, sem
-  efeitos colaterais: agrupa notas por `local_instalacao` e considera
-  candidato a correção todo local de 14 caracteres terminado em "9" cujo
-  prefixo de 13 caracteres (o tamanho válido: cidade 3 + tipo 2 + número
-  8) existe em outra nota da mesma planilha — essa outra nota é a prova
-  de que o local sem o "9" é real. Notas sem id numérico (`/^\d+$/`) são
-  contadas em `ignoradasSemId` mas ficam fora de `notasAfetadas`, porque
-  o COFFEE é chaveado por id numérico. É estado derivado
+  efeitos colaterais: agrupa por `local_instalacao` toda nota cujo local
+  tem 14 caracteres terminados em "9". O formato válido é fixo em 13
+  caracteres (cidade 3 + tipo 2 + número 8), então 14 caracteres já é
+  provadamente um dígito a mais — a correção é sempre remover o "9"
+  final. Não exige nota-referência na planilha: a planilha do Verificar
+  é de notas com problema, e a versão correta (13 chars) normalmente
+  nem aparece nela; além disso a segurança real está no backend, que
+  re-confirma cada nota no COFFEE antes de alterar (só altera se o local
+  lá for exatamente `proposto + "9"`, senão marca `divergente` e pula).
+  Notas sem id numérico (`/^\d+$/`) são contadas em `ignoradasSemId` mas
+  ficam fora de `notasAfetadas` (o COFFEE é chaveado por id numérico);
+  grupos sem nenhuma nota corrigível são descartados. É estado derivado
   (`React.useMemo(() => detectarNoveExtra(notes), [notes])` em
   `dashboard.tsx`); nada é persistido.
 - **`malha-fina-panel.tsx` — `<MalhaFinaPanel grupos={...} />`** —

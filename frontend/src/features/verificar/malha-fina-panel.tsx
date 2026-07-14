@@ -184,8 +184,7 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
                     <span className="text-text-mute text-[12px]">→</span>
                     <span className="edp-mono text-[12px] text-[var(--accent)]">{g.localProposto}</span>
                     <span className="text-[11.5px] text-text-dim">
-                      {g.notasAfetadas.length} nota{g.notasAfetadas.length !== 1 ? "s" : ""} ·
-                      {" "}{g.notasReferencia.length} referência{g.notasReferencia.length !== 1 ? "s" : ""}
+                      {g.notasAfetadas.length} nota{g.notasAfetadas.length !== 1 ? "s" : ""}
                       {g.ignoradasSemId > 0 ? ` · ${g.ignoradasSemId} sem id (ignorada${g.ignoradasSemId !== 1 ? "s" : ""})` : ""}
                     </span>
                     <button type="button"
@@ -198,7 +197,6 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
                   {exp && (
                     <div className="edp-mono text-[11px] text-text-dim pl-[26px] pt-[4px]">
                       <div>afetadas: {g.notasAfetadas.map((n) => n.id).join(", ")}</div>
-                      <div>referência: {g.notasReferencia.map((n) => n.id).join(", ")}</div>
                     </div>
                   )}
                 </div>
