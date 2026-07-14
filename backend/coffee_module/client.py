@@ -42,7 +42,8 @@ def buscar_nota(id) -> dict:
     """GET json_all/{id}. Faz o duplo-parse e retorna campos-chave + fields."""
     inicio = time.perf_counter()
     try:
-        resp = httpx.get(f"{config.base_url()}/json_all/{id}", timeout=_TIMEOUT)
+        resp = httpx.get(f"{config.base_url()}/json_all/{id}", timeout=_TIMEOUT,
+                         verify=config.ssl_verify())
         resp.raise_for_status()
         bruto = resp.json()
         if isinstance(bruto, str):
@@ -72,7 +73,7 @@ def buscar_nota(id) -> dict:
 def _get_logado(acao: str, url: str, nota_pk, detalhes: dict) -> bool:
     inicio = time.perf_counter()
     try:
-        resp = httpx.get(url, timeout=_TIMEOUT)
+        resp = httpx.get(url, timeout=_TIMEOUT, verify=config.ssl_verify())
         resp.raise_for_status()
         tempo_ms = round((time.perf_counter() - inicio) * 1000)
         db.registrar_log("api_call", acao, nota_pk,

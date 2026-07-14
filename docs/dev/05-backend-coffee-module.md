@@ -27,6 +27,15 @@ Todas as chamadas usam `httpx` síncrono contra `config.base_url()`
 timeout de 120s, e cada chamada é logada em `coffee_logs` via
 `db.registrar_log("api_call", ...)`, sucesso ou falha.
 
+A verificação TLS é controlada por `config.ssl_verify()` (env
+`COFFEE_SSL_VERIFY`) e passada como `verify=` em toda chamada `httpx`. A
+rede corporativa injeta um CA raiz auto-assinado na cadeia, que o bundle
+público rejeita (`CERTIFICATE_VERIFY_FAILED`); por isso o padrão é
+`"false"` (verificação desligada, host interno da EDP). Aceita também
+`"true"` (bundle padrão) ou o caminho de um CA bundle `.pem` — recomendado
+em produção. Sem essa configuração, toda `buscar_nota` falha no handshake
+e a rota `/marcar-gerar` responde 502 "Nao foi possivel buscar a nota".
+
 - `buscar_nota(id)` (`client.py:41`) — `GET json_all/{id}`. A API COFFEE
   devolve uma string JSON duplamente codificada (`json.loads` sobre o
   corpo já decodificado pelo `httpx`), de onde é extraído o primeiro

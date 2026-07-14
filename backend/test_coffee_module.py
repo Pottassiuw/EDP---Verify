@@ -180,7 +180,7 @@ def test_buscar_nota_faz_duplo_parse(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     capturado = {}
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, timeout=None, verify=None):
         capturado["url"] = url
         return _FakeResp(payload=_JSON_ALL)
 
@@ -199,7 +199,7 @@ def test_buscar_nota_faz_duplo_parse(coffee_tmp, monkeypatch):
 
 def test_buscar_nota_propaga_erro_http(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
-    monkeypatch.setattr(httpx, "get", lambda url, timeout=None: _FakeResp(status=500))
+    monkeypatch.setattr(httpx, "get", lambda url, timeout=None, verify=None: _FakeResp(status=500))
     from coffee_module import client, db
     with pytest.raises(httpx.HTTPStatusError):
         client.buscar_nota(1)
@@ -211,7 +211,7 @@ def test_buscar_nota_propaga_erro_http(coffee_tmp, monkeypatch):
 def test_buscar_nota_inexistente_erro_claro(coffee_tmp, monkeypatch):
     # json_all devolve 200 com lista vazia quando o id nao existe no COFFEE
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
-    monkeypatch.setattr(httpx, "get", lambda url, timeout=None: _FakeResp(payload="[]"))
+    monkeypatch.setattr(httpx, "get", lambda url, timeout=None, verify=None: _FakeResp(payload="[]"))
     from coffee_module import client, db
     with pytest.raises(client.NotaNaoEncontradaErro):
         client.buscar_nota(999)
@@ -224,7 +224,7 @@ def test_escritas_montam_url(coffee_tmp, monkeypatch):
     monkeypatch.setattr(config, "COFFEE_API_KEY", "fake-key")
     urls = []
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, timeout=None, verify=None):
         urls.append(url)
         return _FakeResp(payload="ok")
 
@@ -238,6 +238,15 @@ def test_escritas_montam_url(coffee_tmp, monkeypatch):
     assert urls[2].endswith("/deolhonarede/local_instalacao/123321/701CF12345678")
     acoes = {l["acao"] for l in db.listar_logs(tipo="api_call")}
     assert {"definir_sap", "desarquivar", "alterar_local"} <= acoes
+
+
+def test_ssl_verify_le_env(monkeypatch):
+    monkeypatch.delenv("COFFEE_SSL_VERIFY", raising=False)
+    assert config.ssl_verify() is False  # padrao: CA corporativo auto-assinado
+    monkeypatch.setenv("COFFEE_SSL_VERIFY", "true")
+    assert config.ssl_verify() is True
+    monkeypatch.setenv("COFFEE_SSL_VERIFY", "/etc/ssl/corp-ca.pem")
+    assert config.ssl_verify() == "/etc/ssl/corp-ca.pem"
 
 
 # ---------------------------------------------------------------------------

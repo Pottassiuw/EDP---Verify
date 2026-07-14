@@ -27,3 +27,20 @@ def base_url() -> str:
             "COFFEE_API_KEY não definida — defina a variável de ambiente."
         )
     return f"https://coffee.edp.gpti.com.br/api/{COFFEE_API_KEY}/deolhonarede"
+
+
+def ssl_verify() -> bool | str:
+    """Modo de verificação TLS das chamadas COFFEE (parâmetro verify do httpx).
+
+    A rede corporativa injeta um CA raiz auto-assinado na cadeia, que o bundle
+    público do httpx rejeita. Controlado por COFFEE_SSL_VERIFY:
+      - "false" (padrão): desliga a verificação (host interno da EDP);
+      - "true": usa o bundle público padrão;
+      - qualquer outro valor: caminho de um CA bundle .pem (recomendado em prod).
+    """
+    valor = os.environ.get("COFFEE_SSL_VERIFY", "false").strip()
+    if valor.lower() in ("false", "0", "no", ""):
+        return False
+    if valor.lower() in ("true", "1", "yes"):
+        return True
+    return valor
