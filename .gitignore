@@ -17,3 +17,6 @@ backend/data/
 
 # Sessões de brainstorm (visual companion)
 .superpowers/
+
+# Worktrees isolados (subagent-driven-development)
+.worktrees/
