@@ -153,7 +153,7 @@ def _rodar_correcao_local(job_id: str, itens: list, gerar_apos: bool,
                 # Planilha defasada: nunca altera o que nao reconhecemos.
                 with _LOCK:
                     _JOBS[job_id]["divergentes"].append(
-                        {"pk": ident, "local_atual": atual})
+                        {"id": ident, "local_atual": atual})
                 db.registrar_log("acao_usuario", "correcao_local_divergente",
                                  nota["pk"],
                                  {"id": ident, "esperado": local + "9",
@@ -165,7 +165,12 @@ def _rodar_correcao_local(job_id: str, itens: list, gerar_apos: bool,
                 db.registrar_log("acao_usuario", "correcao_local", nota["pk"],
                                  {"id": ident, "de": atual, "para": local}, True)
                 if gerar_apos:
-                    _gerar_apos_correcao(job_id, ident, nota)
+                    try:
+                        _gerar_apos_correcao(job_id, ident, nota)
+                    except Exception as exc:  # noqa: BLE001 — corrigida, mas geracao falhou
+                        with _LOCK:
+                            _JOBS[job_id]["erros"].append(
+                                {"pk": ident, "msg": f"geração após correção: {exc}"})
         except Exception as exc:  # noqa: BLE001 — uma falha não derruba o lote
             with _LOCK:
                 _JOBS[job_id]["erros"].append({"pk": ident, "msg": str(exc)})

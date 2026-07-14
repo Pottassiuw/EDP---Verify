@@ -1174,7 +1174,7 @@ def test_job_correcao_local_corrige_e_pula(coffee_tmp, monkeypatch):
     assert alterados == [(1, "718ET00026773")]
     assert j["corrigidas"] == [1]
     assert j["ja_corrigidas"] == [2]
-    assert j["divergentes"] == [{"pk": 3, "local_atual": "718XX99999999"}]
+    assert j["divergentes"] == [{"id": 3, "local_atual": "718XX99999999"}]
     assert j["geradas"] == [] and j["erros"] == []
 
 
@@ -1253,6 +1253,29 @@ def test_job_correcao_local_gerar_apos_ignora_sap_real(coffee_tmp, monkeypatch):
     assert j["corrigidas"] == [1]
     assert j["geradas"] == []
     assert chamadas == []
+
+
+def test_job_correcao_local_gerar_apos_falha_registra_corrigida_e_erro(coffee_tmp, monkeypatch):
+    """Se _gerar_apos_correcao falha, a nota fica em corrigidas E erros, com contexto."""
+    from coffee_module import client, jobs
+
+    monkeypatch.setattr(client, "buscar_nota",
+                        lambda i: _nota_fake(i, "718ET000267739"))
+    monkeypatch.setattr(client, "alterar_local", lambda i, l: True)
+
+    def fake_definir_sap(i, s):
+        raise RuntimeError("falha ao definir sap")
+
+    monkeypatch.setattr(client, "definir_sap", fake_definir_sap)
+
+    itens = [{"id": 1, "local": "718ET00026773"}]
+    j = _aguardar_job(jobs, jobs.iniciar_correcao_local(itens, gerar_apos=True))
+
+    assert j["corrigidas"] == [1]
+    assert j["geradas"] == []
+    assert len(j["erros"]) == 1
+    assert j["erros"][0]["pk"] == 1
+    assert "gera" in j["erros"][0]["msg"].lower()
 
 
 # ---------------------------------------------------------------------------

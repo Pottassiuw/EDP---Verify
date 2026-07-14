@@ -19,7 +19,7 @@ export interface CoffeeJob {
   corrigidas?: number[];
   ja_corrigidas?: number[];
   geradas?: number[];
-  divergentes?: Array<{ pk: number; local_atual: string | null }>;
+  divergentes?: Array<{ id: number; local_atual: string | null }>;
   iniciado_em: string;
 }
 

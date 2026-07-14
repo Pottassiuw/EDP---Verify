@@ -19,6 +19,10 @@ const TAMANHO_LOCAL_VALIDO = 13;
 export function detectarNoveExtra(notes: Note[]): GrupoNoveExtra[] {
   const porLocal = new Map<string, Note[]>();
   for (const nota of notes) {
+    // Assume que o tipo_local_instalacao do COFFEE é convencionalmente maiúsculo
+    // (compor_local_instalacao, no backend, não normaliza esse componente). Se um
+    // local vier minúsculo por algum motivo, o agrupamento falha e a nota é apenas
+    // ignorada — nunca alterada incorretamente (falha segura).
     const local = (nota.raw.local_instalacao || "").trim().toUpperCase();
     if (!local || local === "-") continue;
     const lista = porLocal.get(local) ?? [];

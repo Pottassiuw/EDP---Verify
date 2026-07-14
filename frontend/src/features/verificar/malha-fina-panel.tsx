@@ -25,13 +25,22 @@ type FaseJob =
   | { fase: "rodando"; job: CoffeeJob | null }
   | { fase: "concluido"; job: CoffeeJob };
 
-function pollJob(jobId: string): Promise<CoffeeJob> {
+function pollJob(jobId: string, onTick: (job: CoffeeJob) => void): Promise<CoffeeJob> {
   return new Promise((resolve, reject) => {
+    let falhas = 0;
     const tick = (): void => {
       fetch(`${BASE}/coffee/job/${jobId}`, { headers: { Accept: "application/json" } })
         .then((r) => { if (!r.ok) throw new Error(`GET /job -> ${r.status}`); return r.json() as Promise<CoffeeJob>; })
-        .then((job) => { if (job.estado === "concluido") resolve(job); else setTimeout(tick, 900); })
-        .catch(reject);
+        .then((job) => {
+          falhas = 0;
+          onTick(job);
+          if (job.estado === "concluido") resolve(job); else setTimeout(tick, 900);
+        })
+        .catch((e: unknown) => {
+          // Tolera falhas transitorias de rede: o job continua rodando no backend.
+          if (++falhas >= 10) reject(e instanceof Error ? e : new Error(String(e)));
+          else setTimeout(tick, 900);
+        });
     };
     tick();
   });
@@ -70,16 +79,9 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
       g.notasAfetadas.map((n) => ({ id: Number(n.id), local: g.localProposto })));
     setFase({ fase: "rodando", job: null });
     corrigirLocalLote(itens, gerarApos)
-      .then(({ job_id }) => {
-        const acompanhar = (): void => {
-          fetch(`${BASE}/coffee/job/${job_id}`, { headers: { Accept: "application/json" } })
-            .then((r) => r.json() as Promise<CoffeeJob>)
-            .then((job) => setFase((f) => (f.fase === "rodando" ? { fase: "rodando", job } : f)))
-            .catch(() => undefined);
-        };
-        const intervalo = setInterval(acompanhar, 900);
-        return pollJob(job_id).finally(() => clearInterval(intervalo));
-      })
+      .then(({ job_id }) =>
+        pollJob(job_id, (job) =>
+          setFase((f) => (f.fase === "rodando" ? { fase: "rodando", job } : f))))
       .then((job) => {
         setFase({ fase: "concluido", job });
         setTratados((t) => new Set([...t, ...gruposSel.map((g) => g.localErrado)]));
