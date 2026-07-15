@@ -224,6 +224,29 @@ def test_responsaveis_roundtrip(banco_temporario):
     assert db.carregar_responsaveis() == {"Poa": "Maria"}
 
 
+# ── Task 2 (integração Coffee↔Input): service.py — caminho canônico ──────
+def test_service_criar_notas(banco_temporario):
+    from input_module import db, service
+    nota = service.NovaNota(
+        Numero_Nota=555001, Status_Nota="00 Pendente",
+        Prioridade_Nota="Programável", Local_Instalacao="045RL00000001",
+    )
+    assert service.criar_notas([nota], usuario="teste") == 1
+    df = db.carregar_dados()
+    linha = df[df["Numero_Nota"] == 555001].iloc[0]
+    assert linha["Regional"] == "Guarulhos"          # derivada de Local_Instalacao[:3]
+    assert linha["ID_Cronologia"] == 1
+    with pytest.raises(service.NotasDuplicadasErro):
+        service.criar_notas([nota], usuario="teste")
+
+
+def test_service_criar_notas_duplicata_no_lote(banco_temporario):
+    from input_module import service
+    n = service.NovaNota(Numero_Nota=7, Status_Nota="00 Pendente", Prioridade_Nota="Programável")
+    with pytest.raises(service.NotasDuplicadasErro):
+        service.criar_notas([n, n], usuario="teste")
+
+
 # ── Tarefa 4: motor de enriquecimento, auditoria, cache e cópia Excel ────
 def _excel_iw28(caminho):
     pd.DataFrame({
@@ -450,8 +473,8 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def cliente(engine_isolado):
     from main import app
-    from input_module import routes
-    routes._migracao["resultado"] = None
+    from input_module import service
+    service.resetar_migracao()
     return TestClient(app)
 
 

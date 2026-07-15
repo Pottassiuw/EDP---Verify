@@ -17,6 +17,7 @@ via `/api/input/*`.
 |---|---|
 | `backend/input_module/engine.py` | Motor de enriquecimento: carrega o cadastro do SQLite e cruza com IW28/IW38/IW66 e as bases de apoio; auditoria de prazo (`avaliar_prazo_sap`); cache em memória com TTL. |
 | `backend/input_module/db.py` | Persistência SQLite local: schema/migração do banco de notas, CRUD com diff/log/undo, backups rotativos, e o cache de bases externas (`salvar_base_dataframe`/`carregar_base_dataframe`). |
+| `backend/input_module/service.py` | Caminho canônico de escrita (criação de notas + migração/init do banco), reusado por `routes.py` e por outros módulos que precisem escrever no Input (ex.: integração Coffee→Input). |
 | `backend/input_module/routes.py` | Router FastAPI `/api/input/*`: leitura/escrita de notas, configuração (responsáveis, bases, backups), sincronização SAP, ramal e hierarquia. |
 | `backend/input_module/config.py` | Dicionários de domínio (status, cidades, regionais, prioridades), caminhos de rede e locais, e as constantes de colunas/nomes do painel. |
 
@@ -107,10 +108,33 @@ O cadastro de notas (tabela `notas`, schema fixo — ver
 e mais antiga, não relacionada a essa migração: é o CRUD principal do
 módulo (upsert, diff/log, undo, backups rotativos).
 
+## service.py — caminho canônico de escrita
+
+`input_module/service.py` concentra o caminho de escrita que antes
+vivia dentro de `routes.py`, para que outros módulos (ex.: a
+integração Coffee→Input) possam reusar exatamente a mesma lógica sem
+importar internals de rotas:
+
+- `garantir_banco() -> str` — roda a migração da rede
+  (`db.migrar_da_rede_se_preciso()`) e `db.inicializar_banco()` uma
+  única vez por processo (protegido por `threading.Lock`); retorna
+  `"ja-existe"`, `"migrado"` ou `"rede-indisponivel"`. `resetar_migracao()`
+  zera esse estado (usado por `POST /migrar`).
+- `NovaNota` (Pydantic) — schema de uma nota nova, mesmos campos/defaults
+  usados pelos endpoints `POST /notas` e `POST /notas/bulk`.
+- `criar_notas(notas: list[NovaNota], usuario: str) -> int` — valida
+  duplicatas (no lote e contra o banco), completa `Regional`
+  (derivado de `Local_Instalacao[:3]` via `config.DE_PARA_REGIONAL`) e
+  `ID_Cronologia`, grava via `db.salvar_em_massa()` e retorna a
+  quantidade inserida. Levanta `NotasDuplicadasErro` em conflito.
+
+`routes.py` apenas delega para essas funções e traduz
+`NotasDuplicadasErro` em `HTTPException(409, ...)`.
+
 ## routes.py
 
 Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
-`_garantir_banco()` (`routes.py:25`), que roda a migração da rede e
+`garantir_banco()` (`service.py`), que roda a migração da rede e
 `db.inicializar_banco()` uma única vez por processo.
 
 | Rota | O que faz |
@@ -131,13 +155,13 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 | `POST /hierarquia`, `GET /hierarquia/{numero_nota}` | Vínculo nota-mãe/nota-filha (`Nota_Mae`). |
 | `POST /migrar` | Força nova tentativa de migração do banco a partir da rede. |
 
-Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:94`), que
+Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:83`), que
 invalida o cache do engine e agenda `engine.gerar_copia_excel_rede()`
 em background para manter o Excel espelhado na rede atualizado.
 
 ## Pontos de atenção
 
-- `input_module/routes.py:292-310` (`_rotina_sap_background`) — chama
+- `input_module/routes.py:247-265` (`_rotina_sap_background`) — chama
   `Sap_Robot.py` via `subprocess.run` com caminho relativo construído a
   partir de `config.data_dir().parent.parent.parent`; qualquer mudança
   na estrutura de diretórios do backend quebra silenciosamente essa
@@ -152,7 +176,7 @@ em background para manter o Excel espelhado na rede atualizado.
   colunas; um Excel de origem com cabeçalho alterado grava sem erro e
   só quebra mais adiante, dentro de `engine.py`, quando a coluna
   esperada não é encontrada.
-- `input_module/routes.py:313` — `from fastapi import Body` está no
+- `input_module/routes.py:268` — `from fastapi import Body` está no
   meio do arquivo (não no bloco de imports do topo), import solto
   antes de `sync_sap`.
 - `input_module/engine.py:617-619` — `_CACHE_TTL_SEGUNDOS = 600` é um

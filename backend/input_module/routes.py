@@ -4,7 +4,6 @@ import io
 import json
 import os
 import re as _re
-import threading
 from typing import Optional
 
 import pandas as pd
@@ -14,20 +13,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from input_module import config, db, engine
+from input_module.service import (NotasDuplicadasErro, NovaNota, criar_notas,
+                                  garantir_banco, resetar_migracao)
 
 router = APIRouter(prefix="/api/input")
-
-# Estado da migração inicial (resolvido no primeiro acesso)
-_migracao = {"resultado": None}
-_banco_lock = threading.Lock()
-
-
-def _garantir_banco() -> str:
-    with _banco_lock:
-        if _migracao["resultado"] is None:
-            _migracao["resultado"] = db.migrar_da_rede_se_preciso()
-            db.inicializar_banco()
-    return _migracao["resultado"]
 
 
 def _df_para_registros(df: pd.DataFrame) -> list:
@@ -42,7 +31,7 @@ def quem_sou_eu():
 
 @router.get("/notas")
 def listar_notas():
-    migracao = _garantir_banco()
+    migracao = garantir_banco()
     df = engine.get_dataset()
     return {
         "registros": _df_para_registros(df),
@@ -59,25 +48,25 @@ def listar_notas():
 
 @router.get("/sync")
 def sync():
-    _garantir_banco()
+    garantir_banco()
     return {"ultima_alteracao": db.obter_data_ultima_alteracao()}
 
 
 @router.get("/logs")
 def listar_logs():
-    _garantir_banco()
+    garantir_banco()
     return {"registros": _df_para_registros(db.carregar_logs())}
 
 
 @router.get("/logs/arquivos")
 def listar_logs_arquivos():
-    _garantir_banco()
+    garantir_banco()
     return {"registros": _df_para_registros(db.carregar_log_arquivos())}
 
 
 @router.get("/logs/nota/{numero}")
 def timeline_nota(numero: int):
-    _garantir_banco()
+    garantir_banco()
     df = db.carregar_logs()
     if not df.empty:
         df = df[df["Numero_Nota"] == numero]
@@ -100,21 +89,6 @@ class EdicaoPedido(BaseModel):
     linhas: list[dict]
 
 
-class NovaNota(BaseModel):
-    Numero_Nota: int
-    Status_Nota: str
-    Prioridade_Nota: str
-    Planejado_DDPM: float = 0.0
-    Status_Obra: str = "-"
-    Conjunto: str = "-"
-    Circuito: str = "-"
-    Local_Instalacao: str = "-"
-    Mes_Execucao_Planejado: str = "-"
-    Data_Envio_Projeto: str = "-"
-    Observacao: str = ""
-    Check: str = "-"
-
-
 class LotePedido(BaseModel):
     notas: list[NovaNota]
 
@@ -128,32 +102,10 @@ class ExportPedido(BaseModel):
     colunas: list[str]
 
 
-def _preparar_novas(notas: list, df_banco: pd.DataFrame) -> pd.DataFrame:
-    """Valida duplicatas e completa Regional/ID_Cronologia (Input/app.py:640-728)."""
-    numeros = [n.Numero_Nota for n in notas]
-    repetidas_lote = {str(n) for n in numeros if numeros.count(n) > 1}
-    if repetidas_lote:
-        raise HTTPException(409, "Notas duplicadas no próprio lote: " + ", ".join(sorted(repetidas_lote)))
-    existentes = set(df_banco["Numero_Nota"].tolist()) if not df_banco.empty else set()
-    repetidas_banco = sorted(str(n) for n in numeros if n in existentes)
-    if repetidas_banco:
-        raise HTTPException(409, "Notas já existentes no banco: " + ", ".join(repetidas_banco))
-    base_id = db.proximo_id_cronologia(df_banco)
-    linhas = []
-    for i, nota in enumerate(notas):
-        registro = nota.model_dump()
-        registro["ID_Cronologia"] = base_id + i
-        registro["Regional"] = config.DE_PARA_REGIONAL.get(str(nota.Local_Instalacao)[:3], "-")
-        registro["Centro_Responsavel"] = "-"
-        registro["Status_Anterior"] = "-"
-        linhas.append(registro)
-    return pd.DataFrame(linhas)
-
-
 @router.patch("/notas")
 def editar_notas(pedido: EdicaoPedido, tasks: BackgroundTasks,
                  usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     try:
         resultado = db.aplicar_edicoes(pedido.linhas, usuario=usuario)
     except ValueError as e:
@@ -166,9 +118,11 @@ def editar_notas(pedido: EdicaoPedido, tasks: BackgroundTasks,
 @router.post("/notas")
 def criar_nota(nota: NovaNota, tasks: BackgroundTasks,
                usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
-    df_novas = _preparar_novas([nota], db.carregar_dados())
-    db.salvar_em_massa(df_novas)
+    garantir_banco()
+    try:
+        criar_notas([nota], usuario=usuario)
+    except NotasDuplicadasErro as e:
+        raise HTTPException(409, str(e))
     _pos_escrita(tasks)
     return {"inseridas": 1}
 
@@ -176,19 +130,21 @@ def criar_nota(nota: NovaNota, tasks: BackgroundTasks,
 @router.post("/notas/bulk")
 def criar_lote(pedido: LotePedido, tasks: BackgroundTasks,
                usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     if not pedido.notas:
         raise HTTPException(400, "Lote vazio.")
-    df_novas = _preparar_novas(pedido.notas, db.carregar_dados())
-    db.salvar_em_massa(df_novas)
+    try:
+        inseridas = criar_notas(pedido.notas, usuario=usuario)
+    except NotasDuplicadasErro as e:
+        raise HTTPException(409, str(e))
     _pos_escrita(tasks)
-    return {"inseridas": len(df_novas)}
+    return {"inseridas": inseridas}
 
 
 @router.delete("/notas")
 def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
                   usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     excluidas = db.deletar_notas(pedido.numeros, usuario=usuario)
     if excluidas:
         _pos_escrita(tasks)
@@ -197,7 +153,7 @@ def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
 
 @router.post("/desfazer")
 def desfazer(tasks: BackgroundTasks, usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     ok, mensagem = db.reverter_ultima_alteracao()
     if ok:
         _pos_escrita(tasks)
@@ -206,7 +162,7 @@ def desfazer(tasks: BackgroundTasks, usuario: str = Depends(usuario_atual)):
 
 @router.post("/export")
 def exportar(pedido: ExportPedido):
-    _garantir_banco()
+    garantir_banco()
     df = engine.get_dataset()
     df = df[df["Numero_Nota"].isin(pedido.numeros)]
     colunas = [c for c in pedido.colunas if c in df.columns]
@@ -231,13 +187,13 @@ def _achar_base(nome_arquivo: str) -> str:
 
 @router.get("/responsaveis")
 def obter_responsaveis():
-    _garantir_banco()
+    garantir_banco()
     return db.carregar_responsaveis()
 
 
 @router.put("/responsaveis")
 def gravar_responsaveis(novo: dict[str, str], usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     db.salvar_responsaveis(novo)
     return {"ok": True}
 
@@ -314,7 +270,7 @@ from fastapi import Body
 @router.post("/bases/sync-sap")
 def sync_sap(tasks: BackgroundTasks, x_user: Optional[str] = Header(default="Sistema", alias="X-User"), payload: dict = Body(None)):
     """Inicia a extração SAP em background."""
-    _garantir_banco()
+    garantir_banco()
     tasks.add_task(_rotina_sap_background)
     return {"mensagem": "Sincronização SAP iniciada em background."}
 
@@ -322,7 +278,7 @@ def sync_sap(tasks: BackgroundTasks, x_user: Optional[str] = Header(default="Sis
 @router.post("/bases/{nome_arquivo}")
 def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
                     usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     caminho = _achar_base(nome_arquivo)
     try:
         with open(caminho, "wb") as f:
@@ -395,14 +351,14 @@ class HierarquiaPedido(BaseModel):
 
 @router.get("/ramal")
 def listar_ramal():
-    _garantir_banco()
+    garantir_banco()
     return {"registros": _df_para_registros(db.carregar_dados_ramal())}
 
 
 @router.post("/ramal/bulk")
 def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
                    usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     if not pedido.notas:
         raise HTTPException(400, "Lote vazio.")
     import pandas as pd
@@ -416,7 +372,7 @@ def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
 @router.delete("/ramal")
 def excluir_ramal(pedido: ExclusaoRamalPedido, tasks: BackgroundTasks,
                   usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     excluidas = db.deletar_notas_ramal(pedido.numeros, usuario=usuario)
     if excluidas:
         _pos_escrita(tasks)
@@ -426,7 +382,7 @@ def excluir_ramal(pedido: ExclusaoRamalPedido, tasks: BackgroundTasks,
 @router.post("/hierarquia")
 def vincular_hierarquia(pedido: HierarquiaPedido, tasks: BackgroundTasks,
                         usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     atualizadas = db.vincular_nota_mae_lote(
         {k: v for k, v in pedido.dados.items()}, usuario=usuario
     )
@@ -437,7 +393,7 @@ def vincular_hierarquia(pedido: HierarquiaPedido, tasks: BackgroundTasks,
 
 @router.get("/hierarquia/{numero_nota}")
 def obter_hierarquia(numero_nota: int):
-    _garantir_banco()
+    garantir_banco()
     df = db.carregar_dados()
     if df.empty or numero_nota not in df["Numero_Nota"].values:
         raise HTTPException(404, f"Nota {numero_nota} não encontrada.")
@@ -452,7 +408,7 @@ def obter_hierarquia(numero_nota: int):
 
 @router.post("/migrar")
 def migrar_novamente(usuario: str = Depends(usuario_atual)):
-    _migracao["resultado"] = None
-    resultado = _garantir_banco()
+    resetar_migracao()
+    resultado = garantir_banco()
     engine.invalidar_cache()
     return {"resultado": resultado}
