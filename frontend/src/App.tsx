@@ -214,7 +214,7 @@ function AppContent(): React.JSX.Element {
                         coffeeReturn={coffeeReturn}
                         onClearReturn={() => setCoffeeReturn(null)}
                         onBackToTriagem={() => { setCoffeeSub("verificar"); }}
-                        onIrParaInput={() => { setInputSub("visao"); setSection("input"); }} />}
+                        onIrParaInput={() => { setInputSub("visao"); changeSection("input"); }} />}
           </React.Suspense>
         </SidebarInset>
       </SidebarProvider>
