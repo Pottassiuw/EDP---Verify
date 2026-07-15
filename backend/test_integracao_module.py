@@ -1,6 +1,15 @@
 """Testes do módulo de integração COFFEE → INPUT."""
 import pandas as pd
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+
+def _client():
+    from integracao_module.routes import router
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app)
 
 
 def _nota_coffee(pk=4242, id_sap=12345678, **fields_extras):
@@ -148,3 +157,30 @@ def test_mover_atualizar_existente_sem_estar_no_plano_recusa(ambiente):
     with pytest.raises(service.NotaNaoEncontradaErro):
         service.mover_para_plano(
             [4242], CAMPOS, usuario="teste", atualizar_existente=True)
+
+
+def test_api_revisao(ambiente):
+    client = _client()
+    r = client.get("/api/integracao/nota/4242/revisao")
+    assert r.status_code == 200
+    corpo = r.json()
+    assert corpo["proposta"]["Numero_Nota"] == 12345678
+    assert corpo["iw28"]["Ordem"] == 900001
+    assert client.get("/api/integracao/nota/999999/revisao").status_code == 404
+
+
+def test_api_mover_fluxo_completo(ambiente):
+    client = _client()
+    payload = {"pks": [4242], "campos_usuario": CAMPOS}
+    assert client.post("/api/integracao/mover-para-plano", json=payload).status_code == 400  # sem X-User
+    r = client.post("/api/integracao/mover-para-plano", json=payload, headers={"X-User": "teste"})
+    assert r.status_code == 200 and r.json()["inseridas"] == 1
+    assert client.post("/api/integracao/mover-para-plano", json=payload,
+                       headers={"X-User": "teste"}).status_code == 409
+    r = client.post("/api/integracao/mover-para-plano",
+                    json={**payload, "atualizar_existente": True},
+                    headers={"X-User": "teste"})
+    assert r.status_code == 200 and r.json()["atualizadas"] >= 0
+    assert client.post("/api/integracao/mover-para-plano",
+                       json={"pks": [4243], "campos_usuario": CAMPOS},
+                       headers={"X-User": "teste"}).status_code == 422

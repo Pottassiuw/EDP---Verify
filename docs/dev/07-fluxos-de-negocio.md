@@ -7,8 +7,9 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
 [`01-frontend-verificar.md`](01-frontend-verificar.md),
 [`02-frontend-coffee.md`](02-frontend-coffee.md),
 [`03-frontend-input.md`](03-frontend-input.md),
-[`05-backend-coffee-module.md`](05-backend-coffee-module.md) e
-[`06-backend-input-module.md`](06-backend-input-module.md).
+[`05-backend-coffee-module.md`](05-backend-coffee-module.md),
+[`06-backend-input-module.md`](06-backend-input-module.md) e
+[`08-integracao-coffee-input.md`](08-integracao-coffee-input.md).
 
 ## Ciclo de vida de uma nota
 
@@ -41,6 +42,14 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
    `classify.classificar`.
 6. **Nota real no SAP** — fim do ciclo: a nota tem `id_sap` real e está
    arquivada no COFFEE.
+7. **COFFEE → Plano (opcional)** — com a nota já gerada (`id_sap`
+   real), o usuário pode revisar (`GET
+   /api/integracao/nota/{pk}/revisao`) e mover a nota para o plano do
+   Input (`POST /api/integracao/mover-para-plano`), que cria ou
+   atualiza o registro correspondente
+   ([`08-integracao-coffee-input.md`](08-integracao-coffee-input.md)).
+   Esse passo é a única ponte entre COFFEE e Input — nenhum dos dois
+   módulos conhece o outro diretamente, só `integracao_module`.
 
 ## Regra de geração COFFEE: desarquivar antes de gerar
 
