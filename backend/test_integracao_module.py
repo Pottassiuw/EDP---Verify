@@ -135,3 +135,16 @@ def test_mover_lote_all_or_nothing(ambiente):
     from integracao_module import service
     with pytest.raises(service.SapPendenteErro):
         service.mover_para_plano([4242, 4243], CAMPOS, usuario="teste")
+
+
+def test_mover_lote_pk_desconhecido_nao_encontrada(ambiente):
+    from integracao_module import service
+    with pytest.raises(service.NotaNaoEncontradaErro):
+        service.mover_para_plano([4242, 999999], CAMPOS, usuario="teste")
+
+
+def test_mover_atualizar_existente_sem_estar_no_plano_recusa(ambiente):
+    from integracao_module import service
+    with pytest.raises(service.NotaNaoEncontradaErro):
+        service.mover_para_plano(
+            [4242], CAMPOS, usuario="teste", atualizar_existente=True)

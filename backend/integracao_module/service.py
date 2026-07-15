@@ -48,17 +48,19 @@ def montar_revisao(pk: int) -> dict:
 
 
 def _carregar_validas(pks: list[int]) -> list[dict]:
-    notas, problemas = [], []
+    notas, nao_encontradas, pendentes = [], [], []
     for pk in pks:
         nota = coffee_db.obter_nota(pk)
         if nota is None:
-            problemas.append(f"{pk}: não está no snapshot local do COFFEE")
+            nao_encontradas.append(f"{pk}: não está no snapshot local do COFFEE")
         elif not _sap_real(nota):
-            problemas.append(f"{pk}: sem SAP real (pendente)")
+            pendentes.append(f"{pk}: sem SAP real (pendente)")
         else:
             notas.append(nota)
-    if problemas:
-        raise SapPendenteErro("; ".join(problemas))
+    if nao_encontradas:
+        raise NotaNaoEncontradaErro("; ".join(nao_encontradas))
+    if pendentes:
+        raise SapPendenteErro("; ".join(pendentes))
     return notas
 
 
@@ -74,6 +76,9 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
 
     if atualizar_existente:
         nota = notas[0]
+        if input_db.obter_nota_plano(nota["id_sap"]) is None:
+            raise NotaNaoEncontradaErro(
+                f"Nota {nota['id_sap']} não está no plano — não é possível atualizar.")
         proposta = mapping.montar_proposta(nota)
         linha = {"Numero_Nota": nota["id_sap"]}
         linha.update({c: proposta[c] for c in mapping.CAMPOS_ATUALIZAVEIS})
