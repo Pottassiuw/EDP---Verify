@@ -15,7 +15,7 @@ via `/api/input/*`.
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `backend/input_module/engine.py` | Motor de enriquecimento: carrega o cadastro do SQLite e cruza com IW28/IW38/IW66 e as bases de apoio; auditoria de prazo (`avaliar_prazo_sap`); cache em memória com TTL. |
+| `backend/input_module/engine.py` | Motor de enriquecimento: carrega o cadastro do SQLite e cruza com IW28/IW38/IW66 e as bases de apoio; auditoria de prazo (`avaliar_prazo_sap`); cache em memória validado por versão do dataset (TTL como fallback). |
 | `backend/input_module/db.py` | Persistência SQLite local: schema/migração do banco de notas, CRUD com diff/log/undo, backups rotativos, e o cache de bases externas (`salvar_base_dataframe`/`carregar_base_dataframe`). |
 | `backend/input_module/iw28.py` | Contrato de leitura somente-consulta da `base_iw28` por número de nota (`obter_por_nota`, `extraida_em`), sem duplicar o SQL de `engine.py`. |
 | `backend/input_module/service.py` | Caminho canônico de escrita (criação de notas + migração/init do banco), reusado por `routes.py` e por outros módulos que precisem escrever no Input (ex.: integração Coffee→Input). |
@@ -72,10 +72,24 @@ faltar ou vier com formato inesperado:
   `Auditoria_Cronograma` (`🟢 Adiantado`, `🔵 No Prazo`, `🔴 Com Atraso`,
   etc.).
 
-`get_dataset(forcar=False)` (`engine.py:622`) envelopa
-`enriquecer_dados()` num cache em memória (TTL de 600s, protegido por
-`threading.Lock`); `invalidar_cache()` é chamado após qualquer escrita
-(ver `routes.py`).
+`get_dataset(forcar=False)` (`engine.py:602`) envelopa
+`enriquecer_dados()` num cache em memória protegido por
+`threading.Lock`. A partir da Tarefa 14, a revalidação é primariamente
+por **versão**: a cada chamada compara a versão em cache com
+`db.obter_versao_dataset()` (Tarefa 13) e refaz `enriquecer_dados()`
+se ela mudou — captura escritas de qualquer processo/worker, não só
+as feitas pelo processo que preencheu o cache. `_CACHE_TTL_SEGUNDOS =
+600` continua existindo como rede de segurança para escritas que não
+passem pelos logs/contagem que `obter_versao_dataset()` cobre (ver
+"Limitação conhecida" abaixo). `invalidar_cache()` segue disponível e
+é chamado após qualquer escrita (ver `routes.py`), mas deixou de ser o
+único gatilho de atualização.
+
+`status_bases()` (`engine.py:623`) — que faz 7 `os.path.exists`/
+`os.path.getmtime` (uma por caminho SMB em `config.BASES_REDE`) — tem
+memo próprio de 60s (`_status_bases_cache`), independente do cache do
+dataset: como é chamado a cada `GET /notas` só para popular metadados,
+o memo evita bater no filesystem de rede a cada request.
 
 ## Cache SQLite (db.py)
 
@@ -149,8 +163,10 @@ não passa por nenhuma dessas funções e não é detectada por
 `obter_versao_dataset()`. O cache do `engine.py` (TTL de 600s) segue
 como rede de segurança para esse caso.
 
-É consumida pelo cache do `engine.py` e, futuramente, pelo `ETag` de
-`GET /notas` (ver tarefas seguintes do plano de performance).
+É consumida pelo cache de `engine.get_dataset()` (Tarefa 14 —
+revalida sozinho quando a versão muda, em vez de depender só do TTL)
+e, futuramente, pelo `ETag` de `GET /notas` (ver tarefas seguintes do
+plano de performance).
 
 ## iw28.py — contrato de leitura
 
@@ -244,10 +260,14 @@ em background para manter o Excel espelhado na rede atualizado.
 - `input_module/routes.py:268` — `from fastapi import Body` está no
   meio do arquivo (não no bloco de imports do topo), import solto
   antes de `sync_sap`.
-- `input_module/engine.py:617-619` — `_CACHE_TTL_SEGUNDOS = 600` é um
-  cache global em memória do processo (não por usuário/request); em
-  múltiplos workers cada processo mantém sua própria cópia, podendo
-  divergir por até 10 minutos entre eles.
+- `input_module/engine.py:597-598` — o cache de `get_dataset()` é
+  global em memória do processo (não por usuário/request); em
+  múltiplos workers cada processo mantém sua própria cópia. Desde a
+  Tarefa 14 isso diverge só pelo tempo de uma chamada (a próxima
+  requisição em qualquer worker já vê `db.obter_versao_dataset()`
+  mudar e revalida); `_CACHE_TTL_SEGUNDOS = 600` continua como
+  fallback só para as escritas fora do alcance dessa versão (ver
+  "Limitação conhecida" na seção de versão do dataset acima).
 - `input_module/db.py:298-302` (`proximo_id_cronologia`) —
   `pd.to_numeric(df["ID_Cronologia"], errors="coerce").max()` ignora em
   silêncio qualquer valor não numérico na coluna (vira `NaN`, excluído

@@ -263,6 +263,26 @@ def test_versao_dataset_muda_com_escritas(banco_temporario):
     assert db.obter_versao_dataset() != v2
 
 
+# ── Task 14: cache do engine revalidado por versão do dataset ───────────
+def test_get_dataset_revalida_por_versao(banco_temporario, monkeypatch):
+    from input_module import db, engine, service
+    engine.invalidar_cache()
+    df1 = engine.get_dataset()
+    chamadas = {"n": 0}
+    original = engine.enriquecer_dados
+    def contando():
+        chamadas["n"] += 1
+        return original()
+    monkeypatch.setattr(engine, "enriquecer_dados", contando)
+    engine.get_dataset()                      # versão igual: serve do cache
+    assert chamadas["n"] == 0
+    nota = service.NovaNota(Numero_Nota=888001, Status_Nota="00 Pendente", Prioridade_Nota="Programável")
+    service.criar_notas([nota], usuario="teste")   # muda a versão (sem invalidar_cache manual)
+    df2 = engine.get_dataset()
+    assert chamadas["n"] == 1
+    assert 888001 in df2["Numero_Nota"].values
+
+
 # ── Tarefa 4: motor de enriquecimento, auditoria, cache e cópia Excel ────
 def _excel_iw28(caminho):
     pd.DataFrame({
@@ -467,10 +487,11 @@ def test_cache_e_invalidacao(engine_isolado):
     from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(2000)]))
     df1 = engine.get_dataset()
+    assert len(engine.get_dataset()) == len(df1)  # mesma versão: cache segura
     db.salvar_em_massa(pd.DataFrame([_nota(2001)]))
-    assert len(engine.get_dataset()) == len(df1)  # cache segura
+    assert len(engine.get_dataset()) == len(df1) + 1  # nova versão: revalida sozinho
     engine.invalidar_cache()
-    assert len(engine.get_dataset()) == len(df1) + 1
+    assert len(engine.get_dataset()) == len(df1) + 1  # invalidação manual continua funcionando
 
 
 def test_status_bases(engine_isolado):

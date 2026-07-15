@@ -591,19 +591,23 @@ def enriquecer_dados():
 
 
 # ====================================================================
-# CACHE EM MEMÓRIA (TTL + lock) E METADADOS DAS BASES
+# CACHE EM MEMÓRIA (validado por versão do dataset + TTL de fallback) E
+# METADADOS DAS BASES
 # ====================================================================
-_CACHE_TTL_SEGUNDOS = 600
-_cache = {"df": None, "quando": 0.0}
+_CACHE_TTL_SEGUNDOS = 600  # fallback para escritas que não passem pelos logs
+_cache = {"df": None, "quando": 0.0, "versao": None}
 _cache_lock = threading.Lock()
 
 
 def get_dataset(forcar: bool = False) -> pd.DataFrame:
     with _cache_lock:
+        versao = db.obter_versao_dataset()
         expirado = time.time() - _cache["quando"] > _CACHE_TTL_SEGUNDOS
-        if forcar or _cache["df"] is None or expirado:
+        if (forcar or _cache["df"] is None or expirado
+                or _cache["versao"] != versao):
             _cache["df"] = enriquecer_dados()
             _cache["quando"] = time.time()
+            _cache["versao"] = versao
         return _cache["df"].copy()
 
 
@@ -612,7 +616,16 @@ def invalidar_cache() -> None:
         _cache["df"] = None
 
 
+_STATUS_BASES_TTL_SEGUNDOS = 60
+_status_bases_cache = {"quando": 0.0, "valor": None}
+
+
 def status_bases() -> list:
+    """Stats dos 7 caminhos SMB, cacheados 60s — fora do hot path de GET /notas."""
+    agora = time.time()
+    if (_status_bases_cache["valor"] is not None
+            and agora - _status_bases_cache["quando"] < _STATUS_BASES_TTL_SEGUNDOS):
+        return _status_bases_cache["valor"]
     bases = []
     for nome, caminho in config.BASES_REDE.items():
         existe = os.path.exists(caminho)
@@ -623,6 +636,8 @@ def status_bases() -> list:
             "modificada": datetime.datetime.fromtimestamp(
                 os.path.getmtime(caminho)).isoformat() if existe else None,
         })
+    _status_bases_cache["quando"] = agora
+    _status_bases_cache["valor"] = bases
     return bases
 
 
