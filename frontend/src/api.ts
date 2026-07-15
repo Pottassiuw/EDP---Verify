@@ -214,6 +214,49 @@ export async function corrigirLocalLote(
   return res.json() as Promise<{ job_id: string }>;
 }
 
+async function garantirUsuarioInput(): Promise<string> {
+  const salvo = localStorage.getItem("edp_input_user");
+  if (salvo) return salvo;
+  let usuario = "sistema";
+  try {
+    const res = await fetch(BASE + "/input/me");
+    if (res.ok) usuario = ((await res.json()) as { usuario: string }).usuario;
+  } catch { /* backend fora: cai no fallback */ }
+  localStorage.setItem("edp_input_user", usuario);
+  return usuario;
+}
+
+export async function revisarNota(
+  pk: number,
+): Promise<import("./features/coffee/types").NotaRevisao> {
+  const res = await fetch(BASE + "/integracao/nota/" + pk + "/revisao", {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw await erroComDetail(res, "GET /integracao/revisao");
+  return res.json();
+}
+
+export async function moverParaPlano(
+  pks: number[],
+  camposUsuario: Partial<import("./features/coffee/types").CamposManuais>,
+  atualizarExistente = false,
+): Promise<import("./features/coffee/types").MoverResultado> {
+  const res = await fetch(BASE + "/integracao/mover-para-plano", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-User": await garantirUsuarioInput(),
+    },
+    body: JSON.stringify({
+      pks,
+      campos_usuario: camposUsuario,
+      atualizar_existente: atualizarExistente,
+    }),
+  });
+  if (!res.ok) throw await erroComDetail(res, "POST /integracao/mover-para-plano");
+  return res.json();
+}
+
 export const EDPApi = {
   BASE,
   fetchData,
@@ -225,4 +268,6 @@ export const EDPApi = {
   coffeeUrl,
   mapsUrl,
   openCoffee,
+  revisarNota,
+  moverParaPlano,
 };

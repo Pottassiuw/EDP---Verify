@@ -8,6 +8,8 @@ export interface CoffeeNota {
   buscado_em: string;
   classificacao_em?: string | null;
   erro: string | null;
+  a_gerar?: boolean;
+  origem?: string | null;
 }
 
 export interface CoffeeJob {
@@ -41,4 +43,38 @@ export interface CoffeeConsulta {
   local_instalacao: string | null;
   classificacao: string;
   arquivado: boolean | null;
+}
+
+export interface PropostaPlano {
+  Numero_Nota: number;
+  Local_Instalacao: string;
+  Circuito: string;
+  Prioridade_Nota: string;
+  Status_Nota: string;
+  Data_Envio_Projeto: string;
+  Observacao: string;
+}
+
+export interface CamposManuais {
+  Mes_Execucao_Planejado: string;
+  Status_Obra: string;
+  Observacao: string;
+  Check: string;
+}
+
+export interface NotaRevisao {
+  coffee: CoffeeNota;
+  iw28: Record<string, string | number | null> | null;
+  iw28_extraida_em: string | null;
+  plano: Record<string, string | number | null> | null;
+  ja_no_plano: boolean;
+  proposta: PropostaPlano;
+  avisos: string[];
+  pode_mover: boolean;
+  motivo_bloqueio: string | null;
+}
+
+export interface MoverResultado {
+  inseridas: number;
+  atualizadas: number;
 }
