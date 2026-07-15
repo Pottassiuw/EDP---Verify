@@ -134,6 +134,12 @@ upsert (comentário `ponytail`, `db.py:103-104`) — representa uma ação do
 usuário no app (via `arquivar_nota()`), não o estado do COFFEE, que arquiva
 como parte do seu próprio workflow normal ao gerar.
 
+`obter_nota(pk)` (`db.py:187`) — leitura passiva de uma nota única por
+primary key, retorna um dict com a mesma forma de `listar_notas` (todos os
+campos em `_COLUNAS`, `dados_json` parseado, booleans coercidos), ou `None`
+se a nota não existe. Task 6 (integração INPUT) consome essa função para
+consultas síncronas durante o processamento da planilha.
+
 ## routes.py
 
 Router `/api/coffee` (prefixo). Mapeamento para o frontend

@@ -455,6 +455,19 @@ def test_nota_existe(coffee_tmp):
     assert db.nota_existe(99) is True
 
 
+def test_obter_nota(monkeypatch, tmp_path):
+    monkeypatch.setenv("COFFEE_DATA_DIR", str(tmp_path))
+    from coffee_module import db
+    db.inicializar_banco()
+    db.upsert_nota(4242, 12345678, {"prioridade": 3, "observacoes": "Trocar poste"})
+    nota = db.obter_nota(4242)
+    assert nota is not None
+    assert nota["id_sap"] == 12345678
+    assert nota["dados_json"]["observacoes"] == "Trocar poste"
+    assert nota["a_gerar"] is False
+    assert db.obter_nota(999999) is None
+
+
 # ---------------------------------------------------------------------------
 # Task 3 — Routes /marcar-gerar + limpeza de a_gerar no /regerar
 # ---------------------------------------------------------------------------

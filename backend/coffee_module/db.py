@@ -184,6 +184,22 @@ def listar_notas(status: str | None = None) -> list:
     return saida
 
 
+def obter_nota(pk: int) -> dict | None:
+    """Linha única de notas_coffee com dados_json parseado (mesma forma de listar_notas)."""
+    conn = get_db_connection()
+    row = conn.execute(
+        f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee WHERE pk = ?", (pk,)
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    d = dict(zip(_COLUNAS, row))
+    d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
+    d["a_gerar"] = bool(d["a_gerar"])
+    d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
+    return d
+
+
 def marcar_gerar(pk: int, a_gerar: bool) -> None:
     """Liga/desliga a flag a_gerar de uma nota existente."""
     conn = get_db_connection()
