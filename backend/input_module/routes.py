@@ -259,7 +259,12 @@ def _rotina_sap_background():
         _processar_upload_base("Gerada_base_IW28.XLSX", config.CAMINHO_BASE_IW28)
         _processar_upload_base("Gerada_custo_ord_IW38.XLSX", config.CAMINHO_CUSTO_ORD_IW38)
         _processar_upload_base("Gerada_medidas_IW66.XLSX", config.CAMINHO_BASE_IW66)
-        
+
+        agora = datetime.datetime.now()
+        for nome in ("Gerada_base_IW28.XLSX", "Gerada_custo_ord_IW38.XLSX",
+                     "Gerada_medidas_IW66.XLSX"):
+            db.salvar_log_arquivo(nome, "robo-sap", agora, "Sync SAP")
+
         engine.invalidar_cache()
     except Exception as e:
         print(f"Erro na execução em background do SAP: {e}")

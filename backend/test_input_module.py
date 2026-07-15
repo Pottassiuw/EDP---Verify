@@ -247,6 +247,22 @@ def test_service_criar_notas_duplicata_no_lote(banco_temporario):
         service.criar_notas([n, n], usuario="teste")
 
 
+# ── Task 13: versão do dataset (cache/ETag de GET /notas) ────────────────
+def test_versao_dataset_muda_com_escritas(banco_temporario):
+    from input_module import db, service
+    import datetime
+    v0 = db.obter_versao_dataset()
+    nota = service.NovaNota(Numero_Nota=777001, Status_Nota="00 Pendente", Prioridade_Nota="Programável")
+    service.criar_notas([nota], usuario="teste")           # criação não loga: pega pelo COUNT(notas)
+    v1 = db.obter_versao_dataset()
+    assert v1 != v0
+    db.aplicar_edicoes([{"Numero_Nota": 777001, "Observacao": "editada"}], usuario="teste")
+    v2 = db.obter_versao_dataset()
+    assert v2 != v1
+    db.salvar_log_arquivo("Gerada_base_IW28.XLSX", "robo-sap", datetime.datetime.now(), "Sync SAP")
+    assert db.obter_versao_dataset() != v2
+
+
 # ── Tarefa 4: motor de enriquecimento, auditoria, cache e cópia Excel ────
 def _excel_iw28(caminho):
     pd.DataFrame({

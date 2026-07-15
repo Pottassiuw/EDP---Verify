@@ -805,3 +805,24 @@ def obter_nota_plano(numero: int) -> dict | None:
     if df.empty or numero not in df["Numero_Nota"].values:
         return None
     return df[df["Numero_Nota"] == numero].iloc[0].to_dict()
+
+
+# ==============================================================================
+# VERSÃO DO DATASET (cache/ETag de GET /notas)
+# ==============================================================================
+def obter_versao_dataset() -> str:
+    """Versão barata do dataset, derivada dos logs + contagem de notas.
+
+    Muda quando: edição/exclusão/undo (log_alteracoes), criação (COUNT de
+    notas — criação não passa pelo log), importação de base (log_arquivos).
+    É a moeda de revalidação do cache do engine e do ETag de GET /notas.
+    """
+    conn = get_db_connection()
+    try:
+        max_alt = conn.execute("SELECT MAX(Data_Hora) FROM log_alteracoes").fetchone()[0]
+        qtd_alt = conn.execute("SELECT COUNT(*) FROM log_alteracoes").fetchone()[0]
+        max_arq = conn.execute("SELECT MAX(Data_Hora) FROM log_arquivos").fetchone()[0]
+        qtd_notas = conn.execute("SELECT COUNT(*) FROM notas").fetchone()[0]
+    finally:
+        conn.close()
+    return f"{max_alt}|{qtd_alt}|{max_arq}|{qtd_notas}"

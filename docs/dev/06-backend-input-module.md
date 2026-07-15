@@ -109,6 +109,49 @@ O cadastro de notas (tabela `notas`, schema fixo — ver
 e mais antiga, não relacionada a essa migração: é o CRUD principal do
 módulo (upsert, diff/log, undo, backups rotativos).
 
+## Versão do dataset (`db.obter_versao_dataset`)
+
+`obter_versao_dataset() -> str` (`db.py`) é uma versão barata do
+dataset, montada sem tabela nova nem migração de schema — só compõe um
+string a partir de colunas que já existem:
+
+```
+f"{max_alt}|{qtd_alt}|{max_arq}|{qtd_notas}"
+```
+
+onde `max_alt`/`qtd_alt` vêm de `MAX(Data_Hora)`/`COUNT(*)` em
+`log_alteracoes`, `max_arq` de `MAX(Data_Hora)` em `log_arquivos`, e
+`qtd_notas` de `COUNT(*)` em `notas`.
+
+O que essa string cobre:
+
+- **Edição/exclusão/undo** — qualquer escrita que passa por
+  `log_alteracoes` (`aplicar_edicoes`, `deletar_notas`,
+  `reverter_ultima_alteracao`) muda `max_alt`/`qtd_alt`.
+- **Criação de nota** — `service.criar_notas` não grava em
+  `log_alteracoes` (é um INSERT puro via `salvar_em_massa`), então é
+  pega pelo `COUNT(*)` de `notas` (`qtd_notas`), não pelos logs.
+- **Importação de base** (upload manual em `POST /bases/{nome}` e a
+  sincronização SAP noturna, `_rotina_sap_background` em
+  `routes.py`) — ambas chamam `db.salvar_log_arquivo(...)`, o que muda
+  `max_arq`. Antes desta versão, o scheduler noturno **não** chamava
+  `salvar_log_arquivo` — a extração SAP atualizava as tabelas
+  `base_iw28`/`base_iw38`/`base_iw66` mas não deixava rastro em
+  `log_arquivos`, então essa versão (e o cache/ETag que depende dela)
+  não mudava depois de uma sincronização automática. `routes.py` agora
+  grava um `salvar_log_arquivo` por arquivo gerado (`Gerada_base_IW28.XLSX`,
+  `Gerada_custo_ord_IW38.XLSX`, `Gerada_medidas_IW66.XLSX`) logo após
+  `_processar_upload_base`, antes de `engine.invalidar_cache()`.
+
+Limitação conhecida: uma escrita direta no `.db` (fora do CRUD deste
+módulo — ex.: script manual tocando `notas`/`log_*` no arquivo SQLite)
+não passa por nenhuma dessas funções e não é detectada por
+`obter_versao_dataset()`. O cache do `engine.py` (TTL de 600s) segue
+como rede de segurança para esse caso.
+
+É consumida pelo cache do `engine.py` e, futuramente, pelo `ETag` de
+`GET /notas` (ver tarefas seguintes do plano de performance).
+
 ## iw28.py — contrato de leitura
 
 `input_module/iw28.py` isola o acesso de leitura à tabela `base_iw28`
@@ -183,7 +226,7 @@ em background para manter o Excel espelhado na rede atualizado.
 
 ## Pontos de atenção
 
-- `input_module/routes.py:247-265` (`_rotina_sap_background`) — chama
+- `input_module/routes.py:247-271` (`_rotina_sap_background`) — chama
   `Sap_Robot.py` via `subprocess.run` com caminho relativo construído a
   partir de `config.data_dir().parent.parent.parent`; qualquer mudança
   na estrutura de diretórios do backend quebra silenciosamente essa
