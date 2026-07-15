@@ -747,3 +747,27 @@ def test_api_hierarquia(cliente):
     r = cliente.get("/api/input/hierarquia/7011")
     assert r.status_code == 200
     assert r.json()["nota_mae"] == "7010"
+
+
+# ── Tarefa 3: contrato de leitura IW28 + consulta de nota do plano ──
+def test_iw28_obter_por_nota(banco_temporario):
+    from input_module import db, iw28
+    assert iw28.obter_por_nota(12345678) is None  # tabela ainda não existe
+    db.salvar_base_dataframe("base_iw28", pd.DataFrame([{
+        "Nota": 12345678.0, "Status usuário": "PLAN",
+        "CenTrabalho princ.": "POA", "Ordem": 900001, "Encerram.por data": None,
+    }]))
+    registro = iw28.obter_por_nota(12345678)
+    assert registro is not None
+    assert registro["Status usuário"] == "PLAN"
+    assert registro["Encerram.por data"] is None      # NaN vira None (JSON-safe)
+    assert iw28.obter_por_nota(99999999) is None
+
+
+def test_obter_nota_plano(banco_temporario):
+    from input_module import db
+    assert db.obter_nota_plano(1000) is None
+    db.salvar_em_massa(pd.DataFrame([_nota(1000)]))
+    registro = db.obter_nota_plano(1000)
+    assert registro is not None
+    assert registro["Status_Nota"] == "10 Em planejamento"   # formatado, não int

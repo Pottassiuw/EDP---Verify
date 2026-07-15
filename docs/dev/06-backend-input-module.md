@@ -17,6 +17,7 @@ via `/api/input/*`.
 |---|---|
 | `backend/input_module/engine.py` | Motor de enriquecimento: carrega o cadastro do SQLite e cruza com IW28/IW38/IW66 e as bases de apoio; auditoria de prazo (`avaliar_prazo_sap`); cache em memória com TTL. |
 | `backend/input_module/db.py` | Persistência SQLite local: schema/migração do banco de notas, CRUD com diff/log/undo, backups rotativos, e o cache de bases externas (`salvar_base_dataframe`/`carregar_base_dataframe`). |
+| `backend/input_module/iw28.py` | Contrato de leitura somente-consulta da `base_iw28` por número de nota (`obter_por_nota`, `extraida_em`), sem duplicar o SQL de `engine.py`. |
 | `backend/input_module/service.py` | Caminho canônico de escrita (criação de notas + migração/init do banco), reusado por `routes.py` e por outros módulos que precisem escrever no Input (ex.: integração Coffee→Input). |
 | `backend/input_module/routes.py` | Router FastAPI `/api/input/*`: leitura/escrita de notas, configuração (responsáveis, bases, backups), sincronização SAP, ramal e hierarquia. |
 | `backend/input_module/config.py` | Dicionários de domínio (status, cidades, regionais, prioridades), caminhos de rede e locais, e as constantes de colunas/nomes do painel. |
@@ -107,6 +108,27 @@ O cadastro de notas (tabela `notas`, schema fixo — ver
 `inicializar_banco()`, `db.py:46`) é uma persistência SQLite diferente
 e mais antiga, não relacionada a essa migração: é o CRUD principal do
 módulo (upsert, diff/log, undo, backups rotativos).
+
+## iw28.py — contrato de leitura
+
+`input_module/iw28.py` isola o acesso de leitura à tabela `base_iw28`
+por número de nota, para que outros módulos não dupliquem o SQL de
+`engine.py` nem precisem conhecer o schema flutuante da extração SAP:
+
+- `obter_por_nota(numero) -> dict | None` — busca a linha da
+  `base_iw28` para a nota (`CAST(Nota AS INTEGER) = ?`), convertendo
+  `NaN` para `None` (JSON-safe). Degrada para `None` (não levanta) se a
+  tabela não existir ou a coluna `Nota` tiver sido renomeada pelo
+  robô — mesma postura defensiva de `carregar_base_dataframe`.
+- `extraida_em() -> str | None` — data da última importação da IW28,
+  lida de `log_arquivos` (`Nome_Arquivo LIKE '%IW28%'`); `None` se não
+  houver registro ou a tabela de log estiver ausente.
+
+Quem consome hoje: a integração Coffee→Input (nota gerada pelo Coffee
+é revisada contra o status real da IW28 antes de virar registro no
+Input). O contrato foi desenhado para ser extensível a enriquecimentos
+futuros que precisem de uma única linha da IW28 sem montar o
+`enriquecer_dados()` completo.
 
 ## service.py — caminho canônico de escrita
 

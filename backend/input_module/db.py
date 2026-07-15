@@ -797,3 +797,11 @@ def aplicar_edicoes(linhas: list, usuario: str) -> dict:
         salvar_log_alteracoes(logs)
         salvar_em_massa(pd.DataFrame(registros_alterados))
     return {"alteradas": len(registros_alterados), "campos": len(logs)}
+
+
+def obter_nota_plano(numero: int) -> dict | None:
+    """Registro do plano na MESMA representação formatada de carregar_dados()."""
+    df = carregar_dados()
+    if df.empty or numero not in df["Numero_Nota"].values:
+        return None
+    return df[df["Numero_Nota"] == numero].iloc[0].to_dict()
