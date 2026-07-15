@@ -27,9 +27,10 @@ interface CoffeeHubProps {
   coffeeReturn: { noteId: string; noteRef: string } | null;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
+  onIrParaInput?: () => void;
 }
 
-export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem }: CoffeeHubProps): React.JSX.Element {
+export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem, onIrParaInput }: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -67,11 +68,11 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
                      coffeeReturn={coffeeReturn} onClearReturn={onClearReturn}
                      onBackToTriagem={onBackToTriagem} />
       ) : sub === "geradas" ? (
-        <CoffeeGeradas />
+        <CoffeeGeradas onIrParaInput={onIrParaInput} />
       ) : sub === "corrigidas" ? (
-        <CoffeeCorrigidas />
+        <CoffeeCorrigidas onIrParaInput={onIrParaInput} />
       ) : sub === "pendentes" ? (
-        <CoffeePendentes />
+        <CoffeePendentes onIrParaInput={onIrParaInput} />
       ) : sub === "verificar" ? (
         <CoffeeVerificar triage={triage} />
       ) : sub === "logs" ? (

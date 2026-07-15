@@ -1,9 +1,11 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn, RevisarNotaBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
+import { RevisarNotaSheet } from './revisar-nota-sheet';
+import { MoverPlanoModal, type MoverAlvo } from './mover-plano-modal';
 import { BASE as API_BASE } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,7 +15,7 @@ type PendingAction =
   | { kind: "remover"; pk: number }
   | { kind: "arquivar"; pk: number };
 
-export function CoffeeGeradas(): React.JSX.Element {
+export function CoffeeGeradas({ onIrParaInput }: { onIrParaInput?: () => void }): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("gerada");
   const aGerar = useCoffeeNotas("a_gerar");
 
@@ -22,6 +24,8 @@ export function CoffeeGeradas(): React.JSX.Element {
   const [pending, setPending] = React.useState<PendingAction | null>(null);
   const [modalBusy, setModalBusy] = React.useState(false);
   const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
+  const [revisaoPk, setRevisaoPk] = React.useState<number | null>(null);
+  const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
 
   function abrirModal(ids?: number[]): void { setModalIds(ids); setModalOpen(true); }
 
@@ -135,6 +139,7 @@ export function CoffeeGeradas(): React.JSX.Element {
         actionColumn={(nota) => (
           <div className="flex items-center gap-[6px]">
             <AbrirCoffeeBtn pk={nota.pk} />
+            <RevisarNotaBtn pk={nota.pk} onClick={() => setRevisaoPk(nota.pk)} />
             <Button variant="ghost" size="icon-sm"
                     onClick={() => setPending({ kind: "arquivar", pk: nota.pk })}
                     aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
@@ -168,6 +173,12 @@ export function CoffeeGeradas(): React.JSX.Element {
         onConfirm={handleConfirm}
         onCancel={() => setPending(null)}
       />
+
+      <RevisarNotaSheet pk={revisaoPk} onClose={() => setRevisaoPk(null)}
+                        onMover={(revisao) => { setRevisaoPk(null); setMoverAlvo({ pks: [revisao.coffee.pk], revisao }); }} />
+      <MoverPlanoModal alvo={moverAlvo} onClose={() => setMoverAlvo(null)}
+                       onSucesso={() => { /* refetch nao necessario: lista de geradas nao muda */ }}
+                       onIrParaInput={onIrParaInput} />
     </div>
   );
 }

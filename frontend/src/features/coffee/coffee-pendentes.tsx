@@ -1,9 +1,11 @@
 ﻿import React from 'react';
 import type { CoffeeJob } from './types';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn, RevisarNotaBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
 import { ConfirmModal } from './confirm-modal';
+import { RevisarNotaSheet } from './revisar-nota-sheet';
+import { MoverPlanoModal, type MoverAlvo } from './mover-plano-modal';
 import { toast } from 'sonner';
 import { BASE as API_BASE } from '../../api';
 import { Button } from '@/components/ui/button';
@@ -12,7 +14,7 @@ import { Archive } from 'lucide-react';
 
 type BuscaEstado = "idle" | "rodando" | "concluido";
 
-export function CoffeePendentes(): React.JSX.Element {
+export function CoffeePendentes({ onIrParaInput }: { onIrParaInput?: () => void }): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("pendente");
   const [buscaEstado, setBuscaEstado] = React.useState<BuscaEstado>("idle");
   const [buscaJob, setBuscaJob] = React.useState<CoffeeJob | null>(null);
@@ -23,6 +25,8 @@ export function CoffeePendentes(): React.JSX.Element {
   const [arquivarLoteOpen, setArquivarLoteOpen] = React.useState(false);
   const [modalBusy, setModalBusy] = React.useState(false);
   const [selecionadas, setSelecionadas] = React.useState<Set<number>>(() => new Set());
+  const [revisaoPk, setRevisaoPk] = React.useState<number | null>(null);
+  const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
 
   const ordenadas = React.useMemo(
     () => [...notas].sort((a, b) =>
@@ -205,6 +209,7 @@ export function CoffeePendentes(): React.JSX.Element {
         actionColumn={(nota) => (
           <>
             <AbrirCoffeeBtn pk={nota.pk} />
+            <RevisarNotaBtn pk={nota.pk} onClick={() => setRevisaoPk(nota.pk)} />
             <Button variant="ghost" size="icon-sm" onClick={() => setArquivarPk(nota.pk)}
                     aria-label={`Arquivar nota ${nota.pk}`} title="Arquivar nota"
                     className="text-red">
@@ -251,6 +256,12 @@ export function CoffeePendentes(): React.JSX.Element {
         onConfirm={(j) => { void arquivarLote(j); }}
         onCancel={() => setArquivarLoteOpen(false)}
       />
+
+      <RevisarNotaSheet pk={revisaoPk} onClose={() => setRevisaoPk(null)}
+                        onMover={(revisao) => { setRevisaoPk(null); setMoverAlvo({ pks: [revisao.coffee.pk], revisao }); }} />
+      <MoverPlanoModal alvo={moverAlvo} onClose={() => setMoverAlvo(null)}
+                       onSucesso={() => { /* pode_mover=false nesta tela: fluxo real fica bloqueado no sheet */ }}
+                       onIrParaInput={onIrParaInput} />
     </div>
   );
 }

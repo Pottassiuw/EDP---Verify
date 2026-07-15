@@ -1,15 +1,20 @@
 import React from 'react';
 import { useCoffeeNotas } from './use-coffee-notas';
-import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn } from './coffee-notas-table';
+import { CoffeeNotasTable, AbrirCoffeeBtn, LogsBtn, RevisarNotaBtn } from './coffee-notas-table';
 import { LogDrawer } from './coffee-log-drawer';
+import { RevisarNotaSheet } from './revisar-nota-sheet';
+import { MoverPlanoModal, type MoverAlvo } from './mover-plano-modal';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 
-export function CoffeeCorrigidas(): React.JSX.Element {
+export function CoffeeCorrigidas({ onIrParaInput }: { onIrParaInput?: () => void }): React.JSX.Element {
   const { notas, isLoading, error, refetch } = useCoffeeNotas("corrigida");
   const [drawerPk, setDrawerPk] = React.useState<number | null>(null);
   const [busca, setBusca] = React.useState("");
+  const [revisaoPk, setRevisaoPk] = React.useState<number | null>(null);
+  const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
+  const [selecionadas, setSelecionadas] = React.useState<Set<number>>(new Set());
 
   const filtradas = React.useMemo(() => {
     const q = busca.trim();
@@ -50,6 +55,10 @@ export function CoffeeCorrigidas(): React.JSX.Element {
         <Button variant="outline" size="sm" disabled={filtradas.length === 0} onClick={() => void copiarIds()}>
           <Copy /> Copiar IDs
         </Button>
+        <Button size="sm" disabled={selecionadas.size === 0}
+                onClick={() => setMoverAlvo({ pks: [...selecionadas], revisao: null })}>
+          Mover p/ Plano ({selecionadas.size})
+        </Button>
       </div>
       <div className="shrink-0 pt-0 px-[22px] pb-[10px] text-[12px] text-text-dim">
         Notas que transitaram de pendente para SAP real. Na próxima busca, passam para Geradas.
@@ -60,9 +69,14 @@ export function CoffeeCorrigidas(): React.JSX.Element {
         emptyMessage={busca.trim()
           ? "Nenhuma nota corrigida bate com a busca."
           : "Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."}
+        selectable
+        selectedPks={selecionadas}
+        onToggleSelect={(pk) => setSelecionadas((s) => { const n = new Set(s); if (n.has(pk)) n.delete(pk); else n.add(pk); return n; })}
+        onToggleAll={() => setSelecionadas((s) => s.size === filtradas.length ? new Set() : new Set(filtradas.map((n) => n.pk)))}
         actionColumn={(nota) => (
           <>
             <AbrirCoffeeBtn pk={nota.pk} />
+            <RevisarNotaBtn pk={nota.pk} onClick={() => setRevisaoPk(nota.pk)} />
             <LogsBtn pk={nota.pk} onClick={() => setDrawerPk(nota.pk)} />
           </>
         )}
@@ -70,6 +84,11 @@ export function CoffeeCorrigidas(): React.JSX.Element {
       {drawerPk !== null && (
         <LogDrawer notaPk={drawerPk} open onClose={() => setDrawerPk(null)} />
       )}
+      <RevisarNotaSheet pk={revisaoPk} onClose={() => setRevisaoPk(null)}
+                        onMover={(revisao) => { setRevisaoPk(null); setMoverAlvo({ pks: [revisao.coffee.pk], revisao }); }} />
+      <MoverPlanoModal alvo={moverAlvo} onClose={() => setMoverAlvo(null)}
+                       onSucesso={() => setSelecionadas(new Set())}
+                       onIrParaInput={onIrParaInput} />
     </div>
   );
 }

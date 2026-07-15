@@ -15,16 +15,18 @@ status) para auditoria.
 |---|---|
 | `frontend/src/features/coffee/coffee-hub.tsx` | Casca da feature: cabeçalho, `SegTabs` de navegação entre sub-abas (`verificar`/`abrir`/`geradas`/`corrigidas`/`pendentes`/`logs`) e roteamento condicional para o componente de cada aba. |
 | `frontend/src/features/coffee/coffee-gerar-modal.tsx` | Modal de "Gerar / Consultar notas": entrada de IDs, consulta individual (`EDPApi.consultarNota`), edição do local de instalação (`maskLocal`/`unmaskLocal`), geração em lote com polling de job. |
-| `frontend/src/features/coffee/coffee-pendentes.tsx` | Lista de notas pendentes (SAP `10000000`): busca em lote com polling de job, seleção múltipla, arquivamento individual e em lote via `ConfirmModal`. |
-| `frontend/src/features/coffee/coffee-geradas.tsx` | Lista de notas "a gerar" (fila) e "geradas": abre o modal de gerar/consultar, remove da fila ou arquiva, ambos com justificativa via `ConfirmModal`. |
-| `frontend/src/features/coffee/coffee-corrigidas.tsx` | Lista de notas que transitaram de SAP pendente para SAP real; busca local por ID/SAP e cópia de IDs para a área de transferência. |
+| `frontend/src/features/coffee/coffee-pendentes.tsx` | Lista de notas pendentes (SAP `10000000`): busca em lote com polling de job, seleção múltipla, arquivamento individual e em lote via `ConfirmModal`, e "Revisar Nota" (o CTA de mover fica desabilitado pelo `pode_mover=false` da própria revisão, já que a nota ainda não tem SAP real). |
+| `frontend/src/features/coffee/coffee-geradas.tsx` | Lista de notas "a gerar" (fila) e "geradas": abre o modal de gerar/consultar, remove da fila ou arquiva, ambos com justificativa via `ConfirmModal`; "Revisar Nota"/"Mover para o Plano" individual na zona "Notas Geradas". |
+| `frontend/src/features/coffee/coffee-corrigidas.tsx` | Lista de notas que transitaram de SAP pendente para SAP real; busca local por ID/SAP, cópia de IDs para a área de transferência, seleção múltipla e "Revisar Nota"/"Mover para o Plano" (individual e em lote). |
 | `frontend/src/features/coffee/coffee-abrir.tsx` | Monta uma lista de IDs (independente do backend, via `localStorage`) e abre cada um no COFFEE em nova aba, tudo de uma vez ou em blocos configuráveis. |
 | `frontend/src/features/coffee/coffee-logs.tsx` | Tela de histórico de logs: filtros por passo/nota/usuário/limite/período, StatTiles de resumo, toggle "ao vivo" com refresh automático. |
 | `frontend/src/features/coffee/confirm-modal.tsx` | `AlertDialog` genérico de confirmação com campo de justificativa opcional/obrigatória; usado por `coffee-pendentes.tsx` e `coffee-geradas.tsx`. |
 | `frontend/src/features/coffee/coffee-log-drawer.tsx` | `Sheet` lateral com o histórico de logs de uma única nota (`LogTable` compacto), aberto a partir do botão "Ver logs" das tabelas de lista. |
 | `frontend/src/features/coffee/coffee-verificar.tsx` | Sub-aba "Verificar" dentro do hub COFFEE: repassa o `TriageHandoff` recebido de `App.tsx` para `UploadScreen`/`Dashboard` da feature Verificar (reuso direto, sem lógica própria). |
-| `frontend/src/features/coffee/coffee-notas-table.tsx` | Tabela compartilhada de notas COFFEE (`CoffeeNotasTable`), `StatusBadge`, `formatRelativeTime`, e os botões reutilizáveis `AbrirCoffeeBtn`/`LogsBtn`. |
+| `frontend/src/features/coffee/coffee-notas-table.tsx` | Tabela compartilhada de notas COFFEE (`CoffeeNotasTable`), `StatusBadge`, `formatRelativeTime`, e os botões reutilizáveis `AbrirCoffeeBtn`/`LogsBtn`/`RevisarNotaBtn`. |
 | `frontend/src/features/coffee/coffee-log-table.tsx` | Tabela/timeline de logs (`LogTable`), agrupamento por `trace_id` (`agruparLogs`), filtro por passo (`grupoNoPasso`) e derivação da classificação atual da nota (`classeAtual`). |
+| `frontend/src/features/coffee/revisar-nota-sheet.tsx` | `RevisarNotaSheet`: `Sheet` lateral com os dados de uma nota (`GET /api/integracao/nota/{pk}/revisao`) — identificação, proposta de plano, dados SAP (IW28) e dados brutos do COFFEE — e o CTA "Mover para o Plano"/"Atualizar dados". |
+| `frontend/src/features/coffee/mover-plano-modal.tsx` | `MoverPlanoModal`: `Dialog` de confirmação (individual ou em lote) para `POST /api/integracao/mover-para-plano`; coleta os campos manuais do plano (mês de execução, status da obra, observação, check) e, em caso de sucesso, oferece a ação de toast "Ver no plano". |
 
 ## Navegação e sub-abas
 
@@ -146,6 +148,52 @@ arquivamento em lote (`arquivarLote`, `coffee-pendentes.tsx:44-65`) roda
 sequencialmente (`for...of` com `await`), não em paralelo — um comentário
 `ponytail` (`coffee-pendentes.tsx:48`) já sinaliza trocar por um endpoint
 de lote real se o volume passar de ~50 notas por vez.
+
+## Fluxo: Revisar Nota e Mover para o Plano
+
+Fecha o ciclo entre COFFEE e Input: uma nota já gerada (SAP real) pode
+ser conferida e enviada como registro do plano do Input sem sair da
+tela COFFEE. As duas peças (`RevisarNotaBtn` no `actionColumn` de
+`Corrigidas`/`Gerar`/`Pendentes`, `RevisarNotaSheet`,
+`MoverPlanoModal`) são as mesmas em todas as telas — só o ponto de
+entrada (botão de olho na linha da tabela) e a disponibilidade do
+lote mudam por tela.
+
+**Individual**: clicar em `RevisarNotaBtn` (ícone de olho) guarda o
+`pk` clicado em `revisaoPk`, abrindo o `RevisarNotaSheet`, que busca
+`GET /api/integracao/nota/{pk}/revisao` (`use-nota-revisao.ts`,
+documentado no backend em `08-integracao-coffee-input.md`) e mostra
+identificação, proposta de plano, dados do IW28 e dados brutos do
+COFFEE. O botão do rodapé do sheet ("Mover para o Plano" ou "Atualizar
+dados", conforme `revisao.ja_no_plano`) fica desabilitado quando
+`revisao.pode_mover === false` (nota ainda pendente no COFFEE — caso
+comum em `coffee-pendentes.tsx`), mostrando `revisao.motivo_bloqueio`.
+Clicar nele fecha o sheet (`onMover`) e abre o `MoverPlanoModal` já
+com o `alvo` `{ pks: [pk], revisao }`, prefiltrado com os campos atuais
+do plano se a nota já estiver lá (`camposIniciais`,
+`mover-plano-modal.tsx`).
+
+**Em lote (só Corrigidas)**: `coffee-corrigidas.tsx` ganha seleção via
+`CoffeeNotasTable` (`selectable`/`selectedPks`/`onToggleSelect`/
+`onToggleAll`, mesmo padrão já usado em `coffee-pendentes.tsx`) e um
+botão "Mover p/ Plano (N)" no cabeçalho, que abre o mesmo
+`MoverPlanoModal` com `alvo = { pks: [...selecionadas], revisao: null }`
+— sem revisão prefixada, o modal cai no modo "lote" (`emLote`,
+`mover-plano-modal.tsx:53`), aplicando os mesmos campos manuais a
+todas as notas selecionadas via `POST /api/integracao/mover-para-plano`.
+
+**Sucesso e navegação para o Input**: `MoverPlanoModal` invalida
+`INPUT_DADOS_KEY` (a mesma chave de `use-input-data.ts`, ver
+`03-frontend-input.md`) e a `REVISAO_KEY` de cada `pk` movido, então
+mostra um `toast.success` com a ação "Ver no plano" quando o chamador
+passa `onIrParaInput`. Esse callback nasce em `App.tsx` (`onIrParaInput
+={() => { setInputSub("visao"); setSection("input"); }}`), desce por
+`coffee-hub.tsx` (prop `onIrParaInput`) até as três telas de lista —
+clicar em "Ver no plano" troca de módulo (`section`) e sub-aba
+(`inputSub`) para a Visão Geral do Input, onde a nota recém-movida já
+aparece (mesmo cache que o COFFEE acabou de invalidar). Não há
+nenhuma marca visual na nota do Input indicando que ela veio do COFFEE
+— ver observação em `03-frontend-input.md`.
 
 ## Timings (tabela consolidada desta feature)
 

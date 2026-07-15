@@ -146,9 +146,24 @@ e dependia de um banner com botão "Recarregar dados"
 
 `INPUT_DADOS_KEY` (`use-input-data.ts:6`) é a `queryKey` de
 `useInputData`, exportada para que qualquer código fora do hook — o
-próprio polling, `use-auto-vinculos.ts` e futuras integrações (ex.:
-módulo COFFEE movendo notas) — invalide o mesmo cache sem duplicar o
+próprio polling, `use-auto-vinculos.ts` e a integração COFFEE
+(`mover-plano-modal.tsx`, ver `02-frontend-coffee.md`, fluxo "Revisar
+Nota e Mover para o Plano") — invalide o mesmo cache sem duplicar o
 array literal `['input-dados']`.
+
+### Notas vindas do COFFEE
+
+Quando uma nota é movida do COFFEE para o plano
+(`POST /api/integracao/mover-para-plano`, documentado em
+`08-integracao-coffee-input.md`), o registro criado é uma linha comum
+da base principal do Input — não existe nenhum campo, flag ou coluna
+que marque a origem "veio do COFFEE". Na `overview.tsx`/`manage.tsx`,
+uma nota assim é visualmente indistinguível de uma cadastrada
+manualmente pelo modo "Cadastrar Nota"; a única forma de rastrear a
+origem é do lado do COFFEE (o `revisao.ja_no_plano`/`revisao.plano` do
+`GET /api/integracao/nota/{pk}/revisao`, ou o histórico de logs do
+COFFEE). Vale ter isso em mente ao investigar divergências no plano —
+o Input em si não guarda essa informação.
 
 ## Timings (tabela consolidada desta feature)
 
