@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Coffee, ScrollText } from 'lucide-react';
+import { Coffee, Eye, ScrollText } from 'lucide-react';
 import { coffeeUrl } from '../../api';
 
 const SAP_PENDENTE = 10000000;
@@ -26,6 +26,16 @@ export function LogsBtn({ pk, onClick }: { pk: number; onClick: () => void }): R
     <Button variant="ghost" size="icon-sm" onClick={onClick}
             aria-label={`Ver logs da nota ${pk}`} title="Ver logs">
       <ScrollText />
+    </Button>
+  );
+}
+
+/** Botão "revisar nota" das linhas — abre o sheet de revisão da integração. */
+export function RevisarNotaBtn({ pk, onClick }: { pk: number; onClick: () => void }): React.JSX.Element {
+  return (
+    <Button variant="ghost" size="icon-sm" onClick={onClick}
+            aria-label={`Revisar nota ${pk}`} title="Revisar nota">
+      <Eye />
     </Button>
   );
 }
