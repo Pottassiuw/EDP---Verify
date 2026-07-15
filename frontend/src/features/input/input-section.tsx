@@ -2,7 +2,7 @@
 import type { AbaInput } from './types';
 import { toast } from 'sonner';
 import { getUsuario, setUsuario, InputApi } from './api';
-import { useAvisoSincronizacao, useInputData, useRecarregarInput } from './use-input-data';
+import { useSincronizacaoAutomatica, useInputData, useRecarregarInput } from './use-input-data';
 import { Overview } from './overview';
 import { Manage } from './manage';
 import { Ramal } from './ramal';
@@ -37,7 +37,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         .catch(() => setUsuario('sistema'));
     }
   }, []);
-  const { desatualizado, limpar } = useAvisoSincronizacao(dados?.meta.ultima_alteracao);
+  useSincronizacaoAutomatica(dados?.meta.ultima_alteracao);
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
   return (
@@ -52,13 +52,6 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       </div>
 
-      {desatualizado && (
-        <div className="shrink-0 flex items-center gap-[12px] py-[8px] px-[18px] bg-tint-amber text-[13px]"
-             style={{ borderBottom: '1px solid rgba(240,169,59,.3)' }}>
-          <span className="flex-1">Os dados foram atualizados por outro usuário.</span>
-          <Button variant="outline" size="sm" onClick={() => { limpar(); void recarregar(); }}>Recarregar dados</Button>
-        </div>
-      )}
       {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
         <div className="py-[8px] px-[18px] bg-tint-amber text-[13px]">
           Importação inicial pendente: a rede da EDP estava indisponível.{' '}

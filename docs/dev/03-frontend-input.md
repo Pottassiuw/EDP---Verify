@@ -25,7 +25,7 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. |
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
-| `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query), `useRecarregarInput` (invalidação) e `useAvisoSincronizacao` (polling que detecta alteração feita em outra sessão). |
+| `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
 | `frontend/src/features/input/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", usado nos modos Cadastrar Nota e Edição em Lote de `manage.tsx`/`ramal.tsx`. Substitui o antigo campo de texto livre. |
 | `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
 | `frontend/src/features/input/ui.ts` | `CLASSE_SELECT_MONO`: className compartilhada que aplica `var(--font-mono)` ao conteúdo (portalado) dos `Select` do módulo Input. |
@@ -44,12 +44,13 @@ mesmo padrão do hub COFFEE documentado em `02-frontend-coffee.md`.
 sub-aba, todos recebendo o mesmo `dados: InputDataset` já carregado
 (exceto `Logs`, que não depende dele).
 
-Acima do conteúdo da sub-aba, `input-section.tsx` mostra até três
-banners independentes: aviso de dados desatualizados por outra sessão
-(`desatualizado`, ver "Sincronização SAP" abaixo), aviso de importação
-inicial pendente por rede indisponível (com botão "Tentar importar de
-novo" que chama `InputApi.migrar()`), e contagem de bases da rede
-EDP indisponíveis (`basesAusentes`, `input-section.tsx:72-76`).
+Acima do conteúdo da sub-aba, `input-section.tsx` mostra até dois
+banners independentes: aviso de importação inicial pendente por rede
+indisponível (com botão "Tentar importar de novo" que chama
+`InputApi.migrar()`), e contagem de bases da rede EDP indisponíveis
+(`basesAusentes`, `input-section.tsx:65-69`). Não há mais um banner de
+"dados desatualizados por outra sessão" — ver "Sincronização SAP"
+abaixo, que agora revalida em background sem intervenção do usuário.
 
 ## Fluxo: Edição em lote (manage.tsx)
 
@@ -132,21 +133,30 @@ endpoint). O botão não guarda estado de "rodando" — não fica desabilitado
 enquanto a sincronização está em andamento (ver "Pontos de atenção").
 
 Como a sincronização roda em background e pode ser disparada por
-qualquer sessão, `use-input-data.ts:29-35` mantém um polling próprio
+qualquer sessão, `use-input-data.ts:25-43` mantém um polling próprio
 para detectar quando os dados mudaram em outro lugar: a cada `60_000ms`
-(`window.setInterval(..., 60_000)`), chama `InputApi.sync()` e compara
-`s.ultima_alteracao` com o valor conhecido; se mudou, marca
-`desatualizado = true` (usado para avisar o usuário que a base pode ter
-sido sincronizada em outra aba/sessão). Esse flag alimenta o banner em
-`input-section.tsx:55-61`, com um botão "Recarregar dados" que chama
-`limpar()` e `recarregar()` (invalidação via `useRecarregarInput`).
+(`window.setInterval(..., 60_000)`), `useSincronizacaoAutomatica` chama
+`InputApi.sync()` e compara `s.ultima_alteracao` com o valor conhecido;
+se mudou, dispara um `toast.info` avisando o usuário e invalida
+`INPUT_DADOS_KEY` (`qc.invalidateQueries`) — a tabela é revalidada em
+segundo plano automaticamente, sem exigir clique. Isso substituiu o
+antigo `useAvisoSincronizacao`, que só marcava um flag `desatualizado`
+e dependia de um banner com botão "Recarregar dados"
+(`useRecarregarInput`) para o usuário buscar os dados novos manualmente.
+
+`INPUT_DADOS_KEY` (`use-input-data.ts:6`) é a `queryKey` de
+`useInputData`, exportada para que qualquer código fora do hook — o
+próprio polling, `use-auto-vinculos.ts` e futuras integrações (ex.:
+módulo COFFEE movendo notas) — invalide o mesmo cache sem duplicar o
+array literal `['input-dados']`.
 
 ## Timings (tabela consolidada desta feature)
 
 | Valor | Onde | O que faz |
 |---|---|---|
-| `60_000ms` | `use-input-data.ts:29-35` | Polling de `InputApi.sync()` (`useAvisoSincronizacao`); compara `ultima_alteracao` com o valor conhecido e marca `desatualizado = true` se mudou (dados alterados em outra sessão). |
-| `300_000ms` | `use-input-data.ts:9` | `staleTime` da query `useInputData` (React Query): por 5 minutos os dados carregados são considerados "frescos" e não disparam refetch automático em background. |
+| `60_000ms` | `use-input-data.ts:29` | Polling de `InputApi.sync()` (`useSincronizacaoAutomatica`); compara `ultima_alteracao` com o valor conhecido e, se mudou, avisa via `toast.info` e invalida `INPUT_DADOS_KEY` em background. |
+| `300_000ms` | `use-input-data.ts:12` | `staleTime` da query `useInputData` (React Query): por 5 minutos os dados carregados são considerados "frescos" e não disparam refetch automático em background (o default global de 60s do `QueryClient`, ver `04-frontend-shared.md`, não se aplica aqui). |
+| `300_000ms` | `use-ramal-data.ts:8` | `staleTime` da query `useRamalData`, mesmo racional do `useInputData` acima — dataset separado (base "Ramal"), mesma cadência de frescor. |
 
 ## Pontos de atenção
 
@@ -174,12 +184,13 @@ sido sincronizada em outra aba/sessão). Esse flag alimenta o banner em
   sincronizações em paralelo no backend, diferente do botão "Exportar
   Excel" logo ao lado, que usa `exportando` para se desabilitar
   (`overview.tsx:25,67-70`).
-- `use-input-data.ts:34` — falhas do polling de sincronização são
+- `use-input-data.ts:39` — falhas do polling de sincronização são
   silenciadas (`.catch(() => {})`) com o comentário "o erro aparece no
   fluxo principal"; mas se apenas o polling falhar (ex.: `/sync`
   intermitente) enquanto o carregamento principal continua ok, o
-  usuário não tem nenhuma indicação de que a checagem de
-  desatualização parou de funcionar.
+  usuário não tem nenhuma indicação de que a checagem de sincronização
+  parou de funcionar (não há mais banner ligado a esse estado — a
+  falha simplesmente não gera o `toast.info` de aviso).
 - `app.css` (bloco `.input-scope`) — os cards do módulo Input usam a
   borda `--line` (hairline discreto) em vez de `--line-2` (usada em
   todo o resto do app), e os `Select` internos renderizam em

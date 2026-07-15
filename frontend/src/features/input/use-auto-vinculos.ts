@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { NotaInput } from './types';
 import { InputApi } from './api';
 import { varrerVinculos } from './lib';
+import { INPUT_DADOS_KEY } from './use-input-data';
 
 export interface VinculoStatus {
   atualizadas: number;
@@ -41,7 +42,7 @@ export function useAutoVinculos(registros: NotaInput[]): { status: VinculoStatus
         setStatus({ atualizadas, hora });
         if (atualizadas > 0) {
           toast.success(`${atualizadas} vínculo(s) Nota_Mae aplicados automaticamente`);
-          void qc.invalidateQueries({ queryKey: ['input-dados'] });
+          void qc.invalidateQueries({ queryKey: INPUT_DADOS_KEY });
         }
       })
       .catch(() => { /* backend fora: erro visível no fluxo principal */ })

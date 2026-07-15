@@ -166,6 +166,36 @@ portalizado pelo Radix (tooltip, dropdown, sheet) renderiza fora de
 `.edp`, direto no `<body>`, e precisa resolver as mesmas cores sem
 depender do elemento `.edp[data-theme="light"]` estar como ancestral.
 
+## React Query (main.tsx)
+
+O `QueryClient` único do app é criado em `main.tsx:14-22` com
+`defaultOptions.queries`:
+
+- **`staleTime: 60_000`** — por 1 minuto após buscar, uma query é
+  considerada "fresca" e React Query não dispara refetch automático
+  (nem por remontagem nem por foco de janela). Antes deste default,
+  o `QueryClient` não tinha `staleTime` configurado (implícito `0`),
+  então **toda** query refazia fetch a cada remontagem/foco — inclusive
+  o dataset inteiro do módulo Input, que é grande. Hooks que precisam
+  de um frescor diferente sobrescrevem por query (ex.: `useInputData`
+  e `useRamalData` usam `staleTime: 300_000`, 5 minutos — ver
+  `03-frontend-input.md`).
+- **`gcTime: 30 * 60_000`** (30 minutos) — tempo que uma query inativa
+  (sem observador montado) fica em cache antes de ser descartada.
+  Mantém dados já buscados disponíveis para reexibição instantânea ao
+  trocar de aba e voltar, sem refazer o fetch.
+- **`retry: 1`** — mesmo valor que já era usado individualmente por
+  `useInputData`; virou default global para não exigir repetir a opção
+  em cada novo hook de query.
+
+**`refetchOnWindowFocus` não foi alterado** (permanece o default `true`
+do React Query): com `staleTime` configurado, o refetch por foco de
+janela passa a ser uma revalidação em background — os dados já em
+cache continuam na tela normalmente, e são trocados só quando a
+resposta nova chega (padrão SWR: "stale-while-revalidate"). Sem
+`staleTime`, esse mesmo refetch por foco reexecutava a busca a cada
+troca de aba, mesmo com o dado ainda válido.
+
 ## Hooks compartilhados
 
 - **`use-mobile.ts`** (`useIsMobile`) — hook usado pelo `Sidebar` do

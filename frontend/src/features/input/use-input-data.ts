@@ -1,10 +1,13 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { InputApi } from './api';
+
+export const INPUT_DADOS_KEY = ['input-dados'] as const;
 
 export function useInputData() {
   return useQuery({
-    queryKey: ['input-dados'],
+    queryKey: INPUT_DADOS_KEY,
     queryFn: InputApi.dados,
     staleTime: 300_000,
     retry: 1,
@@ -14,26 +17,27 @@ export function useInputData() {
 export function useRecarregarInput(): () => Promise<void> {
   const qc = useQueryClient();
   return React.useCallback(async () => {
-    await qc.invalidateQueries({ queryKey: ['input-dados'] });
+    await qc.invalidateQueries({ queryKey: INPUT_DADOS_KEY });
   }, [qc]);
 }
 
-/** Polling leve de /sync: retorna true quando outro usuário salvou algo. */
-export function useAvisoSincronizacao(ultimaConhecida: string | null | undefined): {
-  desatualizado: boolean;
-  limpar: () => void;
-} {
-  const [desatualizado, setDesatualizado] = React.useState(false);
+/** Polling de /sync: quando outro usuário salva, revalida em background e avisa. */
+export function useSincronizacaoAutomatica(ultimaConhecida: string | null | undefined): void {
+  const qc = useQueryClient();
   React.useEffect(() => {
     if (ultimaConhecida === undefined) return;
     const id = window.setInterval(() => {
       InputApi.sync()
         .then((s) => {
-          if (s.ultima_alteracao !== (ultimaConhecida ?? null)) setDesatualizado(true);
+          if (s.ultima_alteracao !== (ultimaConhecida ?? null)) {
+            toast.info('Dados atualizados por outro usuário', {
+              description: 'A tabela foi recarregada em segundo plano.',
+            });
+            void qc.invalidateQueries({ queryKey: INPUT_DADOS_KEY });
+          }
         })
         .catch(() => { /* backend fora: o erro aparece no fluxo principal */ });
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [ultimaConhecida]);
-  return { desatualizado, limpar: () => setDesatualizado(false) };
+  }, [ultimaConhecida, qc]);
 }
