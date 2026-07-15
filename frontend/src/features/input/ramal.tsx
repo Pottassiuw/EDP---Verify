@@ -7,7 +7,7 @@ import { COLUNAS_RAMAL, COLUNAS_COLAGEM_RAMAL, ROTULOS_RAMAL } from './columns-r
 import { useRamalData, useRecarregarRamal } from './use-ramal-data';
 import { DataGrid } from './data-grid';
 import { NotesTable } from './notes-table';
-import { MesExecucaoPicker } from './mes-execucao-picker';
+import { MesExecucaoPicker } from '@/components/branded/mes-execucao-picker';
 import { ColagemPlanilha } from './colagem-planilha';
 import { CLASSE_SELECT_MONO } from './ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

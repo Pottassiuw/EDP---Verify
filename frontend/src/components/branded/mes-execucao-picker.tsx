@@ -3,7 +3,11 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
   SelectSeparator, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { CLASSE_SELECT_MONO } from './ui';
+
+/** Fonte mono aplicada aos dropdowns (casa com a grade de dados).
+ *  O conteúdo do Select é portalado p/ fora do escopo da feature, então recebe a
+ *  fonte por className. */
+const CLASSE_SELECT_MONO = '[font-family:var(--font-mono)]';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun',
                'jul', 'ago', 'set', 'out', 'nov', 'dez'] as const;

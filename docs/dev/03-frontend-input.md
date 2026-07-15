@@ -26,9 +26,8 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
 | `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
-| `frontend/src/features/input/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", usado nos modos Cadastrar Nota e Edição em Lote de `manage.tsx`/`ramal.tsx`. Substitui o antigo campo de texto livre. |
+| `frontend/src/components/branded/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", movido para `components/branded/` para reutilização entre features (Input e futura integração COFFEE). |
 | `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
-| `frontend/src/features/input/ui.ts` | `CLASSE_SELECT_MONO`: className compartilhada que aplica `var(--font-mono)` ao conteúdo (portalado) dos `Select` do módulo Input. |
 
 ## Fluxo: Overview e sub-navegação
 
@@ -198,6 +197,7 @@ array literal `['input-dados']`.
   `input-section.tsx` para não vazar para Coffee/Verificar. O mono nos
   `Select` é um desvio deliberado do `DESIGN.md` (que reserva mono
   para código) — decisão explícita para casar com a estética "grade de
-  dados" do Input; qualquer novo `SelectContent` do módulo precisa
-  lembrar de aplicar `CLASSE_SELECT_MONO` manualmente, pois o
-  conteúdo é portalado para fora de `.input-scope`.
+  dados" do Input. `MesExecucaoPicker` (agora em `components/branded/`)
+  já declara `CLASSE_SELECT_MONO` internamente; qualquer outro novo
+  `SelectContent` do módulo precisa lembrar de aplicá-la manualmente,
+  pois o conteúdo é portalado para fora de `.input-scope`.

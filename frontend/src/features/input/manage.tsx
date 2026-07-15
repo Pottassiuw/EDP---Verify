@@ -8,7 +8,7 @@ import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
-import { MesExecucaoPicker } from './mes-execucao-picker';
+import { MesExecucaoPicker } from '@/components/branded/mes-execucao-picker';
 import { ColagemPlanilha } from './colagem-planilha';
 import { CLASSE_SELECT_MONO } from './ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

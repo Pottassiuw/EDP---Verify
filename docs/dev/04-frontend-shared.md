@@ -64,6 +64,15 @@ built on top of ui/"). Quatro exports:
   navegação por setas) do `ToggleGroup` por baixo. É o padrão de
   sub-navegação usado por `input-section.tsx` e pelo hub COFFEE
   (documentado em `02-frontend-coffee.md`/`03-frontend-input.md`).
+- **`MesExecucaoPicker`** (`mes-execucao-picker.tsx:40-69`) — dropdown
+  do campo "Mês de Execução Planejado" que resolve o valor sempre em
+  formato `MMM-YYYY` minúsculo (ex.: `jan-2026`). Recebe
+  `value`/`onChange`/`valorNeutro`/`rotuloNeutro`/`id?`/`className?` —
+  exporta também `construirOpcoesMes(anoAtual)` para gerar as 12 opções
+  do ano corrente mais dois futuros fixos (janeiro do ano seguinte,
+  janeiro de 2050). Usado pelo módulo Input em `manage.tsx` e
+  `ramal.tsx` (Cadastrar Nota, Edição em Lote); será consumido também
+  pela integração COFFEE.
 
 ## components/ui/ (shadcn)
 
