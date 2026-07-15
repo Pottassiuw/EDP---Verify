@@ -184,3 +184,19 @@ def test_api_mover_fluxo_completo(ambiente):
     assert client.post("/api/integracao/mover-para-plano",
                        json={"pks": [4243], "campos_usuario": CAMPOS},
                        headers={"X-User": "teste"}).status_code == 422
+
+
+def test_api_mover_pk_desconhecido_retorna_404(ambiente):
+    client = _client()
+    r = client.post("/api/integracao/mover-para-plano",
+                     json={"pks": [4242, 999999], "campos_usuario": CAMPOS},
+                     headers={"X-User": "teste"})
+    assert r.status_code == 404
+
+
+def test_api_mover_atualizar_existente_sem_estar_no_plano_retorna_404(ambiente):
+    client = _client()
+    r = client.post("/api/integracao/mover-para-plano",
+                     json={"pks": [4242], "campos_usuario": CAMPOS, "atualizar_existente": True},
+                     headers={"X-User": "teste"})
+    assert r.status_code == 404

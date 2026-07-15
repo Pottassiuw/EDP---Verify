@@ -34,6 +34,8 @@ def mover(pedido: MoverPedido, tasks: BackgroundTasks,
             pedido.pks, pedido.campos_usuario, usuario, pedido.atualizar_existente)
     except service.SapPendenteErro as e:
         raise HTTPException(422, str(e))
+    except service.NotaNaoEncontradaErro as e:
+        raise HTTPException(404, str(e))
     except (service.JaNoPlanoErro, NotasDuplicadasErro) as e:
         raise HTTPException(409, str(e))
     except ValueError as e:
