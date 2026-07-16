@@ -125,11 +125,11 @@ def criar_nota(nota: NovaNota, tasks: BackgroundTasks,
                usuario: str = Depends(usuario_atual)):
     garantir_banco()
     try:
-        criar_notas([nota], usuario=usuario)
+        inseridas = criar_notas([nota], usuario=usuario)
     except NotasDuplicadasErro as e:
         raise HTTPException(409, str(e))
     pos_escrita(tasks)
-    return {"inseridas": 1}
+    return {"inseridas": inseridas}
 
 
 @router.post("/notas/bulk")
@@ -225,7 +225,9 @@ def baixar_base(nome_arquivo: str):
     return FileResponse(caminho, filename=nome_arquivo)
 
 
-def _processar_upload_base(nome_arquivo: str, caminho: str):
+def _processar_upload_base(nome_arquivo: str, caminho: str) -> bool:
+    """Importa o arquivo para o SQLite nativo. Retorna se a importação teve sucesso —
+    o chamador usa isso para decidir se registra o import em log_arquivos."""
     map_simples = {
         "Indicador base conjunto - Limite Aneel.xlsx": "base_indicador_continuidade",
         "Gerada_base_IW28.XLSX": "base_iw28",
@@ -245,8 +247,12 @@ def _processar_upload_base(nome_arquivo: str, caminho: str):
             db.salvar_base_dataframe("base_custo_modular", df_mod)
             df_saz = pd.read_excel(caminho, sheet_name='Modulares', skiprows=1, nrows=4)
             db.salvar_base_dataframe("base_sazonal", df_saz)
+        else:
+            return False
+        return True
     except Exception as e:
         print(f"Aviso: Não foi possível importar {nome_arquivo} para o SQLite nativo: {e}")
+        return False
 
 
 def _rotina_sap_background():
@@ -260,17 +266,21 @@ def _rotina_sap_background():
         env["INPUT_DB_PATH"] = db.obter_caminho_banco()
         subprocess.run(["python", script_path], check=True, env=env)
         
-        # Assim que termina, atualiza o SQLite com os arquivos gerados!
-        _processar_upload_base("Gerada_base_IW28.XLSX", config.CAMINHO_BASE_IW28)
-        _processar_upload_base("Gerada_custo_ord_IW38.XLSX", config.CAMINHO_CUSTO_ORD_IW38)
-        _processar_upload_base("Gerada_medidas_IW66.XLSX", config.CAMINHO_BASE_IW66)
-
+        # Assim que termina, atualiza o SQLite com os arquivos gerados; só
+        # registra em log_arquivos (e portanto bumpa a versão do dataset) os
+        # arquivos que realmente foram importados com sucesso.
+        arquivos = {
+            "Gerada_base_IW28.XLSX": config.CAMINHO_BASE_IW28,
+            "Gerada_custo_ord_IW38.XLSX": config.CAMINHO_CUSTO_ORD_IW38,
+            "Gerada_medidas_IW66.XLSX": config.CAMINHO_BASE_IW66,
+        }
         agora = datetime.datetime.now()
-        for nome in ("Gerada_base_IW28.XLSX", "Gerada_custo_ord_IW38.XLSX",
-                     "Gerada_medidas_IW66.XLSX"):
-            db.salvar_log_arquivo(nome, "robo-sap", agora, "Sync SAP")
+        for nome, caminho in arquivos.items():
+            if _processar_upload_base(nome, caminho):
+                db.salvar_log_arquivo(nome, "robo-sap", agora, "Sync SAP")
 
         engine.invalidar_cache()
+        engine.invalidar_status_bases()
     except Exception as e:
         print(f"Erro na execução em background do SAP: {e}")
 
@@ -296,10 +306,10 @@ def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
     except OSError as e:
         raise HTTPException(502, f"Erro ao gravar na rede: {e}")
     
-    _processar_upload_base(nome_arquivo, caminho)
-    
-    db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
+    if _processar_upload_base(nome_arquivo, caminho):
+        db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
     engine.invalidar_cache()
+    engine.invalidar_status_bases()
     return {"ok": True}
 
 

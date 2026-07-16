@@ -134,11 +134,15 @@ upsert (comentário `ponytail`, `db.py:103-104`) — representa uma ação do
 usuário no app (via `arquivar_nota()`), não o estado do COFFEE, que arquiva
 como parte do seu próprio workflow normal ao gerar.
 
-`obter_nota(pk)` (`db.py:187`) — leitura passiva de uma nota única por
+`obter_nota(pk)` (`db.py:188`) — leitura passiva de uma nota única por
 primary key, retorna um dict com a mesma forma de `listar_notas` (todos os
 campos em `_COLUNAS`, `dados_json` parseado, booleans coercidos), ou `None`
-se a nota não existe. Task 6 (integração INPUT) consome essa função para
-consultas síncronas durante o processamento da planilha.
+se a nota não existe **ou está arquivada localmente** — mesmo filtro
+`(arquivado IS NULL OR arquivado = 0)` de `listar_notas`, para que uma nota
+que o usuário arquivou (ação local, distinta do arquivamento do próprio
+COFFEE) não fique acessível para revisão/movimentação por outros módulos.
+`integracao_module` consome essa função para revisar e mover notas para o
+plano do Input.
 
 ## routes.py
 

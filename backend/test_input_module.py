@@ -496,11 +496,27 @@ def test_cache_e_invalidacao(engine_isolado):
 
 def test_status_bases(engine_isolado):
     from input_module import config, engine
+    engine.invalidar_status_bases()
     _excel_iw28(config.CAMINHO_BASE_IW28)
     bases = engine.status_bases()
     por_nome = {b["nome"]: b for b in bases}
     assert por_nome["IW28"]["encontrada"] is True
     assert por_nome["IW38"]["encontrada"] is False
+
+
+def test_invalidar_status_bases_forca_releitura(engine_isolado):
+    """Sem invalidar_status_bases(), um arquivo criado após o primeiro status_bases()
+    fica invisível até o TTL de 60s expirar — a invalidação explícita evita isso."""
+    from input_module import config, engine
+    engine.invalidar_status_bases()
+    bases = engine.status_bases()
+    por_nome = {b["nome"]: b for b in bases}
+    assert por_nome["IW28"]["encontrada"] is False
+    _excel_iw28(config.CAMINHO_BASE_IW28)
+    engine.invalidar_status_bases()
+    bases = engine.status_bases()
+    por_nome = {b["nome"]: b for b in bases}
+    assert por_nome["IW28"]["encontrada"] is True
 
 
 # ── Tarefa 5: endpoints de leitura /api/input/* ──────────────────────────

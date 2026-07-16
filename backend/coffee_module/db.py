@@ -186,10 +186,16 @@ def listar_notas(status: str | None = None) -> list:
 
 
 def obter_nota(pk: int) -> dict | None:
-    """Linha única de notas_coffee com dados_json parseado (mesma forma de listar_notas)."""
+    """Linha única de notas_coffee com dados_json parseado (mesma forma de listar_notas).
+
+    Respeita o mesmo filtro de arquivamento local que listar_notas — uma nota
+    arquivada pelo usuário (arquivar_nota) não deve ficar acessível para
+    revisão/movimentação por outros módulos.
+    """
     conn = get_db_connection()
     row = conn.execute(
-        f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee WHERE pk = ?", (pk,)
+        f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee "
+        "WHERE pk = ? AND (arquivado IS NULL OR arquivado = 0)", (pk,)
     ).fetchone()
     conn.close()
     return _linha_para_dict(row) if row is not None else None

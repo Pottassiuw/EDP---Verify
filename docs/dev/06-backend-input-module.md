@@ -85,11 +85,16 @@ passem pelos logs/contagem que `obter_versao_dataset()` cobre (ver
 é chamado após qualquer escrita (ver `routes.py`), mas deixou de ser o
 único gatilho de atualização.
 
-`status_bases()` (`engine.py:623`) — que faz 7 `os.path.exists`/
+`status_bases()` (`engine.py:626`) — que faz 7 `os.path.exists`/
 `os.path.getmtime` (uma por caminho SMB em `config.BASES_REDE`) — tem
 memo próprio de 60s (`_status_bases_cache`), independente do cache do
 dataset: como é chamado a cada `GET /notas` só para popular metadados,
-o memo evita bater no filesystem de rede a cada request.
+o memo evita bater no filesystem de rede a cada request. Diferente do
+cache do dataset, este memo não é revalidado por versão (os arquivos
+de rede não passam por `obter_versao_dataset()`) — por isso
+`substituir_base()` e `_rotina_sap_background()` chamam
+`engine.invalidar_status_bases()` explicitamente depois de trocar um
+arquivo, para não deixar `meta.bases` desatualizado por até 60s.
 
 ## Cache SQLite (db.py)
 
@@ -154,8 +159,12 @@ O que essa string cobre:
   `log_arquivos`, então essa versão (e o cache/ETag que depende dela)
   não mudava depois de uma sincronização automática. `routes.py` agora
   grava um `salvar_log_arquivo` por arquivo gerado (`Gerada_base_IW28.XLSX`,
-  `Gerada_custo_ord_IW38.XLSX`, `Gerada_medidas_IW66.XLSX`) logo após
-  `_processar_upload_base`, antes de `engine.invalidar_cache()`.
+  `Gerada_custo_ord_IW38.XLSX`, `Gerada_medidas_IW66.XLSX`), mas só para o
+  arquivo cujo `_processar_upload_base` retornou sucesso — `_processar_upload_base`
+  agora devolve `bool` em vez de engolir a falha em silêncio; um import
+  que falhar (ex.: coluna renomeada pelo robô SAP) não bumpa a versão do
+  dataset nem dispara o aviso de "dados atualizados" no frontend para uma
+  base que na prática não mudou.
 
 Limitação conhecida: uma escrita direta no `.db` (fora do CRUD deste
 módulo — ex.: script manual tocando `notas`/`log_*` no arquivo SQLite)

@@ -468,6 +468,17 @@ def test_obter_nota(monkeypatch, tmp_path):
     assert db.obter_nota(999999) is None
 
 
+def test_obter_nota_ignora_arquivada(monkeypatch, tmp_path):
+    """obter_nota respeita o mesmo filtro de arquivamento local de listar_notas."""
+    monkeypatch.setenv("COFFEE_DATA_DIR", str(tmp_path))
+    from coffee_module import db
+    db.inicializar_banco()
+    db.upsert_nota(4242, 12345678, {"prioridade": 3, "observacoes": "Trocar poste"})
+    assert db.obter_nota(4242) is not None
+    db.arquivar_nota(4242)
+    assert db.obter_nota(4242) is None
+
+
 # ---------------------------------------------------------------------------
 # Task 3 — Routes /marcar-gerar + limpeza de a_gerar no /regerar
 # ---------------------------------------------------------------------------

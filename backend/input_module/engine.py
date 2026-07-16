@@ -645,6 +645,16 @@ def status_bases() -> list:
         return bases
 
 
+def invalidar_status_bases() -> None:
+    """Força status_bases() a reler o filesystem na próxima chamada.
+
+    Chamar após qualquer escrita que troque um arquivo de BASES_REDE
+    (upload manual, sync SAP) — o TTL de 60s por si só não detecta isso.
+    """
+    with _status_bases_lock:
+        _status_bases_cache["valor"] = None
+
+
 # ====================================================================
 # CÓPIA EXCEL NA REDE — porte de Input/processamento.py:387
 # (nunca derruba a request: corpo inteiro em try/except)
