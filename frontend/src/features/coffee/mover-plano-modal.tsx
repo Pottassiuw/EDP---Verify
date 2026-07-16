@@ -48,6 +48,8 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
   const qc = useQueryClient();
   const [campos, setCampos] = React.useState<CamposManuais>(() => camposIniciais(alvo?.revisao ?? null));
   React.useEffect(() => { setCampos(camposIniciais(alvo?.revisao ?? null)); }, [alvo]);
+  const setCampo = (campo: keyof CamposManuais) => (v: string) =>
+    setCampos((c) => ({ ...c, [campo]: v }));
 
   const atualizar = alvo?.revisao?.ja_no_plano === true;
   const emLote = (alvo?.pks.length ?? 0) > 1;
@@ -102,23 +104,23 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-mes">Data de execução planejada</Label>
             <MesExecucaoPicker id="mp-mes" value={campos.Mes_Execucao_Planejado}
-                               onChange={(v) => setCampos((c) => ({ ...c, Mes_Execucao_Planejado: v }))}
+                               onChange={setCampo('Mes_Execucao_Planejado')}
                                valorNeutro="-" rotuloNeutro="Sem planejamento" />
           </div>
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-obra">Status da obra</Label>
             <Input id="mp-obra" value={campos.Status_Obra}
-                   onChange={(e) => setCampos((c) => ({ ...c, Status_Obra: e.target.value }))} />
+                   onChange={(e) => setCampo('Status_Obra')(e.target.value)} />
           </div>
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-obs">Observação</Label>
             <Textarea id="mp-obs" rows={3} value={campos.Observacao}
-                      onChange={(e) => setCampos((c) => ({ ...c, Observacao: e.target.value }))} />
+                      onChange={(e) => setCampo('Observacao')(e.target.value)} />
           </div>
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-check">Check</Label>
             <Input id="mp-check" value={campos.Check}
-                   onChange={(e) => setCampos((c) => ({ ...c, Check: e.target.value }))} />
+                   onChange={(e) => setCampo('Check')(e.target.value)} />
           </div>
         </div>
 

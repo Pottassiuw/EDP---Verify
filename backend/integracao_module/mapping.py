@@ -6,16 +6,12 @@ config.PRIORIDADES do INPUT; 7-8 não são usados pelo COFFEE (fallback + aviso)
 import datetime
 
 from coffee_module.client import compor_local_instalacao
+from input_module import config
 from input_module.service import NovaNota
 
-DE_PARA_PRIORIDADE = {
-    1: "Emergente",
-    2: "Urgente",
-    3: "Importante",
-    4: "Prioritário",
-    5: "Programável",
-    6: "Informativo",
-}
+# Índice 1-6 de config.PRIORIDADES (COFFEE nunca emite 7/8 — categorias
+# administrativas "Protheus"/"Nota Projetos" não existem no fluxo COFFEE).
+DE_PARA_PRIORIDADE = {i: config.PRIORIDADES[i - 1] for i in range(1, 7)}
 PRIORIDADE_PADRAO = "Programável"
 STATUS_NOTA_INICIAL = "00 Pendente"
 

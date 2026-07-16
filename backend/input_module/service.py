@@ -2,9 +2,10 @@
 import threading
 
 import pandas as pd
+from fastapi import BackgroundTasks
 from pydantic import BaseModel
 
-from input_module import config, db
+from input_module import config, db, engine
 
 # Estado da migração inicial (resolvido uma vez por processo)
 _migracao = {"resultado": None}
@@ -21,6 +22,13 @@ def garantir_banco() -> str:
 
 def resetar_migracao() -> None:
     _migracao["resultado"] = None
+
+
+def pos_escrita(tasks: BackgroundTasks) -> None:
+    """Efeitos pós-escrita comuns a toda mutação do plano: invalida o cache em
+    memória e agenda a cópia Excel de rede em background."""
+    engine.invalidar_cache()
+    tasks.add_task(engine.gerar_copia_excel_rede)
 
 
 class NovaNota(BaseModel):

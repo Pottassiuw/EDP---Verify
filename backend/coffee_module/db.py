@@ -37,6 +37,14 @@ _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao_em"]
 
 
+def _linha_para_dict(row: tuple) -> dict:
+    d = dict(zip(_COLUNAS, row))
+    d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
+    d["a_gerar"] = bool(d["a_gerar"])
+    d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
+    return d
+
+
 def obter_caminho_banco() -> str:
     return str(config.data_dir() / "coffee.db")
 
@@ -174,14 +182,7 @@ def listar_notas(status: str | None = None) -> list:
     sql += " WHERE " + " AND ".join(clausulas)
     rows = conn.execute(sql, tuple(params)).fetchall()
     conn.close()
-    saida = []
-    for r in rows:
-        d = dict(zip(_COLUNAS, r))
-        d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
-        d["a_gerar"] = bool(d["a_gerar"])
-        d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
-        saida.append(d)
-    return saida
+    return [_linha_para_dict(r) for r in rows]
 
 
 def obter_nota(pk: int) -> dict | None:
@@ -191,13 +192,7 @@ def obter_nota(pk: int) -> dict | None:
         f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee WHERE pk = ?", (pk,)
     ).fetchone()
     conn.close()
-    if row is None:
-        return None
-    d = dict(zip(_COLUNAS, row))
-    d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
-    d["a_gerar"] = bool(d["a_gerar"])
-    d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
-    return d
+    return _linha_para_dict(row) if row is not None else None
 
 
 def marcar_gerar(pk: int, a_gerar: bool) -> None:

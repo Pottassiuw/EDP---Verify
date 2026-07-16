@@ -11,6 +11,7 @@ import type {
   ToggleResult,
   DuplicateResult,
 } from "./types";
+import { getUsuario, setUsuario, InputApi } from "./features/input/api";
 export const BASE: string = localStorage.getItem("edp_api") || "/api";
 const hash_api_url = import.meta.env.VITE_HASH_API_URL;
 const COFFEE_BASE = `https://coffee.edp.gpti.com.br/${hash_api_url}/informativo/`;
@@ -215,14 +216,13 @@ export async function corrigirLocalLote(
 }
 
 async function garantirUsuarioInput(): Promise<string> {
-  const salvo = localStorage.getItem("edp_input_user");
+  const salvo = getUsuario();
   if (salvo) return salvo;
   let usuario = "sistema";
   try {
-    const res = await fetch(BASE + "/input/me");
-    if (res.ok) usuario = ((await res.json()) as { usuario: string }).usuario;
+    usuario = (await InputApi.me()).usuario;
   } catch { /* backend fora: cai no fallback */ }
-  localStorage.setItem("edp_input_user", usuario);
+  setUsuario(usuario);
   return usuario;
 }
 

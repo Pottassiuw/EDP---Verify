@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from input_module import config, db, engine
 from input_module.service import (NotasDuplicadasErro, NovaNota, criar_notas,
-                                  garantir_banco, resetar_migracao)
+                                  garantir_banco, pos_escrita, resetar_migracao)
 
 router = APIRouter(prefix="/api/input")
 
@@ -90,11 +90,6 @@ def usuario_atual(x_user: Optional[str] = Header(default=None, alias="X-User")) 
     return x_user.strip()
 
 
-def _pos_escrita(tasks: BackgroundTasks) -> None:
-    engine.invalidar_cache()
-    tasks.add_task(engine.gerar_copia_excel_rede)
-
-
 class EdicaoPedido(BaseModel):
     linhas: list[dict]
 
@@ -121,7 +116,7 @@ def editar_notas(pedido: EdicaoPedido, tasks: BackgroundTasks,
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     if resultado["alteradas"]:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {**resultado, "ultima_alteracao": db.obter_data_ultima_alteracao()}
 
 
@@ -133,7 +128,7 @@ def criar_nota(nota: NovaNota, tasks: BackgroundTasks,
         criar_notas([nota], usuario=usuario)
     except NotasDuplicadasErro as e:
         raise HTTPException(409, str(e))
-    _pos_escrita(tasks)
+    pos_escrita(tasks)
     return {"inseridas": 1}
 
 
@@ -147,7 +142,7 @@ def criar_lote(pedido: LotePedido, tasks: BackgroundTasks,
         inseridas = criar_notas(pedido.notas, usuario=usuario)
     except NotasDuplicadasErro as e:
         raise HTTPException(409, str(e))
-    _pos_escrita(tasks)
+    pos_escrita(tasks)
     return {"inseridas": inseridas}
 
 
@@ -157,7 +152,7 @@ def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
     garantir_banco()
     excluidas = db.deletar_notas(pedido.numeros, usuario=usuario)
     if excluidas:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {"excluidas": excluidas}
 
 
@@ -166,7 +161,7 @@ def desfazer(tasks: BackgroundTasks, usuario: str = Depends(usuario_atual)):
     garantir_banco()
     ok, mensagem = db.reverter_ultima_alteracao()
     if ok:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {"ok": ok, "mensagem": mensagem}
 
 
@@ -380,7 +375,7 @@ def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
     df = pd.DataFrame([n.model_dump() for n in pedido.notas])
     df["ID_Cronologia"] = list(range(1, len(df) + 1))
     db.salvar_ramal_em_massa(df)
-    _pos_escrita(tasks)
+    pos_escrita(tasks)
     return {"inseridas": len(df)}
 
 
@@ -390,7 +385,7 @@ def excluir_ramal(pedido: ExclusaoRamalPedido, tasks: BackgroundTasks,
     garantir_banco()
     excluidas = db.deletar_notas_ramal(pedido.numeros, usuario=usuario)
     if excluidas:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {"excluidas": excluidas}
 
 
