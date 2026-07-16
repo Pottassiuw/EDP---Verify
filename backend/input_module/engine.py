@@ -8,8 +8,10 @@ Diferenças relevantes em relação ao porte original:
 - Caminhos de rede lidos de ``config`` em TEMPO DE CHAMADA (``config.CAMINHO_*``),
   para que o monkeypatch dos testes tenha efeito.
 - ``st.error(...)`` vira ``print(...)``.
-- Cache em memória com TTL e lock, ``status_bases`` e ``gerar_copia_excel_rede``
-  (que nunca derruba a request: corpo inteiro em try/except).
+- Cache em memória de ``get_dataset`` revalidado por versão do dataset
+  (``db.obter_versao_dataset()``), com TTL de fallback e lock; ``status_bases``
+  com seu próprio TTL e lock; e ``gerar_copia_excel_rede`` (que nunca derruba
+  a request: corpo inteiro em try/except).
 """
 import datetime
 import os
@@ -618,27 +620,29 @@ def invalidar_cache() -> None:
 
 _STATUS_BASES_TTL_SEGUNDOS = 60
 _status_bases_cache = {"quando": 0.0, "valor": None}
+_status_bases_lock = threading.Lock()
 
 
 def status_bases() -> list:
     """Stats dos 7 caminhos SMB, cacheados 60s — fora do hot path de GET /notas."""
-    agora = time.time()
-    if (_status_bases_cache["valor"] is not None
-            and agora - _status_bases_cache["quando"] < _STATUS_BASES_TTL_SEGUNDOS):
-        return _status_bases_cache["valor"]
-    bases = []
-    for nome, caminho in config.BASES_REDE.items():
-        existe = os.path.exists(caminho)
-        bases.append({
-            "nome": nome,
-            "arquivo": os.path.basename(caminho),
-            "encontrada": existe,
-            "modificada": datetime.datetime.fromtimestamp(
-                os.path.getmtime(caminho)).isoformat() if existe else None,
-        })
-    _status_bases_cache["quando"] = agora
-    _status_bases_cache["valor"] = bases
-    return bases
+    with _status_bases_lock:
+        agora = time.time()
+        if (_status_bases_cache["valor"] is not None
+                and agora - _status_bases_cache["quando"] < _STATUS_BASES_TTL_SEGUNDOS):
+            return _status_bases_cache["valor"]
+        bases = []
+        for nome, caminho in config.BASES_REDE.items():
+            existe = os.path.exists(caminho)
+            bases.append({
+                "nome": nome,
+                "arquivo": os.path.basename(caminho),
+                "encontrada": existe,
+                "modificada": datetime.datetime.fromtimestamp(
+                    os.path.getmtime(caminho)).isoformat() if existe else None,
+            })
+        _status_bases_cache["quando"] = agora
+        _status_bases_cache["valor"] = bases
+        return bases
 
 
 # ====================================================================
