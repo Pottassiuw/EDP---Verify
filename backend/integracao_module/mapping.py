@@ -13,7 +13,7 @@ from input_module.service import NovaNota
 # administrativas "Protheus"/"Nota Projetos" não existem no fluxo COFFEE).
 DE_PARA_PRIORIDADE = {i: config.PRIORIDADES[i - 1] for i in range(1, 7)}
 PRIORIDADE_PADRAO = "Programável"
-STATUS_NOTA_INICIAL = "00 Pendente"
+STATUS_NOTA_INICIAL = "01 Sem providência"
 
 # O que o usuário preenche no modal (spec)
 CAMPOS_MANUAIS = ["Mes_Execucao_Planejado", "Status_Obra", "Observacao", "Check"]

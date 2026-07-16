@@ -31,7 +31,7 @@ def test_montar_proposta_mapeia_campos():
     assert proposta["Local_Instalacao"] == "718ET00026773"
     assert proposta["Circuito"] == "BJU02"
     assert proposta["Prioridade_Nota"] == "Importante"      # 3 -> índice na lista
-    assert proposta["Status_Nota"] == "00 Pendente"
+    assert proposta["Status_Nota"] == "01 Sem providência"
     assert proposta["Observacao"] == "Trocar poste podre"
     assert mapping.avisos_proposta(_nota_coffee()) == []
 
@@ -137,7 +137,7 @@ def test_mover_ja_no_plano_recusa_e_atualiza(ambiente):
     assert resultado["atualizadas"] == 1
     registro = input_db.obter_nota_plano(12345678)
     assert registro["Status_Obra"] == "Linha Morta"
-    assert registro["Status_Nota"] == "00 Pendente"   # atualização NÃO reseta status
+    assert registro["Status_Nota"] == "01 Sem providência"   # atualização NÃO reseta status
 
 
 def test_mover_lote_all_or_nothing(ambiente):
