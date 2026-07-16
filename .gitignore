@@ -1,6 +1,10 @@
 # Dependências
 node_modules/
 .venv/
+backend/venv/
+
+# Credenciais do robô SAP (nunca versionar login/senha reais)
+backend/credenciais.json
 
 # Python
 __pycache__/

@@ -258,13 +258,18 @@ def _processar_upload_base(nome_arquivo: str, caminho: str) -> bool:
 def _rotina_sap_background():
     import subprocess
     import os
+    import sys
     try:
-        # Chama o robô SAP forçando UTF-8 para evitar crash com emojis no print
+        # Chama o robô SAP forçando UTF-8 para evitar crash com emojis no print.
+        # Usa o mesmo Python do venv do backend (com pywin32/pyperclip
+        # instalados via requirements-sap-robot.txt) — "python" do PATH do
+        # sistema pode não ter essas libs.
         script_path = str(config.caminho_sap_robot())
+        python_exe = sys.executable
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         env["INPUT_DB_PATH"] = db.obter_caminho_banco()
-        subprocess.run(["python", script_path], check=True, env=env)
+        subprocess.run([python_exe, script_path], check=True, env=env)
         
         # Assim que termina, atualiza o SQLite com os arquivos gerados; só
         # registra em log_arquivos (e portanto bumpa a versão do dataset) os

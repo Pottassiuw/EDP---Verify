@@ -249,13 +249,38 @@ Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:83`), que
 invalida o cache do engine e agenda `engine.gerar_copia_excel_rede()`
 em background para manter o Excel espelhado na rede atualizado.
 
-## Pontos de atenção
+## Robô SAP (`backend/Sap_Robot.py`) — setup
 
-- `input_module/routes.py:247-271` (`_rotina_sap_background`) — chama
-  `Sap_Robot.py` via `subprocess.run` com caminho relativo construído a
-  partir de `config.data_dir().parent.parent.parent`; qualquer mudança
-  na estrutura de diretórios do backend quebra silenciosamente essa
-  rota sem erro em tempo de import, só na primeira sincronização.
+Script de automação do SAP GUI (via `win32com`, Windows-only) que faz login
+no SAP, roda as transações IW28/IW38/IW66 para as notas do banco local e
+salva os três Excel exatamente nos caminhos de `input_config.CAMINHO_BASE_IW28`/
+`CAMINHO_CUSTO_ORD_IW38`/`CAMINHO_BASE_IW66` (os mesmos que
+`_processar_upload_base` depois importa para o SQLite). Não depende mais de
+Streamlit — roda como script standalone.
+
+Setup (uma vez por máquina):
+
+```bash
+cd backend
+venv\Scripts\python.exe -m pip install -r requirements-sap-robot.txt
+copy credenciais.json.example credenciais.json
+# edite credenciais.json com LOGIN_SAP/SENHA_SAP reais — nunca commitar esse arquivo
+```
+
+Duas formas de rodar:
+- **Clique duplo em `backend/Rodar_Sap_Robot.bat`** — checa venv/credenciais,
+  roda com o Python do venv, pausa no fim mostrando o resultado.
+- **Pelo app** — botão "Sincronizar SAP" do frontend chama `POST
+  /api/input/bases/sync-sap`, que dispara `_rotina_sap_background` em
+  background usando `sys.executable` (o mesmo Python do venv do backend, não
+  o `python` genérico do PATH — precisa ser o venv com pywin32/pyperclip
+  instalados via `requirements-sap-robot.txt`).
+
+`requirements-sap-robot.txt` fica separado de `requirements.txt` porque
+`pywin32`/`pyperclip` são Windows-only e o backend web (FastAPI) não precisa
+deles — só quem for rodar a extração local precisa instalá-las.
+
+## Pontos de atenção
 - `input_module/engine.py:449-450` e blocos irmãos — praticamente todo
   bloco de cruzamento em `enriquecer_dados()` usa `except Exception:
   print(...)`, sem re-lançar; uma base corrompida ou com coluna

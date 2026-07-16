@@ -1,0 +1,6 @@
+# Dependências extras do Sap_Robot.py (automação do SAP GUI via COM,
+# Windows-only) — não fazem parte do requirements.txt principal porque o
+# backend web (FastAPI) não precisa delas.
+-r requirements.txt
+pywin32
+pyperclip
