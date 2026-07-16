@@ -53,6 +53,8 @@ export interface PropostaPlano {
   Status_Nota: string;
   Data_Envio_Projeto: string;
   Observacao: string;
+  Planejado_DDPM: number;
+  Planejado_Unidade: string | null;
 }
 
 export interface CamposManuais {

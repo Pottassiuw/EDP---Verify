@@ -40,8 +40,8 @@ def montar_revisao(pk: int) -> dict:
         "iw28_extraida_em": iw28.extraida_em(),
         "plano": plano,
         "ja_no_plano": plano is not None,
-        "proposta": mapping.montar_proposta(nota),
-        "avisos": mapping.avisos_proposta(nota),
+        "proposta": mapping.montar_proposta(nota, registro_iw28),
+        "avisos": mapping.avisos_proposta(nota, registro_iw28),
         "pode_mover": pode_mover,
         "motivo_bloqueio": motivo,
     }
@@ -79,7 +79,8 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
         if input_db.obter_nota_plano(nota["id_sap"]) is None:
             raise NotaNaoEncontradaErro(
                 f"Nota {nota['id_sap']} não está no plano — não é possível atualizar.")
-        proposta = mapping.montar_proposta(nota)
+        registro_iw28 = iw28.obter_por_nota(nota["id_sap"])
+        proposta = mapping.montar_proposta(nota, registro_iw28)
         linha = {"Numero_Nota": nota["id_sap"]}
         linha.update({c: proposta[c] for c in mapping.CAMPOS_ATUALIZAVEIS})
         linha.update({c: campos_usuario[c] for c in mapping.CAMPOS_MANUAIS if c in campos_usuario})
@@ -92,7 +93,8 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
     if ja_existem:
         raise JaNoPlanoErro(
             "Já no plano: " + ", ".join(str(n["id_sap"]) for n in ja_existem))
-    novas = [mapping.montar_nova_nota(n, campos_usuario) for n in notas]
+    novas = [mapping.montar_nova_nota(n, iw28.obter_por_nota(n["id_sap"]), campos_usuario)
+             for n in notas]
     inseridas = input_service.criar_notas(novas, usuario=usuario)
     coffee_db.registrar_log("acao_usuario", "mover_para_plano", None,
                             {"pks": list(pks),

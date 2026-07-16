@@ -75,6 +75,9 @@ export function RevisarNotaSheet({ pk, onClose, onMover }: RevisarNotaSheetProps
                 <Linha rotulo="Circuito" valor={revisao.proposta.Circuito} />
                 <Linha rotulo="Prioridade" valor={revisao.proposta.Prioridade_Nota} />
                 <Linha rotulo="Status inicial" valor={revisao.proposta.Status_Nota} />
+                <Linha rotulo="Planejado" valor={
+                  `${revisao.proposta.Planejado_DDPM}${revisao.proposta.Planejado_Unidade ? ` ${revisao.proposta.Planejado_Unidade}` : ''}`
+                } />
                 <Linha rotulo="Observação (prefill)" valor={revisao.proposta.Observacao || '—'} />
                 {revisao.avisos.map((aviso) => (
                   <div key={aviso} className="text-[12px] text-amber">{aviso}</div>

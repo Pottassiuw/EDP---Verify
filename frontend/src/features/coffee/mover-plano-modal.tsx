@@ -97,6 +97,9 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
             <div><span className="text-text-mute">Local </span><span className="edp-mono">{proposta.Local_Instalacao}</span></div>
             <div><span className="text-text-mute">Circuito </span><span className="edp-mono">{proposta.Circuito}</span></div>
             <div><span className="text-text-mute">Prioridade </span>{proposta.Prioridade_Nota}</div>
+            <div><span className="text-text-mute">Planejado </span><span className="edp-mono">
+              {proposta.Planejado_DDPM}{proposta.Planejado_Unidade ? ` ${proposta.Planejado_Unidade}` : ''}
+            </span></div>
           </div>
         )}
 

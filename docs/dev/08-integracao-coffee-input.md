@@ -29,7 +29,7 @@ ou nas rotas.
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `backend/integracao_module/mapping.py` | De-para COFFEE → Input: `montar_proposta` (campos deriváveis do snapshot COFFEE), `avisos_proposta` (mapeamentos incertos, ex. prioridade fora da faixa), `montar_nova_nota` (proposta + campos manuais do usuário, manual vence). |
+| `backend/integracao_module/mapping.py` | De-para COFFEE → Input: `montar_proposta` (campos deriváveis do snapshot COFFEE + IW28), `avisos_proposta` (mapeamentos incertos, ex. prioridade fora da faixa), `montar_nova_nota` (proposta + campos manuais do usuário, manual vence). `Planejado_DDPM` vem de `fields.quantidade` (COFFEE); se a nota já está na extração IW28 e seu `Denom.conjunto` é um dos `CONJUNTOS_METRICOS` (rede — RDA, RDS, blindagem, multiplexada, etc.), o valor é convertido de metros para km (÷1000, rótulo "Km" só na exibição); para os demais conjuntos — ou enquanto o IW28 não tem a nota — o valor fica como veio (contagem de unidades), sem rótulo. |
 | `backend/integracao_module/service.py` | Orquestração: `montar_revisao` (junta COFFEE + IW28 + plano existente numa revisão só) e `mover_para_plano` (cria ou atualiza o registro no plano do Input a partir de uma nota COFFEE). |
 | `backend/integracao_module/routes.py` | Router FastAPI `/api/integracao/*` — endpoints finos que só validam, chamam `service` e traduzem exceções para status HTTP. |
 

@@ -52,7 +52,7 @@ def test_montar_proposta_sem_local_composto():
 
 def test_montar_nova_nota_manual_vence():
     from integracao_module import mapping
-    nova = mapping.montar_nova_nota(_nota_coffee(), {
+    nova = mapping.montar_nova_nota(_nota_coffee(), None, {
         "Mes_Execucao_Planejado": "ago-2026", "Status_Obra": "Linha Viva",
         "Observacao": "Texto editado pelo usuário", "Check": "OK",
     })
@@ -60,6 +60,45 @@ def test_montar_nova_nota_manual_vence():
     assert nova.Mes_Execucao_Planejado == "ago-2026"
     assert nova.Observacao == "Texto editado pelo usuário"
     assert nova.Check == "OK"
+
+
+def test_planejado_ddpm_conjunto_metrico_converte_para_km():
+    from integracao_module import mapping
+    nota = _nota_coffee(quantidade=1500)
+    iw28 = {"Denom.conjunto": "RDA - EXTENSAO REDE DISTR. AEREA"}
+    proposta = mapping.montar_proposta(nota, iw28)
+    assert proposta["Planejado_DDPM"] == 1.5
+    assert proposta["Planejado_Unidade"] == "Km"
+
+
+def test_planejado_ddpm_conjunto_nao_metrico_fica_unitario():
+    from integracao_module import mapping
+    nota = _nota_coffee(quantidade=3)
+    iw28 = {"Denom.conjunto": "SUBESTACAO - CAPEX"}
+    proposta = mapping.montar_proposta(nota, iw28)
+    assert proposta["Planejado_DDPM"] == 3.0
+    assert proposta["Planejado_Unidade"] is None
+
+
+def test_planejado_ddpm_sem_iw28_fica_unitario_e_avisa():
+    from integracao_module import mapping
+    nota = _nota_coffee(quantidade=1500)
+    proposta = mapping.montar_proposta(nota, None)
+    assert proposta["Planejado_DDPM"] == 1500.0
+    assert proposta["Planejado_Unidade"] is None
+    avisos = mapping.avisos_proposta(nota, None)
+    assert any("IW28" in a for a in avisos)
+
+
+def test_montar_nova_nota_planejado_ddpm_via_iw28():
+    from integracao_module import mapping
+    nota = _nota_coffee(quantidade=2000)
+    iw28 = {"Denom.conjunto": "REDE MULTIPLEXADA BT - CAPEX"}
+    nova = mapping.montar_nova_nota(nota, iw28, {
+        "Mes_Execucao_Planejado": "ago-2026", "Status_Obra": "-",
+        "Observacao": "", "Check": "-",
+    })
+    assert nova.Planejado_DDPM == 2.0
 
 
 @pytest.fixture
