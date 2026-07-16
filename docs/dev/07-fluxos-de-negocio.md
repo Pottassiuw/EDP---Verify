@@ -83,9 +83,10 @@ durante o SP1) está em
 Como a sincronização roda em background e pode ser disparada por
 qualquer sessão, outras abas/usuários não são notificados
 automaticamente — é o polling de 60s em `use-input-data.ts` (ver
-tabela abaixo) que detecta a mudança comparando `ultima_alteracao` e
-marca `desatualizado = true`, deixando a UI avisar o usuário que os
-dados na tela estão obsoletos.
+tabela abaixo) que detecta a mudança comparando `versao`
+(`db.obter_versao_dataset()`, retornada por `GET /sync`) e invalida
+`INPUT_DADOS_KEY` em background, avisando o usuário via `toast.info`
+(ver "Sincronização SAP" em [`03-frontend-input.md`](03-frontend-input.md)).
 
 ## Debounce e polling — tabela consolidada
 
@@ -97,7 +98,7 @@ dados na tela estão obsoletos.
 | 2000ms (2s) | `frontend/src/features/coffee/coffee-pendentes.tsx:87-111` | Polling de status de um job de busca em lote, até `job.estado === "concluido"`. |
 | 3000ms (3s) | `frontend/src/features/coffee/coffee-pendentes.tsx:103` | Banner "Busca concluída" volta ao estado `idle` automaticamente. |
 | 10_000ms (10s) | `frontend/src/features/coffee/coffee-logs.tsx:60` | Refresh automático dos logs quando o toggle "ao vivo" está ligado. |
-| 60_000ms (60s) | `frontend/src/features/input/use-input-data.ts:29-35` | Verifica se a base de dados do Input foi sincronizada em outra sessão (compara `ultima_alteracao`); se sim, marca `desatualizado = true`. |
+| 60_000ms (60s) | `frontend/src/features/input/use-input-data.ts:29-35` | Verifica se a base de dados do Input foi sincronizada em outra sessão (compara `versao`); se sim, invalida `INPUT_DADOS_KEY` em background e avisa via `toast.info`. |
 
 ## Pontos de atenção
 
@@ -124,7 +125,7 @@ dados na tela estão obsoletos.
   regra (por exemplo, um novo status intermediário) precisa ser
   aplicada nos dois pontos manualmente.
 - **Duas fontes de "a base mudou".** A staleness do Input é detectada
-  por polling client-side comparando `ultima_alteracao`
+  por polling client-side comparando `versao`
   (`use-input-data.ts`), enquanto a sincronização em si roda
   server-side via subprocesso RPA sem callback — o frontend não sabe
   quando a extração terminou, só infere pela mudança de timestamp na

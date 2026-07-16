@@ -8,7 +8,7 @@ from typing import Optional
 
 import pandas as pd
 from fastapi import (APIRouter, BackgroundTasks, Depends, File, Header,
-                     HTTPException, Response, UploadFile)
+                     HTTPException, Request, Response, UploadFile)
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -30,9 +30,15 @@ def quem_sou_eu():
 
 
 @router.get("/notas")
-def listar_notas():
+def listar_notas(request: Request, response: Response):
     migracao = garantir_banco()
+    versao = db.obter_versao_dataset()
+    etag = f'W/"{versao}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
     df = engine.get_dataset()
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache"
     return {
         "registros": _df_para_registros(df),
         "meta": {
@@ -42,6 +48,7 @@ def listar_notas():
             "ultima_alteracao": db.obter_data_ultima_alteracao(),
             "migracao": migracao,
             "colunas": config.COLUNAS_PAINEL,
+            "versao": versao,
         },
     }
 
@@ -49,7 +56,10 @@ def listar_notas():
 @router.get("/sync")
 def sync():
     garantir_banco()
-    return {"ultima_alteracao": db.obter_data_ultima_alteracao()}
+    return {
+        "ultima_alteracao": db.obter_data_ultima_alteracao(),
+        "versao": db.obter_versao_dataset(),
+    }
 
 
 @router.get("/logs")

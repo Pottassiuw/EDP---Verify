@@ -37,7 +37,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         .catch(() => setUsuario('sistema'));
     }
   }, []);
-  useSincronizacaoAutomatica(dados?.meta.ultima_alteracao);
+  useSincronizacaoAutomatica(dados?.meta.versao);
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
   return (

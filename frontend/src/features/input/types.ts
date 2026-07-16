@@ -20,6 +20,7 @@ export interface InputMeta {
   ultima_alteracao: string | null;
   migracao: "ja-existe" | "migrado" | "rede-indisponivel";
   colunas: string[];
+  versao: string;
 }
 
 export interface InputDataset {

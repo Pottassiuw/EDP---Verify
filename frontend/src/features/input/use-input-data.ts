@@ -22,14 +22,14 @@ export function useRecarregarInput(): () => Promise<void> {
 }
 
 /** Polling de /sync: quando outro usuário salva, revalida em background e avisa. */
-export function useSincronizacaoAutomatica(ultimaConhecida: string | null | undefined): void {
+export function useSincronizacaoAutomatica(versaoConhecida: string | undefined): void {
   const qc = useQueryClient();
   React.useEffect(() => {
-    if (ultimaConhecida === undefined) return;
+    if (versaoConhecida === undefined) return;
     const id = window.setInterval(() => {
       InputApi.sync()
         .then((s) => {
-          if (s.ultima_alteracao !== (ultimaConhecida ?? null)) {
+          if (s.versao !== versaoConhecida) {
             toast.info('Dados atualizados por outro usuário', {
               description: 'A tabela foi recarregada em segundo plano.',
             });
@@ -39,5 +39,5 @@ export function useSincronizacaoAutomatica(ultimaConhecida: string | null | unde
         .catch(() => { /* backend fora: o erro aparece no fluxo principal */ });
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [ultimaConhecida, qc]);
+  }, [versaoConhecida, qc]);
 }

@@ -539,6 +539,22 @@ def test_get_sync(cliente):
     assert "ultima_alteracao" in r.json()
 
 
+def test_notas_etag_304(banco_temporario):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from input_module.routes import router
+    app = FastAPI(); app.include_router(router)
+    client = TestClient(app)
+    r1 = client.get("/api/input/notas")
+    assert r1.status_code == 200
+    etag = r1.headers["etag"]
+    assert r1.json()["meta"]["versao"]
+    r2 = client.get("/api/input/notas", headers={"If-None-Match": etag})
+    assert r2.status_code == 304
+    r3 = client.get("/api/input/sync")
+    assert "versao" in r3.json()
+
+
 def test_get_logs_e_timeline(cliente):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(2000)]))

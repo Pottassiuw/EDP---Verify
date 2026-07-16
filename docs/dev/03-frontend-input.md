@@ -136,13 +136,27 @@ Como a sincronização roda em background e pode ser disparada por
 qualquer sessão, `use-input-data.ts:25-43` mantém um polling próprio
 para detectar quando os dados mudaram em outro lugar: a cada `60_000ms`
 (`window.setInterval(..., 60_000)`), `useSincronizacaoAutomatica` chama
-`InputApi.sync()` e compara `s.ultima_alteracao` com o valor conhecido;
-se mudou, dispara um `toast.info` avisando o usuário e invalida
-`INPUT_DADOS_KEY` (`qc.invalidateQueries`) — a tabela é revalidada em
-segundo plano automaticamente, sem exigir clique. Isso substituiu o
-antigo `useAvisoSincronizacao`, que só marcava um flag `desatualizado`
-e dependia de um banner com botão "Recarregar dados"
-(`useRecarregarInput`) para o usuário buscar os dados novos manualmente.
+`InputApi.sync()` e compara `s.versao` (`db.obter_versao_dataset()`,
+Tarefa 13) com o valor conhecido (`dados?.meta.versao`, passado por
+`input-section.tsx`); se mudou, dispara um `toast.info` avisando o
+usuário e invalida `INPUT_DADOS_KEY` (`qc.invalidateQueries`) — a
+tabela é revalidada em segundo plano automaticamente, sem exigir
+clique. A Tarefa 15 trocou a comparação de `ultima_alteracao` para
+`versao`: como `service.criar_notas` não passa por `log_alteracoes`
+(ver `06-backend-input-module.md`), criações de nota não mudavam
+`ultima_alteracao` e não eram detectadas pelo polling; `versao` cobre
+também o `COUNT(*)` de notas, então criações agora disparam o aviso.
+Isso substituiu o antigo `useAvisoSincronizacao`, que só marcava um
+flag `desatualizado` e dependia de um banner com botão "Recarregar
+dados" (`useRecarregarInput`) para o usuário buscar os dados novos
+manualmente.
+
+`GET /notas` (`InputApi.dados`) também usa essa versão como `ETag`
+HTTP (`W/"<versao>"`, `Cache-Control: no-cache`) — o navegador cuida
+sozinho da revalidação condicional (`If-None-Match`) a cada `fetch`,
+sem nenhum código extra no cliente: se a versão não mudou, o backend
+responde `304` e o corpo vem do cache HTTP local em vez de trafegar o
+dataset inteiro de novo.
 
 `INPUT_DADOS_KEY` (`use-input-data.ts:6`) é a `queryKey` de
 `useInputData`, exportada para que qualquer código fora do hook — o
@@ -169,7 +183,7 @@ o Input em si não guarda essa informação.
 
 | Valor | Onde | O que faz |
 |---|---|---|
-| `60_000ms` | `use-input-data.ts:29` | Polling de `InputApi.sync()` (`useSincronizacaoAutomatica`); compara `ultima_alteracao` com o valor conhecido e, se mudou, avisa via `toast.info` e invalida `INPUT_DADOS_KEY` em background. |
+| `60_000ms` | `use-input-data.ts:29` | Polling de `InputApi.sync()` (`useSincronizacaoAutomatica`); compara `versao` com o valor conhecido e, se mudou, avisa via `toast.info` e invalida `INPUT_DADOS_KEY` em background. |
 | `300_000ms` | `use-input-data.ts:12` | `staleTime` da query `useInputData` (React Query): por 5 minutos os dados carregados são considerados "frescos" e não disparam refetch automático em background (o default global de 60s do `QueryClient`, ver `04-frontend-shared.md`, não se aplica aqui). |
 | `300_000ms` | `use-ramal-data.ts:8` | `staleTime` da query `useRamalData`, mesmo racional do `useInputData` acima — dataset separado (base "Ramal"), mesma cadência de frescor. |
 

@@ -165,8 +165,8 @@ como rede de segurança para esse caso.
 
 É consumida pelo cache de `engine.get_dataset()` (Tarefa 14 —
 revalida sozinho quando a versão muda, em vez de depender só do TTL)
-e, futuramente, pelo `ETag` de `GET /notas` (ver tarefas seguintes do
-plano de performance).
+e pelo `ETag` de `GET /notas` e pelo `versao` de `GET /sync` (Tarefa
+15 — ver "routes.py" abaixo).
 
 ## iw28.py — contrato de leitura
 
@@ -220,8 +220,8 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 
 | Rota | O que faz |
 |---|---|
-| `GET /notas` | Lista o dataset enriquecido (`engine.get_dataset()`) + metadados (opções de status/prioridade, status das bases, última alteração, colunas do painel). |
-| `GET /sync` | Retorna só `ultima_alteracao`, usado para polling leve. |
+| `GET /notas` | Lista o dataset enriquecido (`engine.get_dataset()`) + metadados (opções de status/prioridade, status das bases, última alteração, colunas do painel, `versao`). Responde `ETag: W/"<versao>"` (`db.obter_versao_dataset()`) e `Cache-Control: no-cache`; se `If-None-Match` bater com o ETag atual, devolve `304` sem chamar `engine.get_dataset()` — o navegador serve o corpo do cache HTTP local ao `fetch`, sem re-enviar o dataset pela rede. |
+| `GET /sync` | Retorna `ultima_alteracao` e `versao` (`db.obter_versao_dataset()`), usado para polling leve — o frontend compara `versao` a cada 60s para saber se precisa revalidar (ver `03-frontend-input.md`). |
 | `GET /logs`, `GET /logs/arquivos`, `GET /logs/nota/{numero}` | Log de alterações e de substituição de arquivos. |
 | `PATCH /notas` | Edição parcial (`db.aplicar_edicoes`), com diff campo a campo e log; exige header `X-User`. |
 | `POST /notas`, `POST /notas/bulk` | Criação de notas (unitária/lote), validando duplicatas contra o lote e contra o banco. |
