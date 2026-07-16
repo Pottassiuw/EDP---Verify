@@ -18,6 +18,15 @@ def data_dir() -> Path:
     )
 
 
+def caminho_sap_robot() -> Path:
+    """Script do robô SAP — vive em backend/Sap_Robot.py, não numa pasta de rede."""
+    return Path(
+        os.environ.get(
+            "SAP_ROBOT_PATH", str(Path(__file__).resolve().parent.parent / "Sap_Robot.py")
+        )
+    )
+
+
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
 REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"

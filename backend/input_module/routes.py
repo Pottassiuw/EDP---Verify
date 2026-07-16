@@ -260,7 +260,7 @@ def _rotina_sap_background():
     import os
     try:
         # Chama o robô SAP forçando UTF-8 para evitar crash com emojis no print
-        script_path = str(config.data_dir().parent.parent.parent / "INPUT SQL" / "Sap_Robot.py")
+        script_path = str(config.caminho_sap_robot())
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         env["INPUT_DB_PATH"] = db.obter_caminho_banco()
