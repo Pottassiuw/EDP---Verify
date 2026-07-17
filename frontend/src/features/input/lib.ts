@@ -53,7 +53,13 @@ export function aplicarFiltros(registros: NotaInput[], filtros: Filtro[]): NotaI
   return registros.filter((r) => ativos.every((f) => {
     const bruto = r[f.campo];
     if (f.tipo === 'texto') {
-      return String(bruto ?? '').toUpperCase().includes((f.texto ?? '').trim().toUpperCase());
+      const valStr = String(bruto ?? '').toUpperCase();
+      const query = (f.texto ?? '').trim().toUpperCase();
+      if (query.startsWith('*') && query.endsWith('*') && query.length > 2) {
+        const exclude = query.slice(1, -1);
+        return !valStr.includes(exclude);
+      }
+      return valStr.includes(query);
     }
     if (f.tipo === 'multi') {
       return (f.valores ?? []).includes(String(bruto ?? ''));

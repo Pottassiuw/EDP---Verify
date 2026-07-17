@@ -18,6 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { SegTabs, Banner } from '@/components/branded/section';
+import { ConfirmModal } from '../coffee/confirm-modal';
 
 type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 
@@ -128,9 +129,15 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
     });
   };
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+
   const excluirSelecionadas = (): void => {
     if (selecionados.size === 0) { setMsg({ tipo: 'erro', texto: 'Nenhuma nota selecionada.' }); return; }
-    if (!window.confirm(`Excluir ${selecionados.size} nota(s) ramal do banco?`)) return;
+    setConfirmDeleteOpen(true);
+  };
+
+  const confirmarExcluir = (): void => {
+    setConfirmDeleteOpen(false);
     void executar(`${selecionados.size} nota(s) ramal excluída(s).`, async () => {
       await InputApi.excluirRamal([...selecionados]);
       setSelecionados(new Set());
@@ -352,6 +359,16 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
           onSalvar={salvarColagem} />
       )}
 
+      <ConfirmModal
+        open={confirmDeleteOpen}
+        title="Excluir ramais selecionados?"
+        message={`Deseja realmente excluir ${selecionados.size} nota(s) ramal do banco de dados? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        tone="danger"
+        requireJustification={false}
+        onConfirm={confirmarExcluir}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </div>
   );
 }

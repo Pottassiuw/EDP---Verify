@@ -13,7 +13,7 @@ import { Logs } from './logs';
 import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
 import { SegTabs } from '@/components/branded/section';
-import { FILTROS_INICIAIS, type FiltersState } from './filters';
+import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 
 export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
@@ -33,8 +33,29 @@ interface InputSectionProps {
 export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
-  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(FILTROS_INICIAIS);
+  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
+    try {
+      const salvas = localStorage.getItem('input_estado_filtros');
+      if (salvas) {
+        const parsed = JSON.parse(salvas);
+        if (typeof parsed.busca === 'string' && typeof parsed.somente2026 === 'boolean' && Array.isArray(parsed.filtros)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      // Silencia
+    }
+    return FILTROS_INICIAIS;
+  });
   const { sincronizando } = useNetworkSync();
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('input_estado_filtros', JSON.stringify(estadoFiltros));
+    } catch (e) {
+      // Silencia
+    }
+  }, [estadoFiltros]);
 
   React.useEffect(() => {
     if (!getUsuario()) {
@@ -71,6 +92,12 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       </div>
 
+      {dados && (sub === 'visao' || sub === 'gerenciar') && (
+        <div className="shrink-0 bg-surface border-b-[1px] border-b-line px-[22px] py-[12px]">
+          <Filters registros={dados.registros} estado={estadoFiltros} setEstado={setEstadoFiltros} />
+        </div>
+      )}
+
       {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
         <div className="py-[8px] px-[18px] bg-tint-amber text-[13px]">
           Importação inicial pendente: a rede da EDP estava indisponível.{' '}
@@ -94,8 +121,8 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       )}
 
-      {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} setEstado={setEstadoFiltros} />}
-      {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} setEstadoFiltros={setEstadoFiltros} />}
+      {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
+      {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
       {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} />}
       {dados && sub === 'rateio' && <Rateio dados={dados} recarregar={recarregar} />}
       {dados && sub === 'relatorios' && <Reports dados={dados} />}

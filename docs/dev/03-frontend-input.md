@@ -14,12 +14,12 @@ enquanto o usuário está com a tela aberta.
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `frontend/src/features/input/input-section.tsx` | Casca da feature: cabeçalho, `SegTabs` das sub-abas (`INPUT_SUBS`), banners de aviso (dados desatualizados, importação inicial pendente, bases ausentes) e roteamento condicional para o componente de cada sub-aba. |
-| `frontend/src/features/input/overview.tsx` | Sub-aba "Visão Geral": busca global + `Filters`, `DataGrid` somente-leitura, botões "Sincronizar SAP" e "Exportar Excel", status de vínculos automáticos (`useAutoVinculos`) e o `HierarquiaCard`. |
+| `frontend/src/features/input/input-section.tsx` | Casca da feature: cabeçalho, `SegTabs` das sub-abas (`INPUT_SUBS`), banners de aviso (dados desatualizados, importação inicial pendente, bases ausentes), roteamento condicional para o componente de cada sub-aba e renderização do bloco unificado de filtros avançados no topo para as sub-abas de Visão Geral e Gerenciar. |
+| `frontend/src/features/input/overview.tsx` | Sub-aba "Visão Geral": DataGrid somente-leitura, botões "Sincronizar SAP" e "Exportar Excel", status de vínculos automáticos (`useAutoVinculos`) e o `HierarquiaCard`. |
 | `frontend/src/features/input/manage.tsx` | Sub-aba "Gerenciar": cinco modos (Edição Rápida, Edição em Lote, Exclusão, Cadastrar Nota, Colar Planilha) sobre a base principal, cada um operando via `NotesTable`. |
 | `frontend/src/features/input/ramal.tsx` | Equivalente a `manage.tsx` para a base "Ramal" (dataset separado, `useRamalData`), com um modo "Visão Geral" a mais (via `DataGrid`). |
-| `frontend/src/features/input/filters.tsx` | Componente `Filters`: busca global por número de nota + filtros avançados por campo (texto, faixa numérica, multi-seleção), reaproveitado por `overview.tsx` e `manage.tsx`. |
-| `frontend/src/features/input/reports.tsx` | Sub-aba "Relatórios": auditoria de prazo (DDPM vs SAP) com filtros rápidos, filtros por ano/status/regional, KPIs (`StatTile`) e um gráfico de rosca (SVG desenhado à mão). |
+| `frontend/src/features/input/filters.tsx` | Componente `Filters`: busca global por número de nota, switch rápido para o ano de 2026 e filtros avançados por campo (texto, faixa numérica, multi-seleção), unificado no nível de `input-section.tsx` e compartilhado entre as abas. |
+| `frontend/src/features/input/reports.tsx` | Sub-aba "Relatórios" (Painel Executivo): Permite navegar entre três relatórios interativos: "Auditoria de Prazos" (KPIs, cronograma, gráfico de rosca SVG), "Visão Financeira (Custos)" (totais, regional e status em barras de progresso) e "Em Planejamento (Status 10)" (backlog de planejamento, priorização e distribuição regional). Todos usam filtros avançados via `MultiSelect` e exportação customizada para Excel. |
 | `frontend/src/features/input/logs.tsx` | Sub-aba "Logs": três sub-abas (Alterações nas Notas, Bases de Apoio, Linha do Tempo), cada uma consumindo um endpoint próprio via `useQuery`. |
 | `frontend/src/features/input/settings.tsx` | Sub-aba "Configurações": nome do usuário (log de auditoria), responsáveis por conjunto, status/substituição das bases de apoio, lista de backups locais para download. |
 | `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. |
@@ -102,26 +102,17 @@ chama a API diretamente.
 
 ## Fluxo: Filtros (filters.tsx)
 
-O `Select` "+ Adicionar campo de filtro…" (`filters.tsx:84-105`) não
-recebe `value` — ele é não controlado do ponto de vista do React. O
-efeito de "voltar para vazio depois de cada escolha" não vem de um
-reset explícito: `camposDisponiveis` (`filters.tsx:48-52`) filtra do
-`SelectContent` qualquer campo que já esteja em `estado.filtros`, e
-`onValueChange` (`filters.tsx:85-93`) adiciona o campo escolhido a
-`estado.filtros` imediatamente. Como o campo recém-escolhido some da
-lista de `SelectItem` no próximo render, o `SelectValue` interno do
-Radix não encontra mais um item correspondente ao valor selecionado e
-volta a exibir o `placeholder` — visualmente idêntico a um reset, mas
-é consequência da lista de opções encolher, não de um `setState`
-que zera o campo.
+O `Select` "+ Adicionar campo de filtro…" (`filters.tsx`) não recebe `value` — ele é não controlado do ponto de vista do React. O efeito de "voltar para vazio depois de cada escolha" não vem de um reset explícito: `camposDisponiveis` filtra do `SelectContent` qualquer campo que já esteja em `estado.filtros`, e `onValueChange` adiciona o campo escolhido a `estado.filtros` imediatamente. Como o campo recém-escolhido some da lista de `SelectItem` no próximo render, o `SelectValue` interno do Radix não encontra mais um item correspondente ao valor selecionado e volta a exibir o `placeholder`.
 
-Cada filtro adicionado renderiza um controle conforme o tipo
-(`tipoDoCampo`, `filters.tsx:36-40`): campo de texto livre (`"texto"`,
-`filters.tsx:114-124`), faixa numérica mín/máx (`"faixa"`,
-`filters.tsx:125-158`) ou `<select multiple>` nativo com os valores
-únicos da coluna (`"multi"`, `filters.tsx:159-180`). O botão "🧹
-Limpar" (`filters.tsx:74-79`) zera busca e filtros de uma vez; esse
-sim é um reset explícito via `setEstado`.
+Cada filtro adicionado renderiza um controle conforme o tipo (`tipoDoCampo`):
+* Campo de texto livre (`"texto"`): Permite busca parcial ou busca negativa (se digitado entre asteriscos, ex: `*termo*`, o motor de filtragem em `lib.ts` reverte a lógica para ocultar os registros que contêm o termo).
+* Faixa numérica mín/máx (`"faixa"`).
+* Dropdown múltiplo customizado (`"multi"`): Implementado como um combobox (`MultiSelect`) premium que oferece:
+  * Caixa de pesquisa com suporte a negação via asteriscos (`*termo*`).
+  * Opções de **"Selecionar tudo"** (aplica-se aos itens visíveis de acordo com a pesquisa atual) e **"Limpar filtro"**.
+  * Checkboxes e contador dinâmico de itens ativos.
+
+O botão de limpar filtros zera a busca global, o seletor "Planejado 2026" e os filtros avançados ativos de uma só vez.
 
 ## Sincronização SAP
 

@@ -21,6 +21,7 @@ export interface InputMeta {
   migracao: "ja-existe" | "migrado" | "rede-indisponivel";
   colunas: string[];
   versao: string;
+  sincronizando?: boolean;
 }
 
 export interface InputDataset {

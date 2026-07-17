@@ -14,9 +14,9 @@ interface RateioProps {
   recarregar: () => Promise<void>;
 }
 
-function ehNotaAtiva(status: string | null | undefined): boolean {
-  if (!status) return false;
-  const stUpper = status.trim().toUpperCase();
+function ehNotaAtiva(status: string | number | null | undefined): boolean {
+  if (status === null || status === undefined) return false;
+  const stUpper = String(status).trim().toUpperCase();
   const blacklist = ["ENCE CANC", "SUPR CANC", "ENCE EXEC", "SUPR", "999", "998", "997", "55", "99"];
   if (blacklist.includes(stUpper)) return false;
   if (stUpper.startsWith("55") || stUpper.startsWith("99")) return false;
@@ -81,7 +81,7 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
 
   const dfComMae = React.useMemo(() => {
     return ativas
-      .map((r) => ({ ...r, Nota_Mae_Limpa: limparNotaMae(r.Nota_Mae) }))
+      .map((r): NotaInput & { Nota_Mae_Limpa: string } => ({ ...r, Nota_Mae_Limpa: limparNotaMae(r['Nota_Mae']) }))
       .filter((r) => ehNotaMaeValida(r.Nota_Mae_Limpa) && r.Nota_Mae_Limpa !== '');
   }, [ativas]);
 
@@ -108,10 +108,10 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
 
     uniqueMaes.forEach((maeId) => {
       const maeRow = dados.registros.find((r) => String(r.Numero_Nota) === maeId);
-      const maeDiv = maeRow?.Medida_vs_Planejado === 'Não';
+      const maeDiv = maeRow?.['Medida_vs_Planejado'] === 'Não';
 
       const filhas = ativasComMae.filter((r) => r.Nota_Mae_Limpa === maeId);
-      const filhasDiv = filhas.some((r) => r.Medida_vs_Planejado === 'Não');
+      const filhasDiv = filhas.some((r) => r['Medida_vs_Planejado'] === 'Não');
 
       if (maeDiv || filhasDiv) {
         maes.add(maeId);
@@ -132,10 +132,10 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
     const filhas = ativasComMae.filter((r) => r.Nota_Mae_Limpa === maeSelecionada);
     const initial: Record<number, number> = {};
     if (maeRow) {
-      initial[maeRow.Numero_Nota] = Number(maeRow.Planejado_DDPM ?? 0);
+      initial[maeRow.Numero_Nota] = Number(maeRow['Planejado_DDPM'] ?? 0);
     }
     filhas.forEach((f) => {
-      initial[f.Numero_Nota] = Number(f.Planejado_DDPM ?? 0);
+      initial[f.Numero_Nota] = Number(f['Planejado_DDPM'] ?? 0);
     });
     setNovasMedidasHier(initial);
     setRelatorio(null);
@@ -152,17 +152,17 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
 
   const undMae = React.useMemo(() => {
     if (!maeRowDetails) return 'km';
-    const [, und] = extrairValorUnidadeMedida(maeRowDetails.Medida_SAP);
+    const [, und] = extrairValorUnidadeMedida(maeRowDetails['Medida_SAP'] as string);
     if (und) return und;
-    const valMae = Number(maeRowDetails.Planejado_DDPM ?? 0.0);
+    const valMae = Number(maeRowDetails['Planejado_DDPM'] ?? 0.0);
     return Number.isInteger(valMae) && valMae <= 50 ? 'un' : 'km';
   }, [maeRowDetails]);
 
   // Metrics for Hierarchical Rateio
   const valMaeTarget = React.useMemo(() => {
     if (!maeRowDetails) return 0;
-    const valMae = Number(maeRowDetails.Planejado_DDPM ?? 0.0);
-    const valPlanFilhas = filhasDaMae.reduce((acc, f) => acc + Number(f.Planejado_DDPM ?? 0.0), 0);
+    const valMae = Number(maeRowDetails['Planejado_DDPM'] ?? 0.0);
+    const valPlanFilhas = filhasDaMae.reduce((acc, f) => acc + Number(f['Planejado_DDPM'] ?? 0.0), 0);
     return valMae + valPlanFilhas;
   }, [maeRowDetails, filhasDaMae]);
 
@@ -182,7 +182,7 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
 
   // --- STATE FOR INDIVIDUAL TAB ---
   const dfDivergentes = React.useMemo(() => {
-    return dados.registros.filter((r) => r.Medida_vs_Planejado === 'Não' && ehNotaAtiva(r.Status_Nota));
+    return dados.registros.filter((r) => r['Medida_vs_Planejado'] === 'Não' && ehNotaAtiva(r['Status_Nota']));
   }, [dados.registros]);
 
   const [selecionadasInd, setSelecionadasInd] = React.useState<Set<number>>(new Set());
@@ -197,12 +197,12 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
 
     dfDivergentes.forEach((r) => {
       sel.add(r.Numero_Nota);
-      measures[r.Numero_Nota] = Number(r.Planejado_DDPM ?? 0);
-      const [, und] = extrairValorUnidadeMedida(r.Medida_SAP);
+      measures[r.Numero_Nota] = Number(r['Planejado_DDPM'] ?? 0);
+      const [, und] = extrairValorUnidadeMedida(r['Medida_SAP'] as string);
       if (und) {
         units[r.Numero_Nota] = und;
       } else {
-        const valPlan = Number(r.Planejado_DDPM ?? 0.0);
+        const valPlan = Number(r['Planejado_DDPM'] ?? 0.0);
         units[r.Numero_Nota] = Number.isInteger(valPlan) && valPlan <= 50 ? 'un' : 'km';
       }
     });
@@ -460,10 +460,10 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
                           <tr key={f.Numero_Nota} className="border-b border-b-line hover:bg-surface-2">
                             <td className="py-[10px] px-[12px] text-text-mute">FILHA</td>
                             <td className="py-[10px] px-[12px] edp-mono">{f.Numero_Nota}</td>
-                            <td className="py-[10px] px-[12px] edp-mono">{f.Local_Instalacao}</td>
-                            <td className="py-[10px] px-[12px] text-right">{f.Planejado_DDPM}</td>
-                            <td className="py-[10px] px-[12px]">{f.Medida_SAP}</td>
-                            <td className="py-[10px] px-[12px] text-center">{f.Medida_vs_Planejado}</td>
+                            <td className="py-[10px] px-[12px] edp-mono">{f['Local_Instalacao']}</td>
+                            <td className="py-[10px] px-[12px] text-right">{f['Planejado_DDPM']}</td>
+                            <td className="py-[10px] px-[12px]">{f['Medida_SAP']}</td>
+                            <td className="py-[10px] px-[12px] text-center">{f['Medida_vs_Planejado']}</td>
                             <td className="py-[8px] px-[12px]">
                               <Input
                                 type="number"
@@ -542,7 +542,7 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
                         </Label>
                       </div>
                       <Button
-                        variant="primary"
+                        variant="default"
                         onClick={executarNoSap}
                         disabled={loadingRobot || (!somaFechada && !forcarValidacao) || (undMae === 'un' && !unidadeCorreta)}
                         className="ml-auto"
@@ -656,7 +656,7 @@ export function Rateio({ dados, recarregar }: RateioProps): React.JSX.Element {
                     Selecionadas para envio: <strong>{selecionadasInd.size}</strong> nota(s)
                   </span>
                   <Button
-                    variant="primary"
+                    variant="default"
                     onClick={executarNoSap}
                     disabled={loadingRobot || selecionadasInd.size === 0 || !individualValido}
                   >

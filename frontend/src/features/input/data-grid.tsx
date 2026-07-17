@@ -138,8 +138,25 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const scrollRef = React.useRef<{ left: number; top: number } | null>(null);
 
+  // Calcula a altura ideal do grid dinamicamente baseada nas linhas
+  // para evitar que a barra de rolagem horizontal sobreponha as células se houverem poucos registros.
+  const gridHeight = React.useMemo(() => {
+    if (registros.length === 0) return 100;
+    // 35px header + 32px por linha + 18px margem da scrollbar
+    const calculada = registros.length * 32 + 35 + 18;
+    return Math.max(160, Math.min(altura, calculada));
+  }, [registros.length, altura]);
+
   const alternar = React.useCallback((campo: string) => {
-    setOrdem((o) => (o && o.campo === campo ? { campo, asc: !o.asc } : { campo, asc: true }));
+    const cont = wrapRef.current?.querySelector(".dsg-container") as HTMLElement | null;
+    scrollRef.current = cont ? { left: cont.scrollLeft, top: cont.scrollTop } : null;
+
+    setOrdem((o) => {
+      if (!o || o.campo !== campo) return { campo, asc: true };
+      if (o.asc) return { campo, asc: false };
+      return null;
+    });
+    setRemontar((n) => n + 1);
   }, []);
 
   const onResizeDrag = React.useCallback((clientX: number) => {
@@ -218,7 +235,7 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
         value={ordenados}
         onChange={() => { /* read-only: todas as colunas disabled */ }}
         columns={cols}
-        height={altura}
+        height={gridHeight}
         rowHeight={ALTURA_LINHA}
         lockRows
         disableContextMenu

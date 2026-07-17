@@ -102,7 +102,11 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
       <TableHead
         key={c.key}
         onClick={() =>
-          setOrdem({ campo: c.key, asc: ativa ? !ordem!.asc : true })
+          setOrdem((o) => {
+            if (!o || o.campo !== c.key) return { campo: c.key, asc: true };
+            if (o.asc) return { campo: c.key, asc: false };
+            return null;
+          })
         }
         className={`${HEADER_STICKY_CLASS} cursor-pointer whitespace-nowrap font-mono text-[10px] font-medium tracking-[0.14em] uppercase`}
         style={{
