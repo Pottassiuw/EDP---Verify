@@ -1,21 +1,25 @@
-﻿import React from 'react';
+import React from 'react';
 import type { AbaInput } from './types';
 import { toast } from 'sonner';
 import { getUsuario, setUsuario, InputApi } from './api';
-import { useSincronizacaoAutomatica, useInputData, useRecarregarInput } from './use-input-data';
+import { useSincronizacaoAutomatica, useInputData, useRecarregarInput, useNetworkSync } from './use-input-data';
+import { Loader2 } from 'lucide-react';
 import { Overview } from './overview';
 import { Manage } from './manage';
 import { Ramal } from './ramal';
+import { Rateio } from './rateio';
 import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
 import { SegTabs } from '@/components/branded/section';
+import { FILTROS_INICIAIS, type FiltersState } from './filters';
 
 export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
   { id: 'gerenciar', rotulo: 'Gerenciar' },
   { id: 'ramal', rotulo: 'Ramal' },
+  { id: 'rateio', rotulo: 'Rateio' },
   { id: 'relatorios', rotulo: 'Relatórios' },
   { id: 'logs', rotulo: 'Logs' },
   { id: 'config', rotulo: 'Configurações' },
@@ -29,6 +33,8 @@ interface InputSectionProps {
 export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
+  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(FILTROS_INICIAIS);
+  const { sincronizando } = useNetworkSync();
 
   React.useEffect(() => {
     if (!getUsuario()) {
@@ -43,9 +49,22 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
   return (
     <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden">
       <div className="shrink-0 bg-surface border-b-[1px] border-b-line">
-        <div className="pt-[13px] px-[22px] pb-[11px] flex flex-col gap-[2px]">
-          <span className="edp-eyebrow">Módulo Input</span>
-          <strong className="edp-title text-[16px]">Gestão de Notas</strong>
+        <div className="pt-[13px] px-[22px] pb-[11px] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-[2px]">
+            <span className="edp-eyebrow">Módulo Input</span>
+            <strong className="edp-title text-[16px]">Gestão de Notas</strong>
+          </div>
+          {sincronizando ? (
+            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-amber-500/10 border border-amber-500/30 text-amber text-[12px] font-medium animate-pulse">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
+              <span>Sincronizando com a rede... (Não feche)</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[12px] font-medium">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Sincronizado com a rede</span>
+            </div>
+          )}
         </div>
         <div className="py-[0px] px-[22px] border-t-[1px] border-t-line">
           <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
@@ -75,9 +94,10 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       )}
 
-      {dados && sub === 'visao' && <Overview dados={dados} />}
-      {dados && sub === 'gerenciar' && <Manage dados={dados} />}
+      {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} setEstado={setEstadoFiltros} />}
+      {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} setEstadoFiltros={setEstadoFiltros} />}
       {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} />}
+      {dados && sub === 'rateio' && <Rateio dados={dados} recarregar={recarregar} />}
       {dados && sub === 'relatorios' && <Reports dados={dados} />}
       {dados && sub === 'logs' && <Logs />}
       {dados && sub === 'config' && <Settings dados={dados} />}

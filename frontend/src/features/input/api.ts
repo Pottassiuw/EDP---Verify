@@ -38,7 +38,7 @@ function escrita(method: string, corpo?: unknown): RequestInit {
 export const InputApi = {
   me: () => req<{ usuario: string }>('/me'),
   dados: () => req<InputDataset>('/notas'),
-  sync: () => req<{ ultima_alteracao: string | null; versao: string }>('/sync'),
+  sync: () => req<{ ultima_alteracao: string | null; versao: string; sincronizando?: boolean }>('/sync'),
 
   editar: (linhas: Partial<NotaInput>[]) =>
     req<EdicaoResultado>('/notas', escrita('PATCH', { linhas })),
@@ -86,6 +86,16 @@ export const InputApi = {
     req<{ atualizadas: number }>('/hierarquia', escrita('POST', { dados })),
   obterHierarquia: (numero: number) =>
     req<HierarquiaInfo>(`/hierarquia/${numero}`),
+
+  executarRateio: (
+    correcoes: Array<{ nota: number; quantidade: number; unidade: string }>,
+    login_sap?: string,
+    senha_sap?: string,
+    modo_teste?: boolean,
+  ) =>
+    req<{
+      relatorio: Array<{ Nota: number; Status: 'OK' | 'ERRO' | 'TESTE'; Mensagem: string }>;
+    }>('/rateio/executar', escrita('POST', { correcoes, login_sap, senha_sap, modo_teste })),
 
   exportar: async (numeros: number[], colunas: string[]): Promise<Blob> => {
     const r = await fetch(`${base()}/input/export`, {

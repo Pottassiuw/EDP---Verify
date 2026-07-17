@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
@@ -20,8 +20,13 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
   return aplicarFiltros(resultado, estado.filtros);
 }
 
-export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element {
-  const [estado, setEstado] = React.useState<FiltersState>(FILTROS_INICIAIS);
+interface OverviewProps {
+  dados: InputDataset;
+  estado: FiltersState;
+  setEstado: React.Dispatch<React.SetStateAction<FiltersState>>;
+}
+
+export function Overview({ dados, estado, setEstado }: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);

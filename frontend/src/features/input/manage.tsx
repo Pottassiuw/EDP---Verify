@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import type { Celula, InputDataset, NotaInput } from './types';
 import { InputApi } from './api';
 import { toast } from 'sonner';
@@ -38,10 +39,15 @@ const NOTA_VAZIA: Record<string, string> = {
   Data_Envio_Projeto: new Date().toLocaleDateString('pt-BR'), Observacao: '', Check: '-',
 };
 
-export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
+interface ManageProps {
+  dados: InputDataset;
+  estadoFiltros: FiltersState;
+  setEstadoFiltros: React.Dispatch<React.SetStateAction<FiltersState>>;
+}
+
+export function Manage({ dados, estadoFiltros, setEstadoFiltros }: ManageProps): React.JSX.Element {
   const recarregar = useRecarregarInput();
   const [modo, setModo] = React.useState<Modo>('rapida');
-  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(FILTROS_INICIAIS);
   const [edicoes, setEdicoes] = React.useState<Map<number, Partial<NotaInput>>>(new Map());
   const [selecionados, setSelecionados] = React.useState<Set<number>>(new Set());
   const [msg, setMsg] = React.useState<Mensagem | null>(null);
@@ -214,6 +220,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                                      valorNeutro="" rotuloNeutro="Mês: (manter atual)"
                                      className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
+                    {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
                 </div>
@@ -228,7 +235,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
                   </span>
                   <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
-                    🗑 Excluir selecionadas
+                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '🗑 '}
+                    Excluir selecionadas
                   </Button>
                 </div>
               </CardContent>
@@ -242,7 +250,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
                   </span>
                   <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
-                    💾 Salvar edições
+                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
+                    Salvar edições
                   </Button>
                   <Button variant="ghost" size="sm" disabled={edicoes.size === 0}
                           onClick={() => setEdicoes(new Map())}>❌ Descartar</Button>
@@ -298,7 +307,10 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
               ))}
             </div>
             <div className="mt-[16px]">
-              <Button disabled={salvando} onClick={cadastrar}>💾 Salvar nova nota</Button>
+              <Button disabled={salvando} onClick={cadastrar}>
+                {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
+                Salvar nova nota
+              </Button>
             </div>
           </CardContent>
         </Card>

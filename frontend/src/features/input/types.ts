@@ -86,4 +86,4 @@ export interface HierarquiaInfo {
   filhas: Array<{ Numero_Nota: number; Status_Nota: string; Conjunto: string }>;
 }
 
-export type AbaInput = "visao" | "gerenciar" | "relatorios" | "logs" | "config" | "ramal";
+export type AbaInput = 'visao' | 'gerenciar' | 'ramal' | 'rateio' | 'relatorios' | 'logs' | 'config';

@@ -1,5 +1,6 @@
 # region Chapter 1. IMPORTS & CONSTANTS
 import os
+import sys
 import time
 import pandas as pd
 import subprocess
@@ -9,7 +10,18 @@ import gc
 import json
 import sqlite3
 
-from config import CAMINHO_PASTA_SQL, CAMINHO_EXPORT_NOTAS, CAMINHO_EXPORT_ORDEM, CAMINHO_EXPORT_MEDIDAS, CAMINHO_DB
+# Adiciona o diretório atual ao path para garantir resolução do input_module
+caminho_dir = os.path.dirname(os.path.abspath(__file__))
+if caminho_dir not in sys.path:
+    sys.path.append(caminho_dir)
+
+from input_module.config import (
+    REDE_INPUT_SQL as CAMINHO_PASTA_SQL,
+    CAMINHO_BASE_IW28 as CAMINHO_EXPORT_NOTAS,
+    CAMINHO_CUSTO_ORD_IW38 as CAMINHO_EXPORT_ORDEM,
+    CAMINHO_BASE_IW66 as CAMINHO_EXPORT_MEDIDAS,
+    REDE_DB_ORIGEM as CAMINHO_DB
+)
 
 # Nomes de Arquivos
 ARQUIVO_NOME_IW28 = os.path.basename(CAMINHO_EXPORT_NOTAS)

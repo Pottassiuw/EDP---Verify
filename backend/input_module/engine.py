@@ -30,6 +30,76 @@ meses_pt_rev = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "maio": 5, "jun": 6,
                 "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
 
 
+def normalizar_prioridade_sap(val):
+    if pd.isna(val) or str(val).strip() in ["", "-", "nan", "None"]:
+        return None
+    val_str = str(val).strip().lower()
+    
+    import unicodedata
+    val_str = ''.join(c for c in unicodedata.normalize('NFD', val_str) if unicodedata.category(c) != 'Mn')
+    
+    if val_str.startswith("1"): return "Emergente"
+    if val_str.startswith("2"): return "Urgente"
+    if val_str.startswith("3"): return "Importante"
+    if val_str.startswith("4"): return "Prioritário"
+    if val_str.startswith("5"): return "Programável"
+    if val_str.startswith("6"): return "Informativo"
+    
+    if "emerg" in val_str: return "Emergente"
+    if "urg" in val_str: return "Urgente"
+    if "imp" in val_str: return "Importante"
+    if "prio" in val_str: return "Prioritário"
+    if "prog" in val_str: return "Programável"
+    if "info" in val_str: return "Informativo"
+    if "prot" in val_str: return "Protheus"
+    if "proj" in val_str: return "Nota Projetos"
+    
+    return None
+
+
+def normalizar_status_sap(val):
+    if pd.isna(val) or str(val).strip() in ["", "-", "nan", "None", "Fora SAP", "Pendente Extração SAP", "Erro na leitura"]:
+        return None
+    val_str = str(val).strip()
+    
+    match = re.match(r'^(\d+)', val_str)
+    if match:
+        num = int(match.group(1))
+        from input_module.config import STATUS_MAP
+        if num in STATUS_MAP:
+            return STATUS_MAP[num]
+            
+    val_upper = val_str.upper()
+    if "SUPR CANC" in val_upper or "ENCE CANC" in val_upper: return "55 Cancelado"
+    if "SUPR" in val_upper: return "SUPR"
+    if "ENCE EXEC" in val_upper: return "ENCE EXEC"
+    
+    return None
+
+
+def extrair_data_sap(descricao):
+    if pd.isna(descricao):
+        return "-"
+    desc_str = str(descricao).strip()
+    match = re.search(r'\bM(\d{2})/(\d{4}|\d{2})\b', desc_str, re.IGNORECASE)
+    if match:
+        mes_num = int(match.group(1))
+        ano_str = match.group(2)
+        ano_num = int(ano_str)
+        if len(ano_str) == 2:
+            ano_num += 2000
+        
+        meses_pt = {
+            1: 'jan', 2: 'fev', 3: 'mar', 4: 'abr',
+            5: 'maio', 6: 'jun', 7: 'jul', 8: 'ago',
+            9: 'set', 10: 'out', 11: 'nov', 12: 'dez'
+        }
+        if 1 <= mes_num <= 12:
+            return f"{meses_pt[mes_num]}-{ano_num}"
+    return "-"
+
+
+
 def _ler_export_medidas() -> pd.DataFrame | None:
     return db.carregar_base_dataframe("base_iw66")
 
@@ -236,7 +306,7 @@ def enriquecer_dados():
     df['Centro_Responsavel_Banco'] = df['Centro_Responsavel'].fillna("-")
 
     df_sap = db.carregar_base_dataframe("base_iw28")
-    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data']
+    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data', 'Descrição', 'Prioridade']
 
     if df_sap is not None and not df_sap.empty:
         try:
@@ -263,19 +333,53 @@ def enriquecer_dados():
             else:
                 df['Encerram.por data'] = "-"
 
+            # Integração do Descrição para extrair a data programada do SAP
+            if 'Descrição' in df_sap.columns:
+                dicionario_desc_sap = dict(zip(df_sap['Nota'], df_sap['Descrição']))
+                df['Descricao_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_desc_sap)
+                df['Data programada SAP'] = df['Descricao_SAP'].apply(extrair_data_sap)
+            else:
+                df['Data programada SAP'] = "-"
+
+            def comparar_datas_sap(row):
+                dt_sap = str(row.get('Data programada SAP', '-')).strip()
+                dt_local = str(row.get('Mes_Execucao_Planejado', '-')).strip()
+                if dt_sap == "-" or dt_local in ["-", "", "nan", "None", "<NA>"]:
+                    return "-"
+                if dt_sap.lower() == dt_local.lower():
+                    return "Igual"
+                return "Divergente"
+
+            df['Comparação Data SAP'] = df.apply(comparar_datas_sap, axis=1)
+
+            # Normalização do Status do SAP para atualizar o Status local
+            df['Status_SAP_Norm'] = df['Export_status'].apply(normalizar_status_sap)
+            df['Status_Nota'] = df['Status_SAP_Norm'].fillna(df['Status_Nota'])
+
+            # Integração da Prioridade da Nota vinda do SAP
+            if 'Prioridade' in df_sap.columns:
+                dicionario_prio_sap = dict(zip(df_sap['Nota'], df_sap['Prioridade']))
+                df['Prioridade_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_prio_sap)
+                df['Prioridade_SAP_Norm'] = df['Prioridade_SAP'].apply(normalizar_prioridade_sap)
+                df['Prioridade_Nota'] = df['Prioridade_SAP_Norm'].fillna(df['Prioridade_Nota'])
+
             df['Centro_Responsavel'] = df['Centro_SAP'].fillna(df['Centro_Responsavel_Banco']).fillna("-")
 
         except Exception as e:
             df['Export_status'] = "Erro na leitura"
             df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
             df['Encerram.por data'] = "-"
+            df['Data programada SAP'] = "-"
+            df['Comparação Data SAP'] = "-"
             print(f"Erro ao ler IW28: {e}")
     else:
         df['Export_status'] = "Pendente Extração SAP"
         df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
         df['Encerram.por data'] = "-"
+        df['Data programada SAP'] = "-"
+        df['Comparação Data SAP'] = "-"
 
-    df = df.drop(columns=['Centro_Responsavel_Banco'], errors='ignore')
+    df = df.drop(columns=['Centro_Responsavel_Banco', 'Descricao_SAP', 'Status_SAP_Norm', 'Prioridade_SAP', 'Prioridade_SAP_Norm'], errors='ignore')
     if 'Centro_SAP' in df.columns:
         df = df.drop(columns=['Centro_SAP'], errors='ignore')
 
@@ -600,6 +704,13 @@ _CACHE_TTL_SEGUNDOS = 600  # fallback para escritas que não passem pelos logs
 _cache = {"df": None, "quando": 0.0, "versao": None}
 _cache_lock = threading.Lock()
 
+_sincronizando_rede = False
+_sincronizando_lock = threading.Lock()
+
+def esta_sincronizando_rede() -> bool:
+    with _sincronizando_lock:
+        return _sincronizando_rede
+
 
 def get_dataset(forcar: bool = False) -> pd.DataFrame:
     with _cache_lock:
@@ -607,7 +718,10 @@ def get_dataset(forcar: bool = False) -> pd.DataFrame:
         expirado = time.time() - _cache["quando"] > _CACHE_TTL_SEGUNDOS
         if (forcar or _cache["df"] is None or expirado
                 or _cache["versao"] != versao):
-            _cache["df"] = enriquecer_dados()
+            df_res = enriquecer_dados()
+            colunas_existentes = [col for col in config.COLUNAS_PAINEL if col in df_res.columns]
+            colunas_extras = [col for col in df_res.columns if col not in colunas_existentes]
+            _cache["df"] = df_res[colunas_existentes + colunas_extras]
             _cache["quando"] = time.time()
             _cache["versao"] = versao
         return _cache["df"].copy()
@@ -666,6 +780,12 @@ def gerar_copia_excel_rede():
     Toda a lógica está protegida por try/except: se a rede estiver indisponível
     o erro é apenas registrado, sem derrubar a request que disparou a tarefa.
     """
+    global _sincronizando_rede
+    with _sincronizando_lock:
+        if _sincronizando_rede:
+            print("Sincronização com a rede já em andamento. Ignorando chamada duplicada.")
+            return
+        _sincronizando_rede = True
     try:
         # 1. Puxa os dados atualizados com todos os cálculos automáticos prontos
         df_fresco = enriquecer_dados()
@@ -673,9 +793,103 @@ def gerar_copia_excel_rede():
         # Filtra e renomeia as colunas para o mesmo padrão amigável do painel
         colunas_exportar = [col for col in config.COLUNAS_PAINEL if col in df_fresco.columns]
         df_export = df_fresco[colunas_exportar].copy()
-        df_export = df_export.rename(columns=config.NOMES_AMIGAVEIS)
+        df_export = df_export.rename(columns=config.MAPA_NOMES_EXCEL_LEGADO)
 
-        # 2. Salva na rede de forma limpa usando o openpyxl
-        df_export.to_excel(config.CAMINHO_COPIA_EXCEL, index=False)
+        # Função auxiliar para formatar e salvar o Excel de forma idêntica ao legado
+        def salvar_excel_formatado(caminho):
+            with pd.ExcelWriter(caminho, engine='openpyxl') as writer:
+                nome_aba = 'Input de Notas'
+                df_export.to_excel(writer, sheet_name=nome_aba, index=False)
+                
+                workbook = writer.book
+                worksheet = writer.sheets[nome_aba]
+                
+                from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+                
+                # Estilo do cabeçalho
+                header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+                header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+                data_font = Font(name='Calibri', size=11)
+                
+                center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+                
+                thin_border = Border(
+                    left=Side(style='thin', color='A6A6A6'),
+                    right=Side(style='thin', color='A6A6A6'),
+                    top=Side(style='thin', color='A6A6A6'),
+                    bottom=Side(style='thin', color='A6A6A6')
+                )
+                
+                # Formata linha do cabeçalho
+                worksheet.row_dimensions[1].height = 45
+                for col_num in range(1, len(df_export.columns) + 1):
+                    cell = worksheet.cell(row=1, column=col_num)
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = center_align
+                    cell.border = thin_border
+                    
+                # Formata dados e configura largura das colunas
+                for col_num, col_name in enumerate(df_export.columns, 1):
+                    if "Observação" in col_name or "Observacao" in col_name:
+                        width = 45
+                    elif "Local" in col_name or "Conjunto" in col_name or "Circuito" in col_name:
+                        width = 20
+                    else:
+                        width = 14
+                    
+                    letter = chr(64 + col_num) if col_num <= 26 else f"{chr(64 + col_num // 26)}{chr(64 + col_num % 26)}"
+                    worksheet.column_dimensions[letter].width = width
+                    
+                    for row_num in range(2, len(df_export) + 2):
+                        cell = worksheet.cell(row=row_num, column=col_num)
+                        cell.alignment = center_align
+                        cell.font = data_font
+                
+                # Adiciona autofiltro e congela cabeçalho
+                worksheet.auto_filter.ref = worksheet.dimensions
+                worksheet.freeze_panes = 'A2'
+
+        # 2. Salva na rede a planilha principal
+        salvar_excel_formatado(config.CAMINHO_COPIA_EXCEL)
+        
+        # 3. Salva também como "Input Nota.xlsx" na raiz da rede para compatibilidade externa
+        try:
+            salvar_excel_formatado(config.CAMINHO_INPUT_NOTA_RAIZ)
+        except Exception as e2:
+            print(f"Erro ao gerar cópia de compatibilidade Input Nota.xlsx na rede: {e2}")
+            
+        # 4. Sincroniza o banco SQLite local de volta para o banco SQLite na rede
+        # Mitiga erros de "database is locked" com retentativas automáticas e timeout de 30s
+        try:
+            import time
+            import sqlite3
+            
+            sucesso_db = False
+            tentativas_db = 3
+            intervalo_db = 2.0
+            
+            for tent in range(1, tentativas_db + 1):
+                try:
+                    src_conn = db.get_db_connection()
+                    dst_conn = sqlite3.connect(config.REDE_DB_ORIGEM, timeout=30)
+                    with dst_conn:
+                        src_conn.backup(dst_conn)
+                    dst_conn.close()
+                    src_conn.close()
+                    sucesso_db = True
+                    break
+                except sqlite3.OperationalError as oe:
+                    print(f"Tentativa {tent}/{tentativas_db} - Banco de rede travado: {oe}")
+                    if tent < tentativas_db:
+                        time.sleep(intervalo_db)
+                    else:
+                        raise
+        except Exception as e3:
+            print(f"Erro ao sincronizar banco SQLite local com a rede: {e3}")
+            
     except Exception as e:
         print(f"Erro ao gerar cópia Excel na rede: {e}")
+    finally:
+        with _sincronizando_lock:
+            _sincronizando_rede = False
