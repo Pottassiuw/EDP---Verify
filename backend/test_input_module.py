@@ -840,3 +840,39 @@ def test_obter_nota_plano(banco_temporario):
     registro = db.obter_nota_plano(1000)
     assert registro is not None
     assert registro["Status_Nota"] == "10 Em planejamento"   # formatado, não int
+
+
+# ── Relatórios Home: schema e helpers de metas do Plano de Recomposição ──
+def test_metas_schema_e_helpers(banco_temporario):
+    from input_module import db
+    conn = db.get_db_connection()
+    tabelas = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    conn.close()
+    assert {"metas_plano", "planos_depara", "metas_sync_estado"} <= tabelas
+
+    metas = pd.DataFrame([
+        {"Ano": 2026, "Mes": 1, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Meta": 17.0},
+        {"Ano": 2026, "Mes": 2, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Meta": 19.0},
+    ])
+    depara = pd.DataFrame([
+        {"Plano": "POSTES - CAPEX", "Nome_Curto": "POSTE", "Unidade": "Und.",
+         "Area": "Construção", "Modular_RS": 6921.0, "Ordem_Exibicao": 1},
+    ])
+    db.substituir_metas(metas, depara)
+    assert len(db.carregar_metas(2026)) == 2
+    assert db.carregar_metas(2025).empty
+    dp = db.carregar_planos_depara()
+    assert dp.iloc[0]["Nome_Curto"] == "POSTE"
+
+    # replace: segunda chamada substitui, não acumula
+    db.substituir_metas(metas.head(1), depara)
+    assert len(db.carregar_metas(2026)) == 1
+
+    # estado de sync sobrevive e guarda erro
+    assert db.obter_estado_metas() is None
+    db.gravar_estado_metas(arquivo_mtime=1234.5, erro=None)
+    estado = db.obter_estado_metas()
+    assert estado["arquivo_mtime"] == 1234.5 and estado["erro"] is None
+    db.gravar_estado_metas(arquivo_mtime=1234.5, erro="lock")
+    assert db.obter_estado_metas()["erro"] == "lock"

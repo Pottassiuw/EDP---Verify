@@ -111,6 +111,29 @@ def inicializar_banco() -> None:
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS metas_plano (
+            Ano INTEGER NOT NULL, Mes INTEGER NOT NULL,
+            Regional TEXT NOT NULL, Plano TEXT NOT NULL,
+            Meta REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY (Ano, Mes, Regional, Plano)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS planos_depara (
+            Plano TEXT PRIMARY KEY, Nome_Curto TEXT NOT NULL,
+            Unidade TEXT NOT NULL, Area TEXT NOT NULL,
+            Modular_RS REAL NOT NULL DEFAULT 0,
+            Ordem_Exibicao INTEGER NOT NULL DEFAULT 999
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS metas_sync_estado (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            arquivo_mtime REAL, atualizadas_em TEXT, erro TEXT
+        )
+    ''')
+
     # --- VERIFICAÇÃO E ATUALIZAÇÃO DO ESQUEMA (ALTER TABLE) ---
     # Pega a lista de colunas que realmente existem hoje no banco
     cursor.execute("PRAGMA table_info(notas)")
@@ -826,3 +849,72 @@ def obter_versao_dataset() -> str:
     finally:
         conn.close()
     return f"{max_alt}|{qtd_alt}|{max_arq}|{qtd_notas}"
+
+
+# ==============================================================================
+# METAS DO PLANO DE RECOMPOSIÇÃO (espelho do Controle...xlsx — ver metas.py)
+# ==============================================================================
+def substituir_metas(df_metas: pd.DataFrame, df_depara: pd.DataFrame) -> None:
+    """Replace transacional das metas e do de-para (sync sempre traz o conjunto completo)."""
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM metas_plano")
+        conn.execute("DELETE FROM planos_depara")
+        df_metas[["Ano", "Mes", "Regional", "Plano", "Meta"]].to_sql(
+            "metas_plano", conn, if_exists="append", index=False)
+        df_depara[["Plano", "Nome_Curto", "Unidade", "Area", "Modular_RS",
+                   "Ordem_Exibicao"]].to_sql(
+            "planos_depara", conn, if_exists="append", index=False)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def carregar_metas(ano: int) -> pd.DataFrame:
+    conn = get_db_connection()
+    try:
+        return pd.read_sql("SELECT * FROM metas_plano WHERE Ano = ?", conn, params=(ano,))
+    finally:
+        conn.close()
+
+
+def carregar_planos_depara() -> pd.DataFrame:
+    conn = get_db_connection()
+    try:
+        return pd.read_sql(
+            "SELECT * FROM planos_depara ORDER BY Ordem_Exibicao, Plano", conn)
+    finally:
+        conn.close()
+
+
+def obter_estado_metas() -> dict | None:
+    conn = get_db_connection()
+    try:
+        row = conn.execute(
+            "SELECT arquivo_mtime, atualizadas_em, erro FROM metas_sync_estado WHERE id = 1"
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+    return {"arquivo_mtime": row[0], "atualizadas_em": row[1], "erro": row[2]}
+
+
+def gravar_estado_metas(arquivo_mtime: float, erro: str | None) -> None:
+    agora = datetime.datetime.now().isoformat()
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            """INSERT INTO metas_sync_estado (id, arquivo_mtime, atualizadas_em, erro)
+               VALUES (1, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                 arquivo_mtime=excluded.arquivo_mtime,
+                 atualizadas_em=excluded.atualizadas_em,
+                 erro=excluded.erro""",
+            (arquivo_mtime, agora, erro))
+        conn.commit()
+    finally:
+        conn.close()
