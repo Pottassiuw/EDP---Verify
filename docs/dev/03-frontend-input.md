@@ -136,6 +136,18 @@ Cada filtro adicionado renderiza um controle conforme o tipo
 Limpar" (`filters.tsx:74-79`) zera busca e filtros de uma vez; esse
 sim é um reset explícito via `setEstado`.
 
+## Card de status das metas (settings.tsx)
+
+`Settings` mostra o card "Metas do Plano de Recomposição" acima dos
+demais (`settings.tsx`). O estado exibido (`atualizadas_em`, `erro`)
+vem de `useDashboardRelatorios(null)` (`features/relatorios/use-dashboard.ts`,
+query já cacheada com `staleTime` de 60s) — **nunca** do
+`POST /metas/sincronizar`, porque esse endpoint tem efeito colateral
+(força reimportação do Excel). O botão "Sincronizar agora" chama
+`InputApi.sincronizarMetas()` dentro de um `toast.promise` e, no
+sucesso, invalida `['relatorios-dashboard']` via `useQueryClient` —
+o dashboard de Relatórios (se montado) refaz o fetch automaticamente.
+
 ## Sincronização SAP
 
 O botão "Sincronizar SAP" em `overview.tsx:58-66` chama

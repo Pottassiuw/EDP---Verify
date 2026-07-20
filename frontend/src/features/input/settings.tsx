@@ -1,10 +1,11 @@
 ﻿import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InputDataset } from './types';
 import { getUsuario, InputApi, setUsuario } from './api';
 import { toast } from 'sonner';
 import { useRecarregarInput } from './use-input-data';
 import { Button } from '@/components/ui/button';
+import { useDashboardRelatorios } from '../relatorios/use-dashboard';
 
 function Cartao({ titulo, children }: { titulo: string; children: React.ReactNode }): React.JSX.Element {
   return (
@@ -17,12 +18,26 @@ function Cartao({ titulo, children }: { titulo: string; children: React.ReactNod
 
 export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element {
   const recarregar = useRecarregarInput();
+  const queryClient = useQueryClient();
   const [msg, setMsg] = React.useState('');
   const [nome, setNome] = React.useState(getUsuario() ?? '');
   const [linhasResp, setLinhasResp] = React.useState<[string, string][] | null>(null);
+  const [sincronizando, setSincronizando] = React.useState(false);
 
   const responsaveis = useQuery({ queryKey: ['input-resp'], queryFn: InputApi.responsaveis });
   const backups = useQuery({ queryKey: ['input-backups'], queryFn: InputApi.backups });
+  const dashboard = useDashboardRelatorios(null);
+
+  function sincronizarMetas(): void {
+    setSincronizando(true);
+    const p = InputApi.sincronizarMetas().finally(() => setSincronizando(false));
+    toast.promise(p, {
+      loading: 'Sincronizando metas…',
+      success: 'Metas sincronizadas',
+      error: (e) => `Falha ao sincronizar: ${e instanceof Error ? e.message : String(e)}`,
+    });
+    void p.then(() => queryClient.invalidateQueries({ queryKey: ['relatorios-dashboard'] }), () => { /* toast já informou o erro */ });
+  }
 
   const linhas = linhasResp ?? Object.entries(responsaveis.data ?? {});
 
@@ -35,6 +50,22 @@ export function Settings({ dados }: { dados: InputDataset }): React.JSX.Element 
   return (
     <div className="edp-page">
       {msg && <div className="edp-banner ok">{msg}</div>}
+
+      <Cartao titulo="Metas do Plano de Recomposição">
+        <div className="flex items-center gap-[12px] flex-wrap">
+          <span className="text-[13px] text-text-mute">
+            {dashboard.data?.metas_info.atualizadas_em
+              ? `Última sincronização: ${new Date(dashboard.data.metas_info.atualizadas_em).toLocaleString('pt-BR')}`
+              : 'Ainda não sincronizado.'}
+          </span>
+          <Button variant="outline" size="sm" disabled={sincronizando} onClick={sincronizarMetas}>
+            {sincronizando ? 'Sincronizando…' : 'Sincronizar agora'}
+          </Button>
+        </div>
+        {dashboard.data?.metas_info.erro && (
+          <p className="text-[12px] text-red mt-[6px]">{dashboard.data.metas_info.erro}</p>
+        )}
+      </Cartao>
 
       <Cartao titulo="Seu nome (log de auditoria)">
         <div className="flex gap-[8px]">
