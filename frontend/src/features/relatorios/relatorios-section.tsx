@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/select';
 
 import { HeroMes } from './hero-mes';
+import { TabelaAnual } from './tabela-anual';
 import { useDashboardRelatorios, useForaDoPlano } from './use-dashboard';
 
 const REGIONAL_TODAS = 'todas';
@@ -22,7 +23,6 @@ export function RelatoriosSection({
   const [regional, setRegional] = React.useState<string | null>(null);
   const { data, isLoading, error } = useDashboardRelatorios(regional);
   useForaDoPlano();
-  void onVerPlano;
   void onIrParaCoffee;
 
   return (
@@ -62,11 +62,17 @@ export function RelatoriosSection({
       )}
 
       {data && (
-        <HeroMes
-          hero={data.hero}
-          financeiroAno={data.financeiro_ano}
-          aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
-        />
+        <>
+          <HeroMes
+            hero={data.hero}
+            financeiroAno={data.financeiro_ano}
+            aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
+          />
+          <TabelaAnual
+            linhas={data.visao_anual}
+            aoClicarPlano={(plano) => onVerPlano(plano, regional)}
+          />
+        </>
       )}
     </div>
   );
