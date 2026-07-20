@@ -12,7 +12,9 @@ function corFarol(pct: number | null): string {
 
 export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): React.JSX.Element {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-[10px]">
+    <div className="flex flex-col gap-[8px]">
+      <span className="edp-eyebrow">Saldo por regional (mês corrente)</span>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-[10px]">
       {regionais.map((r) => (
         <Card key={r.regional}>
           <CardContent className="flex flex-col gap-[4px] py-[12px]">
@@ -29,6 +31,7 @@ export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): 
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   );
 }

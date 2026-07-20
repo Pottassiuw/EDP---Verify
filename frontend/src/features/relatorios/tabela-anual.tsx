@@ -66,6 +66,10 @@ export function TabelaAnual({ linhas, aoClicarPlano }: {
               </TableRow>
               {grupo.map((l) => (
                 <TableRow key={l.plano} onClick={() => aoClicarPlano(l.plano)}
+                          tabIndex={0} role="button"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aoClicarPlano(l.plano); }
+                          }}
                           className="cursor-pointer"
                           aria-label={`Ver notas do plano ${l.plano}`}>
                   <TableCell title={l.plano}>{l.nome_curto}</TableCell>
