@@ -15,6 +15,29 @@ const FAROL_STYLE: Record<Farol, React.CSSProperties> = {
   vermelho: { background: 'var(--tint-red)', color: 'var(--red)' },
 };
 
+interface Totais {
+  meta: number;
+  carteira: number;
+  saldo: number;
+  postergado: number;
+  gap_rs: number;
+  pct_disp: number | null;
+}
+
+function somar(linhas: LinhaAnual[]): Totais {
+  const t = linhas.reduce(
+    (acc, l) => ({
+      meta: acc.meta + l.meta,
+      carteira: acc.carteira + l.carteira,
+      saldo: acc.saldo + l.saldo,
+      postergado: acc.postergado + l.postergado,
+      gap_rs: acc.gap_rs + l.gap_rs,
+    }),
+    { meta: 0, carteira: 0, saldo: 0, postergado: 0, gap_rs: 0 },
+  );
+  return { ...t, pct_disp: t.meta === 0 ? null : t.carteira / t.meta };
+}
+
 function BadgeDisp({ pct }: { pct: number | null }): React.JSX.Element {
   const cor = farol(pct);
   if (cor === null) {
@@ -25,6 +48,28 @@ function BadgeDisp({ pct }: { pct: number | null }): React.JSX.Element {
           style={FAROL_STYLE[cor]}>
       {fmtPct(pct)}
     </span>
+  );
+}
+
+function LinhaTotais({ rotulo, totais, forte }: {
+  rotulo: string;
+  totais: Totais;
+  forte?: boolean;
+}): React.JSX.Element {
+  const borda = forte ? 'border-t-2 border-[var(--line-2)]' : 'border-t border-[var(--line)]';
+  return (
+    <TableRow className={`hover:bg-transparent font-semibold ${borda}`}>
+      <TableCell className="edp-eyebrow py-[8px]">{rotulo}</TableCell>
+      <TableCell />
+      <TableCell className="text-right edp-mono">{fmtQtd(totais.meta)}</TableCell>
+      <TableCell className="text-right edp-mono">{fmtQtd(totais.carteira)}</TableCell>
+      <TableCell className="text-right edp-mono">{fmtQtd(totais.saldo)}</TableCell>
+      <TableCell className="text-right"><BadgeDisp pct={totais.pct_disp} /></TableCell>
+      <TableCell className="text-right edp-mono">{fmtQtd(totais.postergado)}</TableCell>
+      <TableCell className="text-right edp-mono text-text-mute">
+        {totais.gap_rs !== 0 ? fmtRS(totais.gap_rs) : ''}
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -85,9 +130,13 @@ export function TabelaAnual({ linhas, aoClicarPlano }: {
                   </TableCell>
                 </TableRow>
               ))}
+              <LinhaTotais rotulo={`Subtotal ${area}`} totais={somar(grupo)} />
             </React.Fragment>
           );
         })}
+        {linhas.length > 0 && (
+          <LinhaTotais rotulo="Total geral" totais={somar(linhas)} forte />
+        )}
       </TableBody>
     </Table>
   );

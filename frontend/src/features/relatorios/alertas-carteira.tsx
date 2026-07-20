@@ -15,7 +15,7 @@ export function AlertasCarteira({ linhas, aoClicarPlano }: {
 
   return (
     <div className="flex flex-col gap-[8px]">
-      <span className="edp-eyebrow text-amber">⚠ Carteira abaixo da meta (ação)</span>
+      <span className="edp-eyebrow text-amber">⚠ Carteira abaixo da meta ({abaixo.length})</span>
       <div className="flex flex-col gap-[4px]">
         {abaixo.map((l) => {
           const f = farol(l.pct_disp);

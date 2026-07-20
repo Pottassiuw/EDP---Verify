@@ -29,7 +29,7 @@ export function MensalizacaoChart({ meses, mesCorrente }: {
       <div className="flex gap-[14px] text-[11px] text-text-mute">
         <span><span className="inline-block w-[10px] h-[10px] rounded-[2px] mr-[4px] align-middle border border-[var(--line)] bg-[var(--surface-2)]" />Meta</span>
         <span><span className="inline-block w-[10px] h-[10px] rounded-[2px] mr-[4px] align-middle bg-[var(--accent)]" />Carteira</span>
-        <span><span className="inline-block w-[10px] h-[10px] rounded-[2px] mr-[4px] align-middle bg-green" />Executado</span>
+        <span><span className="inline-block w-[10px] h-[10px] rounded-[2px] mr-[4px] align-middle bg-[var(--green-2)]" />Executado</span>
       </div>
       <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} width="100%" role="img"
            aria-label="Mensalização: meta, carteira e executado por mês">
@@ -39,8 +39,14 @@ export function MensalizacaoChart({ meses, mesCorrente }: {
           const hCarteira = altura(m.carteira);
           const hExec = m.mes <= mesCorrente ? altura(m.executado) : 0;
           const baseY = ALTURA - PAD_BOTTOM;
+          const atual = m.mes === mesCorrente;
           return (
             <g key={m.mes}>
+              {atual && (
+                <rect x={x0 - GAP_GRUPO / 2} y={PAD_TOP} width={larguraGrupo}
+                      height={ALTURA - PAD_TOP - PAD_BOTTOM + 4} rx={RAIO}
+                      fill="var(--surface-2)" opacity={0.6} />
+              )}
               <rect x={x0} y={baseY - hMeta} width={larguraBarra} height={hMeta}
                     rx={RAIO} fill="var(--surface-2)" stroke="var(--line)">
                 <title>{`${MESES_ABREV_PT[m.mes - 1]} · Meta ${fmtQtd(m.meta)}`}</title>
@@ -51,13 +57,14 @@ export function MensalizacaoChart({ meses, mesCorrente }: {
               </rect>
               {hExec > 0 && (
                 <rect x={x0 + larguraBarra + GAP_GRUPO} y={baseY - hExec}
-                      width={larguraBarra} height={hExec} rx={RAIO} fill="var(--green)">
+                      width={larguraBarra} height={hExec} rx={RAIO} fill="var(--green-2)">
                   <title>{`${MESES_ABREV_PT[m.mes - 1]} · Executado ${fmtQtd(m.executado)}`}</title>
                 </rect>
               )}
               <text x={x0 + larguraGrupo / 2 - GAP_GRUPO / 2} y={ALTURA - 6}
                     textAnchor="middle" className="edp-mono" fontSize="10"
-                    fill="var(--text-mute)">
+                    fontWeight={atual ? 600 : 400}
+                    fill={atual ? 'var(--text)' : 'var(--text-mute)'}>
                 {MESES_ABREV_PT[m.mes - 1]}
               </text>
             </g>
