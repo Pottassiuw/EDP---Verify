@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { Card, CardContent } from '@/components/ui/card';
-
 import { FAROL_COR, farol, fmtPct, fmtQtd } from './fmt';
 import type { RegionalResumo } from './types';
 
@@ -12,25 +10,25 @@ function corFarol(pct: number | null): string {
 
 export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-[8px]">
+    <div className="flex flex-col gap-[10px]">
       <span className="edp-eyebrow">Saldo por regional (mês corrente)</span>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-[10px]">
-      {regionais.map((r) => (
-        <Card key={r.regional}>
-          <CardContent className="flex flex-col gap-[4px] py-[12px]">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-[12px]">
+        {regionais.map((r) => (
+          <div key={r.regional}
+               className="flex flex-col gap-[4px] p-[14px] rounded-[var(--r-md)] bg-[var(--surface-2)]">
             <span className="edp-eyebrow">{r.regional}</span>
-            <span className="edp-num text-[20px]" style={{ color: corFarol(r.pct_disp) }}>
+            <span className="edp-num text-[22px]" style={{ color: corFarol(r.pct_disp) }}>
               {fmtPct(r.pct_disp)}
             </span>
-            <span className="edp-mono text-[12px]" style={{ color: r.saldo < 0 ? 'var(--red)' : 'var(--text-mute)' }}>
+            <span className="edp-mono text-[13px]"
+                  style={{ color: r.saldo < 0 ? 'var(--red)' : 'var(--text-mute)' }}>
               Saldo {r.saldo > 0 ? '+' : ''}{fmtQtd(r.saldo)}
             </span>
-            <span className="text-[11px] text-text-mute">
+            <span className="text-[13px] text-text-mute">
               Meta {fmtQtd(r.meta)} · Carteira {fmtQtd(r.carteira)}
             </span>
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        ))}
       </div>
     </div>
   );
