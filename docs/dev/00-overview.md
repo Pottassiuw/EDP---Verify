@@ -119,6 +119,7 @@ cd frontend && npm run build                    # type-check (tsc) + build
 
 | Módulo | Caminho | O que faz | Doc detalhado |
 |---|---|---|---|
+| Relatórios | `frontend/src/features/relatorios/` | Home do app: dashboard vivo do Plano de Recomposição (hero do mês, visão anual, mensalização, saldo por regional, financeiro) | [04-frontend-shared.md](./04-frontend-shared.md) |
 | Verificar | `frontend/src/features/verificar/` | Triagem da planilha, upload, KPIs, comparação de duplicatas | [01-frontend-verificar.md](./01-frontend-verificar.md) |
 | COFFEE | `frontend/src/features/coffee/` | Geração de notas no SAP via COFFEE, consulta de status, correção, logs | [02-frontend-coffee.md](./02-frontend-coffee.md) |
 | Input | `frontend/src/features/input/` | Gestão de notas do departamento, edição em lote, sincronização SAP | [03-frontend-input.md](./03-frontend-input.md) |

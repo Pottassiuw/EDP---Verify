@@ -1,5 +1,39 @@
 # Componentes e infraestrutura compartilhada
 
+## Seção default e navegação (App.tsx)
+
+`AppSection` (`types.ts`) é `"relatorios" | "coffee" | "input" |
+"configuracoes"`. `AppContent` inicializa `section` com
+`useState<AppSection>("relatorios")` — a home do app é o dashboard de
+Relatórios (`features/relatorios/relatorios-section.tsx`), não mais o
+COFFEE. O item "Relatórios" no `app-sidebar.tsx` fica acima de COFFEE,
+sem sub-abas (ícone `ChartNoAxesCombined` do lucide).
+
+### Handoff de filtros pro Input
+
+`RelatoriosSection` não navega diretamente — devolve callbacks
+(`onVerNotasDoMes`, `onVerPlano`, `onIrParaCoffee`) que o `App.tsx`
+resolve via `irParaInputFiltrado(filtros: Filtro[])`:
+
+```tsx
+const [filtrosHandoff, setFiltrosHandoff] =
+  React.useState<{ estado: FiltersState; id: number } | null>(null);
+
+function irParaInputFiltrado(filtros: Filtro[]): void {
+  setFiltrosHandoff((prev) => ({ estado: { busca: "", filtros }, id: (prev?.id ?? 0) + 1 }));
+  setInputSub("visao");
+  changeSection("input");
+}
+```
+
+O `id` incremental força o `Overview` do Input a remontar
+(`key={filtrosHandoff?.id}`) mesmo quando os filtros mudam para o
+mesmo conjunto de valores duas vezes seguidas — ver
+[03-frontend-input.md](./03-frontend-input.md#handoff-de-filtros).
+`onIrParaCoffee` troca `coffeeSub` para `"corrigidas"` e a seção para
+`"coffee"` diretamente (não passa pelo handoff — é navegação simples,
+sem filtros).
+
 ## Configurações (features/configuracoes/)
 
 `configuracoes.tsx` é a tela "Configurações" da sidebar: três `Card`

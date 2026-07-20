@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChartNoAxesCombined, ChevronDown } from 'lucide-react';
 import type { AppSection, CoffeeSubPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
@@ -33,9 +33,6 @@ const IconCoffee = (): React.JSX.Element => (
 );
 const IconInput = (): React.JSX.Element => (
   <svg {...svgBase}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M9 9v11" /></svg>
-);
-const IconReport = (): React.JSX.Element => (
-  <svg {...svgBase}><path d="M3 21h18" /><rect x="5" y="10" width="3" height="8" rx="1" /><rect x="11" y="5" width="3" height="13" rx="1" /><rect x="17" y="13" width="3" height="5" rx="1" /></svg>
 );
 const IconBI = (): React.JSX.Element => (
   <svg {...svgBase}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -86,6 +83,17 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, input
         <SidebarGroup>
           <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Relatórios"
+                isActive={section === "relatorios"}
+                onClick={() => setSection("relatorios")}
+              >
+                <ChartNoAxesCombined size={16} />
+                <span>Relatórios</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             <SidebarMenuItem>
               <Collapsible defaultOpen className="group/coffee">
                 <CollapsibleTrigger asChild>
@@ -152,14 +160,6 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, input
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </Collapsible>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton disabled className="opacity-40">
-                <IconReport />
-                <span>Relatórios</span>
-                <span className="ml-auto text-[9px] group-data-[collapsible=icon]:hidden">soon</span>
-              </SidebarMenuButton>
             </SidebarMenuItem>
 
             <SidebarMenuItem>

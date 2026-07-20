@@ -5,7 +5,7 @@ export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
-export type AppSection = "coffee" | "input" | "configuracoes";
+export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 
 export interface NoteError {

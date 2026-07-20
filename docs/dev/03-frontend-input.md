@@ -100,6 +100,19 @@ puramente presentacional: recebe texto/preview/callbacks do pai
 (`manage.tsx:308`, `ramal.tsx:342`) e não guarda estado próprio nem
 chama a API diretamente.
 
+## Handoff de filtros {#handoff-de-filtros}
+
+`InputSection` recebe `filtrosHandoff?: { estado: FiltersState; id: number } | null`
+do `App.tsx` (ver [04-frontend-shared.md](./04-frontend-shared.md)) e
+repassa ao `Overview` como `key={filtrosHandoff?.id ?? 0}` +
+`filtrosIniciais={filtrosHandoff?.estado}`. `Overview` inicializa seu
+estado com `React.useState<FiltersState>(filtrosIniciais ?? FILTROS_INICIAIS)`
+— a `key` força a remontagem do componente a cada novo handoff (mesmo
+que o usuário navegue duas vezes para o mesmo mês/plano), o que reseta
+o `useState` para os novos `filtrosIniciais`. Depois de montado, os
+filtros voltam a ser edição livre do usuário — o handoff só define o
+estado inicial.
+
 ## Fluxo: Filtros (filters.tsx)
 
 O `Select` "+ Adicionar campo de filtro…" (`filters.tsx:84-105`) não

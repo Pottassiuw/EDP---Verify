@@ -1,6 +1,8 @@
 ﻿import React from 'react';
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
 import type { AbaInput } from './features/input/types';
+import type { FiltersState } from './features/input/filters';
+import type { Filtro } from './features/input/lib';
 import type { TriageHandoff } from './features/coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { SettingsProvider, useSettings } from './context/settings-context';
@@ -16,6 +18,10 @@ const CoffeeHub = React.lazy(() =>
   import('./features/coffee/coffee-hub').then((m) => ({ default: m.CoffeeHub })));
 const ConfiguracoesPage = React.lazy(() =>
   import('./features/configuracoes/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
+const RelatoriosSection = React.lazy(() =>
+  import('./features/relatorios/relatorios-section').then((m) => ({ default: m.RelatoriosSection })));
+
+const MESES_ABREV_PT = ["jan", "fev", "mar", "abr", "maio", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -70,10 +76,18 @@ function AppContent(): React.JSX.Element {
   const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set(_snap?.dupResolved ?? []));
   const [file, setFile] = React.useState(_snap?.file ?? "");
   const [source, setSource] = React.useState<Source>(_snap?.source ?? "api");
-  const [section, setSection] = React.useState<AppSection>("coffee");
+  const [section, setSection] = React.useState<AppSection>("relatorios");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
+  const [filtrosHandoff, setFiltrosHandoff] =
+    React.useState<{ estado: FiltersState; id: number } | null>(null);
+
+  function irParaInputFiltrado(filtros: Filtro[]): void {
+    setFiltrosHandoff((prev) => ({ estado: { busca: "", filtros }, id: (prev?.id ?? 0) + 1 }));
+    setInputSub("visao");
+    changeSection("input");
+  }
 
   const accentStyle: CssVars = {
     "--accent": settings.accent[0],
@@ -206,8 +220,21 @@ function AppContent(): React.JSX.Element {
                     inputSub={inputSub} setInputSub={setInputSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
-            {section === "input"         ? <InputSection sub={inputSub} setSub={setInputSub} /> :
-             section === "configuracoes" ? <ConfiguracoesPage /> :
+            {section === "relatorios" ? (
+              <RelatoriosSection
+                onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([
+                  { campo: "Mes_Execucao_Planejado", tipo: "multi",
+                    valores: [`${MESES_ABREV_PT[mes - 1]}-${ano}`] },
+                ])}
+                onVerPlano={(plano, regional) => irParaInputFiltrado([
+                  { campo: "Conjunto", tipo: "multi", valores: [plano] },
+                  ...(regional ? [{ campo: "Regional_CSD", tipo: "multi" as const, valores: [regional] }] : []),
+                ])}
+                onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}
+              />
+            ) : section === "input" ? (
+              <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
+            ) : section === "configuracoes" ? <ConfiguracoesPage /> :
              <CoffeeHub notes={notes}
                         sub={coffeeSub} setSub={setCoffeeSub}
                         triage={triage}

@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import type { AbaInput } from './types';
+import type { FiltersState } from './filters';
 import { toast } from 'sonner';
 import { getUsuario, setUsuario, InputApi } from './api';
 import { useSincronizacaoAutomatica, useInputData, useRecarregarInput } from './use-input-data';
@@ -24,9 +25,10 @@ export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
 interface InputSectionProps {
   sub: AbaInput;
   setSub: (s: AbaInput) => void;
+  filtrosHandoff?: { estado: FiltersState; id: number } | null;
 }
 
-export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Element {
+export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error } = useInputData();
   const recarregar = useRecarregarInput();
 
@@ -75,7 +77,9 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       )}
 
-      {dados && sub === 'visao' && <Overview dados={dados} />}
+      {dados && sub === 'visao' && (
+        <Overview dados={dados} key={filtrosHandoff?.id ?? 0} filtrosIniciais={filtrosHandoff?.estado} />
+      )}
       {dados && sub === 'gerenciar' && <Manage dados={dados} />}
       {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} />}
       {dados && sub === 'relatorios' && <Reports dados={dados} />}

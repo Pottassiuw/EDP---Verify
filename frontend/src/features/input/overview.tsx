@@ -20,8 +20,11 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
   return aplicarFiltros(resultado, estado.filtros);
 }
 
-export function Overview({ dados }: { dados: InputDataset }): React.JSX.Element {
-  const [estado, setEstado] = React.useState<FiltersState>(FILTROS_INICIAIS);
+export function Overview({ dados, filtrosIniciais }: {
+  dados: InputDataset;
+  filtrosIniciais?: FiltersState;
+}): React.JSX.Element {
+  const [estado, setEstado] = React.useState<FiltersState>(filtrosIniciais ?? FILTROS_INICIAIS);
   const [exportando, setExportando] = React.useState(false);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
