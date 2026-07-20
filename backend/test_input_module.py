@@ -949,3 +949,78 @@ def test_metas_sincronizar_falha_preserva(banco_temporario, monkeypatch, tmp_pat
     estado = metas.sincronizar_se_preciso(forcar=True)
     assert estado["erro"] is not None
     assert len(db.carregar_metas(2026)) == 3  # última sync preservada
+
+
+def _fx_relatorios():
+    """Fixtures mínimas para o dashboard: 2 notas + 1 ramal + metas/depara."""
+    df_notas = pd.DataFrame([
+        # carteira jul/2026, Guarulhos (via Regional_CSD), POSTES: 2 und, uma executada (99)
+        {"Numero_Nota": 1, "Conjunto": "POSTES - CAPEX", "Planejado_DDPM": 1.0,
+         "Mes_Execucao_Planejado": "jul-2026", "Regional": "Mogi das Cruzes",
+         "Regional_CSD": "Guarulhos", "Status_Nota": "99 Encerrado",
+         "Export_status": "-", "Encerram.por data": "2026-07-10"},
+        {"Numero_Nota": 2, "Conjunto": "POSTES - CAPEX", "Planejado_DDPM": 1.0,
+         "Mes_Execucao_Planejado": "jul-2026", "Regional": "Guarulhos",
+         "Regional_CSD": "-", "Status_Nota": "10 Em planejamento",
+         "Export_status": "ENCE EXEC", "Encerram.por data": "2026-08-02"},
+        # conjunto fora do de-para -> balde Outros
+        {"Numero_Nota": 3, "Conjunto": "MISTERIOSO", "Planejado_DDPM": 2.0,
+         "Mes_Execucao_Planejado": "jan-2026", "Regional": "Guarulhos",
+         "Regional_CSD": "Guarulhos", "Status_Nota": "01 Sem providência",
+         "Export_status": "-", "Encerram.por data": None},
+    ])
+    df_ramal = pd.DataFrame([
+        # prefixo 160 (Poá) -> Poa/Suzano
+        {"Numero_Nota": 9, "Local_Instalacao": "160RL00000001", "Planejado_DDPM": 1.0,
+         "Mes_Execucao_Planejado": "jul-2026", "Status_Nota": "ENCE EXEC"},
+    ])
+    df_metas = pd.DataFrame([
+        {"Ano": 2026, "Mes": 7, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Meta": 4.0},
+        {"Ano": 2026, "Mes": 7, "Regional": "Poa/Suzano", "Plano": "RAMAL", "Meta": 2.0},
+    ])
+    df_depara = pd.DataFrame([
+        {"Plano": "POSTES - CAPEX", "Nome_Curto": "POSTE", "Unidade": "Und.",
+         "Area": "Construção", "Modular_RS": 10.0, "Ordem_Exibicao": 1},
+        {"Plano": "RAMAL", "Nome_Curto": "RAMAL", "Unidade": "Ponto",
+         "Area": "CSD", "Modular_RS": 2.0, "Ordem_Exibicao": 2},
+    ])
+    return df_notas, df_ramal, df_metas, df_depara
+
+
+def test_dashboard_agregacao_basica(banco_temporario):
+    from input_module import relatorios
+    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_corrente=7, regional=None)
+
+    # hero de julho: carteira POSTES 2 + RAMAL 1 = 3; meta 4+2=6; executado jul = 1 (nota 1; a nota 2 encerra em ago)
+    assert d["hero"]["carteira"] == 3.0
+    assert d["hero"]["meta"] == 6.0
+    assert d["hero"]["executado"] == 1.0
+    assert round(d["hero"]["pct_disp"], 3) == 0.5
+    assert d["hero"]["carteira_rs"] == 2 * 10.0 + 1 * 2.0
+
+    anual = {l["plano"]: l for l in d["visao_anual"]}
+    assert anual["POSTES - CAPEX"]["area"] == "Construção"
+    assert anual["POSTES - CAPEX"]["carteira"] == 2.0
+    assert anual["POSTES - CAPEX"]["saldo"] == -2.0
+    assert anual["RAMAL"]["carteira"] == 1.0
+    assert anual["MISTERIOSO"]["area"] == "Outros"        # nunca some silenciosamente
+    assert anual["MISTERIOSO"]["pct_disp"] is None        # meta 0 -> null
+
+    assert len(d["mensalizacao"]) == 12
+    jul = next(m for m in d["mensalizacao"] if m["mes"] == 7)
+    assert jul["carteira"] == 3.0 and jul["executado"] == 1.0
+
+    regs = {r["regional"]: r for r in d["regionais"]}
+    assert len(regs) == 6
+    assert regs["Guarulhos"]["carteira"] == 2.0           # Regional_CSD + fallback Regional
+    assert regs["Poa/Suzano"]["carteira"] == 1.0          # ramal 160 -> Poa/Suzano
+
+
+def test_dashboard_filtro_regional(banco_temporario):
+    from input_module import relatorios
+    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_corrente=7,
+                                    regional="Guarulhos")
+    assert d["hero"]["carteira"] == 2.0                   # só POSTES; ramal era Poa/Suzano
+    assert d["hero"]["meta"] == 4.0
+    regs = {r["regional"]: r for r in d["regionais"]}
+    assert len(regs) == 6                                 # bloco regionais não filtra
