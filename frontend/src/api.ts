@@ -257,6 +257,14 @@ export async function moverParaPlano(
   return res.json();
 }
 
+export async function resumoForaDoPlano(): Promise<{ corrigidas_fora_do_plano: number }> {
+  const res = await fetch(BASE + "/integracao/resumo-fora-do-plano", {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw await erroComDetail(res, "GET /integracao/resumo-fora-do-plano");
+  return res.json() as Promise<{ corrigidas_fora_do_plano: number }>;
+}
+
 export const EDPApi = {
   BASE,
   fetchData,
@@ -270,4 +278,5 @@ export const EDPApi = {
   openCoffee,
   revisarNota,
   moverParaPlano,
+  resumoForaDoPlano,
 };

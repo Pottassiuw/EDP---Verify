@@ -77,6 +77,13 @@ export const InputApi = {
 
   migrar: () => req<{ resultado: string }>('/migrar', escrita('POST')),
 
+  dashboardRelatorios: (regional?: string) =>
+    req<import('../relatorios/types').DashboardRelatorios>(
+      `/relatorios/dashboard${regional ? `?regional=${encodeURIComponent(regional)}` : ''}`),
+  sincronizarMetas: () =>
+    req<import('../relatorios/types').MetasInfo & { sincronizou: boolean }>(
+      '/metas/sincronizar', escrita('POST')),
+
   ramal: () => req<RamalDataset>('/ramal'),
   importarRamal: (notas: Partial<NotaRamal>[]) =>
     req<{ inseridas: number }>('/ramal/bulk', escrita('POST', { notas })),
