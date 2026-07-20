@@ -1,5 +1,7 @@
 import React from 'react';
 import type { InputDataset, NotaInput, NotaRamal } from './types';
+import type { FiltersState } from './filters';
+import { filtrarRegistros } from './overview';
 import { InputApi } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
@@ -41,7 +43,13 @@ const NOTA_RAMAL_VAZIA: Record<string, string> = {
 
 interface Mensagem { tipo: 'ok' | 'erro'; texto: string; }
 
-export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): React.JSX.Element {
+export function Ramal({
+  dadosPrincipais,
+  estadoFiltros,
+}: {
+  dadosPrincipais: InputDataset;
+  estadoFiltros?: FiltersState;
+}): React.JSX.Element {
   const { data: dadosRamal, isLoading, error } = useRamalData();
   const recarregar = useRecarregarRamal();
 
@@ -56,7 +64,11 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const [novaNota, setNovaNota] = React.useState<Record<string, string>>({ ...NOTA_RAMAL_VAZIA });
   const [textoColagem, setTextoColagem] = React.useState('');
   const registros = dadosRamal?.registros ?? [];
-  const registrosComoNotaInput = registros as unknown as NotaInput[];
+  const registrosComoNotaInput = React.useMemo(() => {
+    const raw = registros as unknown as NotaInput[];
+    if (!estadoFiltros) return raw;
+    return filtrarRegistros(raw, estadoFiltros);
+  }, [registros, estadoFiltros]);
 
   const previewColagem = React.useMemo(
     () => parseColagemTsv(textoColagem, COLUNAS_COLAGEM_RAMAL),

@@ -474,3 +474,23 @@ def rateio_executar(
     except Exception as e:
         raise HTTPException(500, f"Erro ao executar robô SAP: {e}")
 
+
+# ── Status 10 Relatório e E-mail ──────────────────────────────────────────────
+from input_module.status10_service import obter_resumo_status10, gerar_email_outlook_status10
+
+
+@router.get("/status10/resumo")
+def status10_resumo():
+    garantir_banco()
+    return obter_resumo_status10()
+
+
+@router.post("/status10/enviar-email")
+def status10_enviar_email(usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    resultado = gerar_email_outlook_status10(usuario=usuario)
+    if not resultado["ok"]:
+        raise HTTPException(400, detail=resultado["mensagem"])
+    return resultado
+
+

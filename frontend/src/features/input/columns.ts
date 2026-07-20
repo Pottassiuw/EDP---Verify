@@ -63,14 +63,21 @@ export const ROTULOS: Record<string, string> =
 export const CAMPOS_EDITAVEIS = COLUNAS.filter((c) => c.editavel).map((c) => c.key);
 
 /** Campos oferecidos nos filtros avançados, por tipo (Input/app.py:216-217). */
-export const FILTROS_TEXTO = ['Local_Instalacao', 'Observacao', 'Ordem',
-  'Centro_Responsavel', 'Equipamento_Protecao'];
-export const FILTROS_FAIXA = ['Planejado_DDPM', 'ranking', 'Total_planejado_ordem',
-  'Total_real_ordem', 'Exec_percentagem_ordem', 'N_Clientes_Conjunto',
-  'CHI', 'CI', 'Ocorrencia', 'DEC', 'FEC', 'Nota_Mae'];
-export const FILTROS_MULTI = ['Status_Nota', 'Regional', 'Mes_Execucao_Planejado',
-  'Prioridade_Nota', 'Conjunto', 'Cidade', 'CJ_Aneel', 'Conj.critico',
-  'Export_status', 'Status_Final', 'Ordem_Executada', 'Regional_CSD'];
+export const FILTROS_TEXTO = [
+  'Local_Instalacao', 'Observacao', 'Ordem', 'Centro_Responsavel',
+  'Equipamento_Protecao', 'Numero_Nota'
+];
+export const FILTROS_FAIXA = [
+  'Planejado_DDPM', 'ranking', 'Total_planejado_ordem', 'Total_real_ordem',
+  'Exec_percentagem_ordem', 'N_Clientes_Conjunto', 'CHI', 'CI', 'Ocorrencia',
+  'DEC', 'FEC', 'Modular', 'Total_planejado_modular', 'CHI_Conj', 'DEC_PROG_CHI'
+];
+export const FILTROS_MULTI = [
+  'Status_Nota', 'Regional', 'Mes_Execucao_Planejado', 'Prioridade_Nota',
+  'Conjunto', 'Cidade', 'CJ_Aneel', 'Conj.critico', 'Export_status',
+  'Status_Final', 'Ordem_Executada', 'Regional_CSD', 'Nota_Mae',
+  'Status_Obra', 'Circuito', 'Medida_SAP', 'Medida_vs_Planejado'
+];
 
 /** Colunas da colagem em massa, na ordem (Input/app.py:674-679). */
 export const COLUNAS_COLAGEM = ['Numero_Nota', 'Status_Nota', 'Prioridade_Nota',

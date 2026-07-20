@@ -7,7 +7,6 @@ import { Loader2 } from 'lucide-react';
 import { Overview } from './overview';
 import { Manage } from './manage';
 import { Ramal } from './ramal';
-import { Rateio } from './rateio';
 import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
@@ -19,7 +18,6 @@ export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão Geral' },
   { id: 'gerenciar', rotulo: 'Gerenciar' },
   { id: 'ramal', rotulo: 'Ramal' },
-  { id: 'rateio', rotulo: 'Rateio' },
   { id: 'relatorios', rotulo: 'Relatórios' },
   { id: 'logs', rotulo: 'Logs' },
   { id: 'config', rotulo: 'Configurações' },
@@ -92,7 +90,7 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
         </div>
       </div>
 
-      {dados && (sub === 'visao' || sub === 'gerenciar') && (
+      {dados && (sub === 'visao' || sub === 'gerenciar' || sub === 'ramal' || sub === 'relatorios') && (
         <div className="shrink-0 bg-surface border-b-[1px] border-b-line px-[22px] py-[12px]">
           <Filters registros={dados.registros} estado={estadoFiltros} setEstado={setEstadoFiltros} />
         </div>
@@ -123,9 +121,8 @@ export function InputSection({ sub, setSub }: InputSectionProps): React.JSX.Elem
 
       {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
       {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
-      {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} />}
-      {dados && sub === 'rateio' && <Rateio dados={dados} recarregar={recarregar} />}
-      {dados && sub === 'relatorios' && <Reports dados={dados} />}
+      {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} estadoFiltros={estadoFiltros} />}
+      {dados && sub === 'relatorios' && <Reports dados={dados} estadoFiltros={estadoFiltros} />}
       {dados && sub === 'logs' && <Logs />}
       {dados && sub === 'config' && <Settings dados={dados} />}
     </div>

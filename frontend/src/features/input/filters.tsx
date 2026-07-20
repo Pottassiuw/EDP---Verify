@@ -12,7 +12,7 @@ import { CLASSE_SELECT_MONO } from "./ui";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Search, X, ChevronDown, Filter, Check } from "lucide-react";
+import { Search, X, ChevronDown, ChevronRight, Filter, Check } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ export interface FiltersState {
 export const FILTROS_INICIAIS: FiltersState = {
   busca: "",
   filtros: [],
-  somente2026: false,
+  somente2026: true,
 };
 
 interface FiltersProps {
@@ -45,7 +45,57 @@ function tipoDoCampo(campo: string): Filtro["tipo"] {
   return "multi";
 }
 
-/** Componente Premium de Multi-Seleção (Dropdown com Checkboxes e Busca Interna) */
+interface GroupedOptions {
+  isDateGrouped: boolean;
+  groups: Array<{
+    year: string;
+    items: string[];
+  }>;
+}
+
+function detectAndGroupDateOptions(options: string[]): GroupedOptions {
+  if (!options || options.length === 0) {
+    return { isDateGrouped: false, groups: [] };
+  }
+
+  const datePattern = /^([a-zA-ZçáéíóúÁÉÍÓÚ]{3,9}|\d{1,2})[-/\s]+(\d{4})$/;
+  const dateMatches = options.map((opt) => String(opt).trim().match(datePattern));
+  const validMatchesCount = dateMatches.filter(Boolean).length;
+
+  if (validMatchesCount / options.length < 0.6) {
+    return { isDateGrouped: false, groups: [] };
+  }
+
+  const mapByYear = new Map<string, string[]>();
+
+  options.forEach((opt, idx) => {
+    const match = dateMatches[idx];
+    const year = match ? match[2] : "Outros";
+    if (!mapByYear.has(year)) {
+      mapByYear.set(year, []);
+    }
+    mapByYear.get(year)!.push(opt);
+  });
+
+  const currentYearStr = String(new Date().getFullYear());
+
+  const sortedYears = Array.from(mapByYear.keys()).sort((a, b) => {
+    if (a === currentYearStr) return -1;
+    if (b === currentYearStr) return 1;
+    if (a === "Outros") return 1;
+    if (b === "Outros") return -1;
+    return Number(b) - Number(a);
+  });
+
+  const groups = sortedYears.map((year) => ({
+    year,
+    items: mapByYear.get(year)!,
+  }));
+
+  return { isDateGrouped: true, groups };
+}
+
+/** Componente Premium de Multi-Seleção (Dropdown com Checkboxes, Agrupamento de Datas e Busca Interna) */
 interface MultiSelectProps {
   options: string[];
   selected: string[];
@@ -61,7 +111,24 @@ export function MultiSelect({
 }: MultiSelectProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [expandedYears, setExpandedYears] = React.useState<Record<string, boolean>>({});
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const currentYearStr = String(new Date().getFullYear());
+
+  const isYearExpanded = (year: string): boolean => {
+    if (search.trim() !== "") return true; // Mostra tudo ao buscar
+    if (year in expandedYears) return expandedYears[year];
+    return year === currentYearStr; // Ano atual aberto por padrão, outros colapsados
+  };
+
+  const toggleYearExpanded = (year: string, e: React.MouseEvent): void => {
+    e.stopPropagation();
+    setExpandedYears((prev) => ({
+      ...prev,
+      [year]: !isYearExpanded(year),
+    }));
+  };
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent): void {
@@ -88,11 +155,25 @@ export function MultiSelect({
     );
   }, [options, search]);
 
+  const grouped = React.useMemo(() => {
+    return detectAndGroupDateOptions(filtered);
+  }, [filtered]);
+
   const toggle = (val: string): void => {
     if (selected.includes(val)) {
       onChange(selected.filter((v) => v !== val));
     } else {
       onChange([...selected, val]);
+    }
+  };
+
+  const toggleYear = (yearItems: string[]): void => {
+    const allChecked = yearItems.every((item) => selected.includes(item));
+    if (allChecked) {
+      onChange(selected.filter((v) => !yearItems.includes(v)));
+    } else {
+      const newSelected = Array.from(new Set([...selected, ...yearItems]));
+      onChange(newSelected);
     }
   };
 
@@ -113,7 +194,7 @@ export function MultiSelect({
         onClick={() => setOpen(!open)}
         className="flex h-[32px] w-full items-center justify-between gap-[8px] rounded-[6px] border border-line-2 bg-bg-2 px-[10px] text-[12px] text-text hover:bg-surface-3 transition-colors outline-none focus-visible:border-primary"
       >
-        <span className="truncate max-w-[90%]">
+        <span className="truncate max-w-[90%] font-mono">
           {selected.length === 0
             ? placeholder
             : `${selected.length} selecionado(s)`}
@@ -122,14 +203,14 @@ export function MultiSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-[4px] z-50 w-full min-w-[220px] max-w-[280px] rounded-[8px] border border-line-2 bg-surface shadow-lg p-[6px] flex flex-col gap-[6px] max-h-[260px]">
+        <div className="absolute left-0 mt-[4px] z-50 w-full min-w-[230px] max-w-[300px] rounded-[8px] border border-line-2 bg-surface shadow-lg p-[6px] flex flex-col gap-[6px] max-h-[300px]">
           <div className="relative flex items-center shrink-0">
             <Search size={12} className="absolute left-[8px] text-text-mute" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar..."
+              placeholder="Buscar (ex: 2026, jan)..."
               className="h-[28px] w-full pl-[26px] pr-[8px] text-[12px] rounded-[4px] border border-line bg-bg-2 text-text outline-none focus:border-primary font-sans"
             />
           </div>
@@ -150,27 +231,110 @@ export function MultiSelect({
               Limpar filtro
             </button>
           </div>
-          <div className="overflow-y-auto flex-1 flex flex-col gap-[2px] pr-[2px]">
-            {filtered.map((opt) => {
-              const isChecked = selected.includes(opt);
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => toggle(opt)}
-                  className="flex items-center gap-[8px] w-full text-left px-[8px] py-[6px] rounded-[4px] hover:bg-surface-2 text-[12px] cursor-pointer transition-colors group"
-                >
-                  <div className={`flex items-center justify-center size-[14px] rounded border transition-colors ${
-                    isChecked
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-line-2 bg-bg-2 group-hover:border-text-dim'
-                  }`}>
-                    {isChecked && <Check size={10} strokeWidth={3} />}
+          <div className="overflow-y-auto flex-1 flex flex-col gap-[4px] pr-[2px]">
+            {grouped.isDateGrouped ? (
+              // EXIBIÇÃO AGRUPADA POR ANO (COMPILAÇÃO HIERÁRQUICA)
+              grouped.groups.map((group) => {
+                const yearSelectedCount = group.items.filter((i) => selected.includes(i)).length;
+                const isYearFullySelected = yearSelectedCount === group.items.length;
+                const isYearPartial = yearSelectedCount > 0 && !isYearFullySelected;
+                const isExpanded = isYearExpanded(group.year);
+
+                return (
+                  <div key={group.year} className="flex flex-col gap-[2px] border-b border-line-2/40 pb-[4px]">
+                    {/* Cabeçalho do Ano */}
+                    <div className="flex items-center justify-between w-full px-[6px] py-[4px] rounded-[4px] bg-bg-2/80 hover:bg-surface-2 text-[11.5px] font-bold text-text-dim transition-colors group/year">
+                      <button
+                        type="button"
+                        onClick={() => toggleYear(group.items)}
+                        className="flex items-center gap-[6px] cursor-pointer flex-1 text-left"
+                      >
+                        <div
+                          className={`flex items-center justify-center size-[13px] rounded border transition-colors ${
+                            isYearFullySelected
+                              ? "border-primary bg-primary text-white"
+                              : isYearPartial
+                              ? "border-primary bg-primary/20 text-primary font-bold"
+                              : "border-line-2 bg-bg-2 group-hover/year:border-text-dim"
+                          }`}
+                        >
+                          {isYearFullySelected && <Check size={9} strokeWidth={3} />}
+                          {isYearPartial && <span className="text-[9px] text-primary">▪</span>}
+                        </div>
+                        <span>📅 Ano {group.year}</span>
+                      </button>
+
+                      <div className="flex items-center gap-[6px]">
+                        <span className="text-[10px] font-normal font-mono text-text-mute">
+                          {yearSelectedCount}/{group.items.length}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleYearExpanded(group.year, e)}
+                          className="p-[2px] hover:bg-surface-3 rounded text-text-mute hover:text-text cursor-pointer transition-colors"
+                          title={isExpanded ? "Colapsar ano" : "Expandir ano"}
+                        >
+                          {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Meses do Ano Identados (se expandido) */}
+                    {isExpanded && (
+                      <div className="grid grid-cols-2 gap-[2px] pl-[16px] pt-[2px]">
+                        {group.items.map((opt) => {
+                          const isChecked = selected.includes(opt);
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => toggle(opt)}
+                              className="flex items-center gap-[6px] w-full text-left px-[6px] py-[4px] rounded-[4px] hover:bg-surface-2 text-[11.5px] cursor-pointer transition-colors group/item"
+                            >
+                              <div
+                                className={`flex items-center justify-center size-[12px] rounded border transition-colors ${
+                                  isChecked
+                                    ? "border-primary bg-primary text-white"
+                                    : "border-line-2 bg-bg-2 group-hover/item:border-text-dim"
+                                }`}
+                              >
+                                {isChecked && <Check size={8} strokeWidth={3} />}
+                              </div>
+                              <span className="truncate text-text font-mono">{opt}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <span className="truncate text-text font-mono">{opt}</span>
-                </button>
-              );
-            })}
+                );
+              })
+            ) : (
+              // EXIBIÇÃO EM LISTA SIMPLES (PADRÃO)
+              filtered.map((opt) => {
+                const isChecked = selected.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => toggle(opt)}
+                    className="flex items-center gap-[8px] w-full text-left px-[8px] py-[5px] rounded-[4px] hover:bg-surface-2 text-[12px] cursor-pointer transition-colors group"
+                  >
+                    <div
+                      className={`flex items-center justify-center size-[14px] rounded border transition-colors ${
+                        isChecked
+                          ? "border-primary bg-primary text-white"
+                          : "border-line-2 bg-bg-2 group-hover:border-text-dim"
+                      }`}
+                    >
+                      {isChecked && <Check size={10} strokeWidth={3} />}
+                    </div>
+                    <span className="truncate text-text font-mono">{opt}</span>
+                  </button>
+                );
+              })
+            )}
+
             {filtered.length === 0 && (
               <div className="py-[12px] text-center text-text-mute text-[11px] font-sans">
                 Sem resultados
@@ -211,7 +375,7 @@ export function Filters({
     });
   }
 
-  const temFiltrosAtivos = estado.filtros.length > 0 || estado.busca || estado.somente2026;
+  const temFiltrosAtivos = estado.filtros.length > 0 || Boolean(estado.busca) || !estado.somente2026;
 
   return (
     <div className="flex flex-col gap-[10px]">
@@ -236,7 +400,7 @@ export function Filters({
           )}
         </div>
 
-        {/* Seletor On/Off para Mês Planejado de 2026 */}
+        {/* Seletor On/Off para Mês Planejado do Ano Atual */}
         <div className="flex items-center gap-[8px] bg-bg-2 border border-line-2 px-[12px] h-[34px] rounded-sm select-none">
           <Switch
             id="switch-2026"
@@ -245,7 +409,7 @@ export function Filters({
             size="sm"
           />
           <Label htmlFor="switch-2026" className="text-[12.5px] font-medium text-text-dim cursor-pointer">
-            Planejado 2026
+            Planejado {new Date().getFullYear()}
           </Label>
         </div>
 
@@ -272,7 +436,7 @@ export function Filters({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setEstado({ busca: "", filtros: [], somente2026: false })}
+            onClick={() => setEstado(FILTROS_INICIAIS)}
             className="h-[34px] text-text-mute hover:text-text cursor-pointer"
           >
             Limpar filtros

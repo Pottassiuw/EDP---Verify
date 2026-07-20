@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/branded/section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiSelect } from './filters';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 
 /** Cores do "semáforo" (porte de Input/app.py:1132-1139). */
 const CORES_AUDITORIA: Record<string, string> = {
@@ -210,8 +210,22 @@ function calcularSLA(n: NotaInput): SLADados {
   }
 }
 
-export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
+import type { FiltersState } from './filters';
+import { filtrarRegistros } from './overview';
+
+export function Reports({
+  dados,
+  estadoFiltros,
+}: {
+  dados: InputDataset;
+  estadoFiltros?: FiltersState;
+}): React.JSX.Element {
   const [tab, setTab] = React.useState<TabRelatorio>('prazos');
+
+  const registrosBase = React.useMemo(() => {
+    if (!estadoFiltros) return dados.registros;
+    return filtrarRegistros(dados.registros, estadoFiltros);
+  }, [dados.registros, estadoFiltros]);
 
   // --- FILTROS ABA PRAZOS ---
   const [rapido, setRapido] = React.useState<(typeof FILTROS_RAPIDOS)[number]>('(Nenhum)');
@@ -235,10 +249,29 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
   const [slaStatus, setSlaStatus] = React.useState<string[]>([]);
 
   const [exportando, setExportando] = React.useState(false);
+  const [enviandoEmailSt10, setEnviandoEmailSt10] = React.useState(false);
+
+  const dispararEmailStatus10 = async (): Promise<void> => {
+    setEnviandoEmailSt10(true);
+    try {
+      const res = await InputApi.enviarEmailStatus10();
+      if (res.ok) {
+        toast.success(res.mensagem);
+      } else {
+        toast.error('Erro ao gerar e-mail', { description: res.mensagem });
+      }
+    } catch (e) {
+      toast.error('Falha no envio de e-mail', {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setEnviandoEmailSt10(false);
+    }
+  };
 
   // --- PROCESSAMENTO DADOS: PRAZOS ---
   const auditadas = React.useMemo(() => {
-    let r: NotaInput[] = dados.registros;
+    let r: NotaInput[] = registrosBase;
     if (rapido === 'Passíveis de Encerramento') {
       r = r.filter((n) => n.Status_Nota !== '99 Encerrado' && n.Ordem_Executada === 'SIM');
     } else if (rapido === 'Em Andamento') {
@@ -252,7 +285,7 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
     if (fStatus.length) r = r.filter((n) => fStatus.includes(String(n.Auditoria_Cronograma ?? '')));
     if (fRegional.length) r = r.filter((n) => fRegional.includes(String(n.Regional ?? '')));
     return r;
-  }, [dados.registros, rapido, fAnos, fStatus, fRegional]);
+  }, [registrosBase, rapido, fAnos, fStatus, fRegional]);
 
   const contagens = React.useMemo(() => {
     const mapa = new Map<string, number>();
@@ -265,12 +298,12 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
 
   const anosDisponiveis = React.useMemo(() => {
     const anos = new Set<string>();
-    dados.registros.forEach((n) => {
+    registrosBase.forEach((n) => {
       const a = anoEncerramento(n['Encerram.por data']);
       if (a) anos.add(String(a));
     });
     return [...anos].sort().reverse();
-  }, [dados.registros]);
+  }, [registrosBase]);
 
   const kpisPrazos = [
     { rotulo: 'Total Auditadas', valor: auditadas.length },
@@ -287,12 +320,12 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
 
   // --- PROCESSAMENTO DADOS: FINANÇAS ---
   const registrosFinancas = React.useMemo(() => {
-    let r = dados.registros;
+    let r = registrosBase;
     if (finMeses.length) r = r.filter((n) => finMeses.includes(String(n.Mes_Execucao_Planejado ?? '')));
     if (finRegionais.length) r = r.filter((n) => finRegionais.includes(String(n.Regional ?? '')));
     if (finStatus.length) r = r.filter((n) => finStatus.includes(String(n.Status_Nota ?? '')));
     return r;
-  }, [dados.registros, finMeses, finRegionais, finStatus]);
+  }, [registrosBase, finMeses, finRegionais, finStatus]);
 
   const totaisFinancas = React.useMemo(() => {
     let total = 0;
@@ -316,7 +349,8 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
         emExecucao += valor;
       } else if (statusStr.startsWith('99')) {
         encerrado += valor;
-      } else if (statusStr.startsWith('54') || statusStr.startsWith('52')) {
+      }
+      if (n.Ordem_Executada === 'SIM') {
         executado += valor;
       }
     });
@@ -346,12 +380,12 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
 
   // --- PROCESSAMENTO DADOS: PLANEJAMENTO (STATUS 10) ---
   const registrosPlanejamento = React.useMemo(() => {
-    let r = dados.registros.filter((n) => String(n.Status_Nota ?? '').startsWith('10'));
+    let r = registrosBase.filter((n) => String(n.Status_Nota ?? '').startsWith('10'));
     if (planMeses.length) r = r.filter((n) => planMeses.includes(String(n.Mes_Execucao_Planejado ?? '')));
     if (planRegionais.length) r = r.filter((n) => planRegionais.includes(String(n.Regional ?? '')));
     if (planPrioridades.length) r = r.filter((n) => planPrioridades.includes(String(n.Prioridade_Nota ?? '')));
     return r;
-  }, [dados.registros, planMeses, planRegionais, planPrioridades]);
+  }, [registrosBase, planMeses, planRegionais, planPrioridades]);
 
   const totaisPlanejamento = React.useMemo(() => {
     let totalValor = 0;
@@ -384,8 +418,8 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
 
   // --- PROCESSAMENTO DADOS: ADERÊNCIA (SLA) ---
   const registrosSLA = React.useMemo(() => {
-    return dados.registros.map((n) => calcularSLA(n));
-  }, [dados.registros]);
+    return registrosBase.map((n) => calcularSLA(n));
+  }, [registrosBase]);
 
   const registrosSLAFiltrados = React.useMemo(() => {
     let r = registrosSLA;
@@ -880,6 +914,40 @@ export function Reports({ dados }: { dados: InputDataset }): React.JSX.Element {
       {/* CONTEÚDO DA ABA: EM PLANEJAMENTO (STATUS 10) */}
       {tab === 'planejamento' && (
         <>
+          {/* Card de Disparo do E-mail de Engenharia */}
+          <div className="flex justify-between items-center bg-surface border border-line p-[14px] rounded-[8px] gap-[12px] flex-wrap shadow-xs">
+            <div className="flex items-center gap-[10px]">
+              <div className="p-[8px] rounded-full bg-primary/10 text-primary">
+                <Mail size={18} />
+              </div>
+              <div>
+                <h4 className="text-[13px] font-bold text-text">Relatório Diário de Engenharia (Status 10)</h4>
+                <p className="text-[11.5px] text-text-mute">
+                  Gera a tabela analítica formatada e abre o rascunho de e-mail no Outlook pronto para disparo aos engenheiros.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              disabled={enviandoEmailSt10 || registrosPlanejamento.length === 0}
+              onClick={() => { void dispararEmailStatus10(); }}
+              className="bg-primary hover:bg-primary/90 text-white gap-[6px]"
+            >
+              {enviandoEmailSt10 ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Gerando no Outlook...
+                </>
+              ) : (
+                <>
+                  <Mail size={14} />
+                  Disparar E-mail Status 10
+                </>
+              )}
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-[16px] shrink-0">
             {/* Bloco de KPIs e Gráficos de Prioridade */}
             <Card className="lg:col-span-2 bg-surface border border-line flex flex-col justify-between">

@@ -105,6 +105,12 @@ export const InputApi = {
     if (!r.ok) throw new Error(await r.text());
     return r.blob();
   },
+  obterStatus10Resumo: async (): Promise<import('./types').Status10Resumo> => {
+    return req<import('./types').Status10Resumo>('/status10/resumo');
+  },
+  enviarEmailStatus10: async (): Promise<{ ok: boolean; mensagem: string }> => {
+    return req<{ ok: boolean; mensagem: string }>('/status10/enviar-email', escrita('POST'));
+  },
 };
 
 export function baixarBlob(blob: Blob, nome: string): void {

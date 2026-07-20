@@ -22,10 +22,13 @@ import {
 import { SegTabs, Banner } from '@/components/branded/section';
 import { ConfirmModal } from '../coffee/confirm-modal';
 
-type Modo = 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
+import { Rateio } from './rateio';
+
+type Modo = 'rapida' | 'lote' | 'rateio' | 'exclusao' | 'cadastro' | 'colagem';
 const MODOS: { id: Modo; rotulo: string }[] = [
   { id: 'rapida', rotulo: 'Edição Rápida' },
   { id: 'lote', rotulo: 'Edição em Lote' },
+  { id: 'rateio', rotulo: 'Rateio de Medidas' },
   { id: 'exclusao', rotulo: 'Exclusão' },
   { id: 'cadastro', rotulo: 'Cadastrar Nota' },
   { id: 'colagem', rotulo: 'Colar Planilha' },
@@ -319,6 +322,10 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {modo === 'rateio' && (
+        <Rateio dados={dados} estadoFiltros={estadoFiltros} recarregar={recarregar} />
       )}
 
       {modo === 'colagem' && (

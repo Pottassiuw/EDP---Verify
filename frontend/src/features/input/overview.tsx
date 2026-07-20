@@ -19,7 +19,8 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
     resultado = numeros.length ? resultado.filter((r) => numeros.includes(r.Numero_Nota)) : [];
   }
   if (estado.somente2026) {
-    resultado = resultado.filter((r) => String(r.Mes_Execucao_Planejado ?? '').includes('2026'));
+    const anoAtual = String(new Date().getFullYear());
+    resultado = resultado.filter((r) => String(r.Mes_Execucao_Planejado ?? '').includes(anoAtual));
   }
   return aplicarFiltros(resultado, estado.filtros);
 }
