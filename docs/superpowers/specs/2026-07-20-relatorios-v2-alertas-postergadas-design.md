@@ -33,17 +33,22 @@ não aparecem:
 3. **Postergadas — exibição**: **coluna "Postergado" na tabela da visão
    anual** (total do ano por plano) **+ KPI no hero** ("Postergadas" do mês
    corrente).
-4. **Postergadas — semântica**: uma nota conta como postergada no **mês de
-   onde saiu** (from-month). O KPI do hero soma as postergadas cujo from-month
-   é o `mes_corrente`; a coluna da tabela soma o ano inteiro por plano.
+4. **Postergadas — semântica**: o arquivo real **não guarda o mês de origem**
+   (from-month não existe como coluna). A nota conta no **mês de destino**
+   (`Mês de Execução Planejado - DDPM`, para onde foi replanejada). O KPI do
+   hero soma as postergadas cujo mês destino é o `mes_corrente` (leitura:
+   "notas replanejadas PARA este mês"); a coluna da tabela soma o ano inteiro
+   por plano.
 5. **Postergado é quantidade** (soma de DDPM/qtd das notas postergadas),
    consistente com `meta`/`carteira` que também são quantidades — não uma
    contagem de linhas.
 6. **Fonte Postergadas**: a mesma planilha e o mesmo canal (pasta OneDrive
    sincronizada localmente). Sem editor no app — o Excel é a fonte da verdade.
 7. **Nomes exatos das colunas da aba `Postergadas`**: verificados contra o
-   arquivo real na implementação (o arquivo vive na máquina do servidor, não
-   acessível no ambiente de desenvolvimento). O `try/except` do sync já
+   arquivo real — `Regional`, `Projeto\nConstrução`, `Mês de Execução
+   Planejado - DDPM` e `Planejado-DDPM` (quantidade). `_postergadas` resolve
+   por nome **normalizado** (colapsa espaço duplo, quebra de linha e caixa),
+   porque os cabeçalhos reais têm essas variações. O `try/except` do sync
    garante que um nome de coluna/aba errado degrada com aviso no estado, sem
    derrubar o dashboard.
 

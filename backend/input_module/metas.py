@@ -32,19 +32,41 @@ def _nome_curto(df_base: pd.DataFrame) -> dict:
     return pares
 
 
-def _postergadas(df: pd.DataFrame) -> pd.DataFrame:
-    """Aba Postergadas -> agregado (Ano, Mes-de-onde-saiu, Regional, Plano, Qtd).
+def _coluna(df: pd.DataFrame, nome: str) -> str:
+    """Resolve o nome real da coluna por comparação normalizada.
 
-    Grão: uma linha por nota postergada, atribuída ao mês DE onde saiu (from-month).
-    Nomes de coluna ('Regionais', 'Mês De', 'Plano', 'Qtd') espelham o fixture
-    sintético; conferir contra o arquivo real na verificação (Task 2, Step 6)."""
-    df = df.dropna(subset=["Regionais", "Mês De", "Plano"])
-    mes = pd.to_datetime(df["Mês De"], errors="coerce")
+    Os cabeçalhos da aba Postergadas variam espaço duplo, quebra de linha e
+    caixa (ex.: 'Projeto\\nConstrução', 'Mês de Execução  Planejado - DDPM');
+    casar pelo nome exato quebrava o sync. Coluna ausente vira erro claro que
+    o try/except do sync transforma em aviso no card de metas."""
+    def _norm(valor: object) -> str:
+        return " ".join(str(valor).split()).casefold()
+    alvo = _norm(nome)
+    for coluna in df.columns:
+        if _norm(coluna) == alvo:
+            return coluna
+    raise KeyError(f"coluna '{nome}' ausente na aba Postergadas")
+
+
+def _postergadas(df: pd.DataFrame) -> pd.DataFrame:
+    """Aba Postergadas -> agregado (Ano, Mes, Regional, Plano, Qtd).
+
+    Grão real do Excel: uma linha por nota postergada. A quantidade é a soma
+    de 'Planejado-DDPM'. O mês é o de 'Mês de Execução Planejado - DDPM' (mês
+    DESTINO planejado): o arquivo real não guarda o mês de origem, então a
+    postergada é atribuída ao mês para onde a nota foi replanejada."""
+    col_regional = _coluna(df, "Regional")
+    col_plano = _coluna(df, "Projeto Construção")
+    col_mes = _coluna(df, "Mês de Execução Planejado - DDPM")
+    col_qtd = _coluna(df, "Planejado-DDPM")
+
+    df = df.dropna(subset=[col_regional, col_plano, col_mes])
+    mes = pd.to_datetime(df[col_mes], errors="coerce")
     out = pd.DataFrame({
         "Ano": mes.dt.year, "Mes": mes.dt.month,
-        "Regional": df["Regionais"].astype(str).str.strip(),
-        "Plano": df["Plano"].astype(str).str.strip(),
-        "Qtd": pd.to_numeric(df["Qtd"], errors="coerce").fillna(0.0),
+        "Regional": df[col_regional].astype(str).str.strip(),
+        "Plano": df[col_plano].astype(str).str.strip(),
+        "Qtd": pd.to_numeric(df[col_qtd], errors="coerce").fillna(0.0),
     }).dropna(subset=["Ano", "Mes"])
     return out.groupby(["Ano", "Mes", "Regional", "Plano"], as_index=False)["Qtd"].sum()
 

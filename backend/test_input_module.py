@@ -930,10 +930,10 @@ def _xlsx_controle(caminho, meta_jan=17.0, com_postergadas=True):
         {"Projeto": "RAMAL", "Unidade": "Ponto", "Área": "CSD", "Modular R$": 694.5},
     ])
     postergadas = pd.DataFrame([
-        {"Regionais": "Guarulhos", "Mês De": pd.Timestamp(2026, 7, 1),
-         "Plano": "POSTES - CAPEX", "Qtd": 3.0},
-        {"Regionais": "Guarulhos", "Mês De": pd.Timestamp(2026, 8, 1),
-         "Plano": "POSTES - CAPEX", "Qtd": 2.0},
+        {"Regional": "Guarulhos", "Mês de Execução Planejado - DDPM": pd.Timestamp(2026, 7, 1),
+         "Projeto\nConstrução": "POSTES - CAPEX", "Planejado-DDPM": 3.0},
+        {"Regional": "Guarulhos", "Mês de Execução Planejado - DDPM": pd.Timestamp(2026, 8, 1),
+         "Projeto\nConstrução": "POSTES - CAPEX", "Planejado-DDPM": 2.0},
     ])
     w = pd.ExcelWriter(caminho, engine="openpyxl")
     try:

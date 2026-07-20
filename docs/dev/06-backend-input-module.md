@@ -358,10 +358,13 @@ completamente as tabelas `metas_plano`, `planos_depara` e
   com o apelido; demais em colisão usam o nome longo sem " - CAPEX").
 - `metas_postergadas` — quantidade postergada por Ano/Mês/Regional/Plano,
   lida da aba `Postergadas` do mesmo Excel (`metas._postergadas`). O grão
-  é o **mês de onde a nota saiu** (from-month) — uma nota planejada para
-  julho e empurrada para setembro conta como postergada em julho, não em
-  setembro. `df_postergacoes` é opcional (`None` mantém a tabela intocada,
-  retrocompatível com o replace de metas puro); o sync sempre a passa.
+  é o **mês de destino** (`Mês de Execução Planejado - DDPM`, o mês para
+  onde a nota foi replanejada) — o arquivo real **não guarda o mês de
+  origem**, então a postergada conta no mês destino, não no de onde saiu.
+  A quantidade é a **soma de `Planejado-DDPM`**; regional e plano vêm de
+  `Regional` e `Projeto Construção`. `df_postergacoes` é opcional (`None`
+  mantém a tabela intocada, retrocompatível com o replace de metas puro);
+  o sync sempre a passa.
 
 Não há merge/upsert — o que o Excel diz é tudo; dados que saíram do
 Excel são apagados (garantindo que o banco reflete fielmente a fonte de
@@ -370,14 +373,12 @@ a exceção cai no mesmo `try/except` de `sincronizar_se_preciso` — a última
 sincronização boa (metas **e** postergadas) é preservada, e o erro aparece
 em `metas_info.erro` no dashboard.
 
-**Nomes de coluna não verificados contra o arquivo real:** o parser em
-`metas._postergadas` assume colunas `Regionais`, `Mês De`, `Plano`, `Qtd`
-(espelhando o padrão da aba `base`), mas o arquivo real vive apenas na
-máquina que hospeda o servidor em produção (`e713611`) e não estava
-acessível no ambiente onde esta funcionalidade foi implementada. Confirmar
-os nomes reais na primeira sincronização em produção — um nome divergente
-não derruba o dashboard (vira erro visível no card de metas), mas a
-quantidade postergada ficará zerada até o ajuste.
+Os nomes de coluna foram verificados contra o arquivo real. `_postergadas`
+resolve cada coluna pelo helper `_coluna`, que casa por nome **normalizado**
+(colapsa espaço duplo, quebra de linha e caixa) — o arquivo real usa
+cabeçalhos como `Projeto\nConstrução` e `Mês de Execução  Planejado - DDPM`
+(espaço duplo), que quebravam o casamento por nome exato. Coluna realmente
+ausente vira `KeyError` claro, degradado em aviso no card de metas.
 
 ### Versionamento: log_arquivos e obter_versao_dataset
 
