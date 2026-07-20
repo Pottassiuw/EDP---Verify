@@ -38,7 +38,7 @@ function escrita(method: string, corpo?: unknown): RequestInit {
 export const InputApi = {
   me: () => req<{ usuario: string }>('/me'),
   dados: () => req<InputDataset>('/notas'),
-  sync: () => req<{ ultima_alteracao: string | null; versao: string }>('/sync'),
+  sync: () => req<{ ultima_alteracao: string | null; versao: string; sincronizando?: boolean }>('/sync'),
 
   editar: (linhas: Partial<NotaInput>[]) =>
     req<EdicaoResultado>('/notas', escrita('PATCH', { linhas })),
@@ -94,6 +94,16 @@ export const InputApi = {
   obterHierarquia: (numero: number) =>
     req<HierarquiaInfo>(`/hierarquia/${numero}`),
 
+  executarRateio: (
+    correcoes: Array<{ nota: number; quantidade: number; unidade: string }>,
+    login_sap?: string,
+    senha_sap?: string,
+    modo_teste?: boolean,
+  ) =>
+    req<{
+      relatorio: Array<{ Nota: number; Status: 'OK' | 'ERRO' | 'TESTE'; Mensagem: string }>;
+    }>('/rateio/executar', escrita('POST', { correcoes, login_sap, senha_sap, modo_teste })),
+
   exportar: async (numeros: number[], colunas: string[]): Promise<Blob> => {
     const r = await fetch(`${base()}/input/export`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -101,6 +111,12 @@ export const InputApi = {
     });
     if (!r.ok) throw new Error(await r.text());
     return r.blob();
+  },
+  obterStatus10Resumo: async (): Promise<import('./types').Status10Resumo> => {
+    return req<import('./types').Status10Resumo>('/status10/resumo');
+  },
+  enviarEmailStatus10: async (): Promise<{ ok: boolean; mensagem: string }> => {
+    return req<{ ok: boolean; mensagem: string }>('/status10/enviar-email', escrita('POST'));
   },
 };
 

@@ -1,10 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
+import { Loader2 } from 'lucide-react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
 import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
-import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
+import { type FiltersState } from './filters';
 import { DataGrid } from './data-grid';
 import { HierarquiaCard } from './hierarquia-card';
 import { useRecarregarInput } from './use-input-data';
@@ -17,14 +18,19 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
   if (estado.busca.trim() !== '') {
     resultado = numeros.length ? resultado.filter((r) => numeros.includes(r.Numero_Nota)) : [];
   }
+  if (estado.somente2026) {
+    const anoAtual = String(new Date().getFullYear());
+    resultado = resultado.filter((r) => String(r.Mes_Execucao_Planejado ?? '').includes(anoAtual));
+  }
   return aplicarFiltros(resultado, estado.filtros);
 }
 
-export function Overview({ dados, filtrosIniciais }: {
+interface OverviewProps {
   dados: InputDataset;
-  filtrosIniciais?: FiltersState;
-}): React.JSX.Element {
-  const [estado, setEstado] = React.useState<FiltersState>(filtrosIniciais ?? FILTROS_INICIAIS);
+  estado: FiltersState;
+}
+
+export function Overview({ dados, estado }: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
@@ -58,14 +64,31 @@ export function Overview({ dados, filtrosIniciais }: {
           </span>
         </div>
         <div className="flex gap-[8px]">
-          <Button variant="outline" onClick={() => {
-            toast.promise(InputApi.syncSap(), {
-              loading: 'Iniciando extração do SAP...',
-              success: 'Sincronização SAP rodando em background!',
-              error: 'Erro ao iniciar SAP',
-            });
-          }}>
-            Sincronizar SAP
+          <Button
+            variant="outline"
+            disabled={dados.meta.sincronizando}
+            onClick={() => {
+              toast.promise(
+                (async () => {
+                  await InputApi.syncSap();
+                  recarregar();
+                })(),
+                {
+                  loading: 'Iniciando extração do SAP...',
+                  success: 'Sincronização SAP rodando em background!',
+                  error: 'Erro ao iniciar SAP',
+                }
+              );
+            }}
+          >
+            {dados.meta.sincronizando ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              'Sincronizar SAP'
+            )}
           </Button>
           <Button disabled={exportando || filtrados.length === 0}
                   onClick={() => { void exportar(); }}>
@@ -74,7 +97,6 @@ export function Overview({ dados, filtrosIniciais }: {
         </div>
       </div>
 
-      <Filters registros={dados.registros} estado={estado} setEstado={setEstado} />
       <DataGrid registros={filtrados} colunas={COLUNAS} />
 
       <div className="edp-mono text-[11px] text-text-mute py-[2px] px-[0px]">

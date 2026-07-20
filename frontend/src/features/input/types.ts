@@ -21,6 +21,7 @@ export interface InputMeta {
   migracao: "ja-existe" | "migrado" | "rede-indisponivel";
   colunas: string[];
   versao: string;
+  sincronizando?: boolean;
 }
 
 export interface InputDataset {
@@ -86,4 +87,20 @@ export interface HierarquiaInfo {
   filhas: Array<{ Numero_Nota: number; Status_Nota: string; Conjunto: string }>;
 }
 
-export type AbaInput = "visao" | "gerenciar" | "relatorios" | "logs" | "config" | "ramal";
+export interface Status10Regional {
+  Regional: string;
+  Conjunto: string;
+  Qtd_Notas: number;
+  Total_Planejado: number;
+  Total_Modular: number;
+}
+
+export interface Status10Resumo {
+  total_notas: number;
+  total_planejado: number;
+  total_modular: number;
+  resumo_regional: Status10Regional[];
+  registros: NotaInput[];
+}
+
+export type AbaInput = 'visao' | 'gerenciar' | 'ramal' | 'relatorios' | 'logs' | 'config';

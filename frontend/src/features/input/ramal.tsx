@@ -1,5 +1,7 @@
 import React from 'react';
 import type { InputDataset, NotaInput, NotaRamal } from './types';
+import type { FiltersState } from './filters';
+import { filtrarRegistros } from './overview';
 import { InputApi } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
@@ -18,6 +20,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { SegTabs, Banner } from '@/components/branded/section';
+import { ConfirmModal } from '../coffee/confirm-modal';
 
 type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
 
@@ -40,7 +43,13 @@ const NOTA_RAMAL_VAZIA: Record<string, string> = {
 
 interface Mensagem { tipo: 'ok' | 'erro'; texto: string; }
 
-export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): React.JSX.Element {
+export function Ramal({
+  dadosPrincipais,
+  estadoFiltros,
+}: {
+  dadosPrincipais: InputDataset;
+  estadoFiltros?: FiltersState;
+}): React.JSX.Element {
   const { data: dadosRamal, isLoading, error } = useRamalData();
   const recarregar = useRecarregarRamal();
 
@@ -55,7 +64,11 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
   const [novaNota, setNovaNota] = React.useState<Record<string, string>>({ ...NOTA_RAMAL_VAZIA });
   const [textoColagem, setTextoColagem] = React.useState('');
   const registros = dadosRamal?.registros ?? [];
-  const registrosComoNotaInput = registros as unknown as NotaInput[];
+  const registrosComoNotaInput = React.useMemo(() => {
+    const raw = registros as unknown as NotaInput[];
+    if (!estadoFiltros) return raw;
+    return filtrarRegistros(raw, estadoFiltros);
+  }, [registros, estadoFiltros]);
 
   const previewColagem = React.useMemo(
     () => parseColagemTsv(textoColagem, COLUNAS_COLAGEM_RAMAL),
@@ -128,9 +141,15 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
     });
   };
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+
   const excluirSelecionadas = (): void => {
     if (selecionados.size === 0) { setMsg({ tipo: 'erro', texto: 'Nenhuma nota selecionada.' }); return; }
-    if (!window.confirm(`Excluir ${selecionados.size} nota(s) ramal do banco?`)) return;
+    setConfirmDeleteOpen(true);
+  };
+
+  const confirmarExcluir = (): void => {
+    setConfirmDeleteOpen(false);
     void executar(`${selecionados.size} nota(s) ramal excluída(s).`, async () => {
       await InputApi.excluirRamal([...selecionados]);
       setSelecionados(new Set());
@@ -352,6 +371,16 @@ export function Ramal({ dadosPrincipais }: { dadosPrincipais: InputDataset }): R
           onSalvar={salvarColagem} />
       )}
 
+      <ConfirmModal
+        open={confirmDeleteOpen}
+        title="Excluir ramais selecionados?"
+        message={`Deseja realmente excluir ${selecionados.size} nota(s) ramal do banco de dados? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        tone="danger"
+        requireJustification={false}
+        onConfirm={confirmarExcluir}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </div>
   );
 }

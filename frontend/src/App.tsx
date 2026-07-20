@@ -82,7 +82,10 @@ function AppContent(): React.JSX.Element {
     React.useState<{ estado: FiltersState; id: number } | null>(null);
 
   function irParaInputFiltrado(filtros: Filtro[]): void {
-    setFiltrosHandoff((prev) => ({ estado: { busca: "", filtros }, id: (prev?.id ?? 0) + 1 }));
+    setFiltrosHandoff((prev) => ({
+      estado: { busca: "", filtros, somente2026: true },
+      id: (prev?.id ?? 0) + 1,
+    }));
     setInputSub("visao");
     changeSection("input");
   }

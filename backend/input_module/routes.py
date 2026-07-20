@@ -14,7 +14,8 @@ from pydantic import BaseModel
 
 from input_module import config, db, engine, metas, relatorios
 from input_module.service import (NotasDuplicadasErro, NovaNota, criar_notas,
-                                  garantir_banco, pos_escrita, resetar_migracao)
+                                  garantir_banco, pos_escrita, resetar_migracao,
+                                  executar_correcao_medidas)
 
 router = APIRouter(prefix="/api/input")
 
@@ -49,6 +50,7 @@ def listar_notas(request: Request, response: Response):
             "migracao": migracao,
             "colunas": config.COLUNAS_PAINEL,
             "versao": versao,
+            "sincronizando": engine.esta_sincronizando_rede(),
         },
     }
 
@@ -59,6 +61,7 @@ def sync():
     return {
         "ultima_alteracao": db.obter_data_ultima_alteracao(),
         "versao": db.obter_versao_dataset(),
+        "sincronizando": engine.esta_sincronizando_rede(),
     }
 
 
@@ -469,3 +472,62 @@ def migrar_novamente(usuario: str = Depends(usuario_atual)):
     resultado = garantir_banco()
     engine.invalidar_cache()
     return {"resultado": resultado}
+
+
+class CorrecaoItem(BaseModel):
+    nota: int
+    quantidade: float
+    unidade: str
+
+
+class RateioExecutarPedido(BaseModel):
+    correcoes: list[CorrecaoItem]
+    login_sap: Optional[str] = None
+    senha_sap: Optional[str] = None
+    modo_teste: bool = True
+
+
+@router.post("/rateio/executar")
+def rateio_executar(
+    pedido: RateioExecutarPedido,
+    tasks: BackgroundTasks,
+    usuario: str = Depends(usuario_atual)
+):
+    garantir_banco()
+    if not pedido.correcoes:
+        raise HTTPException(400, "Lista de correções vazia.")
+    try:
+        lista_dicts = [item.model_dump() for item in pedido.correcoes]
+        relatorio = executar_correcao_medidas(
+            correcoes=lista_dicts,
+            login_sap=pedido.login_sap,
+            senha_sap=pedido.senha_sap,
+            modo_teste=pedido.modo_teste,
+            usuario=usuario
+        )
+        if not pedido.modo_teste:
+            pos_escrita(tasks)
+        return {"relatorio": relatorio}
+    except Exception as e:
+        raise HTTPException(500, f"Erro ao executar robô SAP: {e}")
+
+
+# ── Status 10 Relatório e E-mail ──────────────────────────────────────────────
+from input_module.status10_service import obter_resumo_status10, gerar_email_outlook_status10
+
+
+@router.get("/status10/resumo")
+def status10_resumo():
+    garantir_banco()
+    return obter_resumo_status10()
+
+
+@router.post("/status10/enviar-email")
+def status10_enviar_email(usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    resultado = gerar_email_outlook_status10(usuario=usuario)
+    if not resultado["ok"]:
+        raise HTTPException(400, detail=resultado["mensagem"])
+    return resultado
+
+

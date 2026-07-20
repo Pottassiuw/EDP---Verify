@@ -41,3 +41,51 @@ export function useSincronizacaoAutomatica(versaoConhecida: string | undefined):
     return () => window.clearInterval(id);
   }, [versaoConhecida, qc]);
 }
+
+/** Hook para monitorar sincronização de rede ativa e bloquear o fechamento do navegador. */
+export function useNetworkSync() {
+  const [sincronizando, setSincronizando] = React.useState(false);
+
+  React.useEffect(() => {
+    let active = true;
+    
+    const tick = () => {
+      InputApi.sync()
+        .then((res) => {
+          if (active) {
+            setSincronizando(!!res.sincronizando);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setSincronizando(false);
+          }
+        });
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 3000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!sincronizando) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Sincronização com a rede em andamento. Suas alterações podem ser perdidas se fechar o sistema agora.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [sincronizando]);
+
+  return { sincronizando };
+}

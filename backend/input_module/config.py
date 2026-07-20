@@ -58,6 +58,7 @@ CAMINHO_CUSTO_MODULAR = REDE_BASES_APOIO + r"\Custo_Modular.xlsx"
 CAMINHO_GANHOS = REDE_BASES_APOIO + r"\Ganhos.xlsx"
 CAMINHO_PROJETO_CONSTRUCAO = REDE_RAIZ + r"\config_projeto_construcao.json"
 CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
+CAMINHO_INPUT_NOTA_RAIZ = REDE_RAIZ + r"\Input Nota.xlsx"
 
 # Bases lidas pelo motor (para o meta.bases da API)
 BASES_REDE = {
@@ -500,19 +501,26 @@ NOMES_AMIGAVEIS.update(
         "Total_planejado_ordem": "Total Planejado Ordem (R$)",
         "Total_real_ordem": "Total Real Ordem (R$)",
         "Modular": "Modular (R$)",
+        "Data programada SAP": "Data programada SAP",
+        "Comparação Data SAP": "Comparação Data SAP",
     }
 )
 
-# Colunas exibidas/exportadas na ordem do painel (Input/app.py:172-179 — copiar literal)
+# Colunas exibidas/exportadas na ordem do painel
 COLUNAS_PAINEL = [
     "Regional",
     "Numero_Nota",
+    "Nota_Mae",
     "Status_Obra",
     "Conjunto",
     "Circuito",
     "Local_Instalacao",
     "Planejado_DDPM",
+    "Medida_SAP",
+    "Medida_vs_Planejado",
     "Mes_Execucao_Planejado",
+    "Data programada SAP",
+    "Comparação Data SAP",
     "Data_Envio_Projeto",
     "Centro_Responsavel",
     "Prioridade_Nota",
@@ -544,10 +552,57 @@ COLUNAS_PAINEL = [
     "Ocorrencia",
     "DEC",
     "FEC",
-    "CHI_Conjunto",
+    "CHI_Conj",
     "Equipamento_Protecao",
-    "DEC_Prog_CHI",
-    "Medida_SAP",
-    "Medida_vs_Planejado",
-    "Nota_Mae",
 ]
+
+
+MAPA_NOMES_EXCEL_LEGADO = {
+    "Regional": "Regional",
+    "Numero_Nota": "NOTA",
+    "Nota_Mae": "Nota_Mae",
+    "Status_Obra": "Status da Obra",
+    "Conjunto": "Conjunto",
+    "Circuito": "Circuito",
+    "Local_Instalacao": "Local Instalação",
+    "Planejado_DDPM": "Planejado-DDPM",
+    "Medida_SAP": "Medida_SAP",
+    "Medida_vs_Planejado": "Medida_vs_Planejado",
+    "Mes_Execucao_Planejado": "Mês de Execução  Planejado - DDPM",
+    "Data programada SAP": "Data Programada SAP",
+    "Comparação Data SAP": "Comparação Data SAP",
+    "Data_Envio_Projeto": "Data Envio Projeto-DDPM",
+    "Centro_Responsavel": "CenTrab respon/",
+    "Prioridade_Nota": "Prioridade Nota",
+    "Status_Nota": "Status Nota",
+    "Cidade": "Cidade",
+    "Observacao": "Observação",
+    "CJ_Aneel": "CJ ANEEL",
+    "substacao_conjunto": " SUBESTAÇÃO ",
+    "Conj.critico": " Conj.Crítico ",
+    "ranking": "Rankig",
+    "Check": "Check",
+    "Export_status": "EXPORT\nStatus",
+    "Status_Final": "Status\nFinal",
+    "Status_Anterior": "Status\nanterior",
+    "Check_Cancelado": "Check\nCancelado",
+    "Ordem": "Ordem",
+    "Status_Usuário_Ordem": "Status usuário\nOrdem",
+    "Status_Sistema": "Status do sistema",
+    "Total_planejado_ordem": "Ordem\nTotal planejado",
+    "Total_real_ordem": "Ordem\nTotal real",
+    "Exec_percentagem_ordem": "%\nExecutado",
+    "Ordem_Executada": "Considera\nOrdem Exec",
+    "Modular": "Modular",
+    "Total_planejado_modular": "Total Plan\nModular",
+    "Regional_CSD": "Regional\nCSD",
+    "N_Clientes_Conjunto": "Clientes Conj",
+    "CHI": "CHI",
+    "CI": "CI",
+    "Ocorrencia": "Ocor.",
+    "DEC": "DEC",
+    "FEC": "FEC",
+    "CHI_Conj": "CHI - Conj.",
+    "Equipamento_Protecao": "DIS.PROTEÇÃO",
+}
+

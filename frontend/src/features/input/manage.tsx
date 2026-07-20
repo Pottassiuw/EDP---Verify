@@ -1,10 +1,11 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import type { Celula, InputDataset, NotaInput } from './types';
 import { InputApi } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
 import { COLUNAS, COLUNAS_COLAGEM, ROTULOS } from './columns';
-import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
+import { type FiltersState } from './filters';
 import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
@@ -19,11 +20,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { SegTabs, Banner } from '@/components/branded/section';
+import { ConfirmModal } from '../coffee/confirm-modal';
 
-type Modo = 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
+import { Rateio } from './rateio';
+
+type Modo = 'rapida' | 'lote' | 'rateio' | 'exclusao' | 'cadastro' | 'colagem';
 const MODOS: { id: Modo; rotulo: string }[] = [
   { id: 'rapida', rotulo: 'Edição Rápida' },
   { id: 'lote', rotulo: 'Edição em Lote' },
+  { id: 'rateio', rotulo: 'Rateio de Medidas' },
   { id: 'exclusao', rotulo: 'Exclusão' },
   { id: 'cadastro', rotulo: 'Cadastrar Nota' },
   { id: 'colagem', rotulo: 'Colar Planilha' },
@@ -38,10 +43,14 @@ const NOTA_VAZIA: Record<string, string> = {
   Data_Envio_Projeto: new Date().toLocaleDateString('pt-BR'), Observacao: '', Check: '-',
 };
 
-export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
+interface ManageProps {
+  dados: InputDataset;
+  estadoFiltros: FiltersState;
+}
+
+export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element {
   const recarregar = useRecarregarInput();
   const [modo, setModo] = React.useState<Modo>('rapida');
-  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(FILTROS_INICIAIS);
   const [edicoes, setEdicoes] = React.useState<Map<number, Partial<NotaInput>>>(new Map());
   const [selecionados, setSelecionados] = React.useState<Set<number>>(new Set());
   const [msg, setMsg] = React.useState<Mensagem | null>(null);
@@ -121,9 +130,16 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
     });
   };
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+  const [confirmUndoOpen, setConfirmUndoOpen] = React.useState(false);
+
   const excluirSelecionadas = (): void => {
     if (selecionados.size === 0) { setMsg({ tipo: 'erro', texto: 'Nenhuma nota selecionada.' }); return; }
-    if (!window.confirm(`Excluir ${selecionados.size} nota(s) do banco? Esta ação não entra no desfazer.`)) return;
+    setConfirmDeleteOpen(true);
+  };
+
+  const confirmarExcluir = (): void => {
+    setConfirmDeleteOpen(false);
     void executar(`${selecionados.size} nota(s) excluída(s).`, async () => {
       await InputApi.excluir([...selecionados]);
       setSelecionados(new Set());
@@ -131,7 +147,11 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
   };
 
   const desfazer = (): void => {
-    if (!window.confirm('Desfazer a última alteração salva no banco de dados?')) return;
+    setConfirmUndoOpen(true);
+  };
+
+  const confirmarDesfazer = (): void => {
+    setConfirmUndoOpen(false);
     void executar('Última alteração desfeita.', async () => {
       const r = await InputApi.desfazer();
       if (!r.ok) throw new Error(r.mensagem);
@@ -178,12 +198,6 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
 
       {(modo === 'rapida' || comSelecao) && (
         <React.Fragment>
-          <Card>
-            <CardContent className="pt-6">
-              <Filters registros={dados.registros}
-                       estado={estadoFiltros} setEstado={setEstadoFiltros} />
-            </CardContent>
-          </Card>
 
           {modo === 'lote' && (
             <Card>
@@ -214,6 +228,7 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                                      valorNeutro="" rotuloNeutro="Mês: (manter atual)"
                                      className="w-[240px]" />
                   <Button disabled={salvando} onClick={aplicarLote}>
+                    {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Aplicar e salvar lote ({selecionados.size})
                   </Button>
                 </div>
@@ -228,7 +243,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
                   </span>
                   <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
-                    🗑 Excluir selecionadas
+                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '🗑 '}
+                    Excluir selecionadas
                   </Button>
                 </div>
               </CardContent>
@@ -242,7 +258,8 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
                     Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
                   </span>
                   <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
-                    💾 Salvar edições
+                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
+                    Salvar edições
                   </Button>
                   <Button variant="ghost" size="sm" disabled={edicoes.size === 0}
                           onClick={() => setEdicoes(new Map())}>❌ Descartar</Button>
@@ -298,10 +315,17 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
               ))}
             </div>
             <div className="mt-[16px]">
-              <Button disabled={salvando} onClick={cadastrar}>💾 Salvar nova nota</Button>
+              <Button disabled={salvando} onClick={cadastrar}>
+                {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
+                Salvar nova nota
+              </Button>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {modo === 'rateio' && (
+        <Rateio dados={dados} estadoFiltros={estadoFiltros} recarregar={recarregar} />
       )}
 
       {modo === 'colagem' && (
@@ -317,6 +341,28 @@ export function Manage({ dados }: { dados: InputDataset }): React.JSX.Element {
           rotuloSalvar={`Salvar lote (${previewColagem.length})`}
           onSalvar={salvarColagem} />
       )}
+
+      <ConfirmModal
+        open={confirmDeleteOpen}
+        title="Excluir notas selecionadas?"
+        message={`Deseja realmente excluir ${selecionados.size} nota(s) do banco de dados? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        tone="danger"
+        requireJustification={false}
+        onConfirm={confirmarExcluir}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
+
+      <ConfirmModal
+        open={confirmUndoOpen}
+        title="Desfazer última alteração?"
+        message="Deseja realmente reverter a última alteração salva no banco de dados?"
+        confirmLabel="Desfazer"
+        tone="default"
+        requireJustification={false}
+        onConfirm={confirmarDesfazer}
+        onCancel={() => setConfirmUndoOpen(false)}
+      />
     </div>
   );
 }

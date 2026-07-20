@@ -10,20 +10,18 @@ import gc
 import json
 import sqlite3
 
-# Garante que "input_module" seja importável não importa de onde o script
-# for chamado (clique duplo no .bat, ou subprocess.run pelo backend do app).
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from input_module import config as input_config
+# Adiciona o diretório atual ao path para garantir resolução do input_module
+caminho_dir = os.path.dirname(os.path.abspath(__file__))
+if caminho_dir not in sys.path:
+    sys.path.append(caminho_dir)
 
-# Caminhos de saída — os MESMOS já usados pelo resto do app (input_module),
-# para que a extração caia exatamente onde /api/input/bases/sync-sap e
-# _processar_upload_base esperam encontrá-la.
-CAMINHO_EXPORT_NOTAS = input_config.CAMINHO_BASE_IW28
-CAMINHO_EXPORT_ORDEM = input_config.CAMINHO_CUSTO_ORD_IW38
-CAMINHO_EXPORT_MEDIDAS = input_config.CAMINHO_BASE_IW66
-# Banco local por padrão (o app já roda com o banco local, não o de rede);
-# _rotina_sap_background sempre sobrescreve isso via env INPUT_DB_PATH.
-CAMINHO_DB = str(input_config.data_dir() / "notas_departamento.db")
+from input_module.config import (
+    REDE_INPUT_SQL as CAMINHO_PASTA_SQL,
+    CAMINHO_BASE_IW28 as CAMINHO_EXPORT_NOTAS,
+    CAMINHO_CUSTO_ORD_IW38 as CAMINHO_EXPORT_ORDEM,
+    CAMINHO_BASE_IW66 as CAMINHO_EXPORT_MEDIDAS,
+    REDE_DB_ORIGEM as CAMINHO_DB
+)
 
 # Nomes de Arquivos
 ARQUIVO_NOME_IW28 = os.path.basename(CAMINHO_EXPORT_NOTAS)
