@@ -5,6 +5,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
+import { AlertasCarteira } from './alertas-carteira';
 import { HeroMes } from './hero-mes';
 import { MensalizacaoChart } from './mensalizacao-chart';
 import { RegionaisCards } from './regionais-cards';
@@ -68,6 +69,10 @@ export function RelatoriosSection({
             hero={data.hero}
             financeiroAno={data.financeiro_ano}
             aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
+          />
+          <AlertasCarteira
+            linhas={data.visao_anual}
+            aoClicarPlano={(plano) => onVerPlano(plano, regional)}
           />
           {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
             <button type="button" onClick={onIrParaCoffee}
