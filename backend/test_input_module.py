@@ -878,6 +878,40 @@ def test_metas_schema_e_helpers(banco_temporario):
     assert db.obter_estado_metas()["erro"] == "lock"
 
 
+def test_postergadas_schema_e_helpers(banco_temporario):
+    from input_module import db
+    conn = db.get_db_connection()
+    tabelas = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    conn.close()
+    assert "metas_postergadas" in tabelas
+
+    metas = pd.DataFrame([
+        {"Ano": 2026, "Mes": 1, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Meta": 17.0},
+    ])
+    depara = pd.DataFrame([
+        {"Plano": "POSTES - CAPEX", "Nome_Curto": "POSTE", "Unidade": "Und.",
+         "Area": "Construção", "Modular_RS": 6921.0, "Ordem_Exibicao": 1},
+    ])
+    post = pd.DataFrame([
+        {"Ano": 2026, "Mes": 7, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Qtd": 3.0},
+        {"Ano": 2026, "Mes": 8, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Qtd": 2.0},
+    ])
+    db.substituir_metas(metas, depara, post)
+    p = db.carregar_postergacoes(2026)
+    assert len(p) == 2
+    assert db.carregar_postergacoes(2025).empty
+    assert p["Qtd"].sum() == 5.0
+
+    # replace: segunda chamada substitui, não acumula
+    db.substituir_metas(metas, depara, post.head(1))
+    assert len(db.carregar_postergacoes(2026)) == 1
+
+    # df_postergacoes omitido (None) não mexe na tabela de postergadas
+    db.substituir_metas(metas, depara)
+    assert len(db.carregar_postergacoes(2026)) == 1
+
+
 # ── Task 2: Sincronização de Metas do Controle Plano de Recomposição ───────
 def _xlsx_controle(caminho, meta_jan=17.0):
     """Planilha sintética mínima com abas base e dexpara."""

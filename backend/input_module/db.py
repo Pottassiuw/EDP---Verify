@@ -133,6 +133,14 @@ def inicializar_banco() -> None:
             arquivo_mtime REAL, atualizadas_em TEXT, erro TEXT
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS metas_postergadas (
+            Ano INTEGER NOT NULL, Mes INTEGER NOT NULL,
+            Regional TEXT NOT NULL, Plano TEXT NOT NULL,
+            Qtd REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY (Ano, Mes, Regional, Plano)
+        )
+    ''')
 
     # --- VERIFICAÇÃO E ATUALIZAÇÃO DO ESQUEMA (ALTER TABLE) ---
     # Pega a lista de colunas que realmente existem hoje no banco
@@ -854,8 +862,13 @@ def obter_versao_dataset() -> str:
 # ==============================================================================
 # METAS DO PLANO DE RECOMPOSIÇÃO (espelho do Controle...xlsx — ver metas.py)
 # ==============================================================================
-def substituir_metas(df_metas: pd.DataFrame, df_depara: pd.DataFrame) -> None:
-    """Replace transacional das metas e do de-para (sync sempre traz o conjunto completo)."""
+def substituir_metas(df_metas: pd.DataFrame, df_depara: pd.DataFrame,
+                     df_postergacoes: pd.DataFrame | None = None) -> None:
+    """Replace transacional das metas, do de-para e (quando fornecidas) das
+    postergadas — o sync sempre traz o conjunto completo, numa única transação.
+
+    df_postergacoes=None mantém a tabela de postergadas intocada (chamadas de
+    2 args continuam válidas)."""
     conn = get_db_connection()
     try:
         conn.execute("DELETE FROM metas_plano")
@@ -865,6 +878,10 @@ def substituir_metas(df_metas: pd.DataFrame, df_depara: pd.DataFrame) -> None:
         df_depara[["Plano", "Nome_Curto", "Unidade", "Area", "Modular_RS",
                    "Ordem_Exibicao"]].to_sql(
             "planos_depara", conn, if_exists="append", index=False)
+        if df_postergacoes is not None:
+            conn.execute("DELETE FROM metas_postergadas")
+            df_postergacoes[["Ano", "Mes", "Regional", "Plano", "Qtd"]].to_sql(
+                "metas_postergadas", conn, if_exists="append", index=False)
         conn.commit()
     except Exception:
         conn.rollback()
@@ -877,6 +894,15 @@ def carregar_metas(ano: int) -> pd.DataFrame:
     conn = get_db_connection()
     try:
         return pd.read_sql("SELECT * FROM metas_plano WHERE Ano = ?", conn, params=(ano,))
+    finally:
+        conn.close()
+
+
+def carregar_postergacoes(ano: int) -> pd.DataFrame:
+    conn = get_db_connection()
+    try:
+        return pd.read_sql(
+            "SELECT * FROM metas_postergadas WHERE Ano = ?", conn, params=(ano,))
     finally:
         conn.close()
 
