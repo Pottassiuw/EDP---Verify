@@ -7,6 +7,7 @@ import {
 
 import { HeroMes } from './hero-mes';
 import { MensalizacaoChart } from './mensalizacao-chart';
+import { RegionaisCards } from './regionais-cards';
 import { TabelaAnual } from './tabela-anual';
 import { useDashboardRelatorios, useForaDoPlano } from './use-dashboard';
 
@@ -23,8 +24,7 @@ export function RelatoriosSection({
 }: RelatoriosSectionProps): React.JSX.Element {
   const [regional, setRegional] = React.useState<string | null>(null);
   const { data, isLoading, error } = useDashboardRelatorios(regional);
-  useForaDoPlano();
-  void onIrParaCoffee;
+  const foraDoPlano = useForaDoPlano();
 
   return (
     <div className="edp-page">
@@ -69,12 +69,19 @@ export function RelatoriosSection({
             financeiroAno={data.financeiro_ano}
             aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
           />
+          {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
+            <button type="button" onClick={onIrParaCoffee}
+                    className="text-left edp-mono text-[12px] text-amber hover:underline">
+              {foraDoPlano.data?.corrigidas_fora_do_plano} corrigidas no COFFEE fora do plano →
+            </button>
+          )}
           <TabelaAnual
             linhas={data.visao_anual}
             aoClicarPlano={(plano) => onVerPlano(plano, regional)}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
             <MensalizacaoChart meses={data.mensalizacao} mesCorrente={data.mes_corrente} />
+            <RegionaisCards regionais={data.regionais} />
           </div>
         </>
       )}
