@@ -779,12 +779,12 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                       </CardContent>
                     </Card>
                     <Card className={`flex-1 min-w-[180px] border ${
-                      somaFechada ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'
+                      somaFechada ? 'border-green/30 bg-green/5' : 'border-red/30 bg-red/5'
                     }`}>
                       <CardContent className="pt-[12px] pb-[12px]">
                         <span className="text-[11px] text-text-mute uppercase tracking-[.04em] font-sans">Diferença Restante</span>
                         <div className={`text-[17px] font-bold mt-[2px] font-mono flex items-center gap-[6px] ${
-                          somaFechada ? 'text-emerald-500' : 'text-red'
+                          somaFechada ? 'text-green' : 'text-red'
                         }`}>
                           {somaFechada ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                           <span>{diferenca > 0 ? `+${diferenca.toFixed(3)}` : diferenca.toFixed(3)} {undMae}</span>
@@ -796,17 +796,17 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                   {/* Avisos de Validação e Botão de Disparo */}
                   <div className="flex flex-col gap-[10px]">
                     {!somaFechada && (
-                      <div className="p-[10px] bg-red-500/10 border border-red-500/20 text-red text-[12px] rounded-[6px]">
+                      <div className="p-[10px] bg-red/10 border border-red/20 text-red text-[12px] rounded-[6px]">
                         ⚠️ <strong>Bloqueio de Execução:</strong> A diferença restante ({Math.abs(diferenca).toFixed(3)} {undMae}) supera a tolerância de {tolerancia * 1000} metros/unidades. Use a ação <strong>⚡ Ratear Proporcionalmente</strong> ou clique em <strong>+ Restante</strong>.
                       </div>
                     )}
                     {somaFechada && Math.abs(diferenca) > 1e-5 && (
-                      <div className="p-[10px] bg-amber-500/10 border border-amber-500/20 text-amber text-[12px] rounded-[6px]">
+                      <div className="p-[10px] bg-amber/10 border border-amber/20 text-amber text-[12px] rounded-[6px]">
                         💡 <strong>Diferença Aceitável:</strong> Há uma pequena diferença de {Math.round(Math.abs(diferenca) * 1000)} mm/un dentro da tolerância de {tolerancia * 1000} metros.
                       </div>
                     )}
                     {undMae === 'un' && !unidadeCorreta && (
-                      <div className="p-[10px] bg-red-500/10 border border-red-500/20 text-red text-[12px] rounded-[6px]">
+                      <div className="p-[10px] bg-red/10 border border-red/20 text-red text-[12px] rounded-[6px]">
                         ❌ <strong>Erro de Validação:</strong> Para a unidade &quot;un&quot; (Equipamentos), todas as medidas devem ser números inteiros.
                       </div>
                     )}
@@ -908,7 +908,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                       const isUnValError = unit === 'un' && !Number.isInteger(val) && selected;
 
                       return (
-                        <tr key={num} className={`border-b border-b-line hover:bg-surface-2 ${isUnValError ? 'bg-red-500/5' : ''}`}>
+                        <tr key={num} className={`border-b border-b-line hover:bg-surface-2 ${isUnValError ? 'bg-red/5' : ''}`}>
                           <td className="py-[10px] px-[12px] text-center">
                             <input
                               type="checkbox"
@@ -955,12 +955,12 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
               {/* Avisos e Envio em Lote */}
               <div className="flex flex-col gap-[10px]">
                 {!individualValido && (
-                  <div className="p-[10px] bg-red-500/10 border border-red-500/20 text-red text-[12px] rounded-[6px]">
+                  <div className="p-[10px] bg-red/10 border border-red/20 text-red text-[12px] rounded-[6px]">
                     ❌ <strong>Erro de Validação:</strong> Algumas notas selecionadas possuem unidade &quot;un&quot; mas seus novos valores não são inteiros.
                   </div>
                 )}
                 {selecionadasInd.size === 0 && (
-                  <div className="p-[10px] bg-amber-500/10 border border-amber-500/20 text-amber text-[12px] rounded-[6px]">
+                  <div className="p-[10px] bg-amber/10 border border-amber/20 text-amber text-[12px] rounded-[6px]">
                     ⚠️ Nenhuma nota selecionada para envio. Marque a caixa de seleção &quot;Corrigir?&quot; de pelo menos uma nota.
                   </div>
                 )}
@@ -1008,10 +1008,10 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                         <span
                           className={`inline-block py-[2px] px-[6px] rounded-[4px] font-semibold text-[10px] uppercase ${
                             r.Status === 'OK'
-                              ? 'bg-emerald-500/15 text-emerald-600'
+                              ? 'bg-green/15 text-green'
                               : r.Status === 'TESTE'
-                              ? 'bg-amber-500/15 text-amber-600'
-                              : 'bg-red-500/15 text-red'
+                              ? 'bg-amber/15 text-amber'
+                              : 'bg-red/15 text-red'
                           }`}
                         >
                           {r.Status}

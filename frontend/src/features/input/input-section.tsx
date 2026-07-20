@@ -81,13 +81,13 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
             <strong className="edp-title text-[16px]">Gestão de Notas</strong>
           </div>
           {sincronizando ? (
-            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-amber-500/10 border border-amber-500/30 text-amber text-[12px] font-medium animate-pulse">
+            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-amber/10 border border-amber/30 text-amber text-[12px] font-medium animate-pulse">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
               <span>Sincronizando com a rede... (Não feche)</span>
             </div>
           ) : (
-            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[12px] font-medium">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-green/10 border border-green/20 text-green text-[12px] font-medium">
+              <div className="h-2 w-2 rounded-full bg-green animate-pulse" />
               <span>Sincronizado com a rede</span>
             </div>
           )}

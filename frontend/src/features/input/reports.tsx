@@ -739,7 +739,7 @@ export function Reports({
                     <span className="text-[11px] font-sans text-text-mute uppercase tracking-wider">
                       Total Planejado
                     </span>
-                    <strong className="text-[15px] font-mono text-emerald-500">
+                    <strong className="text-[15px] font-mono text-green">
                       R$ {formatarNumero(totaisFinancas.total)}
                     </strong>
                   </div>
@@ -1158,7 +1158,7 @@ export function Reports({
                     <span className="text-[11px] font-sans text-text-mute uppercase tracking-wider">
                       Índice de Aderência
                     </span>
-                    <strong className="text-[16px] font-mono text-emerald-500">
+                    <strong className="text-[16px] font-mono text-green">
                       {kpisSLA.indexAderencia.toFixed(1)}%
                     </strong>
                   </div>
