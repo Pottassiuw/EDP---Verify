@@ -52,6 +52,7 @@ export function TabelaAnual({ linhas, aoClicarPlano }: {
           <TableHead className="text-right">Carteira</TableHead>
           <TableHead className="text-right">Saldo</TableHead>
           <TableHead className="text-right">%Disp</TableHead>
+          <TableHead className="text-right">Postergado</TableHead>
           <TableHead className="text-right">R$ gap</TableHead>
         </TableRow>
       </TableHeader>
@@ -62,7 +63,7 @@ export function TabelaAnual({ linhas, aoClicarPlano }: {
           return (
             <React.Fragment key={area}>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="edp-eyebrow py-[6px]">{area}</TableCell>
+                <TableCell colSpan={8} className="edp-eyebrow py-[6px]">{area}</TableCell>
               </TableRow>
               {grupo.map((l) => (
                 <TableRow key={l.plano} onClick={() => aoClicarPlano(l.plano)}
@@ -78,6 +79,7 @@ export function TabelaAnual({ linhas, aoClicarPlano }: {
                   <TableCell className="text-right edp-mono">{fmtQtd(l.carteira)}</TableCell>
                   <TableCell className="text-right edp-mono">{fmtQtd(l.saldo)}</TableCell>
                   <TableCell className="text-right"><BadgeDisp pct={l.pct_disp} /></TableCell>
+                  <TableCell className="text-right edp-mono">{fmtQtd(l.postergado)}</TableCell>
                   <TableCell className="text-right edp-mono text-text-mute">
                     {l.gap_rs !== 0 ? fmtRS(l.gap_rs) : ''}
                   </TableCell>

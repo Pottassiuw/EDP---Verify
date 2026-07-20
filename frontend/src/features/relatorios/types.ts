@@ -6,6 +6,7 @@ export interface HeroMes {
   pct_disp: number | null;
   meta_rs: number;
   carteira_rs: number;
+  postergadas: number;
 }
 
 export interface LinhaAnual {
@@ -18,6 +19,7 @@ export interface LinhaAnual {
   saldo: number;
   pct_disp: number | null;
   gap_rs: number;
+  postergado: number;
 }
 
 export interface MesMensalizacao {

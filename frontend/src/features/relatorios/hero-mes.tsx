@@ -26,6 +26,7 @@ export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
         <StatTile label="Meta do mês" value={fmtQtd(hero.meta)} />
         <StatTile label="Carteira" value={fmtQtd(hero.carteira)} />
         <StatTile label="Executado" value={fmtQtd(hero.executado)} />
+        <StatTile label="Postergadas" value={fmtQtd(hero.postergadas)} />
         <StatTile label="% Disp." value={fmtPct(hero.pct_disp)} />
         <StatTile label="R$ carteira/meta" value={`${fmtRS(hero.carteira_rs)} / ${fmtRS(hero.meta_rs)}`} />
       </div>
