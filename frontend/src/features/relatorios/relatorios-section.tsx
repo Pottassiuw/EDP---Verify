@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/select';
 
 import { HeroMes } from './hero-mes';
+import { MensalizacaoChart } from './mensalizacao-chart';
 import { TabelaAnual } from './tabela-anual';
 import { useDashboardRelatorios, useForaDoPlano } from './use-dashboard';
 
@@ -72,6 +73,9 @@ export function RelatoriosSection({
             linhas={data.visao_anual}
             aoClicarPlano={(plano) => onVerPlano(plano, regional)}
           />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+            <MensalizacaoChart meses={data.mensalizacao} mesCorrente={data.mes_corrente} />
+          </div>
         </>
       )}
     </div>
