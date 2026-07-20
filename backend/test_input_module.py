@@ -1024,3 +1024,30 @@ def test_dashboard_filtro_regional(banco_temporario):
     assert d["hero"]["meta"] == 4.0
     regs = {r["regional"]: r for r in d["regionais"]}
     assert len(regs) == 6                                 # bloco regionais não filtra
+
+
+def test_api_relatorios_dashboard(banco_temporario, monkeypatch, tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from input_module.routes import router
+    arquivo = tmp_path / "Controle.xlsx"
+    _xlsx_controle(arquivo)
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(arquivo))
+    app = FastAPI(); app.include_router(router)
+    client = TestClient(app)
+
+    r = client.get("/api/input/relatorios/dashboard")
+    assert r.status_code == 200
+    corpo = r.json()
+    assert {"hero", "visao_anual", "mensalizacao", "regionais",
+            "financeiro_ano", "metas_info", "regionais_disponiveis"} <= set(corpo)
+    assert corpo["metas_info"]["erro"] is None
+    assert len(corpo["regionais_disponiveis"]) == 6
+    etag = r.headers["etag"]
+    assert client.get("/api/input/relatorios/dashboard",
+                      headers={"If-None-Match": etag}).status_code == 304
+    # filtro por regional aceito
+    assert client.get("/api/input/relatorios/dashboard?regional=Guarulhos").status_code == 200
+
+    r = client.post("/api/input/metas/sincronizar")
+    assert r.status_code == 200 and "sincronizou" in r.json()

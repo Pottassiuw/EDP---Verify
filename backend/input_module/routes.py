@@ -12,7 +12,7 @@ from fastapi import (APIRouter, BackgroundTasks, Depends, File, Header,
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from input_module import config, db, engine
+from input_module import config, db, engine, metas, relatorios
 from input_module.service import (NotasDuplicadasErro, NovaNota, criar_notas,
                                   garantir_banco, pos_escrita, resetar_migracao)
 
@@ -60,6 +60,37 @@ def sync():
         "ultima_alteracao": db.obter_data_ultima_alteracao(),
         "versao": db.obter_versao_dataset(),
     }
+
+
+@router.get("/relatorios/dashboard")
+def relatorios_dashboard(request: Request, response: Response,
+                         regional: Optional[str] = None):
+    garantir_banco()
+    estado_metas = metas.sincronizar_se_preciso()
+    versao = db.obter_versao_dataset()
+    etag = f'W/"{versao}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    agora = datetime.datetime.now()
+    corpo = relatorios.montar_dashboard(
+        engine.get_dataset(), db.carregar_dados_ramal(),
+        db.carregar_metas(agora.year), db.carregar_planos_depara(),
+        ano=agora.year, mes_corrente=agora.month, regional=regional)
+    corpo["regionais_disponiveis"] = relatorios.REGIONAIS_CSD
+    corpo["metas_info"] = {
+        "atualizadas_em": estado_metas.get("atualizadas_em"),
+        "arquivo_mtime": estado_metas.get("arquivo_mtime"),
+        "erro": estado_metas.get("erro"),
+    }
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache"
+    return corpo
+
+
+@router.post("/metas/sincronizar")
+def metas_sincronizar():
+    garantir_banco()
+    return metas.sincronizar_se_preciso(forcar=True)
 
 
 @router.get("/logs")
