@@ -1054,7 +1054,12 @@ def _fx_relatorios():
         {"Plano": "RAMAL", "Nome_Curto": "RAMAL", "Unidade": "Ponto",
          "Area": "CSD", "Modular_RS": 2.0, "Ordem_Exibicao": 2},
     ])
-    return df_notas, df_ramal, df_metas, df_depara
+    df_postergacoes = pd.DataFrame([
+        {"Ano": 2026, "Mes": 7, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Qtd": 2.0},
+        {"Ano": 2026, "Mes": 3, "Regional": "Guarulhos", "Plano": "POSTES - CAPEX", "Qtd": 5.0},
+        {"Ano": 2026, "Mes": 7, "Regional": "Poa/Suzano", "Plano": "RAMAL", "Qtd": 9.0},
+    ])
+    return df_notas, df_ramal, df_metas, df_depara, df_postergacoes
 
 
 def test_dashboard_agregacao_basica(banco_temporario):
@@ -1067,12 +1072,15 @@ def test_dashboard_agregacao_basica(banco_temporario):
     assert d["hero"]["executado"] == 1.0
     assert round(d["hero"]["pct_disp"], 3) == 0.5
     assert d["hero"]["carteira_rs"] == 2 * 10.0 + 1 * 2.0
+    assert d["hero"]["postergadas"] == 11.0            # jul: POSTES 2 + RAMAL 9
 
     anual = {l["plano"]: l for l in d["visao_anual"]}
     assert anual["POSTES - CAPEX"]["area"] == "Construção"
     assert anual["POSTES - CAPEX"]["carteira"] == 2.0
     assert anual["POSTES - CAPEX"]["saldo"] == -2.0
+    assert anual["POSTES - CAPEX"]["postergado"] == 7.0  # ano: 2 + 5
     assert anual["RAMAL"]["carteira"] == 1.0
+    assert anual["RAMAL"]["postergado"] == 9.0
     assert anual["MISTERIOSO"]["area"] == "Outros"        # nunca some silenciosamente
     assert anual["MISTERIOSO"]["pct_disp"] is None        # meta 0 -> null
 
@@ -1092,6 +1100,7 @@ def test_dashboard_filtro_regional(banco_temporario):
                                     regional="Guarulhos")
     assert d["hero"]["carteira"] == 2.0                   # só POSTES; ramal era Poa/Suzano
     assert d["hero"]["meta"] == 4.0
+    assert d["hero"]["postergadas"] == 2.0                # só Guarulhos, jul
     regs = {r["regional"]: r for r in d["regionais"]}
     assert len(regs) == 6                                 # bloco regionais não filtra
 
@@ -1113,6 +1122,8 @@ def test_api_relatorios_dashboard(banco_temporario, monkeypatch, tmp_path):
             "financeiro_ano", "metas_info", "regionais_disponiveis"} <= set(corpo)
     assert corpo["metas_info"]["erro"] is None
     assert len(corpo["regionais_disponiveis"]) == 6
+    assert "postergadas" in corpo["hero"]
+    assert all("postergado" in l for l in corpo["visao_anual"])
     etag = r.headers["etag"]
     assert client.get("/api/input/relatorios/dashboard",
                       headers={"If-None-Match": etag}).status_code == 304

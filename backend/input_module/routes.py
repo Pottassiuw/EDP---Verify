@@ -75,6 +75,7 @@ def relatorios_dashboard(request: Request, response: Response,
     corpo = relatorios.montar_dashboard(
         engine.get_dataset(), db.carregar_dados_ramal(),
         db.carregar_metas(agora.year), db.carregar_planos_depara(),
+        db.carregar_postergacoes(agora.year),
         ano=agora.year, mes_corrente=agora.month, regional=regional)
     corpo["regionais_disponiveis"] = relatorios.REGIONAIS_CSD
     corpo["metas_info"] = {

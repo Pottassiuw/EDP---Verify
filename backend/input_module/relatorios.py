@@ -96,6 +96,7 @@ def _pct(carteira: float, meta: float) -> float | None:
 
 def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
                      df_metas: pd.DataFrame, df_depara: pd.DataFrame,
+                     df_postergacoes: pd.DataFrame,
                      ano: int, mes_corrente: int, regional: str | None) -> dict:
     fato = _linhas_fato(df_notas, df_ramal, ano)
     depara = df_depara.set_index("Plano") if not df_depara.empty else pd.DataFrame()
@@ -113,6 +114,12 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
 
     fato_f = fato if regional is None else fato[fato["regional"] == regional]
     metas_f = metas if regional is None else metas[metas["Regional"] == regional]
+    post_f = (df_postergacoes if regional is None
+              else df_postergacoes[df_postergacoes["Regional"] == regional])
+    hero_postergadas = (float(post_f[post_f["Mes"] == mes_corrente]["Qtd"].sum())
+                        if not post_f.empty else 0.0)
+    post_por_plano = (post_f.groupby("Plano")["Qtd"].sum().to_dict()
+                      if not post_f.empty else {})
 
     def modular(plano: str) -> float:
         try:
@@ -136,12 +143,13 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
         "executado": soma_fato(fato_f, por_mes=mes_corrente, so_exec=True),
         "pct_disp": _pct(hero_carteira, hero_meta),
         "meta_rs": rs(meta_mes_por_plano), "carteira_rs": rs(cart_mes_por_plano),
+        "postergadas": hero_postergadas,
     }
 
     # ── visão anual por plano ────────────────────────────────────────
     cart_por_plano = fato_f.groupby("plano")["qtd"].sum().to_dict() if not fato_f.empty else {}
     meta_por_plano = metas_f.groupby("Plano")["Meta"].sum().to_dict() if not metas_f.empty else {}
-    planos = set(cart_por_plano) | set(meta_por_plano)
+    planos = set(cart_por_plano) | set(meta_por_plano) | set(post_por_plano)
     linhas = []
     for plano in planos:
         cart = cart_por_plano.get(plano, 0.0)
@@ -156,6 +164,7 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
             "plano": plano, "nome_curto": nome, "area": area, "unidade": unidade,
             "meta": meta, "carteira": cart, "saldo": cart - meta,
             "pct_disp": _pct(cart, meta), "gap_rs": (cart - meta) * modular(plano),
+            "postergado": post_por_plano.get(plano, 0.0),
             "_ordem": ordem,
         })
     ordem_area = {"Construção": 0, "CSD": 1, "Outros": 2}
