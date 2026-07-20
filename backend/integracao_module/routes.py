@@ -24,6 +24,12 @@ def revisao(pk: int):
         raise HTTPException(404, str(e))
 
 
+@router.get("/resumo-fora-do-plano")
+def resumo_fora_do_plano():
+    garantir_banco()
+    return {"corrigidas_fora_do_plano": service.contar_fora_do_plano()}
+
+
 @router.post("/mover-para-plano")
 def mover(pedido: MoverPedido, tasks: BackgroundTasks,
           usuario: str = Depends(usuario_atual)):

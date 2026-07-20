@@ -100,3 +100,13 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
                             {"pks": list(pks),
                              "saps": [n["id_sap"] for n in notas]}, True)
     return {"inseridas": inseridas, "atualizadas": 0}
+
+
+def contar_fora_do_plano() -> int:
+    """Notas COFFEE com SAP real, não arquivadas, ainda ausentes do plano."""
+    candidatas = [n for n in coffee_db.listar_notas() if _sap_real(n)]
+    if not candidatas:
+        return 0
+    df_plano = input_db.carregar_dados()
+    existentes = set(df_plano["Numero_Nota"].tolist()) if not df_plano.empty else set()
+    return sum(1 for n in candidatas if n["id_sap"] not in existentes)

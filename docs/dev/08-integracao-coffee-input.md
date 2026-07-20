@@ -62,6 +62,14 @@ Erros:
 - `404` — `pk` não existe no snapshot local do COFFEE
   (`service.NotaNaoEncontradaErro`).
 
+### `GET /api/integracao/resumo-fora-do-plano`
+
+Contador para o card "corrigidas fora do plano" da home (Relatórios):
+`{corrigidas_fora_do_plano: N}` — notas COFFEE com SAP real
+(`service._sap_real`), não arquivadas (`coffee_db.listar_notas()` já
+exclui), cujo `id_sap` não existe na tabela `notas` do plano
+(`input_db.carregar_dados()`, lida uma única vez — sem N+1 por nota).
+
 ### `POST /api/integracao/mover-para-plano`
 
 Cria (ou atualiza) registros do plano do Input a partir de notas

@@ -239,3 +239,15 @@ def test_api_mover_atualizar_existente_sem_estar_no_plano_retorna_404(ambiente):
                      json={"pks": [4242], "campos_usuario": CAMPOS, "atualizar_existente": True},
                      headers={"X-User": "teste"})
     assert r.status_code == 404
+
+
+def test_api_resumo_fora_do_plano(ambiente):
+    client = _client()
+    r = client.get("/api/integracao/resumo-fora-do-plano")
+    assert r.status_code == 200
+    assert r.json()["corrigidas_fora_do_plano"] == 1   # 4242 tem SAP real e não está no plano
+    client.post("/api/integracao/mover-para-plano",
+                json={"pks": [4242], "campos_usuario": CAMPOS},
+                headers={"X-User": "teste"})
+    assert client.get("/api/integracao/resumo-fora-do-plano"
+                      ).json()["corrigidas_fora_do_plano"] == 0
