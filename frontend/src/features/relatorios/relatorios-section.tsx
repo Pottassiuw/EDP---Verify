@@ -1,18 +1,25 @@
 import React from 'react';
 
-import { PageHeader } from '@/components/branded/section';
+import { PageHeader, SegTabs } from '@/components/branded/section';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-import { AlertasCarteira } from './alertas-carteira';
-import { HeroMes } from './hero-mes';
-import { MensalizacaoChart } from './mensalizacao-chart';
-import { RegionaisCards } from './regionais-cards';
-import { TabelaAnual } from './tabela-anual';
+import { AbaMensalizacao } from './aba-mensalizacao';
+import { AbaMes } from './aba-mes';
+import { AbaPlanos } from './aba-planos';
+import { ResumoFixo } from './resumo-fixo';
 import { useDashboardRelatorios, useForaDoPlano } from './use-dashboard';
 
 const REGIONAL_TODAS = 'todas';
+
+type AbaRelatorio = 'mes' | 'planos' | 'mensalizacao';
+
+const ABAS: { id: AbaRelatorio; rotulo: string }[] = [
+  { id: 'mes', rotulo: 'Mês' },
+  { id: 'planos', rotulo: 'Planos' },
+  { id: 'mensalizacao', rotulo: 'Mensalização' },
+];
 
 export interface RelatoriosSectionProps {
   onVerNotasDoMes: (mes: number, ano: number) => void;
@@ -24,8 +31,14 @@ export function RelatoriosSection({
   onVerNotasDoMes, onVerPlano, onIrParaCoffee,
 }: RelatoriosSectionProps): React.JSX.Element {
   const [regional, setRegional] = React.useState<string | null>(null);
+  const [aba, setAba] = React.useState<AbaRelatorio>('mes');
   const { data, isLoading, error } = useDashboardRelatorios(regional);
   const foraDoPlano = useForaDoPlano();
+
+  const totalAlertas = React.useMemo(
+    () => (data?.visao_anual ?? []).filter((l) => l.pct_disp !== null && l.pct_disp < 1).length,
+    [data],
+  );
 
   return (
     <div className="edp-page">
@@ -65,29 +78,33 @@ export function RelatoriosSection({
 
       {data && (
         <>
-          <HeroMes
+          <ResumoFixo
             hero={data.hero}
             financeiroAno={data.financeiro_ano}
-            aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
+            totalAlertas={totalAlertas}
+            aoVerAlertas={() => setAba('mes')}
           />
-          <AlertasCarteira
-            linhas={data.visao_anual}
-            aoClicarPlano={(plano) => onVerPlano(plano, regional)}
-          />
-          {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
-            <button type="button" onClick={onIrParaCoffee}
-                    className="text-left edp-mono text-[12px] text-amber hover:underline">
-              {foraDoPlano.data?.corrigidas_fora_do_plano} corrigidas no COFFEE fora do plano →
-            </button>
+          <SegTabs tabs={ABAS} value={aba} onChange={setAba} ariaLabel="Seções do dashboard" />
+
+          {aba === 'mes' && (
+            <>
+              <AbaMes
+                data={data}
+                aoVerNotas={() => onVerNotasDoMes(data.mes_corrente, data.ano)}
+                aoVerPlano={(plano) => onVerPlano(plano, regional)}
+              />
+              {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
+                <button type="button" onClick={onIrParaCoffee}
+                        className="text-left edp-mono text-[13px] text-amber hover:underline">
+                  {foraDoPlano.data?.corrigidas_fora_do_plano} corrigidas no COFFEE fora do plano →
+                </button>
+              )}
+            </>
           )}
-          <TabelaAnual
-            linhas={data.visao_anual}
-            aoClicarPlano={(plano) => onVerPlano(plano, regional)}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
-            <MensalizacaoChart meses={data.mensalizacao} mesCorrente={data.mes_corrente} />
-            <RegionaisCards regionais={data.regionais} />
-          </div>
+          {aba === 'planos' && (
+            <AbaPlanos data={data} aoVerPlano={(plano) => onVerPlano(plano, regional)} />
+          )}
+          {aba === 'mensalizacao' && <AbaMensalizacao data={data} />}
         </>
       )}
     </div>

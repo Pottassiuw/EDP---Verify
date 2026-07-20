@@ -4,11 +4,10 @@ import { StatTile } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 
 import { FAROL_COR, farol, fmtPct, fmtQtd, fmtRS } from './fmt';
-import type { DashboardRelatorios, HeroMes as HeroMesData } from './types';
+import type { HeroMes as HeroMesData } from './types';
 
-export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
+export function HeroMes({ hero, aoVerNotas }: {
   hero: HeroMesData;
-  financeiroAno: DashboardRelatorios['financeiro_ano'];
   aoVerNotas: () => void;
 }): React.JSX.Element {
   const execPct = hero.meta > 0 ? hero.executado / hero.meta : null;
@@ -24,7 +23,6 @@ export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
         </Button>
       </div>
 
-      {/* featured — a leitura que resume o mês: a carteira cobre a meta? */}
       <div className="edp-panel flex flex-col gap-[16px] md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-[2px]">
           <span className="edp-eyebrow">% Disponibilização</span>
@@ -32,7 +30,7 @@ export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
                 style={{ color: corDisp ? FAROL_COR[corDisp] : 'var(--text)' }}>
             {fmtPct(hero.pct_disp)}
           </span>
-          <span className="edp-mono text-[12px] text-text-mute">
+          <span className="edp-mono text-[13px] text-text-mute">
             Carteira {fmtQtd(hero.carteira)} de Meta {fmtQtd(hero.meta)}
           </span>
         </div>
@@ -40,7 +38,7 @@ export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
         <div className="flex flex-col gap-[6px] md:w-[300px]">
           <div className="flex items-baseline justify-between">
             <span className="edp-eyebrow">Execução</span>
-            <span className="edp-mono text-[12px] text-text-mute">{fmtPct(execPct)} da meta</span>
+            <span className="edp-mono text-[13px] text-text-mute">{fmtPct(execPct)} da meta</span>
           </div>
           <div className="h-[6px] w-full rounded-[999px] bg-[var(--surface-2)] overflow-hidden"
                role="progressbar" aria-valuenow={Math.round(progresso * 100)} aria-valuemin={0} aria-valuemax={100}
@@ -60,10 +58,6 @@ export function HeroMes({ hero, financeiroAno, aoVerNotas }: {
         )}
         <StatTile label="R$ carteira/meta" value={`${fmtRS(hero.carteira_rs)} / ${fmtRS(hero.meta_rs)}`} />
       </div>
-
-      <span className="edp-mono text-[12px] text-text-mute">
-        Financeiro do ano — Carteira {fmtRS(financeiroAno.carteira_rs)} · Meta {fmtRS(financeiroAno.meta_rs)} · Gap {fmtRS(financeiroAno.gap_rs)}
-      </span>
     </div>
   );
 }
