@@ -27,6 +27,19 @@ def caminho_sap_robot() -> Path:
     )
 
 
+def caminho_controle_recomposicao() -> Path:
+    """Planilha Controle Plano de Recomposição (OneDrive local sincronizado).
+
+    Default aponta para o perfil do usuário que hospeda o servidor hoje;
+    outra máquina sobrescreve via env CONTROLE_RECOMPOSICAO_PATH.
+    """
+    return Path(os.environ.get(
+        "CONTROLE_RECOMPOSICAO_PATH",
+        r"C:\Users\e713611\EDP\O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
+        r"\PLANO RECOMPOSIÇÃO\SP\2026\Controle Plano de Recomposição 2026.xlsx",
+    ))
+
+
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
 REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"

@@ -308,3 +308,102 @@ deles — só quem for rodar a extração local precisa instalá-las.
   do `max()`); se essa linha ignorada tiver, na verdade, o maior
   `ID_Cronologia` do banco, o próximo ID calculado fica menor do que
   deveria e pode colidir com um `ID_Cronologia` já em uso.
+
+## Metas — sync do Controle Plano de Recomposição
+
+`input_module/metas.py` implementa a sincronização automática das metas
+do Plano de Recomposição a partir de um Excel (OneDrive sincronizado)
+que vive fora do repositório. O Excel é a fonte de verdade; o app apenas
+espelha seus dados no SQLite local.
+
+### Caminho e configuração
+
+A planilha é definida por `config.caminho_controle_recomposicao()`, que
+aponta por padrão para uma máquina específica (o usuário que hospeda o
+servidor hoje) mas pode ser sobrescrito via variável de ambiente:
+
+```python
+CONTROLE_RECOMPOSICAO_PATH=/caminho/alternativo/Controle.xlsx
+```
+
+Modo de execução (no app, sem interface no frontend):
+- `metas.sincronizar_se_preciso(forcar: bool = False)` — roda automaticamente
+  (ou sob demanda se `forcar=True`) quando a timestamp do arquivo (mtime)
+  mudou desde a última sincronização bem-sucedida.
+
+### Estratégia de cópia e tratamento de locks
+
+O arquivo Excel vive lockado pelo Excel/OneDrive enquanto em uso. Para
+evitar conflicts de acesso:
+
+1. `_importar()` copia o arquivo para um diretório temporário antes de
+   lê-lo.
+2. A leitura ocorre dentro do temp-dir (seguro, sem concorrência).
+3. O arquivo original permanece intocado — quem o estiver editando no
+   Excel não vê interrupção.
+4. Após a leitura, `xl.close()` explicitamente libera o file handle
+   (necessário em Windows para evitar lock permanente do temp file).
+
+### Operação: replace em vez de merge
+
+`db.substituir_metas(df_metas, df_depara)` **substitui** completamente
+as tabelas `metas_plano` e `planos_depara`:
+
+- `metas_plano` — todas as metas importadas do Excel.
+- `planos_depara` — mapeamento Plano → Nome_Curto, Unidade, Área
+  (com lógica determinística de colisão: plano com nome mais curto fica
+  com o apelido; demais em colisão usam o nome longo sem " - CAPEX").
+
+Não há merge/upsert — o que o Excel diz é tudo; dados que saíram do
+Excel são apagados (garantindo que o banco reflete fielmente a fonte de
+verdade).
+
+### Versionamento: log_arquivos e obter_versao_dataset
+
+Toda sincronização bem-sucedida registra uma entrada em `log_arquivos`
+com `usuario="metas-sync"`, o que automaticamente bumpa a versão do
+dataset (`db.obter_versao_dataset()`). Isso dispara:
+
+- Revalidação do cache do engine (TDD Task 14: versão como gatilho).
+- Notificação de "dados atualizados" no frontend (Task 15: versão em
+  `/api/input/sync`).
+
+### Tratamento de falhas: preserva última sincronização
+
+Falha nunca derruba nada:
+
+1. Arquivo inacessível (rede/OneDrive fora, permissões perdidas):
+   `sincronizar_se_preciso()` registra o erro no estado (`obter_estado_metas()`)
+   e **preserva** a última importação bem-sucedida.
+2. Erro durante a leitura (aba renomeada, formato corrompido, etc.):
+   idêntico — registra erro, mantém dados velhos.
+3. Retry automático: se `forcar=True`, tenta novamente mesmo que a
+   última tentativa tivesse falhado.
+
+O estado é persistido em `metas_sync_estado` (tabela SQLite):
+
+```python
+obter_estado_metas() -> {
+  "arquivo_mtime": float | 0.0,  # timestamp da última sincronização bem-sucedida
+  "atualizadas_em": str,          # ISO 8601
+  "erro": str | None              # mensagem de erro, se houver
+}
+```
+
+### Estrutura de dados
+
+**Tabelas:**
+
+| Tabela | Colunas | Notas |
+|---|---|---|
+| `metas_plano` | `Ano`, `Mes`, `Regional`, `Plano`, `Meta` | Granularidade: ano/mês/regional/plano. |
+| `planos_depara` | `Plano`, `Nome_Curto`, `Unidade`, `Area`, `Modular_RS`, `Ordem_Exibicao` | Mapeamento 1:1 plano → metadata. |
+| `metas_sync_estado` | `arquivo_mtime`, `atualizadas_em`, `erro` | Estado da última sincronização (singleton). |
+
+**Formato esperado do Excel:**
+
+- Aba `base` (obrigatória): `Regionais`, `Mês` (timestamp), `Plano`, `Meta` (numérico), `Conjunto`.
+- Aba `dexpara` (obrigatória): `Projeto`, `Unidade`, `Área`, `Modular R$`.
+
+Colunas extras/vazias são ignoradas; linhas com valores faltantes em
+`Regionais`/`Mês`/`Plano` são descartadas.

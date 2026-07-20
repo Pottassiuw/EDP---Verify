@@ -876,3 +876,76 @@ def test_metas_schema_e_helpers(banco_temporario):
     assert estado["arquivo_mtime"] == 1234.5 and estado["erro"] is None
     db.gravar_estado_metas(arquivo_mtime=1234.5, erro="lock")
     assert db.obter_estado_metas()["erro"] == "lock"
+
+
+# ── Task 2: Sincronização de Metas do Controle Plano de Recomposição ───────
+def _xlsx_controle(caminho, meta_jan=17.0):
+    """Planilha sintética mínima com abas base e dexpara."""
+    import gc
+    base = pd.DataFrame([
+        {"Regionais": "Guarulhos", "Mês": pd.Timestamp(2026, 1, 1),
+         "Plano": "POSTES - CAPEX", "Meta": meta_jan, "Conjunto": "POSTE"},
+        {"Regionais": "Guarulhos", "Mês": pd.Timestamp(2026, 2, 1),
+         "Plano": "POSTE DEMANDA - CAPEX", "Meta": 5.0, "Conjunto": "POSTE"},
+        {"Regionais": "Poa/Suzano", "Mês": pd.Timestamp(2026, 1, 1),
+         "Plano": "RAMAL", "Meta": 100.0, "Conjunto": "RAMAL"},
+    ])
+    dexpara = pd.DataFrame([
+        {"Projeto": "POSTES - CAPEX", "Unidade": "Und.", "Área": "Projeto", "Modular R$": 6921.0},
+        {"Projeto": "POSTE DEMANDA - CAPEX", "Unidade": "Und.", "Área": "Projeto", "Modular R$": 6921.0},
+        {"Projeto": "RAMAL", "Unidade": "Ponto", "Área": "CSD", "Modular R$": 694.5},
+    ])
+    w = pd.ExcelWriter(caminho, engine="openpyxl")
+    try:
+        base.to_excel(w, sheet_name="base", index=False)
+        dexpara.to_excel(w, sheet_name="dexpara", index=False)
+    finally:
+        w.close()
+        del w
+        gc.collect()
+
+
+def test_metas_sincronizar(banco_temporario, monkeypatch, tmp_path):
+    from input_module import config, db, metas
+    arquivo = tmp_path / "Controle.xlsx"
+    _xlsx_controle(arquivo)
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(arquivo))
+
+    estado = metas.sincronizar_se_preciso()
+    assert estado["sincronizou"] is True and estado["erro"] is None
+    m = db.carregar_metas(2026)
+    assert len(m) == 3
+    assert m[(m["Regional"] == "Poa/Suzano") & (m["Plano"] == "RAMAL")].iloc[0]["Meta"] == 100.0
+    dp = db.carregar_planos_depara().set_index("Plano")
+    assert dp.loc["POSTES - CAPEX", "Nome_Curto"] == "POSTE"
+    # colisão de nome curto: POSTE DEMANDA - CAPEX não pode virar "POSTE" também
+    assert dp.loc["POSTE DEMANDA - CAPEX", "Nome_Curto"] == "POSTE DEMANDA"
+    assert dp.loc["POSTES - CAPEX", "Area"] == "Construção"   # "Projeto" -> exibição
+    assert dp.loc["RAMAL", "Area"] == "CSD"
+
+    # mtime igual: no-op
+    assert metas.sincronizar_se_preciso()["sincronizou"] is False
+    # arquivo mudou: reimporta
+    import time as _t; _t.sleep(0.05)
+    _xlsx_controle(arquivo, meta_jan=99.0)
+    estado = metas.sincronizar_se_preciso()
+    assert estado["sincronizou"] is True
+    m = db.carregar_metas(2026)
+    assert m[(m["Plano"] == "POSTES - CAPEX") & (m["Mes"] == 1)].iloc[0]["Meta"] == 99.0
+    # sync registra em log_arquivos (bumpa a versão do dataset)
+    logs = db.carregar_log_arquivos()
+    assert (logs["Usuario"] == "metas-sync").any()
+
+
+def test_metas_sincronizar_falha_preserva(banco_temporario, monkeypatch, tmp_path):
+    from input_module import db, metas
+    arquivo = tmp_path / "Controle.xlsx"
+    _xlsx_controle(arquivo)
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(arquivo))
+    metas.sincronizar_se_preciso()
+    assert len(db.carregar_metas(2026)) == 3
+
+    arquivo.unlink()  # arquivo some (rede/OneDrive fora)
+    estado = metas.sincronizar_se_preciso(forcar=True)
+    assert estado["erro"] is not None
+    assert len(db.carregar_metas(2026)) == 3  # última sync preservada
