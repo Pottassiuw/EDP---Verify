@@ -43,6 +43,24 @@ export interface Filtro {
   max?: number;
 }
 
+/** Abreviação pt-BR usada em Mes_Execucao_Planejado ("maio" por extenso, demais com 3 letras). */
+export const MESES_ABREV_PT = ['jan', 'fev', 'mar', 'abr', 'maio', 'jun',
+  'jul', 'ago', 'set', 'out', 'nov', 'dez'] as const;
+
+/** Filtro por mês de execução planejado (ex.: mes=7, ano=2026 -> "jul-2026"). */
+export function filtroPorMes(mes: number, ano: number): Filtro {
+  return { campo: 'Mes_Execucao_Planejado', tipo: 'multi',
+    valores: [`${MESES_ABREV_PT[mes - 1]}-${ano}`] };
+}
+
+/** Filtro por Conjunto (plano), opcionalmente combinado com Regional_CSD. */
+export function filtroPorPlano(plano: string, regional: string | null): Filtro[] {
+  return [
+    { campo: 'Conjunto', tipo: 'multi', valores: [plano] },
+    ...(regional ? [{ campo: 'Regional_CSD', tipo: 'multi' as const, valores: [regional] }] : []),
+  ];
+}
+
 /** Motor de filtragem (porte de Input/app.py:247-262, aplicado no cliente). */
 export function aplicarFiltros(registros: NotaInput[], filtros: Filtro[]): NotaInput[] {
   const ativos = filtros.filter((f) =>

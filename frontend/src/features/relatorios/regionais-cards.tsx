@@ -2,14 +2,12 @@ import React from 'react';
 
 import { Card, CardContent } from '@/components/ui/card';
 
-import { fmtPct, fmtQtd } from './fmt';
+import { FAROL_COR, farol, fmtPct, fmtQtd } from './fmt';
 import type { RegionalResumo } from './types';
 
 function corFarol(pct: number | null): string {
-  if (pct === null) return 'var(--text-mute)';
-  if (pct >= 1) return 'var(--green)';
-  if (pct >= 0.85) return 'var(--amber)';
-  return 'var(--red)';
+  const f = farol(pct);
+  return f === null ? 'var(--text-mute)' : FAROL_COR[f];
 }
 
 export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): React.JSX.Element {

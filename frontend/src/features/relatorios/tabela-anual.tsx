@@ -4,23 +4,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 
-import { fmtPct, fmtQtd, fmtRS } from './fmt';
+import { farol, fmtPct, fmtQtd, fmtRS, type Farol } from './fmt';
 import type { LinhaAnual } from './types';
 
 const AREAS: LinhaAnual['area'][] = ['Construção', 'CSD', 'Outros'];
 
-const FAROL_STYLE: Record<'verde' | 'ambar' | 'vermelho', React.CSSProperties> = {
+const FAROL_STYLE: Record<Farol, React.CSSProperties> = {
   verde:    { background: 'var(--tint-green)', color: 'var(--green)' },
   ambar:    { background: 'var(--tint-amber)', color: 'var(--amber)' },
   vermelho: { background: 'var(--tint-red)', color: 'var(--red)' },
 };
-
-function farol(pct: number | null): 'verde' | 'ambar' | 'vermelho' | null {
-  if (pct === null) return null;
-  if (pct >= 1) return 'verde';
-  if (pct >= 0.85) return 'ambar';
-  return 'vermelho';
-}
 
 function BadgeDisp({ pct }: { pct: number | null }): React.JSX.Element {
   const cor = farol(pct);

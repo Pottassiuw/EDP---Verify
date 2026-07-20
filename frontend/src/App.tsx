@@ -2,7 +2,7 @@
 import type { Note, Source, AppSection, CoffeeSubPage } from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
-import type { Filtro } from './features/input/lib';
+import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
 import type { TriageHandoff } from './features/coffee/coffee-verificar';
 import { usePersistedState } from './hooks/use-persisted-state';
 import { SettingsProvider, useSettings } from './context/settings-context';
@@ -20,8 +20,6 @@ const ConfiguracoesPage = React.lazy(() =>
   import('./features/configuracoes/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
 const RelatoriosSection = React.lazy(() =>
   import('./features/relatorios/relatorios-section').then((m) => ({ default: m.RelatoriosSection })));
-
-const MESES_ABREV_PT = ["jan", "fev", "mar", "abr", "maio", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -222,14 +220,8 @@ function AppContent(): React.JSX.Element {
           <React.Suspense fallback={<SectionLoading />}>
             {section === "relatorios" ? (
               <RelatoriosSection
-                onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([
-                  { campo: "Mes_Execucao_Planejado", tipo: "multi",
-                    valores: [`${MESES_ABREV_PT[mes - 1]}-${ano}`] },
-                ])}
-                onVerPlano={(plano, regional) => irParaInputFiltrado([
-                  { campo: "Conjunto", tipo: "multi", valores: [plano] },
-                  ...(regional ? [{ campo: "Regional_CSD", tipo: "multi" as const, valores: [regional] }] : []),
-                ])}
+                onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
+                onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
                 onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}
               />
             ) : section === "input" ? (

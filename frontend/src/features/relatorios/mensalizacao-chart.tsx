@@ -1,10 +1,7 @@
 import React from 'react';
 
-import { fmtQtd } from './fmt';
+import { fmtQtd, MESES_ABREV_PT } from './fmt';
 import type { MesMensalizacao } from './types';
-
-const MESES_ROTULO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-  'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 const LARGURA = 600;
 const ALTURA = 180;
@@ -46,22 +43,22 @@ export function MensalizacaoChart({ meses, mesCorrente }: {
             <g key={m.mes}>
               <rect x={x0} y={baseY - hMeta} width={larguraBarra} height={hMeta}
                     rx={RAIO} fill="var(--surface-2)" stroke="var(--line)">
-                <title>{`${MESES_ROTULO[m.mes - 1]} · Meta ${fmtQtd(m.meta)}`}</title>
+                <title>{`${MESES_ABREV_PT[m.mes - 1]} · Meta ${fmtQtd(m.meta)}`}</title>
               </rect>
               <rect x={x0 + larguraBarra + GAP_GRUPO} y={baseY - hCarteira}
                     width={larguraBarra} height={hCarteira} rx={RAIO} fill="var(--accent)">
-                <title>{`${MESES_ROTULO[m.mes - 1]} · Carteira ${fmtQtd(m.carteira)}`}</title>
+                <title>{`${MESES_ABREV_PT[m.mes - 1]} · Carteira ${fmtQtd(m.carteira)}`}</title>
               </rect>
               {hExec > 0 && (
                 <rect x={x0 + larguraBarra + GAP_GRUPO} y={baseY - hExec}
                       width={larguraBarra} height={hExec} rx={RAIO} fill="var(--green)">
-                  <title>{`${MESES_ROTULO[m.mes - 1]} · Executado ${fmtQtd(m.executado)}`}</title>
+                  <title>{`${MESES_ABREV_PT[m.mes - 1]} · Executado ${fmtQtd(m.executado)}`}</title>
                 </rect>
               )}
               <text x={x0 + larguraGrupo / 2 - GAP_GRUPO / 2} y={ALTURA - 6}
                     textAnchor="middle" className="edp-mono" fontSize="10"
                     fill="var(--text-mute)">
-                {MESES_ROTULO[m.mes - 1]}
+                {MESES_ABREV_PT[m.mes - 1]}
               </text>
             </g>
           );

@@ -12,10 +12,8 @@ Regras (spec 2026-07-17-relatorios-home-design.md):
 import pandas as pd
 
 from input_module import config
+from input_module.engine import meses_pt_rev as MESES_ABREV
 
-MESES_ABREV = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "maio": 5,
-               "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10,
-               "nov": 11, "dez": 12}
 MESES_NOME = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
               "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
 REGIONAIS_CSD = ["Guaratinguetá", "Guarulhos", "Litoral Norte",
@@ -101,7 +99,7 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
                      ano: int, mes_corrente: int, regional: str | None) -> dict:
     fato = _linhas_fato(df_notas, df_ramal, ano)
     depara = df_depara.set_index("Plano") if not df_depara.empty else pd.DataFrame()
-    metas = df_metas.copy()
+    metas = df_metas
 
     def soma_fato(f, por_mes=None, so_exec=False):
         if f.empty:
@@ -119,7 +117,7 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     def modular(plano: str) -> float:
         try:
             return float(depara.loc[plano, "Modular_RS"])
-        except (KeyError, AttributeError):
+        except KeyError:
             return 0.0
 
     def rs(f_plano_qtd: dict) -> float:
@@ -141,13 +139,14 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     }
 
     # ── visão anual por plano ────────────────────────────────────────
-    planos = set(fato_f["plano"]) if not fato_f.empty else set()
-    planos |= set(metas_f["Plano"]) if not metas_f.empty else set()
+    cart_por_plano = fato_f.groupby("plano")["qtd"].sum().to_dict() if not fato_f.empty else {}
+    meta_por_plano = metas_f.groupby("Plano")["Meta"].sum().to_dict() if not metas_f.empty else {}
+    planos = set(cart_por_plano) | set(meta_por_plano)
     linhas = []
     for plano in planos:
-        cart = soma_fato(fato_f[fato_f["plano"] == plano]) if not fato_f.empty else 0.0
-        meta = float(metas_f[metas_f["Plano"] == plano]["Meta"].sum()) if not metas_f.empty else 0.0
-        if plano in getattr(depara, "index", []):
+        cart = cart_por_plano.get(plano, 0.0)
+        meta = meta_por_plano.get(plano, 0.0)
+        if plano in depara.index:
             info = depara.loc[plano]
             nome, area, unidade = str(info["Nome_Curto"]), str(info["Area"]), str(info["Unidade"])
             ordem = int(info["Ordem_Exibicao"])
@@ -173,19 +172,19 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     } for m in range(1, 13)]
 
     # ── regionais (mês corrente; sempre as 6, sem filtro de regional) ──
+    fato_mes = fato[fato["mes"] == mes_corrente]
+    metas_mes = metas[metas["Mes"] == mes_corrente]
+    cart_por_regional = fato_mes.groupby("regional")["qtd"].sum().to_dict() if not fato_mes.empty else {}
+    meta_por_regional = metas_mes.groupby("Regional")["Meta"].sum().to_dict() if not metas_mes.empty else {}
     regionais = []
     for reg in REGIONAIS_CSD:
-        cart = soma_fato(fato[(fato["regional"] == reg) & (fato["mes"] == mes_corrente)]
-                          ) if not fato.empty else 0.0
-        meta = float(metas[(metas["Regional"] == reg) &
-                           (metas["Mes"] == mes_corrente)]["Meta"].sum()) if not metas.empty else 0.0
+        cart = cart_por_regional.get(reg, 0.0)
+        meta = meta_por_regional.get(reg, 0.0)
         regionais.append({"regional": reg, "meta": meta, "carteira": cart,
                           "saldo": cart - meta, "pct_disp": _pct(cart, meta)})
 
     # ── financeiro do ano ────────────────────────────────────────────
-    cart_ano = (fato_f.groupby("plano")["qtd"].sum().to_dict()) if not fato_f.empty else {}
-    meta_ano = (metas_f.groupby("Plano")["Meta"].sum().to_dict()) if not metas_f.empty else {}
-    fin = {"meta_rs": rs(meta_ano), "carteira_rs": rs(cart_ano)}
+    fin = {"meta_rs": rs(meta_por_plano), "carteira_rs": rs(cart_por_plano)}
     fin["gap_rs"] = fin["carteira_rs"] - fin["meta_rs"]
 
     return {"ano": ano, "mes_corrente": mes_corrente, "regional": regional,
