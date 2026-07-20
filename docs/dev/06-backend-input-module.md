@@ -348,17 +348,36 @@ evitar conflicts de acesso:
 
 ### Operação: replace em vez de merge
 
-`db.substituir_metas(df_metas, df_depara)` **substitui** completamente
-as tabelas `metas_plano` e `planos_depara`:
+`db.substituir_metas(df_metas, df_depara, df_postergacoes)` **substitui**
+completamente as tabelas `metas_plano`, `planos_depara` e
+`metas_postergadas`:
 
 - `metas_plano` — todas as metas importadas do Excel.
 - `planos_depara` — mapeamento Plano → Nome_Curto, Unidade, Área
   (com lógica determinística de colisão: plano com nome mais curto fica
   com o apelido; demais em colisão usam o nome longo sem " - CAPEX").
+- `metas_postergadas` — quantidade postergada por Ano/Mês/Regional/Plano,
+  lida da aba `Postergadas` do mesmo Excel (`metas._postergadas`). O grão
+  é o **mês de onde a nota saiu** (from-month) — uma nota planejada para
+  julho e empurrada para setembro conta como postergada em julho, não em
+  setembro. `df_postergacoes` é opcional (`None` mantém a tabela intocada,
+  retrocompatível com o replace de metas puro); o sync sempre a passa.
 
 Não há merge/upsert — o que o Excel diz é tudo; dados que saíram do
 Excel são apagados (garantindo que o banco reflete fielmente a fonte de
-verdade).
+verdade). Se a aba `Postergadas` não existir ou tiver colunas renomeadas,
+a exceção cai no mesmo `try/except` de `sincronizar_se_preciso` — a última
+sincronização boa (metas **e** postergadas) é preservada, e o erro aparece
+em `metas_info.erro` no dashboard.
+
+**Nomes de coluna não verificados contra o arquivo real:** o parser em
+`metas._postergadas` assume colunas `Regionais`, `Mês De`, `Plano`, `Qtd`
+(espelhando o padrão da aba `base`), mas o arquivo real vive apenas na
+máquina que hospeda o servidor em produção (`e713611`) e não estava
+acessível no ambiente onde esta funcionalidade foi implementada. Confirmar
+os nomes reais na primeira sincronização em produção — um nome divergente
+não derruba o dashboard (vira erro visível no card de metas), mas a
+quantidade postergada ficará zerada até o ajuste.
 
 ### Versionamento: log_arquivos e obter_versao_dataset
 

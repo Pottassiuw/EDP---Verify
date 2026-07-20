@@ -32,6 +32,23 @@ def _nome_curto(df_base: pd.DataFrame) -> dict:
     return pares
 
 
+def _postergadas(df: pd.DataFrame) -> pd.DataFrame:
+    """Aba Postergadas -> agregado (Ano, Mes-de-onde-saiu, Regional, Plano, Qtd).
+
+    Grão: uma linha por nota postergada, atribuída ao mês DE onde saiu (from-month).
+    Nomes de coluna ('Regionais', 'Mês De', 'Plano', 'Qtd') espelham o fixture
+    sintético; conferir contra o arquivo real na verificação (Task 2, Step 6)."""
+    df = df.dropna(subset=["Regionais", "Mês De", "Plano"])
+    mes = pd.to_datetime(df["Mês De"], errors="coerce")
+    out = pd.DataFrame({
+        "Ano": mes.dt.year, "Mes": mes.dt.month,
+        "Regional": df["Regionais"].astype(str).str.strip(),
+        "Plano": df["Plano"].astype(str).str.strip(),
+        "Qtd": pd.to_numeric(df["Qtd"], errors="coerce").fillna(0.0),
+    }).dropna(subset=["Ano", "Mes"])
+    return out.groupby(["Ano", "Mes", "Regional", "Plano"], as_index=False)["Qtd"].sum()
+
+
 def _importar(caminho: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         copia = os.path.join(tmp, "controle.xlsx")
@@ -40,6 +57,7 @@ def _importar(caminho: str) -> None:
         try:
             base = pd.read_excel(xl, sheet_name="base")
             dexpara = pd.read_excel(xl, sheet_name="dexpara")
+            postergadas = pd.read_excel(xl, sheet_name="Postergadas")
         finally:
             xl.close()
 
@@ -66,7 +84,9 @@ def _importar(caminho: str) -> None:
         "Ordem_Exibicao": range(1, len(dexpara) + 1),
     }).drop_duplicates(subset=["Plano"])
 
-    db.substituir_metas(df_metas, df_depara)
+    df_postergacoes = _postergadas(postergadas)
+
+    db.substituir_metas(df_metas, df_depara, df_postergacoes)
     db.salvar_log_arquivo(os.path.basename(caminho), _USUARIO_SYNC,
                           datetime.datetime.now(), "Sync Metas")
 

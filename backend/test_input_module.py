@@ -913,8 +913,8 @@ def test_postergadas_schema_e_helpers(banco_temporario):
 
 
 # ── Task 2: Sincronização de Metas do Controle Plano de Recomposição ───────
-def _xlsx_controle(caminho, meta_jan=17.0):
-    """Planilha sintética mínima com abas base e dexpara."""
+def _xlsx_controle(caminho, meta_jan=17.0, com_postergadas=True):
+    """Planilha sintética mínima com abas base, dexpara e (opcional) Postergadas."""
     import gc
     base = pd.DataFrame([
         {"Regionais": "Guarulhos", "Mês": pd.Timestamp(2026, 1, 1),
@@ -929,10 +929,18 @@ def _xlsx_controle(caminho, meta_jan=17.0):
         {"Projeto": "POSTE DEMANDA - CAPEX", "Unidade": "Und.", "Área": "Projeto", "Modular R$": 6921.0},
         {"Projeto": "RAMAL", "Unidade": "Ponto", "Área": "CSD", "Modular R$": 694.5},
     ])
+    postergadas = pd.DataFrame([
+        {"Regionais": "Guarulhos", "Mês De": pd.Timestamp(2026, 7, 1),
+         "Plano": "POSTES - CAPEX", "Qtd": 3.0},
+        {"Regionais": "Guarulhos", "Mês De": pd.Timestamp(2026, 8, 1),
+         "Plano": "POSTES - CAPEX", "Qtd": 2.0},
+    ])
     w = pd.ExcelWriter(caminho, engine="openpyxl")
     try:
         base.to_excel(w, sheet_name="base", index=False)
         dexpara.to_excel(w, sheet_name="dexpara", index=False)
+        if com_postergadas:
+            postergadas.to_excel(w, sheet_name="Postergadas", index=False)
     finally:
         w.close()
         del w
@@ -983,6 +991,34 @@ def test_metas_sincronizar_falha_preserva(banco_temporario, monkeypatch, tmp_pat
     estado = metas.sincronizar_se_preciso(forcar=True)
     assert estado["erro"] is not None
     assert len(db.carregar_metas(2026)) == 3  # última sync preservada
+
+
+def test_metas_sincronizar_postergadas(banco_temporario, monkeypatch, tmp_path):
+    from input_module import db, metas
+    arquivo = tmp_path / "Controle.xlsx"
+    _xlsx_controle(arquivo)
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(arquivo))
+    metas.sincronizar_se_preciso()
+    p = db.carregar_postergacoes(2026)
+    assert p["Qtd"].sum() == 5.0
+    jul = p[(p["Mes"] == 7) & (p["Plano"] == "POSTES - CAPEX")]
+    assert jul.iloc[0]["Qtd"] == 3.0
+
+
+def test_metas_sincronizar_sem_aba_postergadas_preserva(banco_temporario, monkeypatch, tmp_path):
+    from input_module import db, metas
+    arquivo = tmp_path / "Controle.xlsx"
+    _xlsx_controle(arquivo)
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(arquivo))
+    metas.sincronizar_se_preciso()
+    assert len(db.carregar_postergacoes(2026)) == 2
+
+    import time as _t; _t.sleep(0.05)
+    _xlsx_controle(arquivo, com_postergadas=False)  # aba Postergadas some
+    estado = metas.sincronizar_se_preciso(forcar=True)
+    assert estado["erro"] is not None
+    assert len(db.carregar_postergacoes(2026)) == 2   # última sync preservada
+    assert len(db.carregar_metas(2026)) == 3          # metas também intactas
 
 
 def _fx_relatorios():
