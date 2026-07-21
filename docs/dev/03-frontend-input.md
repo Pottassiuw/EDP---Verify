@@ -26,6 +26,7 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
 | `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
+| `frontend/src/features/input/cache.ts` | Snapshots do dataset em IndexedDB via Dexie (tabela `snapshots`, uma linha por dataset: `input-dados`, `ramal-dados`). Best-effort: falha de IndexedDB equivale a cache vazio. |
 | `frontend/src/features/input/ui.ts` | Constantes de estilo compartilhadas: `CLASSE_SELECT_MONO` para `SelectContent` mono-styling, usada por `filters.tsx`, `manage.tsx` e `ramal.tsx`. Nota: `MesExecucaoPicker` (agora em `components/branded/`) declara sua própria instância internamente. |
 | `frontend/src/components/branded/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", movido para `components/branded/` para reutilização entre features (Input e futura integração COFFEE). |
 | `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
@@ -52,6 +53,15 @@ indisponível (com botão "Tentar importar de novo" que chama
 (`basesAusentes`, `input-section.tsx:65-69`). Não há mais um banner de
 "dados desatualizados por outra sessão" — ver "Sincronização SAP"
 abaixo, que agora revalida em background sem intervenção do usuário.
+
+Os hooks `useInputData`/`useRamalData` hidratam o React Query com o
+snapshot do IndexedDB no mount (`setQueryData` com `updatedAt` antigo —
+o dado nasce stale e o próprio React Query revalida em background) e
+regravam o snapshot a cada resposta boa da rede, dentro do `queryFn`.
+Com backend fora e snapshot presente, `input-section.tsx` mostra a grade
+com o banner "Backend indisponível — mostrando dados salvos de {data}"
+em vez do erro bloqueante. Cache é somente leitura; o poll de `/sync`
+segue sendo o invalidador entre sessões.
 
 ## Fluxo: Edição em lote (manage.tsx)
 
