@@ -22,7 +22,7 @@ interface InputSectionProps {
 }
 
 export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
-  const { data: dados, isLoading, error } = useInputData();
+  const { data: dados, isLoading, error, snapshotSalvoEm } = useInputData();
   const recarregar = useRecarregarInput();
   const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
     try {
@@ -112,9 +112,15 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
       )}
 
       {isLoading && <div className="p-[24px] text-text-dim">Carregando notas…</div>}
-      {error != null && (
+      {error != null && !dados && (
         <div className="p-[24px] text-red">
           Backend indisponível. O módulo Input exige o backend rodando (porta 8000). Detalhe: {String((error as Error).message)}
+        </div>
+      )}
+      {error != null && dados && (
+        <div className="py-[6px] px-[18px] text-[12px] text-amber">
+          Backend indisponível — mostrando dados salvos
+          {snapshotSalvoEm ? ` de ${new Date(snapshotSalvoEm).toLocaleString('pt-BR')}` : ''}.
         </div>
       )}
 
