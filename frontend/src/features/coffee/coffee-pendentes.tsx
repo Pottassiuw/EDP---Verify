@@ -7,7 +7,7 @@ import { ConfirmModal } from './confirm-modal';
 import { RevisarNotaSheet } from './revisar-nota-sheet';
 import { MoverPlanoModal, type MoverAlvo } from './mover-plano-modal';
 import { toast } from 'sonner';
-import { BASE as API_BASE } from '../../api';
+import { BASE as API_BASE, coffeeFetch } from '../../api';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Archive } from 'lucide-react';
@@ -52,7 +52,7 @@ export function CoffeePendentes({ onIrParaInput }: { onIrParaInput?: () => void 
     // ponytail: loop sequencial; endpoint de lote se passar de ~50 notas por vez
     for (const pk of pks) {
       try {
-        const res = await fetch(`${API_BASE}/coffee/arquivar`, {
+        const res = await coffeeFetch(`${API_BASE}/coffee/arquivar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: pk, justificativa }),
@@ -77,7 +77,7 @@ export function CoffeePendentes({ onIrParaInput }: { onIrParaInput?: () => void 
 
     const ids = alvo.map(String);
 
-    fetch(`${API_BASE}/coffee/buscar`, {
+    coffeeFetch(`${API_BASE}/coffee/buscar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
@@ -205,7 +205,7 @@ export function CoffeePendentes({ onIrParaInput }: { onIrParaInput?: () => void 
         selectedPks={selecionadas}
         onToggleSelect={toggleSelecionada}
         onToggleAll={toggleTodas}
-        emptyMessage="Nenhuma nota pendente encontrada. Notas aparecem aqui quando buscadas com SAP 10000000."
+        emptyMessage="Nenhuma nota pendente encontrada. Suas notas aparecem aqui quando buscadas com SAP 10000000."
         actionColumn={(nota) => (
           <>
             <AbrirCoffeeBtn pk={nota.pk} />
@@ -233,7 +233,7 @@ export function CoffeePendentes({ onIrParaInput }: { onIrParaInput?: () => void 
         onConfirm={(justificativa) => {
           if (arquivarPk === null) return;
           setModalBusy(true);
-          fetch(`${API_BASE}/coffee/arquivar`, {
+          coffeeFetch(`${API_BASE}/coffee/arquivar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: arquivarPk, justificativa }),

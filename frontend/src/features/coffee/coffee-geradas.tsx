@@ -6,7 +6,7 @@ import { ConfirmModal } from './confirm-modal';
 import { CoffeeGerarModal } from './coffee-gerar-modal';
 import { RevisarNotaSheet } from './revisar-nota-sheet';
 import { MoverPlanoModal, type MoverAlvo } from './mover-plano-modal';
-import { BASE as API_BASE } from '../../api';
+import { BASE as API_BASE, coffeeFetch } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Archive, ListX } from 'lucide-react';
@@ -30,7 +30,7 @@ export function CoffeeGeradas({ onIrParaInput }: { onIrParaInput?: () => void })
   function abrirModal(ids?: number[]): void { setModalIds(ids); setModalOpen(true); }
 
   function arquivar(pk: number, justificativa: string): Promise<void> {
-    return fetch(`${API_BASE}/coffee/arquivar`, {
+    return coffeeFetch(`${API_BASE}/coffee/arquivar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: pk, justificativa }),
@@ -41,7 +41,7 @@ export function CoffeeGeradas({ onIrParaInput }: { onIrParaInput?: () => void })
   }
 
   function remover(pk: number, justificativa: string): Promise<void> {
-    return fetch(`${API_BASE}/coffee/marcar-gerar`, {
+    return coffeeFetch(`${API_BASE}/coffee/marcar-gerar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: pk, a_gerar: false, justificativa }),

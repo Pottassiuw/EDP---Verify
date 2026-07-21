@@ -179,7 +179,7 @@ export async function markDuplicate(id: string): Promise<DuplicateResult> {
 }
 
 export async function marcarGerar(id: string, aGerar: boolean, justificativa?: string): Promise<void> {
-  const res = await fetch(BASE + "/coffee/marcar-gerar", {
+  const res = await coffeeFetch(BASE + "/coffee/marcar-gerar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id: Number(id), a_gerar: aGerar, justificativa }),
@@ -190,7 +190,7 @@ export async function marcarGerar(id: string, aGerar: boolean, justificativa?: s
 export async function consultarNota(
   id: number,
 ): Promise<import("./features/coffee/types").CoffeeConsulta> {
-  const res = await fetch(BASE + "/coffee/consultar/" + id, {
+  const res = await coffeeFetch(BASE + "/coffee/consultar/" + id, {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error("GET /consultar -> " + res.status);
@@ -206,7 +206,7 @@ export async function corrigirLocalLote(
   itens: CorrigirLocalItemApi[],
   gerarApos: boolean,
 ): Promise<{ job_id: string }> {
-  const res = await fetch(BASE + "/coffee/corrigir-local-lote", {
+  const res = await coffeeFetch(BASE + "/coffee/corrigir-local-lote", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ itens, gerar_apos: gerarApos }),
@@ -215,7 +215,7 @@ export async function corrigirLocalLote(
   return res.json() as Promise<{ job_id: string }>;
 }
 
-async function garantirUsuarioInput(): Promise<string> {
+export async function garantirUsuario(): Promise<string> {
   const salvo = getUsuario();
   if (salvo) return salvo;
   let usuario = "sistema";
@@ -224,6 +224,15 @@ async function garantirUsuarioInput(): Promise<string> {
   } catch { /* backend fora: cai no fallback */ }
   setUsuario(usuario);
   return usuario;
+}
+
+/** fetch com o header X-User do COFFEE — identifica o dono das notas no backend. */
+export async function coffeeFetch(
+  url: string,
+  init?: Omit<RequestInit, "headers"> & { headers?: Record<string, string> },
+): Promise<Response> {
+  const headers = { "X-User": await garantirUsuario(), ...init?.headers };
+  return fetch(url, { ...init, headers });
 }
 
 export async function revisarNota(
@@ -241,12 +250,9 @@ export async function moverParaPlano(
   camposUsuario: Partial<import("./features/coffee/types").CamposManuais>,
   atualizarExistente = false,
 ): Promise<import("./features/coffee/types").MoverResultado> {
-  const res = await fetch(BASE + "/integracao/mover-para-plano", {
+  const res = await coffeeFetch(BASE + "/integracao/mover-para-plano", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-User": await garantirUsuarioInput(),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       pks,
       campos_usuario: camposUsuario,
@@ -258,7 +264,7 @@ export async function moverParaPlano(
 }
 
 export async function resumoForaDoPlano(): Promise<{ corrigidas_fora_do_plano: number }> {
-  const res = await fetch(BASE + "/integracao/resumo-fora-do-plano", {
+  const res = await coffeeFetch(BASE + "/integracao/resumo-fora-do-plano", {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw await erroComDetail(res, "GET /integracao/resumo-fora-do-plano");

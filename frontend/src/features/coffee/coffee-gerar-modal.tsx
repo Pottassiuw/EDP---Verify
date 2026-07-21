@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeJob } from './types';
-import { EDPApi, BASE } from '../../api';
+import { EDPApi, BASE, coffeeFetch } from '../../api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -132,7 +132,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
   function salvarLocal(row: Row): void {
     const local = unmaskLocal(row.localEditado ?? "");
     setRows((rs) => rs.map((r) => r.id === row.id ? { ...r, salvandoLocal: true } : r));
-    fetch(`${BASE}/coffee/local-instalacao`, {
+    coffeeFetch(`${BASE}/coffee/local-instalacao`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: row.id, local }),
@@ -174,7 +174,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
     const ids = rows.filter((r) => r.estado === "ok").map((r) => r.id);
     if (ids.length === 0) { toast.info("Nenhuma nota consultada para gerar"); return; }
     setGerando({ rodando: true, feitas: 0, total: ids.length });
-    fetch(`${BASE}/coffee/gerar-lote`, {
+    coffeeFetch(`${BASE}/coffee/gerar-lote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids, justificativa: null }),
@@ -207,12 +207,12 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
       <DialogContent
         showCloseButton={false}
         aria-label="Gerar ou consultar notas"
-        className="w-[clamp(560px,72vw,1120px)] max-w-[94vw] sm:max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
+        className="flex flex-col overflow-hidden w-[clamp(560px,72vw,1120px)] max-w-[94vw] sm:max-w-[94vw] max-h-[88vh] gap-[12px] p-[20px]"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Gerar ou consultar notas</DialogTitle>
         </DialogHeader>
-        <div className="flex items-center gap-[8px]">
+        <div className="shrink-0 flex items-center gap-[8px]">
           <span className="edp-title text-[17px] flex-1">Gerar / Consultar notas</span>
           <Button variant="ghost" size="icon-sm" onClick={onClose} disabled={gerando.rodando}
                   aria-label="Fechar" title="Fechar (Esc)">
@@ -220,7 +220,7 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
           </Button>
         </div>
 
-        <div className="flex gap-[8px]">
+        <div className="shrink-0 flex gap-[8px]">
           <input value={input} onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => { if (e.key === "Enter") adicionar(); }}
                  placeholder="Cole ids (espaço, vírgula ou linha)"
@@ -327,12 +327,12 @@ export function CoffeeGerarModal({ open, idsIniciais, onClose, onChanged }: {
         </div>
 
         {gerando.rodando && (
-          <span className="edp-mono text-[12px] text-text-mute">
+          <span className="shrink-0 edp-mono text-[12px] text-text-mute">
             Gerando {gerando.feitas}/{gerando.total}…
           </span>
         )}
 
-        <div className="flex items-center gap-[8px]">
+        <div className="shrink-0 flex items-center gap-[8px]">
           <Button variant="ghost" size="sm" onClick={limpar}
                   disabled={rows.length === 0 || gerando.rodando}>Limpar lista</Button>
           <div className="flex-1" />

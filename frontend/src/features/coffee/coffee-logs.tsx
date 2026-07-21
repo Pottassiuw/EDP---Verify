@@ -30,7 +30,7 @@ function sinceDe(periodo: Periodo): string | undefined {
 }
 
 export function CoffeeLogs(): React.JSX.Element {
-  const [passo, setPasso] = React.useState("");
+  const [passo, setPasso] = React.useState("todos");
   const [notaPk, setNotaPk] = React.useState("");
   const [limit, setLimit] = React.useState<number>(100);
   const [usuario, setUsuario] = React.useState("");

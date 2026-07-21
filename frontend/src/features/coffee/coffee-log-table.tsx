@@ -79,7 +79,7 @@ const ACOES_GERAR = new Set([
 const ACOES_CONSULTAR = new Set(["busca_lote", "consultar"]);
 
 export const PASSOS = [
-  { value: "", label: "Todos" },
+  { value: "todos", label: "Todos" },
   { value: "gerar", label: "Gerar" },
   { value: "consultar", label: "Consultar" },
   { value: "alterar_local", label: "Alterar local" },
@@ -126,7 +126,7 @@ export function grupoNoPasso(g: Grupo, passo: string): boolean {
     case "alterar_local": return g.cabecalho.acao === "alterar_local";
     case "corrigidas": return g.transicaoNova === "corrigida";
     case "pendentes": return g.transicaoNova === "pendente";
-    default: return true; // "" (Todos) e qualquer valor desconhecido
+    default: return true; // "todos" e qualquer valor desconhecido
   }
 }
 
@@ -165,7 +165,7 @@ interface LogTableProps {
   notaRoot?: number;
 }
 
-export function LogTable({ logs, loading, compact, onClickNota, passo = "", notaRoot }: LogTableProps): React.JSX.Element {
+export function LogTable({ logs, loading, compact, onClickNota, passo = "todos", notaRoot }: LogTableProps): React.JSX.Element {
   const { settings } = useSettings();
   const dev = settings.devLogs;
   const [expanded, setExpanded] = React.useState<Set<number>>(() => new Set());

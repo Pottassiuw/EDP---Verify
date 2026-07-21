@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeLog } from './types';
-import { BASE as API_BASE } from '../../api';
+import { BASE as API_BASE, coffeeFetch } from '../../api';
 
 interface UseCoffeeLogsParams {
   nota_pk?: number;
@@ -36,7 +36,7 @@ export function useCoffeeLogs(params?: UseCoffeeLogsParams): UseCoffeeLogsResult
     if (params?.since) qs.set("since", params.since);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
 
-    fetch(`${API_BASE}/coffee/logs${suffix}`, { headers: { Accept: "application/json" } })
+    coffeeFetch(`${API_BASE}/coffee/logs${suffix}`, { headers: { Accept: "application/json" } })
       .then((res) => {
         if (!res.ok) throw new Error(`GET /coffee/logs -> ${res.status}`);
         return res.json();

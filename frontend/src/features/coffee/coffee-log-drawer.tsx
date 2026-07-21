@@ -11,7 +11,7 @@ interface LogDrawerProps {
 }
 
 export function LogDrawer({ notaPk, open, onClose }: LogDrawerProps): React.JSX.Element {
-  const [passo, setPasso] = React.useState("");
+  const [passo, setPasso] = React.useState("todos");
   const { logs, loading, refresh } = useCoffeeLogs({
     nota_pk: notaPk,
     limit: 50,

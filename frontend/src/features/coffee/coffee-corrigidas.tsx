@@ -61,14 +61,14 @@ export function CoffeeCorrigidas({ onIrParaInput }: { onIrParaInput?: () => void
         </Button>
       </div>
       <div className="shrink-0 pt-0 px-[22px] pb-[10px] text-[12px] text-text-dim">
-        Notas que transitaram de pendente para SAP real. Na próxima busca, passam para Geradas.
+        Suas notas que transitaram de pendente para SAP real. Na próxima busca, passam para Geradas.
       </div>
       <CoffeeNotasTable
         notas={filtradas}
         isLoading={isLoading}
         emptyMessage={busca.trim()
-          ? "Nenhuma nota corrigida bate com a busca."
-          : "Nenhuma nota corrigida no momento. Notas aparecem aqui quando transitam de SAP pendente para SAP real."}
+          ? "Nenhuma das suas notas corrigidas bate com a busca."
+          : "Nenhuma nota corrigida no momento. Suas notas aparecem aqui quando transitam de SAP pendente para SAP real."}
         selectable
         selectedPks={selecionadas}
         onToggleSelect={(pk) => setSelecionadas((s) => { const n = new Set(s); if (n.has(pk)) n.delete(pk); else n.add(pk); return n; })}
