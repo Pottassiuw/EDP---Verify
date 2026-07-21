@@ -32,9 +32,10 @@ enquanto o usuário está com a tela aberta.
 
 ## Fluxo: Overview e sub-navegação
 
-`input-section.tsx` define as seis sub-abas do módulo em `INPUT_SUBS`
-(`input-section.tsx:15-22`): Visão Geral, Gerenciar, Ramal, Relatórios,
-Logs e Configurações, renderizadas pelo `SegTabs`
+As seis sub-abas do módulo vivem em `INPUT_SUBS`
+(`features/input/subs.ts`, módulo leve que o `app-sidebar.tsx` importa
+sem puxar a feature pro bundle inicial): Visão Geral, Gerenciar, Ramal,
+Relatórios, Logs e Configurações, renderizadas pelo `SegTabs`
 (`input-section.tsx:51`). O estado da aba ativa (`sub`/`setSub`) chega
 via props — quem decide e persiste a aba ativa é o componente pai, o
 mesmo padrão do hub COFFEE documentado em `02-frontend-coffee.md`.

@@ -24,14 +24,15 @@ status) para auditoria.
 | `frontend/src/features/coffee/coffee-log-drawer.tsx` | `Sheet` lateral com o histórico de logs de uma única nota (`LogTable` compacto), aberto a partir do botão "Ver logs" das tabelas de lista. |
 | `frontend/src/features/coffee/coffee-verificar.tsx` | Sub-aba "Verificar" dentro do hub COFFEE: repassa o `TriageHandoff` recebido de `App.tsx` para `UploadScreen`/`Dashboard` da feature Verificar (reuso direto, sem lógica própria). |
 | `frontend/src/features/coffee/coffee-notas-table.tsx` | Tabela compartilhada de notas COFFEE (`CoffeeNotasTable`), `StatusBadge`, `formatRelativeTime`, e os botões reutilizáveis `AbrirCoffeeBtn`/`LogsBtn`/`RevisarNotaBtn`. |
-| `frontend/src/features/coffee/coffee-log-table.tsx` | Tabela/timeline de logs (`LogTable`), agrupamento por `trace_id` (`agruparLogs`), filtro por passo (`grupoNoPasso`) e derivação da classificação atual da nota (`classeAtual`). |
+| `frontend/src/features/coffee/coffee-log-table.tsx` | Tabela/timeline de logs (`LogTable`), agrupamento por `trace_id` (`agruparLogs`), filtro por passo (`grupoNoPasso`, sentinel `"todos"` — ver `PASSOS`) e derivação da classificação atual da nota (`classeAtual`). |
 | `frontend/src/features/coffee/revisar-nota-sheet.tsx` | `RevisarNotaSheet`: `Sheet` lateral com os dados de uma nota (`GET /api/integracao/nota/{pk}/revisao`) — identificação, proposta de plano, dados SAP (IW28) e dados brutos do COFFEE — e o CTA "Mover para o Plano"/"Atualizar dados". |
 | `frontend/src/features/coffee/mover-plano-modal.tsx` | `MoverPlanoModal`: `Dialog` de confirmação (individual ou em lote) para `POST /api/integracao/mover-para-plano`; coleta os campos manuais do plano (mês de execução, status da obra, observação, check) e, em caso de sucesso, oferece a ação de toast "Ver no plano". |
 
 ## Navegação e sub-abas
 
 `coffee-hub.tsx` organiza a feature em seis sub-abas via `SegTabs`
-(`COFFEE_SUBS`, `coffee-hub.tsx:13-20`): **Verificar**, **Abrir**,
+(`COFFEE_SUBS`, definido no módulo leve `features/coffee/subs.ts` para o
+sidebar importar sem puxar o hub pro bundle inicial): **Verificar**, **Abrir**,
 **Gerar** (rota interna `geradas`), **Corrigidas**, **Pendentes** e
 **Logs**. O estado da aba ativa (`sub`) e o `setSub` vêm de fora (de
 `App.tsx`), então o hub em si não guarda navegação própria — é só um
@@ -55,6 +56,35 @@ Cada sub-aba mostra:
   virar SAP real.
 - **Logs** — histórico de ações sobre notas COFFEE, com filtros.
 
+## Identidade do usuário (X-User)
+
+Toda chamada ao backend do COFFEE (em `api.ts`, nos hooks
+`use-coffee-notas.ts`/`use-coffee-logs.ts` e nos componentes) passa por
+`coffeeFetch()` (`api.ts`), um wrapper de `fetch` que injeta o header
+`X-User` antes de disparar a requisição:
+
+```ts
+export async function coffeeFetch(
+  url: string,
+  init?: Omit<RequestInit, "headers"> & { headers?: Record<string, string> },
+): Promise<Response> {
+  const headers = { "X-User": await garantirUsuario(), ...init?.headers };
+  return fetch(url, { ...init, headers });
+}
+```
+
+Como o `await` fica encapsulado no wrapper, os call sites continuam
+síncronos (cadeias `.then()`), sem precisar converter handlers para
+`async`. `garantirUsuario()` (`api.ts`, renomeado de `garantirUsuarioInput` —
+agora é compartilhado entre Input e COFFEE, não mais exclusivo do
+handoff de `moverParaPlano`) lê o usuário salvo (`getUsuario()`,
+`localStorage`) ou pede via `prompt` na primeira chamada. O backend usa
+esse header para decidir o **dono** de cada nota nova (`GET /notas`
+só devolve as do próprio usuário + as sem dono) — ver
+`05-backend-coffee-module.md`. Isso é o motivo dos textos "Suas notas…"
+em `coffee-pendentes.tsx`/`coffee-corrigidas.tsx`: a lista já é
+implicitamente filtrada pelo dono.
+
 ## Fluxo: Gerar / Consultar notas
 
 **Aparência do modal**: o `DialogContent` compartilhado
@@ -68,6 +98,11 @@ fluida (`w-[clamp(560px,72vw,1120px)]`, `coffee-gerar-modal.tsx:210`) em
 vez de fixa, com `sm:max-w-[94vw]` para vencer o cap `sm:max-w-lg` do
 primitivo. Tipografia segue a regra do módulo: dados/máquina em mono
 (IDs, SAP, local, **status**) e texto humano (título, botões) em Inter.
+O `DialogContent` do modal de gerar/consultar é `flex flex-col
+overflow-hidden` (fix de overflow: antes, uma lista longa de IDs
+esticava o modal além de `max-h-[88vh]` e cortava os botões de rodapé;
+agora o cabeçalho/input/rodapé ficam `shrink-0` e só a tabela de linhas
+rola internamente).
 
 `coffee-gerar-modal.tsx` é aberto a partir de `coffee-geradas.tsx` (botão
 "Gerar / Consultar notas" ou "Gerar fila (N)"). O usuário cola IDs no

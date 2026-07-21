@@ -7,7 +7,20 @@
 `useState<AppSection>("relatorios")` — a home do app é o dashboard de
 Relatórios (`features/relatorios/relatorios-section.tsx`), não mais o
 COFFEE. O item "Relatórios" no `app-sidebar.tsx` fica acima de COFFEE,
-sem sub-abas (ícone `ChartNoAxesCombined` do lucide).
+com sub-abas (ícone `ChartNoAxesCombined` do lucide) no mesmo padrão de
+`COFFEE_SUBS`/`INPUT_SUBS`: `RelatoriosSubPage` (`types.ts`) é
+`"mes" | "planos" | "mensalizacao"`, persistido em `App.tsx` via
+`usePersistedState<RelatoriosSubPage>("edp_relatorios_sub", "mes")` e
+repassado a `AppSidebar` (`relatoriosSub`/`setRelatoriosSub`) e a
+`RelatoriosSection` (`sub`/`setSub`) — mesma dupla fonte-de-verdade que
+já existe para COFFEE/Input, ver `02-frontend-coffee.md`. Os três
+grupos com sub-menu do `app-sidebar.tsx` usam o componente local
+`SidebarNavGroup` (extraído quando Relatórios virou a terceira cópia do
+padrão `Collapsible`/`SidebarMenuSub` — Rule of Three). As listas de
+sub-abas vivem em módulos leves `features/{relatorios,coffee,input}/subs.ts`
+(`{ id, rotulo }[]`): o sidebar importa só esses arrays, sem puxar as
+seções (e o recharts) pro bundle inicial — as três seções continuam
+chunks lazy do `React.lazy` em `App.tsx`.
 
 ### Handoff de filtros pro Input
 
@@ -36,33 +49,77 @@ sem filtros).
 
 ## Dashboard de Relatórios (features/relatorios/)
 
-A seção home (`relatorios-section.tsx:81-107`) organiza o dashboard em
-duas partes: uma barra de resumo fixa mais uma navegação por três abas
-(`SegTabs`, `relatorios-section.tsx:87`).
+A seção home (`relatorios-section.tsx`) tem o título fixo "Dashboard
+Geral" com subtítulo "Plano de Recomposição \<ano>" (`PageHeader`,
+`relatorios-section.tsx:54`) e organiza o conteúdo em duas partes:
+uma barra de resumo fixa mais uma navegação por três sub-abas
+(`SegTabs`, ligada ao estado de sub-aba que vem de `App.tsx`/
+`AppSidebar` — ver seção anterior).
+
+**Filtros no cabeçalho** (`relatorios-section.tsx:59-90`) — dois
+`Select` lado a lado:
+- **Mês** — "Mês atual" (sentinel `'atual'`, mapeado para `mes: null`)
+  ou um dos 12 meses do ano corrente. Vira o parâmetro `mes` de
+  `InputApi.dashboardRelatorios({ regional, mes })`
+  (`features/input/api.ts`), repassado ao backend como querystring
+  (`GET /relatorios/dashboard?mes=`, ver `06-backend-input-module.md`).
+  Selecionar um mês passado/futuro re-projeta o hero e os cards de
+  regional para aquele mês, sem sair da sub-aba atual.
+- **Regional** — inalterado (SP/todas ou uma das 6 regionais).
+
+`useDashboardRelatorios(regional, mes)` (`use-dashboard.ts`) inclui
+`mes` na `queryKey` (`['relatorios-dashboard', regional, mes]`) —
+trocar de mês gera uma entrada de cache própria no React Query, sem
+invalidar as demais combinações já buscadas.
 
 **Resumo fixo** (`resumo-fixo.tsx:22-46`) — barra sempre visível
-mostrando resumo do mês: rótulo do mês, %Disp (com cor de farol
-`farol()`, `resumo-fixo.tsx:29`), Exec (% execução), Gap R$ extraído
-do `financeiroAno` (`resumo-fixo.tsx:36`) e botão para alertas.
+mostrando resumo do mês (o mês de referência escolhido, `data.mes_referencia`
+— campo renomeado de `mes_corrente`): rótulo do mês, %Disp (com cor de
+farol `farol()`, `resumo-fixo.tsx:29`), Exec (% execução), Gap R$
+extraído do `financeiroAno` (`resumo-fixo.tsx:36`) e botão para
+alertas.
 
-**Navegação por abas** (`SegTabs<AbaRelatorio>`, `relatorios-section.tsx:34,87`)
-— três visões mutuamente exclusivas, com escolha de aba local via
-`useState<AbaRelatorio>`:
+**Navegação por sub-abas** (`SegTabs<RelatoriosSubPage>`,
+`relatorios-section.tsx:111`) — três visões mutuamente exclusivas;
+a aba ativa (`sub`) e sua persistência vêm de fora (`App.tsx`, ver
+seção anterior), não de `useState` local:
 
-- **Aba Mês** (`aba-mes.tsx:8-20`) — padrão ao carregar. Exibe: hero
+- **Aba Mês** (`aba-mes.tsx`) — padrão ao carregar. Exibe: hero
   do mês (KPIs executado/meta), alertas de carteiras abaixo da meta
-  (`AlertasCarteira`, linha 16) e cards de saldo por regional
-  (`RegionaisCards`, linha 17).
-- **Aba Planos** (`aba-planos.tsx:7-20`) — tabela anual (visão de
-  todos os planos da carteira, `TabelaAnual`, linha 14) mais financeiro
-  completo do ano (Carteira/Meta/Gap RS, `aba-planos.tsx:15-17`).
-- **Aba Mensalização** (`aba-mensalizacao.tsx:7-14`) — gráfico de
-  evolução mensal (`MensalizacaoChart`, linha 10) mais tabela de
-  detalhes mensais (`TabelaMensal`, linha 11).
+  (`AlertasCarteira`) e cards de saldo por regional (`RegionaisCards`).
+  O botão de atalho para o COFFEE mudou de "N corrigidas no COFFEE
+  fora do plano →" para **"N nota(s) fora do plano →"**
+  (`relatorios-section.tsx:124`) — o contador em si
+  (`useForaDoPlano`/`GET /integracao/resumo-fora-do-plano`) agora é
+  por usuário (ver `08-integracao-coffee-input.md`), então o rótulo
+  genérico evita insinuar que é uma contagem global.
+- **Aba Planos** (`aba-planos.tsx`) — tabela anual (visão de
+  todos os planos da carteira, `TabelaAnual`) mais financeiro
+  completo do ano (Carteira/Meta/Gap RS).
+- **Aba Mensalização** (`aba-mensalizacao.tsx`) — gráfico de
+  evolução mensal (`MensalizacaoChart`) mais tabela de detalhes
+  mensais (`TabelaMensal`), ambos recebendo `data.mes_referencia`.
 
 **Relocação do Financeiro do ano:** mudou de feature integrada no hero
 (antes) para feature específica da aba Planos (agora). A barra resumo
 exibe apenas o Gap R$ como métrica rápida.
+
+**Rótulo "qtd DDPM":** todo número de quantidade planejada (hero,
+`StatTile`s, `RegionaisCards`, `TabelaMensal`, `MensalizacaoChart`) traz
+o sufixo "qtd DDPM" no texto ou em `title`/`aria-label` — deixa
+explícito que aqueles números vêm do campo `Planejado_DDPM` (unidade
+por plano) e não são contagem de notas nem valor em R$ (esse último só
+aparece nos blocos "financeiro"/Gap R$).
+
+**Gráfico de mensalização (`mensalizacao-chart.tsx`):** reescrito de
+SVG artesanal para `recharts` (`BarChart`) sobre a composição
+`ChartContainer`/`ChartTooltip`/`ChartLegend` de `components/ui/chart.tsx`
+(shadcn "chart"), com `CHART_CONFIG` mapeando `meta`/`carteira`/
+`executado` para os tokens `--surface-2`/`--accent`/`--green-2`. Mantém
+o comportamento anterior (mês de referência destacado via
+`ReferenceArea`, executado zerado para meses futuros) mas ganha
+tooltip/legenda acessíveis "de fábrica" via Radix/recharts em vez de
+`<title>` de SVG. Nova dependência: `recharts` (`package.json`).
 
 ## Configurações (features/configuracoes/)
 
@@ -144,6 +201,10 @@ Por decisão registrada em CLAUDE.md desde o SP1, `src/components/ui/`
 é vendorizado mas é código do projeto — editável diretamente para
 tematizar, redimensionar ou ajustar comportamento padrão de um
 primitivo, em vez de mantido intocado como em outros projetos shadcn.
+
+`chart.tsx` foi adicionado via `npx shadcn@latest add chart` (dependência
+`recharts`) para o gráfico de mensalização de Relatórios — stock, sem
+customização própria; ver "Dashboard de Relatórios" acima.
 
 Dois componentes têm customização real, ambas adicionadas no SP2b
 (`docs/superpowers/specs/2026-07-08-sp2b-shadcn-component-swaps-design.md`)

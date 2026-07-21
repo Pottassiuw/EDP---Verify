@@ -147,8 +147,3 @@ cd frontend && npm run build                    # type-check (tsc) + build
   um scheduler de verdade: é um `while True` que testa `hour == 3 and
   minute == 0` a cada 30 segundos e depois dorme 61 minutos para não
   repetir no mesmo minuto.
-- `frontend/src/components/app-sidebar.tsx:13-15` — comentário `ponytail`
-  já documenta que o import estático de `INPUT_SUBS` (de
-  `features/input/input-section`) puxa a feature Input inteira para o
-  bundle do sidebar, junto com `COFFEE_SUBS`; a extração de um
-  `input/subs.ts` fica marcada como próximo passo se o bundle pesar.
