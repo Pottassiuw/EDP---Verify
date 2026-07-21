@@ -1,12 +1,28 @@
 """Rotas /api/coffee/* -- fundacao do hub COFFEE."""
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from coffee_module import client, config, db, jobs
 
-router = APIRouter(prefix="/api/coffee")
+async def usuario_coffee(x_user: Optional[str] = Header(default=None, alias="X-User")) -> Optional[str]:
+    """Identidade do dono das notas: header X-User quando presente, senão None (fallback local).
+
+    PRECISA ser async: dependency síncrona roda em run_in_threadpool numa cópia
+    de contexto descartada — o set da contextvar nunca chegaria ao corpo da
+    rota. Async roda no task do request; o endpoint sync herda o contexto
+    (copy_context) e _usuario_atual() enxerga o valor.
+    """
+    usuario = x_user.strip() if x_user and x_user.strip() else None
+    db.definir_usuario(usuario)
+    return usuario
+
+
+# dependencies= garante a identidade em TODA rota do módulo (rota nova incluída);
+# rotas que precisam do valor declaram Depends(usuario_coffee) — o FastAPI
+# cacheia a dependency por request, então ela não roda duas vezes.
+router = APIRouter(prefix="/api/coffee", dependencies=[Depends(usuario_coffee)])
 
 _estado = {"inicializado": False}
 
@@ -67,13 +83,13 @@ class CorrigirLocalPedido(BaseModel):
 
 
 @router.post("/buscar")
-def buscar(pedido: BuscaPedido):
+def buscar(pedido: BuscaPedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.ids:
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
     db.registrar_log("acao_usuario", "busca_lote", None,
                      {"ids": pedido.ids, "total": len(pedido.ids)}, True)
-    return {"job_id": jobs.iniciar_busca(pedido.ids, trace=db.trace_atual())}
+    return {"job_id": jobs.iniciar_busca(pedido.ids, trace=db.trace_atual(), usuario=usuario)}
 
 
 @router.get("/job/{job_id}")
@@ -85,9 +101,9 @@ def job(job_id: str):
 
 
 @router.get("/notas")
-def notas(status: Optional[str] = None):
+def notas(status: Optional[str] = None, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
-    return {"registros": db.listar_notas(status)}
+    return {"registros": db.listar_notas(status, usuario=usuario)}
 
 
 @router.get("/consultar/{id}")
@@ -227,7 +243,7 @@ def regerar(pedido: RegerarPedido):
 
 
 @router.post("/gerar-lote")
-def gerar_lote(pedido: GerarLotePedido):
+def gerar_lote(pedido: GerarLotePedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.ids:
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
@@ -235,11 +251,11 @@ def gerar_lote(pedido: GerarLotePedido):
                      {"ids": pedido.ids, "total": len(pedido.ids),
                       "justificativa": pedido.justificativa}, True)
     return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa,
-                                           trace=db.trace_atual())}
+                                           trace=db.trace_atual(), usuario=usuario)}
 
 
 @router.post("/corrigir-local-lote")
-def corrigir_local_lote(pedido: CorrigirLocalPedido):
+def corrigir_local_lote(pedido: CorrigirLocalPedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.itens:
         raise HTTPException(status_code=400, detail="Lista de itens vazia.")
@@ -253,4 +269,4 @@ def corrigir_local_lote(pedido: CorrigirLocalPedido):
                       "gerar_apos": pedido.gerar_apos}, True)
     return {"job_id": jobs.iniciar_correcao_local(
         [item.model_dump() for item in pedido.itens],
-        pedido.gerar_apos, trace=db.trace_atual())}
+        pedido.gerar_apos, trace=db.trace_atual(), usuario=usuario)}

@@ -10,7 +10,7 @@ _JOBS: dict = {}
 _LOCK = threading.Lock()
 
 
-def iniciar_busca(ids: list, trace: str | None = None) -> str:
+def iniciar_busca(ids: list, trace: str | None = None, usuario: str | None = None) -> str:
     job_id = uuid.uuid4().hex
     with _LOCK:
         _JOBS[job_id] = {
@@ -20,12 +20,13 @@ def iniciar_busca(ids: list, trace: str | None = None) -> str:
             "erros": [],
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
-    threading.Thread(target=_rodar, args=(job_id, list(ids), trace), daemon=True).start()
+    threading.Thread(target=_rodar, args=(job_id, list(ids), trace, usuario), daemon=True).start()
     return job_id
 
 
-def _rodar(job_id: str, ids: list, trace: str | None = None) -> None:
+def _rodar(job_id: str, ids: list, trace: str | None = None, usuario: str | None = None) -> None:
     db.definir_trace(trace)
+    db.definir_usuario(usuario)
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
@@ -52,7 +53,7 @@ def obter_job(job_id: str):
 
 
 def iniciar_geracao(ids: list, justificativa: str | None = None,
-                    trace: str | None = None) -> str:
+                    trace: str | None = None, usuario: str | None = None) -> str:
     job_id = uuid.uuid4().hex
     with _LOCK:
         _JOBS[job_id] = {
@@ -62,13 +63,15 @@ def iniciar_geracao(ids: list, justificativa: str | None = None,
             "erros": [],
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
-    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), trace),
+    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), trace, usuario),
                      daemon=True).start()
     return job_id
 
 
-def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
+def _rodar_geracao(job_id: str, ids: list, trace: str | None = None,
+                   usuario: str | None = None) -> None:
     db.definir_trace(trace)
+    db.definir_usuario(usuario)
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
@@ -113,7 +116,7 @@ def _rodar_geracao(job_id: str, ids: list, trace: str | None = None) -> None:
 
 
 def iniciar_correcao_local(itens: list, gerar_apos: bool = False,
-                           trace: str | None = None) -> str:
+                           trace: str | None = None, usuario: str | None = None) -> str:
     """Corrige em lote locais de instalacao com '9' extra (malha fina)."""
     job_id = uuid.uuid4().hex
     with _LOCK:
@@ -129,14 +132,15 @@ def iniciar_correcao_local(itens: list, gerar_apos: bool = False,
             "iniciado_em": datetime.datetime.now().isoformat(),
         }
     threading.Thread(target=_rodar_correcao_local,
-                     args=(job_id, [dict(i) for i in itens], gerar_apos, trace),
+                     args=(job_id, [dict(i) for i in itens], gerar_apos, trace, usuario),
                      daemon=True).start()
     return job_id
 
 
 def _rodar_correcao_local(job_id: str, itens: list, gerar_apos: bool,
-                          trace: str | None = None) -> None:
+                          trace: str | None = None, usuario: str | None = None) -> None:
     db.definir_trace(trace)
+    db.definir_usuario(usuario)
     for item in itens:
         ident, local = item["id"], item["local"]
         try:

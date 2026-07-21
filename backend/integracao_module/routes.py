@@ -1,7 +1,11 @@
 """Rotas /api/integracao/* — ponte COFFEE → INPUT (endpoints finos)."""
+from typing import Optional
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from coffee_module import db as coffee_db
+from coffee_module.routes import usuario_coffee
 from input_module.routes import usuario_atual
 from input_module.service import NotasDuplicadasErro, garantir_banco, pos_escrita
 from integracao_module import service
@@ -25,15 +29,16 @@ def revisao(pk: int):
 
 
 @router.get("/resumo-fora-do-plano")
-def resumo_fora_do_plano():
+def resumo_fora_do_plano(usuario: Optional[str] = Depends(usuario_coffee)):
     garantir_banco()
-    return {"corrigidas_fora_do_plano": service.contar_fora_do_plano()}
+    return {"corrigidas_fora_do_plano": service.contar_fora_do_plano(usuario)}
 
 
 @router.post("/mover-para-plano")
 def mover(pedido: MoverPedido, tasks: BackgroundTasks,
           usuario: str = Depends(usuario_atual)):
     garantir_banco()
+    coffee_db.definir_usuario(usuario)
     try:
         resultado = service.mover_para_plano(
             pedido.pks, pedido.campos_usuario, usuario, pedido.atualizar_existente)

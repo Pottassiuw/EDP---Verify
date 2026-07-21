@@ -102,9 +102,12 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
     return {"inseridas": inseridas, "atualizadas": 0}
 
 
-def contar_fora_do_plano() -> int:
-    """Notas COFFEE com SAP real, não arquivadas, ainda ausentes do plano."""
-    candidatas = [n for n in coffee_db.listar_notas() if _sap_real(n)]
+def contar_fora_do_plano(usuario: str | None = None) -> int:
+    """Notas COFFEE com SAP real, não arquivadas, ainda ausentes do plano.
+
+    Quando usuario é informado, restringe às notas do próprio dono (ou sem dono).
+    """
+    candidatas = [n for n in coffee_db.listar_notas(usuario=usuario) if _sap_real(n)]
     if not candidatas:
         return 0
     df_plano = input_db.carregar_dados()

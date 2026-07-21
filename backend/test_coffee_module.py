@@ -303,7 +303,7 @@ def coffee_cliente(coffee_tmp, monkeypatch):
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": False,
-                    "fields": {"id_sap": 17247854}},
+                    "local_instalacao": None, "fields": {"id_sap": 17247854}},
     )
     from main import app
     return TestClient(app)
@@ -340,6 +340,29 @@ def test_rotas_de_escrita(coffee_cliente, monkeypatch):
     assert coffee_cliente.post("/api/coffee/desarquivar", json={"id": 1}).json()["ok"] is True
     assert coffee_cliente.post("/api/coffee/local-instalacao", json={"id": 1, "local": "X"}).json()["ok"] is True
     assert ("sap", 1, 10000000) in chamadas
+
+
+def test_rota_consultar_grava_dono_do_header(coffee_cliente):
+    """Regressão: usuario_coffee precisa ser async — dependency sync setava a
+    contextvar numa cópia de contexto descartada e o upsert gravava o dono
+    errado (fallback getpass), sumindo a nota da lista do requisitante."""
+    from coffee_module import db
+    r = coffee_cliente.get("/api/coffee/consultar/999", headers={"X-User": "alice"})
+    assert r.status_code == 200
+    assert db.obter_nota(999)["usuario"] == "alice"
+    de_alice = coffee_cliente.get("/api/coffee/notas", headers={"X-User": "alice"}).json()["registros"]
+    assert [n["pk"] for n in de_alice] == [999]
+    de_bob = coffee_cliente.get("/api/coffee/notas", headers={"X-User": "bob"}).json()["registros"]
+    assert de_bob == []
+
+
+def test_rota_buscar_log_acao_com_usuario_do_header(coffee_cliente):
+    from coffee_module import db, jobs
+    r = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["777"]},
+                            headers={"X-User": "bob"})
+    _aguardar_job(jobs, r.json()["job_id"])
+    lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "busca_lote"]
+    assert lote and lote[0]["usuario"] == "bob"
 
 
 # ---------------------------------------------------------------------------
@@ -1325,6 +1348,65 @@ def test_rota_corrigir_local_lote_validacoes(coffee_cliente):
                             json={"itens": [{"id": 1, "local": "curto"}]})
     assert r.status_code == 400
     assert "13" in r.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Tarefa B — notas COFFEE por usuario (visibilidade estrita do dono)
+# ---------------------------------------------------------------------------
+
+
+def test_upsert_grava_dono_no_primeiro_upsert_e_preserva(coffee_tmp):
+    from coffee_module import db
+    db.definir_usuario("alice")
+    db.upsert_nota(1, 10000000, {"id_sap": 10000000})
+    assert db.listar_notas()[0]["usuario"] == "alice"
+    # re-busca por outro usuario nao rouba a posse
+    db.definir_usuario("bob")
+    db.upsert_nota(1, 17247854, {"id_sap": 17247854})
+    assert db.listar_notas()[0]["usuario"] == "alice"
+    db.definir_usuario(None)
+
+
+def test_listar_notas_filtra_estrito_por_usuario_e_inclui_null(coffee_tmp):
+    from coffee_module import db
+    db.definir_usuario("alice")
+    db.upsert_nota(1, 10000000, {"id_sap": 10000000})
+    db.definir_usuario("bob")
+    db.upsert_nota(2, 10000000, {"id_sap": 10000000})
+    db.definir_usuario(None)
+    db.upsert_nota(3, 10000000, {"id_sap": 10000000})
+    # simula nota legada (pre-migracao), sem dono gravado
+    conn = db.get_db_connection()
+    conn.execute("UPDATE notas_coffee SET usuario = NULL WHERE pk = 3")
+    conn.commit()
+    conn.close()
+
+    vistas_por_alice = {n["pk"] for n in db.listar_notas(usuario="alice")}
+    assert vistas_por_alice == {1, 3}
+
+    todas = {n["pk"] for n in db.listar_notas()}
+    assert todas == {1, 2, 3}
+
+
+def test_rota_notas_filtra_por_x_user(coffee_cliente, monkeypatch):
+    from coffee_module import client, db, jobs
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda id: {"pk": int(id), "id_sap": 17247854, "arquivado": False,
+                    "local_instalacao": None, "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["1"]},
+                            headers={"X-User": "alice"})
+    _aguardar_job(jobs, r.json()["job_id"])
+    assert db.listar_notas()[0]["usuario"] == "alice"
+
+    r2 = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["2"]},
+                             headers={"X-User": "bob"})
+    _aguardar_job(jobs, r2.json()["job_id"])
+
+    vistas_por_alice = coffee_cliente.get(
+        "/api/coffee/notas", headers={"X-User": "alice"}).json()["registros"]
+    assert {n["pk"] for n in vistas_por_alice} == {1}
 
 
 def test_rota_corrigir_local_lote_dispara_job(coffee_cliente, monkeypatch):

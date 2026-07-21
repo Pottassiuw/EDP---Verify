@@ -10,8 +10,19 @@ from coffee_module import config
 from coffee_module.classify import classificar
 
 
+_usuario_req: contextvars.ContextVar = contextvars.ContextVar("coffee_usuario", default=None)
+
+
+def definir_usuario(usuario: str | None) -> None:
+    """Define o usuário da operação atual (por requisição / por thread de job)."""
+    _usuario_req.set(usuario)
+
+
 def _usuario_atual() -> str:
-    """Usuário da máquina (best-effort, nunca levanta)."""
+    """Usuário identificado (contextvar via X-User) ou fallback da máquina (best-effort)."""
+    usuario_req = _usuario_req.get()
+    if usuario_req:
+        return usuario_req
     try:
         nome = getpass.getuser()
         if nome:
@@ -34,7 +45,7 @@ def trace_atual():
 
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem",
-            "classificacao_em"]
+            "classificacao_em", "usuario"]
 
 
 def _linha_para_dict(row: tuple) -> dict:
@@ -80,6 +91,8 @@ def inicializar_banco() -> None:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN origem TEXT")
     if "classificacao_em" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN classificacao_em TEXT")
+    if "usuario" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN usuario TEXT")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS coffee_logs (
@@ -123,8 +136,8 @@ def upsert_nota(pk: int, id_sap: int, dados_json: dict) -> str:
         """
         INSERT INTO notas_coffee
             (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json,
-             buscado_em, erro, classificacao_em)
-        VALUES (?, ?, ?, 0, ?, ?, ?, NULL, ?)
+             buscado_em, erro, classificacao_em, usuario)
+        VALUES (?, ?, ?, 0, ?, ?, ?, NULL, ?, ?)
         ON CONFLICT(pk) DO UPDATE SET
             id_sap=excluded.id_sap, id_sap_anterior=excluded.id_sap_anterior,
             classificacao=excluded.classificacao,
@@ -132,10 +145,11 @@ def upsert_nota(pk: int, id_sap: int, dados_json: dict) -> str:
             classificacao_em=CASE
                 WHEN notas_coffee.classificacao IS excluded.classificacao
                 THEN notas_coffee.classificacao_em
-                ELSE excluded.classificacao_em END
+                ELSE excluded.classificacao_em END,
+            usuario=COALESCE(notas_coffee.usuario, excluded.usuario)
         """,
         (pk, id_sap, id_sap_anterior, classe,
-         json.dumps(dados_json, ensure_ascii=False), agora, agora),
+         json.dumps(dados_json, ensure_ascii=False), agora, agora, _usuario_atual()),
     )
     conn.commit()
     conn.close()
@@ -150,10 +164,12 @@ def registrar_erro(pk: int, mensagem: str) -> None:
     conn = get_db_connection()
     conn.execute(
         """
-        INSERT INTO notas_coffee (pk, erro, buscado_em) VALUES (?, ?, ?)
-        ON CONFLICT(pk) DO UPDATE SET erro=excluded.erro, buscado_em=excluded.buscado_em
+        INSERT INTO notas_coffee (pk, erro, buscado_em, usuario) VALUES (?, ?, ?, ?)
+        ON CONFLICT(pk) DO UPDATE SET
+            erro=excluded.erro, buscado_em=excluded.buscado_em,
+            usuario=COALESCE(notas_coffee.usuario, excluded.usuario)
         """,
-        (pk, mensagem, datetime.datetime.now().isoformat()),
+        (pk, mensagem, datetime.datetime.now().isoformat(), _usuario_atual()),
     )
     conn.commit()
     conn.close()
@@ -166,7 +182,7 @@ def arquivar_nota(pk: int) -> None:
     conn.close()
 
 
-def listar_notas(status: str | None = None) -> list:
+def listar_notas(status: str | None = None, usuario: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee"
     clausulas: list[str] = []
@@ -179,6 +195,9 @@ def listar_notas(status: str | None = None) -> list:
         clausulas.append("classificacao = ?")
         params.append(status)
     clausulas.append("(arquivado IS NULL OR arquivado = 0)")
+    if usuario:
+        clausulas.append("(usuario = ? OR usuario IS NULL)")
+        params.append(usuario)
     sql += " WHERE " + " AND ".join(clausulas)
     rows = conn.execute(sql, tuple(params)).fetchall()
     conn.close()

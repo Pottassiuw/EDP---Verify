@@ -241,6 +241,26 @@ def test_api_mover_atualizar_existente_sem_estar_no_plano_retorna_404(ambiente):
     assert r.status_code == 404
 
 
+def test_contar_fora_do_plano_filtrado_por_usuario(ambiente):
+    from coffee_module import db as coffee_db
+    from integracao_module import service
+    coffee_db.definir_usuario("alice")
+    coffee_db.upsert_nota(9001, 90000001, _nota_coffee()["dados_json"])
+    coffee_db.definir_usuario("bob")
+    coffee_db.upsert_nota(9002, 90000002, _nota_coffee()["dados_json"])
+    coffee_db.definir_usuario(None)
+    # simula 4242 (criada pela fixture 'ambiente') como nota legada, sem dono
+    conn = coffee_db.get_db_connection()
+    conn.execute("UPDATE notas_coffee SET usuario = NULL WHERE pk = 4242")
+    conn.commit()
+    conn.close()
+
+    # 4242 (sem dono) + 9001 (alice) contam para alice; 9002 (bob) nao
+    assert service.contar_fora_do_plano(usuario="alice") == 2
+    assert service.contar_fora_do_plano(usuario="bob") == 2  # 4242 (sem dono) + 9002 (bob)
+    assert service.contar_fora_do_plano() == 3  # sem filtro: todas
+
+
 def test_api_resumo_fora_do_plano(ambiente):
     client = _client()
     r = client.get("/api/integracao/resumo-fora-do-plano")
