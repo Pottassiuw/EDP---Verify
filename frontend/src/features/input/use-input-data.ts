@@ -2,16 +2,44 @@ import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { InputApi } from './api';
+import { gravarSnapshot, lerSnapshot, SNAPSHOT_INPUT } from './cache';
+import type { InputDataset } from './types';
 
 export const INPUT_DADOS_KEY = ['input-dados'] as const;
 
+async function buscarEGravar(): Promise<InputDataset> {
+  const dataset = await InputApi.dados();
+  await gravarSnapshot(SNAPSHOT_INPUT, dataset.meta.versao, dataset);
+  return dataset;
+}
+
 export function useInputData() {
-  return useQuery({
+  const qc = useQueryClient();
+  const [snapshotSalvoEm, setSnapshotSalvoEm] = React.useState<string | null>(null);
+
+  // Seed do IndexedDB: só se a query ainda não tem dado (rede pode ter
+  // chegado antes). updatedAt antigo marca o seed como stale, então o
+  // próprio React Query dispara a revalidação — sem estado manual.
+  React.useEffect(() => {
+    let cancelado = false;
+    void lerSnapshot(SNAPSHOT_INPUT).then((snap) => {
+      if (cancelado || !snap) return;
+      if (qc.getQueryData(INPUT_DADOS_KEY) === undefined) {
+        qc.setQueryData(INPUT_DADOS_KEY, snap.dados as InputDataset,
+                        { updatedAt: Date.parse(snap.salvoEm) });
+      }
+      setSnapshotSalvoEm(snap.salvoEm);
+    });
+    return () => { cancelado = true; };
+  }, [qc]);
+
+  const query = useQuery({
     queryKey: INPUT_DADOS_KEY,
-    queryFn: InputApi.dados,
+    queryFn: buscarEGravar,
     staleTime: 300_000,
     retry: 1,
   });
+  return { ...query, snapshotSalvoEm };
 }
 
 export function useRecarregarInput(): () => Promise<void> {
