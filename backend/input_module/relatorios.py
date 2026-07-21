@@ -97,7 +97,7 @@ def _pct(carteira: float, meta: float) -> float | None:
 def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
                      df_metas: pd.DataFrame, df_depara: pd.DataFrame,
                      df_postergacoes: pd.DataFrame,
-                     ano: int, mes_corrente: int, regional: str | None) -> dict:
+                     ano: int, mes_referencia: int, regional: str | None) -> dict:
     fato = _linhas_fato(df_notas, df_ramal, ano)
     depara = df_depara.set_index("Plano") if not df_depara.empty else pd.DataFrame()
     metas = df_metas
@@ -116,7 +116,7 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     metas_f = metas if regional is None else metas[metas["Regional"] == regional]
     post_f = (df_postergacoes if regional is None
               else df_postergacoes[df_postergacoes["Regional"] == regional])
-    hero_postergadas = (float(post_f[post_f["Mes"] == mes_corrente]["Qtd"].sum())
+    hero_postergadas = (float(post_f[post_f["Mes"] == mes_referencia]["Qtd"].sum())
                         if not post_f.empty else 0.0)
     post_por_plano = (post_f.groupby("Plano")["Qtd"].sum().to_dict()
                       if not post_f.empty else {})
@@ -131,16 +131,16 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
         return sum(q * modular(p) for p, q in f_plano_qtd.items())
 
     # ── hero do mês ──────────────────────────────────────────────────
-    cart_mes_por_plano = (fato_f[fato_f["mes"] == mes_corrente]
+    cart_mes_por_plano = (fato_f[fato_f["mes"] == mes_referencia]
                           .groupby("plano")["qtd"].sum().to_dict()) if not fato_f.empty else {}
-    meta_mes_por_plano = (metas_f[metas_f["Mes"] == mes_corrente]
+    meta_mes_por_plano = (metas_f[metas_f["Mes"] == mes_referencia]
                           .groupby("Plano")["Meta"].sum().to_dict()) if not metas_f.empty else {}
     hero_carteira = sum(cart_mes_por_plano.values())
     hero_meta = sum(meta_mes_por_plano.values())
     hero = {
-        "mes_nome": MESES_NOME[mes_corrente - 1],
+        "mes_nome": MESES_NOME[mes_referencia - 1],
         "meta": hero_meta, "carteira": hero_carteira,
-        "executado": soma_fato(fato_f, por_mes=mes_corrente, so_exec=True),
+        "executado": soma_fato(fato_f, por_mes=mes_referencia, so_exec=True),
         "pct_disp": _pct(hero_carteira, hero_meta),
         "meta_rs": rs(meta_mes_por_plano), "carteira_rs": rs(cart_mes_por_plano),
         "postergadas": hero_postergadas,
@@ -181,8 +181,8 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     } for m in range(1, 13)]
 
     # ── regionais (mês corrente; sempre as 6, sem filtro de regional) ──
-    fato_mes = fato[fato["mes"] == mes_corrente]
-    metas_mes = metas[metas["Mes"] == mes_corrente]
+    fato_mes = fato[fato["mes"] == mes_referencia]
+    metas_mes = metas[metas["Mes"] == mes_referencia]
     cart_por_regional = fato_mes.groupby("regional")["qtd"].sum().to_dict() if not fato_mes.empty else {}
     meta_por_regional = metas_mes.groupby("Regional")["Meta"].sum().to_dict() if not metas_mes.empty else {}
     regionais = []
@@ -196,6 +196,6 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
     fin = {"meta_rs": rs(meta_por_plano), "carteira_rs": rs(cart_por_plano)}
     fin["gap_rs"] = fin["carteira_rs"] - fin["meta_rs"]
 
-    return {"ano": ano, "mes_corrente": mes_corrente, "regional": regional,
+    return {"ano": ano, "mes_referencia": mes_referencia, "regional": regional,
             "hero": hero, "visao_anual": linhas, "mensalizacao": mensalizacao,
             "regionais": regionais, "financeiro_ano": fin}

@@ -1064,7 +1064,7 @@ def _fx_relatorios():
 
 def test_dashboard_agregacao_basica(banco_temporario):
     from input_module import relatorios
-    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_corrente=7, regional=None)
+    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_referencia=7, regional=None)
 
     # hero de julho: carteira POSTES 2 + RAMAL 1 = 3; meta 4+2=6; executado jul = 1 (nota 1; a nota 2 encerra em ago)
     assert d["hero"]["carteira"] == 3.0
@@ -1096,13 +1096,21 @@ def test_dashboard_agregacao_basica(banco_temporario):
 
 def test_dashboard_filtro_regional(banco_temporario):
     from input_module import relatorios
-    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_corrente=7,
+    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_referencia=7,
                                     regional="Guarulhos")
     assert d["hero"]["carteira"] == 2.0                   # só POSTES; ramal era Poa/Suzano
     assert d["hero"]["meta"] == 4.0
     assert d["hero"]["postergadas"] == 2.0                # só Guarulhos, jul
     regs = {r["regional"]: r for r in d["regionais"]}
     assert len(regs) == 6                                 # bloco regionais não filtra
+
+
+def test_dashboard_mes_referencia_muda_hero(banco_temporario):
+    from input_module import relatorios
+    d = relatorios.montar_dashboard(*_fx_relatorios(), ano=2026, mes_referencia=3, regional=None)
+    assert d["hero"]["mes_nome"] == "março"
+    assert d["hero"]["carteira"] == 0.0                    # nenhuma carteira em março
+    assert d["mes_referencia"] == 3
 
 
 def test_api_relatorios_dashboard(banco_temporario, monkeypatch, tmp_path):
@@ -1129,6 +1137,16 @@ def test_api_relatorios_dashboard(banco_temporario, monkeypatch, tmp_path):
                       headers={"If-None-Match": etag}).status_code == 304
     # filtro por regional aceito
     assert client.get("/api/input/relatorios/dashboard?regional=Guarulhos").status_code == 200
+
+    # mes fora do intervalo 1..12 -> 422
+    r_invalido = client.get("/api/input/relatorios/dashboard?mes=13")
+    assert r_invalido.status_code == 422
+
+    # mes=3 muda o hero para março e o ETag reflete o mes
+    r_marco = client.get("/api/input/relatorios/dashboard?mes=3")
+    assert r_marco.status_code == 200
+    assert r_marco.json()["hero"]["mes_nome"] == "março"
+    assert r_marco.headers["etag"] != etag
 
     r = client.post("/api/input/metas/sincronizar")
     assert r.status_code == 200 and "sincronizou" in r.json()

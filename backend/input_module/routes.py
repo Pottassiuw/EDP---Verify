@@ -67,19 +67,23 @@ def sync():
 
 @router.get("/relatorios/dashboard")
 def relatorios_dashboard(request: Request, response: Response,
-                         regional: Optional[str] = None):
+                         regional: Optional[str] = None,
+                         mes: Optional[int] = None):
+    if mes is not None and not (1 <= mes <= 12):
+        raise HTTPException(status_code=422, detail="mes deve estar entre 1 e 12")
     garantir_banco()
     estado_metas = metas.sincronizar_se_preciso()
     versao = db.obter_versao_dataset()
-    etag = f'W/"{versao}"'
+    agora = datetime.datetime.now()
+    mes_referencia = mes or agora.month
+    etag = f'W/"{versao}-{mes_referencia}-{regional}"'
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})
-    agora = datetime.datetime.now()
     corpo = relatorios.montar_dashboard(
         engine.get_dataset(), db.carregar_dados_ramal(),
         db.carregar_metas(agora.year), db.carregar_planos_depara(),
         db.carregar_postergacoes(agora.year),
-        ano=agora.year, mes_corrente=agora.month, regional=regional)
+        ano=agora.year, mes_referencia=mes_referencia, regional=regional)
     corpo["regionais_disponiveis"] = relatorios.REGIONAIS_CSD
     corpo["metas_info"] = {
         "atualizadas_em": estado_metas.get("atualizadas_em"),
