@@ -34,6 +34,36 @@ mesmo conjunto de valores duas vezes seguidas — ver
 `"coffee"` diretamente (não passa pelo handoff — é navegação simples,
 sem filtros).
 
+## Dashboard de Relatórios (features/relatorios/)
+
+A seção home (`relatorios-section.tsx:30-46`) organiza o dashboard em
+duas partes: uma barra de resumo fixa mais uma navegação por três abas
+(`SegTabs`, `relatorios-section.tsx:87`).
+
+**Resumo fixo** (`resumo-fixo.tsx:22-46`) — barra sempre visível
+mostrando resumo do mês: rótulo do mês, %Disp (com cor de farol
+`farol()`, `resumo-fixo.tsx:29`), Exec (% execução), Gap R$ extraído
+do `financeiroAno` (`resumo-fixo.tsx:36`) e botão para alertas.
+
+**Navegação por abas** (`SegTabs<AbaRelatorio>`, `relatorios-section.tsx:34,87`)
+— três visões mutuamente exclusivas, com escolha de aba local via
+`useState<AbaRelatorio>`:
+
+- **Aba Mês** (`aba-mes.tsx:8-20`) — padrão ao carregar. Exibe: hero
+  do mês (KPIs executado/meta), alertas de carteiras abaixo da meta
+  (`AlertasCarteira`, linha 16) e cards de saldo por regional
+  (`RegionaisCards`, linha 17).
+- **Aba Planos** (`aba-planos.tsx:7-20`) — tabela anual (visão de
+  todos os planos da carteira, `TabelaAnual`, linha 14) mais financeiro
+  completo do ano (Carteira/Meta/Gap RS, `aba-planos.tsx:15-17`).
+- **Aba Mensalização** (`aba-mensalizacao.tsx:7-14`) — gráfico de
+  evolução mensal (`MensalizacaoChart`, linha 10) mais tabela de
+  detalhes mensais (`TabelaMensal`, linha 11).
+
+**Relocação do Financeiro do ano:** mudou de feature integrada no hero
+(antes) para feature específica da aba Planos (agora). A barra resumo
+exibe apenas o Gap R$ como métrica rápida.
+
 ## Configurações (features/configuracoes/)
 
 `configuracoes.tsx` é a tela "Configurações" da sidebar: três `Card`
