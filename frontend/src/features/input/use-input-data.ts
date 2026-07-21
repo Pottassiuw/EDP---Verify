@@ -15,7 +15,6 @@ async function buscarEGravar(): Promise<InputDataset> {
 
 export function useInputData() {
   const qc = useQueryClient();
-  const [snapshotSalvoEm, setSnapshotSalvoEm] = React.useState<string | null>(null);
 
   // Seed do IndexedDB: só se a query ainda não tem dado (rede pode ter
   // chegado antes). updatedAt antigo marca o seed como stale, então o
@@ -28,18 +27,16 @@ export function useInputData() {
         qc.setQueryData(INPUT_DADOS_KEY, snap.dados as InputDataset,
                         { updatedAt: Date.parse(snap.salvoEm) });
       }
-      setSnapshotSalvoEm(snap.salvoEm);
     });
     return () => { cancelado = true; };
   }, [qc]);
 
-  const query = useQuery({
+  return useQuery({
     queryKey: INPUT_DADOS_KEY,
     queryFn: buscarEGravar,
     staleTime: 300_000,
     retry: 1,
   });
-  return { ...query, snapshotSalvoEm };
 }
 
 export function useRecarregarInput(): () => Promise<void> {

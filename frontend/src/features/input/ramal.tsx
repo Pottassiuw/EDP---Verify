@@ -50,7 +50,7 @@ export function Ramal({
   dadosPrincipais: InputDataset;
   estadoFiltros?: FiltersState;
 }): React.JSX.Element {
-  const { data: dadosRamal, isLoading, error } = useRamalData();
+  const { data: dadosRamal, isLoading, error, dataUpdatedAt } = useRamalData();
   const recarregar = useRecarregarRamal();
 
   const [modo, setModo] = React.useState<ModoRamal>('visao');
@@ -193,9 +193,14 @@ export function Ramal({
       </div>
 
       {isLoading && <div className="p-[24px] text-text-dim">Carregando notas ramal…</div>}
-      {error != null && (
+      {error != null && !dadosRamal && (
         <div className="p-[24px] text-red">
           Erro ao carregar ramal: {String((error as Error).message)}
+        </div>
+      )}
+      {error != null && dadosRamal && (
+        <div className="py-[6px] px-[18px] text-[12px] text-amber">
+          {`Backend indisponível — mostrando dados salvos${dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.`}
         </div>
       )}
 

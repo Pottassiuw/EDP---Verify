@@ -22,7 +22,7 @@ interface InputSectionProps {
 }
 
 export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
-  const { data: dados, isLoading, error, snapshotSalvoEm } = useInputData();
+  const { data: dados, isLoading, error, dataUpdatedAt } = useInputData();
   const recarregar = useRecarregarInput();
   const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
     try {
@@ -119,8 +119,7 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
       )}
       {error != null && dados && (
         <div className="py-[6px] px-[18px] text-[12px] text-amber">
-          Backend indisponível — mostrando dados salvos
-          {snapshotSalvoEm ? ` de ${new Date(snapshotSalvoEm).toLocaleString('pt-BR')}` : ''}.
+          {`Backend indisponível — mostrando dados salvos${dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.`}
         </div>
       )}
 

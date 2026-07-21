@@ -55,13 +55,23 @@ indisponível (com botão "Tentar importar de novo" que chama
 abaixo, que agora revalida em background sem intervenção do usuário.
 
 Os hooks `useInputData`/`useRamalData` hidratam o React Query com o
-snapshot do IndexedDB no mount (`setQueryData` com `updatedAt` antigo —
-o dado nasce stale e o próprio React Query revalida em background) e
-regravam o snapshot a cada resposta boa da rede, dentro do `queryFn`.
-Com backend fora e snapshot presente, `input-section.tsx` mostra a grade
-com o banner "Backend indisponível — mostrando dados salvos de {data}"
-em vez do erro bloqueante. Cache é somente leitura; o poll de `/sync`
-segue sendo o invalidador entre sessões.
+snapshot do IndexedDB no mount (`use-input-data.ts:22-32`,
+`use-ramal-data.ts:19-29`): `lerSnapshot` (`cache.ts:27-38`) busca a
+linha salva e, se a query ainda não tiver dado, um `setQueryData` com
+`updatedAt` do snapshot marca o dado como stale — o próprio React
+Query dispara a revalidação em background, sem estado manual. Cada
+resposta boa da rede regrava o snapshot dentro do `queryFn`
+(`gravarSnapshot`, `cache.ts:40-48`, chamado em `use-input-data.ts:12`
+e `use-ramal-data.ts:12`). O banner "Backend indisponível — mostrando
+dados salvos de {data}" usa `dataUpdatedAt` do próprio `useQuery` — não
+um state paralelo — porque esse campo já reflete tanto o `updatedAt`
+do seed quanto o de cada fetch bem-sucedido; `input-section.tsx:120-124`
+mostra esse banner para a base principal, e `ramal.tsx:201-205` replica
+o mesmo padrão na aba Ramal (erro bloqueante só quando
+`error != null && !dadosRamal`, `ramal.tsx:196-200`), que antes não
+tinha essa paridade. O cache não participa de escrita de notas (edições
+continuam exigindo backend); o poll de `/sync` segue sendo o
+invalidador entre sessões.
 
 ## Fluxo: Edição em lote (manage.tsx)
 
