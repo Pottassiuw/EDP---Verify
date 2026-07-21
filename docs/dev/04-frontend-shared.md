@@ -36,7 +36,7 @@ sem filtros).
 
 ## Dashboard de Relatórios (features/relatorios/)
 
-A seção home (`relatorios-section.tsx:30-46`) organiza o dashboard em
+A seção home (`relatorios-section.tsx:81-107`) organiza o dashboard em
 duas partes: uma barra de resumo fixa mais uma navegação por três abas
 (`SegTabs`, `relatorios-section.tsx:87`).
 
