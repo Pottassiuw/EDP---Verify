@@ -14,7 +14,7 @@ export function AbaMes({ data, aoVerNotas, aoVerPlano }: {
     <div className="flex flex-col gap-[16px]">
       <HeroMes hero={data.hero} aoVerNotas={aoVerNotas} />
       <AlertasCarteira linhas={data.visao_anual} aoClicarPlano={aoVerPlano} />
-      <RegionaisCards regionais={data.regionais} />
+      <RegionaisCards regionais={data.regionais} mesNome={data.hero.mes_nome} />
     </div>
   );
 }

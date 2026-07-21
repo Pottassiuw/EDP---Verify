@@ -77,9 +77,14 @@ export const InputApi = {
 
   migrar: () => req<{ resultado: string }>('/migrar', escrita('POST')),
 
-  dashboardRelatorios: (regional?: string) =>
-    req<import('../relatorios/types').DashboardRelatorios>(
-      `/relatorios/dashboard${regional ? `?regional=${encodeURIComponent(regional)}` : ''}`),
+  dashboardRelatorios: ({ regional, mes }: { regional?: string; mes?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (regional) params.set('regional', regional);
+    if (mes) params.set('mes', String(mes));
+    const query = params.toString();
+    return req<import('../relatorios/types').DashboardRelatorios>(
+      `/relatorios/dashboard${query ? `?${query}` : ''}`);
+  },
   sincronizarMetas: () =>
     req<import('../relatorios/types').MetasInfo & { sincronizou: boolean }>(
       '/metas/sincronizar', escrita('POST')),

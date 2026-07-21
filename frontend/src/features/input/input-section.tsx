@@ -13,15 +13,7 @@ import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
 import { SegTabs } from '@/components/branded/section';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
-
-export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
-  { id: 'visao', rotulo: 'Visão Geral' },
-  { id: 'gerenciar', rotulo: 'Gerenciar' },
-  { id: 'ramal', rotulo: 'Ramal' },
-  { id: 'relatorios', rotulo: 'Relatórios' },
-  { id: 'logs', rotulo: 'Logs' },
-  { id: 'config', rotulo: 'Configurações' },
-];
+import { INPUT_SUBS } from './subs';
 
 interface InputSectionProps {
   sub: AbaInput;

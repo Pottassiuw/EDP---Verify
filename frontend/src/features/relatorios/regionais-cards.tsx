@@ -8,10 +8,15 @@ function corFarol(pct: number | null): string {
   return f === null ? 'var(--text-mute)' : FAROL_COR[f];
 }
 
-export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): React.JSX.Element {
+export function RegionaisCards({ regionais, mesNome }: {
+  regionais: RegionalResumo[];
+  mesNome?: string;
+}): React.JSX.Element {
   return (
     <div className="flex flex-col gap-[10px]">
-      <span className="edp-eyebrow">Saldo por regional (mês corrente)</span>
+      <span className="edp-eyebrow">
+        Saldo por regional · qtd DDPM{mesNome ? <span className="capitalize"> · {mesNome}</span> : ''}
+      </span>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-[12px]">
         {regionais.map((r) => (
           <div key={r.regional}
@@ -25,7 +30,7 @@ export function RegionaisCards({ regionais }: { regionais: RegionalResumo[] }): 
               Saldo {r.saldo > 0 ? '+' : ''}{fmtQtd(r.saldo)}
             </span>
             <span className="text-[13px] text-text-mute">
-              Meta {fmtQtd(r.meta)} · Carteira {fmtQtd(r.carteira)}
+              Meta {fmtQtd(r.meta)} · Carteira {fmtQtd(r.carteira)} (qtd DDPM)
             </span>
           </div>
         ))}

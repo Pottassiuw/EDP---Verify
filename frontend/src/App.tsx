@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import type { Note, Source, AppSection, CoffeeSubPage } from './types';
+import type { Note, Source, AppSection, CoffeeSubPage, RelatoriosSubPage } from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
 import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
@@ -78,6 +78,7 @@ function AppContent(): React.JSX.Element {
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
+  const [relatoriosSub, setRelatoriosSub] = usePersistedState<RelatoriosSubPage>("edp_relatorios_sub", "mes");
   const [filtrosHandoff, setFiltrosHandoff] =
     React.useState<{ estado: FiltersState; id: number } | null>(null);
 
@@ -218,11 +219,13 @@ function AppContent(): React.JSX.Element {
       <SidebarProvider style={{ height: "100%", minHeight: 0 }}>
         <AppSidebar section={section} setSection={changeSection}
                     coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub}
-                    inputSub={inputSub} setInputSub={setInputSub} />
+                    inputSub={inputSub} setInputSub={setInputSub}
+                    relatoriosSub={relatoriosSub} setRelatoriosSub={setRelatoriosSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
             {section === "relatorios" ? (
               <RelatoriosSection
+                sub={relatoriosSub} setSub={setRelatoriosSub}
                 onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
                 onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
                 onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}

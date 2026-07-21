@@ -31,7 +31,7 @@ export function HeroMes({ hero, aoVerNotas }: {
             {fmtPct(hero.pct_disp)}
           </span>
           <span className="edp-mono text-[13px] text-text-mute">
-            Carteira {fmtQtd(hero.carteira)} de Meta {fmtQtd(hero.meta)}
+            Carteira {fmtQtd(hero.carteira)} de Meta {fmtQtd(hero.meta)} (qtd DDPM)
           </span>
         </div>
 
@@ -50,9 +50,9 @@ export function HeroMes({ hero, aoVerNotas }: {
       </div>
 
       <div className="flex gap-[10px] flex-wrap">
-        <StatTile label="Meta do mês" value={fmtQtd(hero.meta)} />
-        <StatTile label="Carteira" value={fmtQtd(hero.carteira)} />
-        <StatTile label="Executado" value={fmtQtd(hero.executado)} />
+        <StatTile label="Meta do mês (qtd DDPM)" value={fmtQtd(hero.meta)} />
+        <StatTile label="Carteira (qtd DDPM)" value={fmtQtd(hero.carteira)} />
+        <StatTile label="Executado (qtd DDPM)" value={fmtQtd(hero.executado)} />
         {hero.postergadas > 0 && (
           <StatTile label="Postergadas" value={fmtQtd(hero.postergadas)} />
         )}

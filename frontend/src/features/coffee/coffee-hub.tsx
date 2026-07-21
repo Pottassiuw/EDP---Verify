@@ -7,17 +7,9 @@ import { CoffeeCorrigidas } from './coffee-corrigidas';
 import { CoffeePendentes } from './coffee-pendentes';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
+import { COFFEE_SUBS } from './subs';
 import { SegTabs } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
-
-export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
-  { id: "verificar", label: "Verificar" },
-  { id: "abrir",     label: "Abrir" },
-  { id: "geradas",   label: "Gerar" },
-  { id: "corrigidas",label: "Corrigidas" },
-  { id: "pendentes", label: "Pendentes" },
-  { id: "logs",      label: "Logs" },
-];
 
 interface CoffeeHubProps {
   notes: Note[];
@@ -58,8 +50,8 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
           )}
         </div>
         <div className="py-0 px-[22px] border-t border-t-line">
-          <SegTabs tabs={COFFEE_SUBS.map((s) => ({ id: s.id, rotulo: s.label }))}
-                   value={sub} onChange={setSub} ariaLabel="Seções do módulo COFFEE" />
+          <SegTabs tabs={COFFEE_SUBS} value={sub} onChange={setSub}
+                   ariaLabel="Seções do módulo COFFEE" />
         </div>
       </div>
 
