@@ -126,3 +126,14 @@ def test_situacao_sem_sap_nunca_no_plano():
     sem_sap = {"status_sap": "Pendente", "data_encerramento_exec": None,
                "sap_real": 0, "id_sap": "10000000"}
     assert situacao.derivar(sem_sap, {10000000}) == "fora_do_plano"
+
+
+def test_listar_numeros_nota(monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    conn = idb.get_db_connection()
+    conn.execute("INSERT INTO notas(Numero_Nota) VALUES(111),(222)")
+    conn.commit()
+    conn.close()
+    assert idb.listar_numeros_nota() == {111, 222}

@@ -944,3 +944,19 @@ def gravar_estado_metas(arquivo_mtime: float, erro: str | None) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def listar_numeros_nota() -> set[int]:
+    """Contrato estreito de leitura: numeros de nota presentes no plano.
+
+    Usado por outros modulos (ex.: Carteira) para derivar situacao sem
+    duplicar SQL do engine. Devolve set vazio se o banco ainda nao existe.
+    """
+    if not os.path.exists(obter_caminho_banco()):
+        return set()
+    conn = get_db_connection()
+    try:
+        linhas = conn.execute("SELECT Numero_Nota FROM notas").fetchall()
+    finally:
+        conn.close()
+    return {int(linha[0]) for linha in linhas if linha[0] is not None}
