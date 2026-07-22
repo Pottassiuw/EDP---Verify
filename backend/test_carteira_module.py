@@ -265,3 +265,28 @@ def test_service_pagina_e_resumo(carteira_tmp, monkeypatch, tmp_path):
     d = service.detalhe(1)
     assert d["id_onr"] == 1 and d["situacao"] == "executada"
     assert service.detalhe(9999) is None
+
+
+def test_rotas_notas_e_sincronizar(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from carteira_module import routes, sync
+
+    sync.sincronizar(
+        ler_origem=lambda: [_origem_exemplo(id_onr=1, id_sap="500", CSD="GUARULHOS")],
+        ler_marker=lambda: "M1", agora="2026-07-22T00:00:00",
+    )
+    app = FastAPI()
+    app.include_router(routes.router)
+    cliente = TestClient(app)
+
+    r = cliente.get("/api/carteira/notas", params={"regional": "GUARULHOS"})
+    assert r.status_code == 200
+    corpo = r.json()
+    assert corpo["total"] == 1 and corpo["registros"][0]["id_onr"] == 1
+
+    assert cliente.get("/api/carteira/notas/1").status_code == 200
+    assert cliente.get("/api/carteira/notas/9999").status_code == 404
+    assert cliente.get("/api/carteira/resumo").json()["total"] == 1
+    assert "execucoes" in cliente.get("/api/carteira/sincronizacao").json()
