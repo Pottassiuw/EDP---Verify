@@ -245,3 +245,23 @@ def test_sync_registra_execucao(carteira_tmp):
     est = sync.estado()
     assert est["ultimo_refresh_marker"] == "M1"
     assert len(est["execucoes"]) >= 1
+
+
+def test_service_pagina_e_resumo(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from carteira_module import service, sync
+    sync.sincronizar(
+        ler_origem=lambda: [
+            _origem_exemplo(id_onr=1, id_sap="500", CSD="GUARULHOS", Status_SAP="Encerrado"),
+            _origem_exemplo(id_onr=2, id_sap="600", CSD="SUZANO", Status_SAP="Pendente"),
+        ],
+        ler_marker=lambda: "M1", agora="2026-07-22T00:00:00",
+    )
+    pag = service.pagina_notas({}, page=1, size=10, ordenar_por="id_onr", ordem="asc")
+    assert pag["total"] == 2 and len(pag["registros"]) == 2
+    assert "versao" in pag
+    r = service.resumo()
+    assert r["total"] == 2
+    d = service.detalhe(1)
+    assert d["id_onr"] == 1 and d["situacao"] == "executada"
+    assert service.detalhe(9999) is None
