@@ -128,6 +128,7 @@ cd frontend && npm run build                    # type-check (tsc) + build
 | Backend — input_module | `backend/input_module/` | Cruzamento IW28/IW38/IW66, cache SQLite, sincronização SAP | [06-backend-input-module.md](./06-backend-input-module.md) |
 | Fluxos de negócio | (cross-cutting) | Ciclo de vida de uma nota, regra de geração COFFEE, timings consolidados | [07-fluxos-de-negocio.md](./07-fluxos-de-negocio.md) |
 | Backend — integracao_module | `backend/integracao_module/` | Ponte COFFEE → Input: monta revisão de uma nota gerada e move (cria/atualiza) o registro correspondente no plano | [08-integracao-coffee-input.md](./08-integracao-coffee-input.md) |
+| Backend — databricks_module | `backend/databricks_module/` | Integração genérica e reutilizável com o Databricks SQL Warehouse (client, config, descoberta de schema); base da Carteira de Notas | [09-backend-databricks-module.md](./09-backend-databricks-module.md) |
 | Backend — core (Verificar) | `backend/main.py` | Endpoints `/api/upload`, `/api/data`, `/api/complete`, `/api/duplicata`; monta os routers de `coffee_module`/`input_module` | (sem doc dedicado — coberto neste overview e em 07) |
 
 ## Pontos de atenção
