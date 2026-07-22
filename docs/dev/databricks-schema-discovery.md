@@ -99,11 +99,17 @@ normalização (`mapping.py`):
 2. **Chave natural:** `id_sap` é **string** (o plano assumia numérico) e tem
    sentinela `10000000` (pendente, 30.206 notas) + 788 vazios → usar `id_onr`
    como chave alternativa para nota sem SAP real (não-movível ao plano).
-3. **Incremental viável:** existe `Atualizacao` (validar se é data parseável);
-   `notas_sp` tem `DATE_LOAD` (data de carga ETL, watermark ideal) — relevante
-   se o enriquecimento entrar.
+3. **Incremental por-linha NÃO é viável em `coffee_onr_es_sp`:** `Atualizacao`
+   tem **valor único para todas as linhas** (`22-07-2026 07:33`, formato
+   `dd-MM-yyyy HH:mm`) — é o carimbo de refresh do ETL da tabela inteira, não
+   um timestamp por-nota. Estratégia: **sync sempre completo** (reconcilia todo
+   o subset SP), usando `Atualizacao` como **sinal de skip** (1 query de 1
+   célula: se não mudou desde o último sync, pula). `notas_sp.DATE_LOAD` pode
+   ser por-linha — verificar quando/se o enriquecimento entrar.
 4. **Situação:** `Status_SAP` é esparso (142k nulos) → derivar situação
    combinando `Status_SAP` + `Data_encerramento_exec` + presença no plano.
+   `Data_encerramento_exec` preenchida em ~28% (só executadas; 2024→2026).
+   `quantidade`: 0–9999 (9999 provável sentinela "sem valor"), média ~22.
 5. **PII:** colaborador/matrícula/solicitante — a projeção deve isolar/omitir
    por padrão; nunca versionar amostras.
 6. **Encoding:** dados UTF-8 íntegros no Python; o mojibake visto no console é
