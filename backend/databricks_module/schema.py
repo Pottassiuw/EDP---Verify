@@ -14,8 +14,9 @@ from databricks_module import client, config
 _IDENTIFICADOR = re.compile(r"^[A-Za-z0-9_]+$")
 
 CANDIDATOS_ATUALIZACAO = (
-    "updated_at", "data_atualizacao", "dt_atualizacao", "modified_at",
-    "ultima_atualizacao", "atualizado_em", "data_modificacao",
+    "date_load", "updated_at", "data_atualizacao", "dt_atualizacao",
+    "modified_at", "ultima_atualizacao", "atualizado_em", "data_modificacao",
+    "atualizacao", "data_carga", "dt_carga",
 )
 
 

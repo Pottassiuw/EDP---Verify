@@ -179,3 +179,14 @@ def test_detectar_coluna_atualizacao():
         ["numero_nota", "Data_Atualizacao", "regional"]
     ) == "Data_Atualizacao"
     assert schema.detectar_coluna_atualizacao(["numero_nota", "regional"]) is None
+    # nomes reais achados na base COFFEE (sandbox_uc.ddpm)
+    assert schema.detectar_coluna_atualizacao(
+        ["id_sap", "conjunto", "Atualizacao"]
+    ) == "Atualizacao"
+    assert schema.detectar_coluna_atualizacao(
+        ["NOTA", "CONJUNTO", "DATE_LOAD"]
+    ) == "DATE_LOAD"
+    # DATE_LOAD (data de carga ETL) tem prioridade sobre outros candidatos
+    assert schema.detectar_coluna_atualizacao(
+        ["DATE_LOAD", "Atualizacao"]
+    ) == "DATE_LOAD"
