@@ -217,3 +217,31 @@ def test_resumo_agrega(carteira_tmp):
     assert r["por_situacao"].get("executada") == 1
     assert r["por_regional"].get("Poá-Suzano") == 1
     conn.close()
+
+
+def test_sync_completo_e_skip(carteira_tmp):
+    from carteira_module import sync
+    origem = [_origem_exemplo(id_onr=1, id_sap="1"),
+              _origem_exemplo(id_onr=2, id_sap="2")]
+    e1 = sync.sincronizar(ler_origem=lambda: origem, ler_marker=lambda: "M1",
+                          agora="2026-07-22T00:00:00")
+    assert e1["estrategia"] == "completa" and e1["status"] == "ok"
+    assert e1["novas"] == 2
+    # mesmo marker -> skip (nao reconcilia)
+    e2 = sync.sincronizar(ler_origem=lambda: origem, ler_marker=lambda: "M1",
+                          agora="2026-07-22T01:00:00")
+    assert e2["estrategia"] == "skip"
+    # marker novo -> reconcilia de novo, idempotente
+    e3 = sync.sincronizar(ler_origem=lambda: origem, ler_marker=lambda: "M2",
+                          agora="2026-07-22T02:00:00")
+    assert e3["estrategia"] == "completa"
+    assert e3["novas"] == 0 and e3["inalteradas"] == 2
+
+
+def test_sync_registra_execucao(carteira_tmp):
+    from carteira_module import sync
+    sync.sincronizar(ler_origem=lambda: [_origem_exemplo(id_onr=1, id_sap="1")],
+                     ler_marker=lambda: "M1", agora="2026-07-22T00:00:00")
+    est = sync.estado()
+    assert est["ultimo_refresh_marker"] == "M1"
+    assert len(est["execucoes"]) >= 1
