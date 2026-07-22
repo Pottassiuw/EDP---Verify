@@ -49,3 +49,89 @@ def test_config_catalogo_schema_default(monkeypatch):
     config = _recarregar_config(monkeypatch)
     assert isinstance(config.catalogo(), str) and config.catalogo()
     assert isinstance(config.schema_padrao(), str) and config.schema_padrao()
+
+
+class _FakeCursor:
+    def __init__(self, descricao, linhas):
+        self.description = descricao
+        self._linhas = linhas
+        self.executado = None
+
+    def execute(self, consulta, params=None):
+        self.executado = (consulta, params)
+
+    def fetchall(self):
+        return self._linhas
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _FakeConexao:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def cursor(self):
+        return self._cursor
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+def test_consultar_monta_dataframe():
+    from databricks_module import client
+    cursor = _FakeCursor(
+        descricao=[("numero_nota", None), ("regional", None)],
+        linhas=[(101, "Guarulhos"), (102, "Mogi das Cruzes")],
+    )
+    df = client.consultar(
+        "SELECT numero_nota, regional FROM t",
+        conectar=lambda: _FakeConexao(cursor),
+    )
+    assert list(df.columns) == ["numero_nota", "regional"]
+    assert df.shape == (2, 2)
+    assert df.iloc[0]["numero_nota"] == 101
+    assert cursor.executado[0].startswith("SELECT")
+
+
+def test_consultar_dataframe_vazio_preserva_colunas():
+    from databricks_module import client
+    cursor = _FakeCursor(descricao=[("total", None)], linhas=[])
+    df = client.consultar("SELECT count(*) AS total FROM t",
+                          conectar=lambda: _FakeConexao(cursor))
+    assert list(df.columns) == ["total"]
+    assert df.empty
+
+
+def test_consultar_repete_e_depois_sucede(monkeypatch):
+    from databricks_module import client
+    monkeypatch.setattr(client.time, "sleep", lambda *_: None)
+    estado = {"chamadas": 0}
+    cursor = _FakeCursor(descricao=[("x", None)], linhas=[(1,)])
+
+    def conectar():
+        estado["chamadas"] += 1
+        if estado["chamadas"] == 1:
+            raise RuntimeError("timeout transitorio")
+        return _FakeConexao(cursor)
+
+    df = client.consultar("SELECT x FROM t", conectar=conectar, tentativas=3)
+    assert estado["chamadas"] == 2
+    assert df.iloc[0]["x"] == 1
+
+
+def test_consultar_desiste_apos_tentativas(monkeypatch):
+    from databricks_module import client
+    monkeypatch.setattr(client.time, "sleep", lambda *_: None)
+
+    def conectar():
+        raise RuntimeError("falha permanente")
+
+    with pytest.raises(RuntimeError, match="falha permanente"):
+        client.consultar("SELECT 1", conectar=conectar, tentativas=3)
