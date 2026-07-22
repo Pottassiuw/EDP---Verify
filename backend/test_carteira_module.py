@@ -96,3 +96,33 @@ def test_hash_estavel_e_sensivel():
     assert mapping.hash_conteudo(a) == mapping.hash_conteudo(b)
     c = mapping.normalizar_linha(_origem_exemplo(Status_SAP="Encerrado"))
     assert mapping.hash_conteudo(a) != mapping.hash_conteudo(c)
+
+
+def test_situacao_precedencia():
+    from carteira_module import situacao
+    cancelada = {"status_sap": "Cancelado", "data_encerramento_exec": None,
+                 "sap_real": 1, "id_sap": "1"}
+    assert situacao.derivar(cancelada, {1}) == "cancelada"
+
+    executada = {"status_sap": "Encerrado", "data_encerramento_exec": None,
+                 "sap_real": 1, "id_sap": "2"}
+    assert situacao.derivar(executada, set()) == "executada"
+
+    exec_por_data = {"status_sap": None, "data_encerramento_exec": "2025-06-01",
+                     "sap_real": 1, "id_sap": "3"}
+    assert situacao.derivar(exec_por_data, set()) == "executada"
+
+    no_plano = {"status_sap": "Pendente", "data_encerramento_exec": None,
+                "sap_real": 1, "id_sap": "44"}
+    assert situacao.derivar(no_plano, {44}) == "no_plano"
+
+    fora = {"status_sap": None, "data_encerramento_exec": None,
+            "sap_real": 1, "id_sap": "99"}
+    assert situacao.derivar(fora, {44}) == "fora_do_plano"
+
+
+def test_situacao_sem_sap_nunca_no_plano():
+    from carteira_module import situacao
+    sem_sap = {"status_sap": "Pendente", "data_encerramento_exec": None,
+               "sap_real": 0, "id_sap": "10000000"}
+    assert situacao.derivar(sem_sap, {10000000}) == "fora_do_plano"
