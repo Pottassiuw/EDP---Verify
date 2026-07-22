@@ -137,3 +137,83 @@ def test_listar_numeros_nota(monkeypatch, tmp_path):
     conn.commit()
     conn.close()
     assert idb.listar_numeros_nota() == {111, 222}
+
+
+def _inserir(conn, notas):
+    from carteira_module import repository
+    repository.carregar_staging(conn, notas)
+    return repository.reconciliar(conn, "2026-07-22T00:00:00")
+
+
+def test_reconciliar_idempotente_e_tombstone(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    n1 = mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="1001"))
+    n2 = mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="1002"))
+    r1 = _inserir(conn, [n1, n2])
+    assert r1["novas"] == 2
+    # rodar de novo com os mesmos dados: nada muda (idempotente)
+    r2 = _inserir(conn, [n1, n2])
+    assert r2["novas"] == 0 and r2["atualizadas"] == 0 and r2["inalteradas"] == 2
+    # n2 some da origem -> tombstone (nunca deletado)
+    r3 = _inserir(conn, [n1])
+    assert r3["ausentes"] == 1
+    row = conn.execute(
+        "SELECT ausente_na_origem_em FROM nota_carteira WHERE id_onr=2"
+    ).fetchone()
+    assert row["ausente_na_origem_em"] is not None
+    # n2 volta -> tombstone limpo
+    _inserir(conn, [n1, n2])
+    row = conn.execute(
+        "SELECT ausente_na_origem_em FROM nota_carteira WHERE id_onr=2"
+    ).fetchone()
+    assert row["ausente_na_origem_em"] is None
+    conn.close()
+
+
+def test_reconciliar_detecta_alteracao(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    _inserir(conn, [mapping.normalizar_linha(_origem_exemplo(id_onr=1, Status_SAP="Pendente"))])
+    r = _inserir(conn, [mapping.normalizar_linha(_origem_exemplo(id_onr=1, Status_SAP="Encerrado"))])
+    assert r["atualizadas"] == 1
+    conn.close()
+
+
+def test_listar_filtra_por_situacao_e_regional(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="500", CSD="GUARULHOS", Status_SAP="Pendente")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="600", CSD="GUARULHOS", Status_SAP="Encerrado")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=3, id_sap="700", CSD="SUZANO", Status_SAP="Pendente")),
+    ])
+    linhas, total = repository.listar(
+        conn, numeros_no_plano={500}, filtros={"regional": "GUARULHOS"},
+        page=1, size=10, ordenar_por="id_onr", ordem="asc",
+    )
+    assert total == 2
+    sit = {l["id_onr"]: l["situacao"] for l in linhas}
+    assert sit[1] == "no_plano"      # id_sap 500 no plano
+    assert sit[2] == "executada"     # Encerrado
+    # filtro por situacao
+    _l, t_fora = repository.listar(
+        conn, numeros_no_plano=set(), filtros={"situacao": "fora_do_plano"},
+        page=1, size=10, ordenar_por="id_onr", ordem="asc",
+    )
+    assert t_fora == 2               # onr 1 e 3 (Pendente, sem plano)
+    conn.close()
+
+
+def test_resumo_agrega(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="500", CSD="GUARULHOS", Status_SAP="Encerrado")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="600", CSD="SUZANO", Status_SAP="Pendente")),
+    ])
+    r = repository.resumo(conn, numeros_no_plano=set())
+    assert r["total"] == 2
+    assert r["por_situacao"].get("executada") == 1
+    assert r["por_regional"].get("Poá-Suzano") == 1
+    conn.close()
