@@ -18,12 +18,22 @@ usa `client.consultar` sem duplicar lógica de conexão.
   `amostrar`, `contar`, `detectar_coluna_atualizacao`. Identificadores
   validados (não são bind params).
 - `discover_databricks.py` (script) — execução manual da descoberta; gera
-  `docs/dev/databricks-schema-discovery.md`.
+  um relatório com esquema/amostras (não commitar saída com PII).
+
+## Fonte confirmada (Fase 0)
+
+- Catálogo: `sandbox_uc` · Schema: `ddpm`.
+- **Tabela-base da Carteira: `coffee_onr_es_sp`** (espinha; filtrar `CSD`
+  para SP). Enriquecimento futuro via `notas_sp` (join `ID_ONR`).
+- Esquema real, distribuições e mapa de colunas:
+  [`databricks-schema-discovery.md`](./databricks-schema-discovery.md).
 
 ## Segurança
 
 `backend/.env` NUNCA é versionado (`.gitignore`). Databricks é **somente
-leitura** nesta fase. Token de acesso deve ser rotacionado periodicamente.
+leitura**. Token de acesso deve ser rotacionado periodicamente. A base tem
+colunas de PII (`matriculaSAP`, `nomeColaborador`, `colaborador`,
+`Solicitante`) — a projeção local deve isolá-las e nunca versionar amostras.
 
 ## Testes
 
@@ -39,14 +49,7 @@ Rodar: `venv/Scripts/python -m pytest test_databricks_module.py -v`.
 
 ## Mapa de colunas da base COFFEE → domínio da aplicação
 
-Preencher a partir de `databricks-schema-discovery.md`; decidir com a engenharia.
-Ação: **incorporar** (vira coluna de `nota_carteira`) · **ignorar** ·
-**enriquecer** (leva também para Input/COFFEE/Relatórios).
-
-| Origem (Databricks) | Tipo | Significado | Equivalente atual | Ação | Observação |
-|---|---|---|---|---|---|
-| numero_nota (ex.) | ? | nº SAP da nota | notas.Numero_Nota | incorporar (chave natural) | confirmar unicidade |
-| conjunto (ex.) | ? | rubrica/plano | Conjunto (ausente no Input) | enriquecer | pedido explícito da engenharia |
-| equipamento (ex.) | ? | tipo do ativo | — (novo) | incorporar | dimensão de dashboard |
-| regional (ex.) | ? | regional CSD | Regional | incorporar | conferir de-para |
-| (coluna de atualização) | ? | última alteração | — | avaliar | viabiliza sync incremental |
+Preenchido com dados reais em
+[`databricks-schema-discovery.md`](./databricks-schema-discovery.md)
+(52 colunas de `coffee_onr_es_sp` + ação proposta por coluna + de-para de
+regional). Falta a **revisão final com a engenharia** — gate da Fase 1.
