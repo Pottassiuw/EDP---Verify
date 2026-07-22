@@ -135,3 +135,47 @@ def test_consultar_desiste_apos_tentativas(monkeypatch):
 
     with pytest.raises(RuntimeError, match="falha permanente"):
         client.consultar("SELECT 1", conectar=conectar, tentativas=3)
+
+
+def test_validar_identificador_rejeita_injecao():
+    from databricks_module import schema
+    with pytest.raises(ValueError):
+        schema._validar_identificador("tabela; DROP TABLE x")
+    assert schema._validar_identificador("base_coffee") == "base_coffee"
+
+
+def test_listar_tabelas_monta_sql(monkeypatch):
+    from databricks_module import schema
+    capturado = {}
+
+    def fake_consultar(consulta, params=None, **kwargs):
+        capturado["sql"] = consulta
+        import pandas as pd
+        return pd.DataFrame({"tableName": ["base_coffee"]})
+
+    monkeypatch.setattr(schema.client, "consultar", fake_consultar)
+    df = schema.listar_tabelas(catalogo="cat", schema="sch")
+    assert "SHOW TABLES IN cat.sch" in capturado["sql"]
+    assert df.iloc[0]["tableName"] == "base_coffee"
+
+
+def test_contar_retorna_inteiro(monkeypatch):
+    from databricks_module import schema
+    import pandas as pd
+
+    def fake_consultar(consulta, params=None, **kwargs):
+        assert "COUNT(*)" in consulta
+        assert "cat.sch.base_coffee" in consulta
+        return pd.DataFrame({"total": [1234]})
+
+    monkeypatch.setattr(schema.client, "consultar", fake_consultar)
+    total = schema.contar("base_coffee", catalogo="cat", schema="sch")
+    assert total == 1234
+
+
+def test_detectar_coluna_atualizacao():
+    from databricks_module import schema
+    assert schema.detectar_coluna_atualizacao(
+        ["numero_nota", "Data_Atualizacao", "regional"]
+    ) == "Data_Atualizacao"
+    assert schema.detectar_coluna_atualizacao(["numero_nota", "regional"]) is None
