@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 
 export const SNAPSHOT_INPUT = 'input-dados';
 export const SNAPSHOT_RAMAL = 'ramal-dados';
+export const SNAPSHOT_CARTEIRA_RESUMO = 'carteira-resumo';
 
 export interface Snapshot {
   chave: string;

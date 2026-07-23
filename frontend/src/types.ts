@@ -5,9 +5,10 @@ export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
-export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
+export type AppSection = "relatorios" | "coffee" | "input" | "carteira" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
+export type CarteiraSubPage = "explorador" | "sincronizacao";
 
 export interface NoteError {
   rule: RuleKey;
