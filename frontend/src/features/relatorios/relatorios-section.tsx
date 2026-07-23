@@ -2,6 +2,7 @@ import React from 'react';
 
 import type { RelatoriosSubPage } from '../../types';
 import { PageHeader, SegTabs } from '@/components/branded/section';
+import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -29,10 +30,11 @@ export interface RelatoriosSectionProps {
   onVerNotasDoMes: (mes: number, ano: number) => void;
   onVerPlano: (plano: string, regional: string | null) => void;
   onIrParaCoffee: () => void;
+  onVerForaDoPlano?: () => void;
 }
 
 export function RelatoriosSection({
-  sub, setSub, onVerNotasDoMes, onVerPlano, onIrParaCoffee,
+  sub, setSub, onVerNotasDoMes, onVerPlano, onIrParaCoffee, onVerForaDoPlano,
 }: RelatoriosSectionProps): React.JSX.Element {
   const [regional, setRegional] = React.useState<string | null>(null);
   const [mes, setMes] = React.useState<number | null>(null);
@@ -116,10 +118,17 @@ export function RelatoriosSection({
                 aoVerPlano={(plano) => onVerPlano(plano, regional)}
               />
               {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
-                <button type="button" onClick={onIrParaCoffee}
-                        className="text-left edp-mono text-[13px] text-amber hover:underline">
-                  {foraDoPlano.data?.corrigidas_fora_do_plano} nota(s) fora do plano →
-                </button>
+                <div className="flex items-center gap-[10px]">
+                  <button type="button" onClick={onIrParaCoffee}
+                          className="text-left edp-mono text-[13px] text-amber hover:underline">
+                    {foraDoPlano.data?.corrigidas_fora_do_plano} nota(s) fora do plano →
+                  </button>
+                  {onVerForaDoPlano && (
+                    <Button variant="link" size="sm" onClick={onVerForaDoPlano}>
+                      Ver na carteira
+                    </Button>
+                  )}
+                </div>
               )}
             </>
           )}

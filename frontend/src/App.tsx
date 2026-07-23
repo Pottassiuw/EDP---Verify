@@ -84,6 +84,8 @@ function AppContent(): React.JSX.Element {
   const [carteiraSub, setCarteiraSub] = usePersistedState<CarteiraSubPage>("edp_carteira_sub", "explorador");
   const [filtrosHandoff, setFiltrosHandoff] =
     React.useState<{ estado: FiltersState; id: number } | null>(null);
+  const [carteiraHandoff, setCarteiraHandoff] =
+    React.useState<{ situacao: string; id: number } | null>(null);
 
   function irParaInputFiltrado(filtros: Filtro[]): void {
     setFiltrosHandoff((prev) => ({
@@ -92,6 +94,12 @@ function AppContent(): React.JSX.Element {
     }));
     setInputSub("visao");
     changeSection("input");
+  }
+
+  function irParaCarteiraForaDoPlano(): void {
+    setCarteiraHandoff((prev) => ({ situacao: 'fora_do_plano', id: (prev?.id ?? 0) + 1 }));
+    setCarteiraSub('explorador');
+    changeSection('carteira');
   }
 
   const accentStyle: CssVars = {
@@ -233,11 +241,13 @@ function AppContent(): React.JSX.Element {
                 onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
                 onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
                 onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}
+                onVerForaDoPlano={irParaCarteiraForaDoPlano}
               />
             ) : section === "input" ? (
               <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
             ) : section === "carteira" ? (
-              <CarteiraSection sub={carteiraSub} setSub={setCarteiraSub} />
+              <CarteiraSection sub={carteiraSub} setSub={setCarteiraSub}
+                               handoff={carteiraHandoff} />
             ) : section === "configuracoes" ? <ConfiguracoesPage /> :
              <CoffeeHub notes={notes}
                         sub={coffeeSub} setSub={setCoffeeSub}
