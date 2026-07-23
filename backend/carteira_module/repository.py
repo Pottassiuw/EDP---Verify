@@ -236,3 +236,28 @@ def listar_divergencias(conn, numeros_no_plano: set[int]) -> list[dict]:
         "(n.status_sap = 'Cancelado' OR n.ausente_na_origem_em IS NOT NULL)"
     ).fetchall()
     return [dict(l) for l in linhas]
+
+
+def base_por_plano(conn: sqlite3.Connection, numeros_no_plano: set[int]) -> list[dict]:
+    """Base disponível (situação fora_do_plano) por regional x descricao_conjunto.
+
+    Espelha a precedência de situacao.derivar: exclui cancelada, executada e
+    o que já está no plano; só sap_real e quantidade válida; nunca tombstone.
+    Devolve a quantidade BRUTA (a conversão para DDPM é feita em dashboard.py,
+    que tem o Unidade de planos_depara).
+    """
+    _preparar_plano(conn, numeros_no_plano)
+    linhas = conn.execute(
+        "SELECT n.regional AS regional, n.descricao_conjunto AS plano, "
+        "SUM(n.quantidade) AS quantidade_bruta, COUNT(*) AS n_notas "
+        "FROM nota_carteira n "
+        "LEFT JOIN plano_atual p ON p.numero = CAST(n.id_sap AS INTEGER) "
+        "AND n.sap_real = 1 "
+        "WHERE n.ausente_na_origem_em IS NULL AND n.sap_real = 1 "
+        "AND n.quantidade_valida = 1 "
+        "AND (n.status_sap IS NULL OR n.status_sap NOT IN ('Cancelado','Encerrado')) "
+        "AND n.data_encerramento_exec IS NULL "
+        "AND p.numero IS NULL "
+        "GROUP BY n.regional, n.descricao_conjunto"
+    ).fetchall()
+    return [dict(l) for l in linhas]

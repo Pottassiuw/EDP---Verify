@@ -459,3 +459,27 @@ def test_normalizar_regional_dashboard():
     assert config.normalizar_regional_dashboard("SÃO JOSÉ DOS CAMPOS") == "São José dos Campos"
     assert config.normalizar_regional_dashboard("Litoral Norte") == "Litoral Norte"
     assert config.normalizar_regional_dashboard(None) is None
+
+
+def test_base_por_plano(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    _inserir(conn, [
+        # fora do plano (sap real, ativo) -> conta
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="800", CSD="GUARULHOS",
+            conjunto="46", **{"descrição_conjunto": "POSTES - CAPEX"}, quantidade=10, Status_SAP="Pendente")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="801", CSD="GUARULHOS",
+            conjunto="46", **{"descrição_conjunto": "POSTES - CAPEX"}, quantidade=5, Status_SAP="Pendente")),
+        # cancelada -> NAO conta
+        mapping.normalizar_linha(_origem_exemplo(id_onr=3, id_sap="802", CSD="GUARULHOS",
+            conjunto="46", **{"descrição_conjunto": "POSTES - CAPEX"}, quantidade=99, Status_SAP="Cancelado")),
+        # no plano (900) -> NAO conta como base
+        mapping.normalizar_linha(_origem_exemplo(id_onr=4, id_sap="900", CSD="SUZANO",
+            conjunto="56", **{"descrição_conjunto": "PODA DE ARVORES - OPEX"}, quantidade=7, Status_SAP="Pendente")),
+    ])
+    base = repository.base_por_plano(conn, numeros_no_plano={900})
+    conn.close()
+    por = {(b["regional"], b["plano"]): b for b in base}
+    assert por[("GUARULHOS", "POSTES - CAPEX")]["quantidade_bruta"] == 15
+    assert por[("GUARULHOS", "POSTES - CAPEX")]["n_notas"] == 2
+    assert ("SUZANO", "PODA DE ARVORES - OPEX") not in por  # 900 esta no plano
