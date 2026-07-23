@@ -1,10 +1,12 @@
 """Rotas /api/input/* — módulo de Gestão de Notas (Input)."""
+from fastapi import Body
 import datetime
 import io
 import json
 import os
 import re as _re
 from typing import Optional
+from input_module.status10_service import obter_resumo_status10, gerar_email_outlook_status10
 
 import pandas as pd
 from fastapi import (APIRouter, BackgroundTasks, Depends, File, Header,
@@ -309,7 +311,7 @@ def _rotina_sap_background():
         env["PYTHONIOENCODING"] = "utf-8"
         env["INPUT_DB_PATH"] = db.obter_caminho_banco()
         subprocess.run([python_exe, script_path], check=True, env=env)
-        
+
         # Assim que termina, atualiza o SQLite com os arquivos gerados; só
         # registra em log_arquivos (e portanto bumpa a versão do dataset) os
         # arquivos que realmente foram importados com sucesso.
@@ -329,7 +331,6 @@ def _rotina_sap_background():
         print(f"Erro na execução em background do SAP: {e}")
 
 
-from fastapi import Body
 
 @router.post("/bases/sync-sap")
 def sync_sap(tasks: BackgroundTasks, x_user: Optional[str] = Header(default="Sistema", alias="X-User"), payload: dict = Body(None)):
@@ -349,7 +350,7 @@ def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
             f.write(arquivo.file.read())
     except OSError as e:
         raise HTTPException(502, f"Erro ao gravar na rede: {e}")
-    
+
     if _processar_upload_base(nome_arquivo, caminho):
         db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
     engine.invalidar_cache()
@@ -517,9 +518,6 @@ def rateio_executar(
 
 
 # ── Status 10 Relatório e E-mail ──────────────────────────────────────────────
-from input_module.status10_service import obter_resumo_status10, gerar_email_outlook_status10
-
-
 @router.get("/status10/resumo")
 def status10_resumo():
     garantir_banco()
@@ -533,5 +531,3 @@ def status10_enviar_email(usuario: str = Depends(usuario_atual)):
     if not resultado["ok"]:
         raise HTTPException(400, detail=resultado["mensagem"])
     return resultado
-
-
