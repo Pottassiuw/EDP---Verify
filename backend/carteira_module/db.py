@@ -87,6 +87,21 @@ def inicializar_banco() -> None:
             chave TEXT PRIMARY KEY,
             valor TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS plano_movimentacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_onr INTEGER,
+            numero_nota TEXT,
+            acao TEXT,
+            usuario TEXT,
+            lote_id TEXT,
+            mes_execucao TEXT,
+            status_obra TEXT,
+            snapshot TEXT,
+            movido_em TEXT
+        );
+        CREATE INDEX IF NOT EXISTS ix_mov_id_onr ON plano_movimentacoes(id_onr);
+        CREATE INDEX IF NOT EXISTS ix_mov_lote ON plano_movimentacoes(lote_id);
         """
     )
     conn.commit()
@@ -120,3 +135,13 @@ def bump_versao(conn: sqlite3.Connection) -> None:
     ).fetchone()
     proximo = (int(atual["valor"]) if atual else 0) + 1
     definir_meta(conn, "versao", str(proximo))
+
+
+def registrar_movimentacao(conn: sqlite3.Connection, movimentos: list[dict]) -> None:
+    conn.executemany(
+        "INSERT INTO plano_movimentacoes (id_onr, numero_nota, acao, usuario, "
+        "lote_id, mes_execucao, status_obra, snapshot, movido_em) "
+        "VALUES (:id_onr,:numero_nota,:acao,:usuario,:lote_id,:mes_execucao,"
+        ":status_obra,:snapshot,:movido_em)",
+        movimentos,
+    )

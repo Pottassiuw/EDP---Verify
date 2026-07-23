@@ -302,3 +302,21 @@ def test_rotas_notas_e_sincronizar(carteira_tmp, monkeypatch, tmp_path):
     assert cliente.get("/api/carteira/notas/9999").status_code == 404
     assert cliente.get("/api/carteira/resumo").json()["total"] == 1
     assert "execucoes" in cliente.get("/api/carteira/sincronizacao").json()
+
+
+def test_plano_movimentacoes(carteira_tmp):
+    from carteira_module import db
+    conn = db.conectar()
+    db.registrar_movimentacao(conn, [{
+        "id_onr": 1, "numero_nota": "17247854", "acao": "entrada",
+        "usuario": "teste", "lote_id": "lote-abc", "mes_execucao": "jul-2026",
+        "status_obra": "Planejada", "snapshot": '{"x":1}',
+        "movido_em": "2026-07-23T00:00:00",
+    }])
+    conn.commit()
+    linhas = conn.execute(
+        "SELECT id_onr, acao, lote_id FROM plano_movimentacoes"
+    ).fetchall()
+    conn.close()
+    assert len(linhas) == 1
+    assert linhas[0]["id_onr"] == 1 and linhas[0]["acao"] == "entrada"
