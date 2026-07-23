@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartNoAxesCombined, ChevronDown } from 'lucide-react';
-import type { AppSection, CoffeeSubPage, RelatoriosSubPage } from '../types';
+import type { AppSection, CoffeeSubPage, RelatoriosSubPage, CarteiraSubPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { COFFEE_SUBS } from '../features/coffee/subs';
 import { INPUT_SUBS } from '../features/input/subs';
 import { RELATORIOS_SUBS } from '../features/relatorios/subs';
+import { CARTEIRA_SUBS } from '../features/carteira/subs';
 import type { AbaInput } from '../features/input/types';
 
 // ─── Ícones inline ────────────────────────────────────────────────────────────
@@ -35,6 +36,9 @@ const IconInput = (): React.JSX.Element => (
 );
 const IconBI = (): React.JSX.Element => (
   <svg {...svgBase}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>
+);
+const IconCarteira = (): React.JSX.Element => (
+  <svg {...svgBase}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /><path d="M7 15h4" /></svg>
 );
 const IconGear = (): React.JSX.Element => (
   <svg {...svgBase}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
@@ -94,9 +98,11 @@ interface AppSidebarProps {
   setInputSub: (s: AbaInput) => void;
   relatoriosSub: RelatoriosSubPage;
   setRelatoriosSub: (s: RelatoriosSubPage) => void;
+  carteiraSub: CarteiraSubPage;
+  setCarteiraSub: (s: CarteiraSubPage) => void;
 }
 
-export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, inputSub, setInputSub, relatoriosSub, setRelatoriosSub }: AppSidebarProps): React.JSX.Element {
+export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, inputSub, setInputSub, relatoriosSub, setRelatoriosSub, carteiraSub, setCarteiraSub }: AppSidebarProps): React.JSX.Element {
   function irPara<T>(setSub: (s: T) => void, alvo: AppSection): (sub: T) => void {
     return (sub) => { setSub(sub); setSection(alvo); };
   }
@@ -149,6 +155,15 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, input
               subs={INPUT_SUBS}
               activeSub={inputSub}
               onSelectSub={irPara(setInputSub, "input")}
+            />
+            <SidebarNavGroup
+              icon={<IconCarteira />}
+              label="Carteira"
+              active={section === "carteira"}
+              onSelect={() => setSection("carteira")}
+              subs={CARTEIRA_SUBS}
+              activeSub={carteiraSub}
+              onSelectSub={irPara(setCarteiraSub, "carteira")}
             />
 
             <SidebarMenuItem>

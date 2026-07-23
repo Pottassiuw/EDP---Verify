@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import type { Note, Source, AppSection, CoffeeSubPage, RelatoriosSubPage } from './types';
+import type { Note, Source, AppSection, CoffeeSubPage, RelatoriosSubPage, CarteiraSubPage } from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
 import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
@@ -20,6 +20,8 @@ const ConfiguracoesPage = React.lazy(() =>
   import('./features/configuracoes/configuracoes').then((m) => ({ default: m.ConfiguracoesPage })));
 const RelatoriosSection = React.lazy(() =>
   import('./features/relatorios/relatorios-section').then((m) => ({ default: m.RelatoriosSection })));
+const CarteiraSection = React.lazy(() =>
+  import('./features/carteira/carteira-section').then((m) => ({ default: m.CarteiraSection })));
 
 type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 
@@ -79,6 +81,7 @@ function AppContent(): React.JSX.Element {
   const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
   const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
   const [relatoriosSub, setRelatoriosSub] = usePersistedState<RelatoriosSubPage>("edp_relatorios_sub", "mes");
+  const [carteiraSub, setCarteiraSub] = usePersistedState<CarteiraSubPage>("edp_carteira_sub", "explorador");
   const [filtrosHandoff, setFiltrosHandoff] =
     React.useState<{ estado: FiltersState; id: number } | null>(null);
 
@@ -220,7 +223,8 @@ function AppContent(): React.JSX.Element {
         <AppSidebar section={section} setSection={changeSection}
                     coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub}
                     inputSub={inputSub} setInputSub={setInputSub}
-                    relatoriosSub={relatoriosSub} setRelatoriosSub={setRelatoriosSub} />
+                    relatoriosSub={relatoriosSub} setRelatoriosSub={setRelatoriosSub}
+                    carteiraSub={carteiraSub} setCarteiraSub={setCarteiraSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
             {section === "relatorios" ? (
@@ -232,6 +236,8 @@ function AppContent(): React.JSX.Element {
               />
             ) : section === "input" ? (
               <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
+            ) : section === "carteira" ? (
+              <CarteiraSection sub={carteiraSub} setSub={setCarteiraSub} />
             ) : section === "configuracoes" ? <ConfiguracoesPage /> :
              <CoffeeHub notes={notes}
                         sub={coffeeSub} setSub={setCoffeeSub}
