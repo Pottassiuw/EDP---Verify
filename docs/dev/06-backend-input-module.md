@@ -212,14 +212,27 @@ importar internals de rotas:
   zera esse estado (usado por `POST /migrar`).
 - `NovaNota` (Pydantic) — schema de uma nota nova, mesmos campos/defaults
   usados pelos endpoints `POST /notas` e `POST /notas/bulk`.
-- `criar_notas(notas: list[NovaNota], usuario: str) -> int` — valida
-  duplicatas (no lote e contra o banco), completa `Regional`
-  (derivado de `Local_Instalacao[:3]` via `config.DE_PARA_REGIONAL`) e
-  `ID_Cronologia`, grava via `db.salvar_em_massa()` e retorna a
-  quantidade inserida. Levanta `NotasDuplicadasErro` em conflito.
+- `criar_notas(notas: list[NovaNota], usuario: str, origem: str = "manual")
+  -> int` — valida duplicatas (no lote e contra o banco), completa
+  `Regional` (derivado de `Local_Instalacao[:3]` via
+  `config.DE_PARA_REGIONAL`), `ID_Cronologia` e `origem`, grava via
+  `db.salvar_em_massa()` e retorna a quantidade inserida. Levanta
+  `NotasDuplicadasErro` em conflito.
 
 `routes.py` apenas delega para essas funções e traduz
 `NotasDuplicadasErro` em `HTTPException(409, ...)`.
+
+### Coluna `origem` (Fase 2 da Carteira)
+
+A tabela `notas` tem uma coluna `origem` que rastreia como a nota entrou
+no plano: `"manual"` (rotas `POST /notas` e `/notas/bulk`, default de
+`criar_notas`), `"coffee"` (`integracao_module` — ponte COFFEE→plano),
+`"carteira"` (`carteira_module` — mover-para-plano da Carteira de Notas).
+Notas legadas (anteriores à coluna) ficam `NULL`. Migração aditiva
+idempotente em `inicializar_banco` (checa `PRAGMA table_info(notas)`
+antes do `ALTER TABLE ... ADD COLUMN`), no mesmo padrão de `Check`/
+`Status_Anterior`/`Nota_Mae`. `salvar_em_massa` inclui `origem` na lista
+`colunas_upsert`.
 
 ## routes.py
 

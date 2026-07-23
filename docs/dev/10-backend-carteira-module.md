@@ -18,6 +18,8 @@ Reutiliza `databricks_module` para leitura; não fala com o Databricks fora do
 - `sync.py` — orquestração: skip-signal (`Atualizacao`), leitura injetável,
   reconcile transacional, single-flight, registro de execuções.
 - `service.py` — casos de uso; `routes.py` — endpoints finos `/api/carteira`.
+- `movimentacao.py` (Fase 2) — mover carteira→plano: mapa `nota_carteira`→
+  `NovaNota`, `preview`, `mover_para_plano` (all-or-nothing), `listar_divergencias`.
 
 ## Sincronização
 
@@ -34,10 +36,35 @@ Derivada em tempo de leitura cruzando `nota_carteira.id_sap` com o conjunto de
 existe em `situacao.py` (pura) e no `CASE` do `repository.py` (para filtrar/
 paginar em SQL).
 
+## Movimentação (Fase 2)
+
+`movimentacao.py` move notas da carteira para o plano do Input, espelhando o
+`integracao_module` (que já move COFFEE→plano) **sem acoplá-lo**: ambos
+funilam por `input_service.criar_notas(origem="carteira")`.
+
+- **Mapa** `nota_carteira`→`NovaNota`: `Numero_Nota=int(id_sap)`,
+  `Conjunto=conjunto` (ganho — o COFFEE deixava `-`), `Local_Instalacao`,
+  `Circuito=alimentador`, `Prioridade_Nota` (de-para 1-6, fallback
+  `Programável`), `Planejado_DDPM=quantidade` as-is (aviso: sem conversão
+  m→km, pois o `conjunto` é código, não o texto "Denom.conjunto" do IW28),
+  `Status_Nota="01 Sem providência"`. `Mes_Execucao_Planejado`/`Status_Obra`/
+  `Observacao`/`Check` vêm do modal (um valor para o lote todo).
+- **Movível** quando: `sap_real=1` E não já no plano E `ausente_na_origem_em
+  IS NULL` E sem duplicata de `Numero_Nota` no lote. Lote **all-or-nothing**
+  (`preview` bloqueia antes de escrever; `MovimentacaoBloqueadaErro`).
+- **`plano_movimentacoes`** (`carteira.db`): histórico (id_onr, numero_nota,
+  acao=`entrada`, usuario, lote_id, mes/status, snapshot JSON, movido_em).
+- **Divergências**: `nota_carteira` com (`status_sap='Cancelado'` OU
+  tombstoned) cujo `id_sap` casa em `Numero_Nota` do plano. Só alerta,
+  nunca auto-corrige.
+
 ## APIs
 
-`GET /api/carteira/notas` (filtros+paginação+ETag futuro), `GET /notas/{id_onr}`,
-`GET /resumo`, `GET /sincronizacao`, `POST /sincronizar`.
+`GET /notas` (filtros+paginação), `GET /notas/{id_onr}`, `GET /resumo`,
+`GET /sincronizacao`, `POST /sincronizar`. Movimentação (Fase 2):
+`POST /mover/preview` (não escreve), `POST /mover-para-plano` (X-User
+obrigatório; 422 bloqueada, 409 duplicata; `pos_escrita`),
+`GET /movimentacoes`, `GET /divergencias`.
 
 ## Testes
 
@@ -46,6 +73,6 @@ Rodar: `venv/Scripts/python -m pytest test_carteira_module.py -v`.
 
 ## Fora de escopo (fases seguintes)
 
-Mover-para-plano em lote, `plano_movimentacoes`, aba Divergências (Fase 2);
-dashboard completo, filtros salvos, command palette (Fase 3); enriquecimento
-via `notas_sp` (join `ID_ONR`).
+Saída do plano (`plano_movimentacoes` prevê `acao` mas Fase 2 só faz
+`entrada`); dashboard completo, filtros salvos, command palette (Fase 3);
+enriquecimento via `notas_sp` (join `ID_ONR`).
