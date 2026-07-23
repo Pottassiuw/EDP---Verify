@@ -483,3 +483,43 @@ def test_base_por_plano(carteira_tmp):
     assert por[("GUARULHOS", "POSTES - CAPEX")]["quantidade_bruta"] == 15
     assert por[("GUARULHOS", "POSTES - CAPEX")]["n_notas"] == 2
     assert ("SUZANO", "PODA DE ARVORES - OPEX") not in por  # 900 esta no plano
+
+
+def test_converter_ddpm():
+    from carteira_module import dashboard
+    assert dashboard.converter_ddpm(2000, "KM") == 2.0
+    assert dashboard.converter_ddpm(10, "Und.") == 10.0
+    assert dashboard.converter_ddpm(10, None) == 10.0
+
+
+def test_dashboard_montar_junta_base_e_meta():
+    from carteira_module import dashboard
+    dash = {
+        "hero": {"meta": 40, "carteira": 30, "executado": 5},
+        "mensalizacao": [{"mes": 1, "meta": 40, "carteira": 30, "executado": 5}],
+        "visao_anual": [
+            {"plano": "POSTES - CAPEX", "nome_curto": "POSTE", "area": "Construção",
+             "meta": 40.0, "carteira": 30.0},
+        ],
+        "regionais": [{"regional": "Guarulhos", "meta": 40.0, "carteira": 30.0}],
+        "regionais_disponiveis": ["Guarulhos"],
+    }
+    base_bruta = [
+        {"regional": "GUARULHOS", "plano": "POSTES - CAPEX", "quantidade_bruta": 15, "n_notas": 2},
+        {"regional": "SUZANO", "plano": "PODA DE ARVORES - OPEX", "quantidade_bruta": 7, "n_notas": 1},
+    ]
+    unidade = {"POSTES - CAPEX": "Und."}
+    nome_area = {"POSTES - CAPEX": ("POSTE", "Construção")}
+    out = dashboard.montar(dash, base_bruta, unidade, nome_area)
+
+    postes = next(p for p in out["por_plano"] if p["plano"] == "POSTES - CAPEX")
+    assert postes["meta"] == 40.0 and postes["planejado"] == 30.0
+    assert postes["base_disponivel"] == 15.0
+    assert postes["gap"] == 10.0                     # meta - planejado
+    assert abs(postes["cobertura_pct"] - (30 + 15) / 40) < 1e-9
+    assert postes["suficiente"] is True              # base 15 >= gap 10
+
+    # OPEX sem meta -> só na camada base_por_plano_sem_meta
+    sem_meta = {p["plano"]: p for p in out["base_por_plano_sem_meta"]}
+    assert sem_meta["PODA DE ARVORES - OPEX"]["base_disponivel"] == 7.0
+    assert all(p["plano"] != "PODA DE ARVORES - OPEX" for p in out["por_plano"])
