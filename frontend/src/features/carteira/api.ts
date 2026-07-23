@@ -1,5 +1,7 @@
+import { getUsuario } from '../input/api';
 import type {
-  EstadoSync, ExecucaoSync, FiltrosCarteira, NotaCarteira, PaginaNotas,
+  Divergencia, EstadoSync, ExecucaoSync, FiltrosCarteira, MoverPedido,
+  MoverResultado, Movimentacao, NotaCarteira, PaginaNotas, PreviewItem,
   ResumoCarteira,
 } from './types';
 
@@ -39,4 +41,24 @@ export const CarteiraApi = {
   resumo: () => req<ResumoCarteira>('/resumo'),
   sincronizacao: () => req<EstadoSync>('/sincronizacao'),
   sincronizar: () => req<ExecucaoSync>('/sincronizar', { method: 'POST' }),
+  moverPreview: (idOnrs: number[]) =>
+    req<PreviewItem[]>('/mover/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_onrs: idOnrs }),
+    }),
+  mover: (pedido: MoverPedido) => {
+    const usuario = getUsuario();
+    return req<MoverResultado>('/mover-para-plano', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(usuario ? { 'X-User': usuario } : {}),
+      },
+      body: JSON.stringify(pedido),
+    });
+  },
+  movimentacoes: (idOnr?: number) =>
+    req<Movimentacao[]>(`/movimentacoes${idOnr ? `?id_onr=${idOnr}` : ''}`),
+  divergencias: () => req<Divergencia[]>('/divergencias'),
 };

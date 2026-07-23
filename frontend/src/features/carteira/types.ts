@@ -67,3 +67,50 @@ export interface FiltrosCarteira {
   q?: string;
   incluir_ausentes?: boolean;
 }
+
+export interface PropostaPlano {
+  Numero_Nota: number;
+  Conjunto: string;
+  Local_Instalacao: string;
+  Circuito: string;
+  Prioridade_Nota: string;
+  Planejado_DDPM: number;
+  Status_Nota: string;
+  Data_Envio_Projeto: string;
+}
+
+export interface PreviewItem {
+  id_onr: number;
+  numero_nota: string | null;
+  movivel: boolean;
+  motivo_bloqueio: string | null;
+  proposta: PropostaPlano | null;
+  avisos: string[];
+}
+
+export interface MoverPedido {
+  id_onrs: number[];
+  mes_execucao: string;
+  status_obra?: string;
+  observacao?: string;
+  check?: string;
+}
+
+export interface MoverResultado {
+  inseridas: number;
+  lote_id: string;
+}
+
+export interface Movimentacao {
+  id: number;
+  id_onr: number;
+  numero_nota: string;
+  acao: string;
+  usuario: string;
+  lote_id: string;
+  mes_execucao: string | null;
+  status_obra: string | null;
+  movido_em: string;
+}
+
+export type Divergencia = NotaCarteira & { tipo_divergencia: 'cancelada' | 'ausente_na_origem' };
