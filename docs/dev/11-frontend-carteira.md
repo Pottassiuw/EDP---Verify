@@ -1,8 +1,37 @@
 # Frontend — features/carteira
 
 Seção da Carteira de Notas: explora a projeção local (Databricks →
-`carteira_module`) e mostra o estado da sincronização. Duas abas:
-**Explorador** e **Sincronização**.
+`carteira_module`), move notas para o plano e mostra divergências e o
+estado da sincronização. Três abas: **Explorador**, **Divergências** e
+**Sincronização**.
+
+## Movimentação (Fase 2b)
+
+- **Seleção de linhas** no Explorador: TanStack Table `enableRowSelection`
+  + `getRowId=id_onr`; checkbox por linha (com `stopPropagation` para não
+  abrir o Sheet de detalhe ao marcar) + checkbox de "selecionar página".
+- **Barra de ação**: aparece quando há seleção → "Mover para o plano" +
+  "Limpar".
+- **`mover/mover-modal.tsx`**: espelha o modal do COFFEE
+  (`features/coffee/mover-plano-modal.tsx`). `POST /mover/preview` valida a
+  seleção (movível/bloqueada + avisos); `MesExecucaoPicker` +
+  `Status_Obra` aplicados ao lote todo; `POST /mover-para-plano` (X-User via
+  `getUsuario()`) → invalida `INPUT_DADOS_KEY` + keys da carteira. A nota
+  movida some do `fora_do_plano` e vira `no_plano` na próxima leitura
+  (situação derivada, sem sync).
+- **All-or-nothing na UI**: o botão "Mover" fica desabilitado se houver
+  nota bloqueada **ou** duplicata de nº SAP na seleção (o `id_sap` não é
+  único na base — 1.548 duplicatas no subset SP; dois `id_onr` virariam o
+  mesmo `Numero_Nota`). O backend também recusa o lote (all-or-nothing);
+  a guarda no cliente evita o clicar-e-tomar-409.
+- **`DialogContent`** portalizado recebe `className="edp carteira-scope"`
+  (canvas branco Supabaze), mesma ressalva de Sheet/Select da Fase 1b.
+- **Aba Divergências** (`divergencias/divergencias.tsx`): consome
+  `GET /divergencias`; badge por tipo (`cancelada`/`ausente_na_origem`).
+  Só alerta; nada é alterado automaticamente.
+- **Atalho**: o card "fora do plano" dos Relatórios ganhou "Ver na
+  carteira" → abre o Explorador filtrado por `situacao=fora_do_plano`
+  (handoff via `App.tsx`, padrão `filtrosHandoff`).
 
 ## Estrutura
 

@@ -22,8 +22,14 @@ export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
 
   const itens = preview.data ?? [];
   const bloqueadas = itens.filter((i) => !i.movivel);
+  // O id_sap não é único na carteira (1.548 duplicatas no subset SP): dois
+  // id_onr podem virar o mesmo Numero_Nota no plano. O backend recusa o lote
+  // (all-or-nothing), mas pré-sinalizamos aqui para não deixar o usuário
+  // clicar e só então tomar o erro 409.
+  const numeros = itens.map((i) => i.numero_nota).filter(Boolean);
+  const temDuplicataNoLote = new Set(numeros).size !== numeros.length;
   const podeMover = itens.length > 0 && bloqueadas.length === 0
-    && mes !== '-' && !mover.isPending;
+    && !temDuplicataNoLote && mes !== '-' && !mover.isPending;
 
   function confirmar(): void {
     mover.mutate(
@@ -53,6 +59,12 @@ export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        {temDuplicataNoLote && (
+          <div className="edp-banner err">
+            Há notas com o mesmo nº SAP na seleção (id_sap duplicado na base).
+            Elas virariam o mesmo registro no plano — selecione só uma de cada.
           </div>
         )}
         {itens.some((i) => i.avisos.length > 0) && (
