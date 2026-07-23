@@ -320,3 +320,34 @@ def test_plano_movimentacoes(carteira_tmp):
     conn.close()
     assert len(linhas) == 1
     assert linhas[0]["id_onr"] == 1 and linhas[0]["acao"] == "entrada"
+
+
+def test_obter_muitas(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=10, id_sap="500")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=11, id_sap="501")),
+    ])
+    achadas = repository.obter_muitas(conn, [10, 11, 999])
+    conn.close()
+    assert set(achadas.keys()) == {10, 11}
+    assert achadas[10]["id_sap"] == "500"
+
+
+def test_listar_divergencias(carteira_tmp):
+    from carteira_module import db, mapping, repository
+    conn = db.conectar()
+    # 100: cancelada e no plano -> divergente
+    # 101: cancelada mas NAO no plano -> nao
+    # 102: ativa e no plano -> nao
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=100, id_sap="900", Status_SAP="Cancelado")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=101, id_sap="901", Status_SAP="Cancelado")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=102, id_sap="902", Status_SAP="Pendente")),
+    ])
+    div = repository.listar_divergencias(conn, numeros_no_plano={900, 902})
+    conn.close()
+    assert len(div) == 1
+    assert div[0]["id_onr"] == 100
+    assert div[0]["tipo_divergencia"] == "cancelada"

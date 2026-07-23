@@ -212,3 +212,27 @@ def resumo(conn, numeros_no_plano: set[int]) -> dict:
         por_regional[linha["regional"]] = linha["c"]
     return {"total": total, "por_situacao": por_situacao,
             "por_regional": por_regional}
+
+
+def obter_muitas(conn, id_onrs: list[int]) -> dict:
+    if not id_onrs:
+        return {}
+    marcadores = ", ".join(["?"] * len(id_onrs))
+    linhas = conn.execute(
+        f"SELECT * FROM nota_carteira WHERE id_onr IN ({marcadores})",
+        [int(i) for i in id_onrs],
+    ).fetchall()
+    return {linha["id_onr"]: dict(linha) for linha in linhas}
+
+
+def listar_divergencias(conn, numeros_no_plano: set[int]) -> list[dict]:
+    _preparar_plano(conn, numeros_no_plano)
+    linhas = conn.execute(
+        "SELECT n.*, CASE WHEN n.status_sap = 'Cancelado' THEN 'cancelada' "
+        "ELSE 'ausente_na_origem' END AS tipo_divergencia "
+        "FROM nota_carteira n "
+        "JOIN plano_atual p ON p.numero = CAST(n.id_sap AS INTEGER) "
+        "WHERE n.sap_real = 1 AND "
+        "(n.status_sap = 'Cancelado' OR n.ausente_na_origem_em IS NOT NULL)"
+    ).fetchall()
+    return [dict(l) for l in linhas]
