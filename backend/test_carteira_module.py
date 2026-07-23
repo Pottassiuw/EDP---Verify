@@ -351,3 +351,21 @@ def test_listar_divergencias(carteira_tmp):
     assert len(div) == 1
     assert div[0]["id_onr"] == 100
     assert div[0]["tipo_divergencia"] == "cancelada"
+
+
+def test_preview_classifica_movivel_e_bloqueada(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    from carteira_module import db, mapping, movimentacao, repository
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="500", conjunto="POSTE")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="10000000")),  # pendente
+    ])
+    conn.close()
+    prev = {p["id_onr"]: p for p in movimentacao.preview([1, 2])}
+    assert prev[1]["movivel"] is True
+    assert prev[1]["proposta"]["Conjunto"] == "POSTE"
+    assert prev[2]["movivel"] is False   # sem SAP real
+    assert prev[2]["motivo_bloqueio"]
