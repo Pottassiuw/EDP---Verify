@@ -1150,3 +1150,25 @@ def test_api_relatorios_dashboard(banco_temporario, monkeypatch, tmp_path):
 
     r = client.post("/api/input/metas/sincronizar")
     assert r.status_code == 200 and "sincronizou" in r.json()
+
+
+def test_criar_notas_grava_origem(banco_temporario):
+    from input_module import db, service
+    nota = service.NovaNota(Numero_Nota=778001, Status_Nota="01 Sem providência",
+                            Prioridade_Nota="Programável", Local_Instalacao="045BF00000123")
+    service.criar_notas([nota], usuario="teste", origem="carteira")
+    conn = db.get_db_connection()
+    row = conn.execute("SELECT origem FROM notas WHERE Numero_Nota=778001").fetchone()
+    conn.close()
+    assert row[0] == "carteira"
+
+
+def test_criar_notas_origem_default_manual(banco_temporario):
+    from input_module import db, service
+    nota = service.NovaNota(Numero_Nota=778002, Status_Nota="01 Sem providência",
+                            Prioridade_Nota="Programável")
+    service.criar_notas([nota], usuario="teste")
+    conn = db.get_db_connection()
+    row = conn.execute("SELECT origem FROM notas WHERE Numero_Nota=778002").fetchone()
+    conn.close()
+    assert row[0] == "manual"
