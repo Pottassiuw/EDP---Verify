@@ -4,6 +4,7 @@ import { PageHeader, SegTabs } from '@/components/branded/section';
 import { CARTEIRA_SUBS } from './subs';
 import { Explorador } from './explorador/explorador';
 import { Sincronizacao } from './sincronizacao/sincronizacao';
+import { Divergencias } from './divergencias/divergencias';
 
 export function CarteiraSection({ sub, setSub }: {
   sub: CarteiraSubPage;
@@ -17,7 +18,9 @@ export function CarteiraSection({ sub, setSub }: {
         subtitle="Toda a carteira disponível — dentro ou fora do plano."
         action={<SegTabs tabs={CARTEIRA_SUBS} value={sub} onChange={setSub} ariaLabel="Abas da carteira" />}
       />
-      {sub === 'explorador' ? <Explorador /> : <Sincronizacao />}
+      {sub === 'explorador' ? <Explorador />
+        : sub === 'divergencias' ? <Divergencias />
+        : <Sincronizacao />}
     </div>
   );
 }

@@ -8,7 +8,7 @@ export type Source = "api";
 export type AppSection = "relatorios" | "coffee" | "input" | "carteira" | "configuracoes";
 export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
 export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
-export type CarteiraSubPage = "explorador" | "sincronizacao";
+export type CarteiraSubPage = "explorador" | "sincronizacao" | "divergencias";
 
 export interface NoteError {
   rule: RuleKey;
