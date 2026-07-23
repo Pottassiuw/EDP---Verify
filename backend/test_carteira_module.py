@@ -416,3 +416,37 @@ def test_mover_all_or_nothing(carteira_tmp, monkeypatch, tmp_path):
     total = iconn.execute("SELECT COUNT(*) FROM notas").fetchone()[0]
     iconn.close()
     assert total == 0
+
+
+def test_rotas_mover_e_divergencias(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from carteira_module import routes, db, mapping
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="700700", conjunto="POSTE")),
+    ])
+    conn.close()
+    app = FastAPI()
+    app.include_router(routes.router)
+    cli = TestClient(app)
+
+    prev = cli.post("/api/carteira/mover/preview", json={"id_onrs": [1]})
+    assert prev.status_code == 200 and prev.json()[0]["movivel"] is True
+
+    cab = {"X-User": "teste"}
+    mov = cli.post("/api/carteira/mover-para-plano", headers=cab,
+                   json={"id_onrs": [1], "mes_execucao": "jul-2026",
+                         "status_obra": "Planejada"})
+    assert mov.status_code == 200 and mov.json()["inseridas"] == 1
+
+    # mover de novo -> 422 (ja no plano, bloqueado no preview)
+    again = cli.post("/api/carteira/mover-para-plano", headers=cab,
+                     json={"id_onrs": [1], "mes_execucao": "jul-2026"})
+    assert again.status_code == 422
+
+    assert cli.get("/api/carteira/movimentacoes").status_code == 200
+    assert cli.get("/api/carteira/divergencias").status_code == 200
