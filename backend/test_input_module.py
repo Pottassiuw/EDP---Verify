@@ -1,5 +1,11 @@
 """Testes do módulo Input (backend)."""
+import os
+import tempfile
 import io
+
+# Blindagem global: impede que a execução de testes afete o banco de dados real
+_tmp_test_dir = tempfile.mkdtemp(prefix="edp_input_test_")
+os.environ.setdefault("INPUT_DATA_DIR", _tmp_test_dir)
 
 from input_module import config
 

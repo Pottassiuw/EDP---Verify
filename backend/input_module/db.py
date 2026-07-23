@@ -410,6 +410,17 @@ def salvar_em_massa(df: pd.DataFrame) -> None:
     realizar_backup()
     df_salvar = df.copy()
 
+    # Normalização de nomes de colunas conhecidas
+    renames = {
+        "Data Envio Projeto-DDPM": "Data_Envio_Projeto",
+        "Data Envio Projeto": "Data_Envio_Projeto",
+        "Data_Envio_Projeto-DDPM": "Data_Envio_Projeto",
+        "Data Envio Projeto DDPM": "Data_Envio_Projeto",
+        "Mês de Execução  Planejado - DDPM": "Mes_Execucao_Planejado",
+        "Planejado-DDPM": "Planejado_DDPM",
+    }
+    df_salvar = df_salvar.rename(columns=renames)
+
     df_salvar['Status_Nota'] = df_salvar['Status_Nota'].apply(status_para_int)
 
     if 'Status_Anterior' not in df_salvar.columns:
@@ -668,7 +679,7 @@ def reverter_ultima_alteracao():
     """Desfaz a última alteração salva no banco com base na tabela de log.
 
     Identifica o último timestamp (Data_Hora) e reverte todas as ações daquela
-    transação, removendo os logs revertidos para permitir "Ctrl+Z infinito".
+    transação de forma segura.
     """
     realizar_backup()
     conn = get_db_connection()
@@ -689,25 +700,60 @@ def reverter_ultima_alteracao():
         if not logs:
             return False, "Nenhum detalhe encontrado para a última alteração."
 
+        cursor.execute("PRAGMA table_info(notas)")
+        colunas_validas_notas = {col[1] for col in cursor.fetchall()}
+
+        cursor.execute("PRAGMA table_info(notas_ramal)")
+        colunas_validas_ramal = {col[1] for col in cursor.fetchall()}
+
+        alteracoes_revertidas = 0
+
         for id_log, numero_nota, campo, valor_antigo in logs:
-            valor_para_banco = valor_antigo
+            if campo == "EXCLUSÃO DE NOTA" or campo == "EXCLUSÃO DE NOTA RAMAL":
+                cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                alteracoes_revertidas += 1
+                continue
 
-            # Se o campo revertido for um Status, garante que volte como ID numérico
-            if campo in ['Status_Nota', 'Status_Anterior']:
-                valor_para_banco = status_para_int(valor_antigo)
+            cursor.execute('SELECT 1 FROM notas WHERE Numero_Nota = ?', (numero_nota,))
+            if cursor.fetchone():
+                if campo not in colunas_validas_notas:
+                    cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                    continue
 
-            cursor.execute(f'UPDATE notas SET "{campo}" = ? WHERE Numero_Nota = ?', (valor_para_banco, numero_nota))
+                valor_para_banco = valor_antigo
+                if campo in ['Status_Nota', 'Status_Anterior']:
+                    valor_para_banco = status_para_int(valor_antigo)
+                elif campo == 'Mes_Execucao_Planejado':
+                    valor_para_banco = converter_para_iso_data(valor_antigo)
 
-            # Remove o log revertido para permitir "Ctrl+Z infinito"
-            cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                cursor.execute(f'UPDATE notas SET "{campo}" = ? WHERE Numero_Nota = ?', (valor_para_banco, numero_nota))
+                cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                alteracoes_revertidas += 1
+            else:
+                cursor.execute('SELECT 1 FROM notas_ramal WHERE Numero_Nota = ?', (numero_nota,))
+                if cursor.fetchone():
+                    if campo not in colunas_validas_ramal:
+                        cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                        continue
+
+                    valor_para_banco = valor_antigo
+                    if campo == 'Mes_Execucao_Planejado':
+                        valor_para_banco = converter_para_iso_data(valor_antigo)
+
+                    cursor.execute(f'UPDATE notas_ramal SET "{campo}" = ? WHERE Numero_Nota = ?', (valor_para_banco, numero_nota))
+                    cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
+                    alteracoes_revertidas += 1
+                else:
+                    cursor.execute("DELETE FROM log_alteracoes WHERE ID_Log = ?", (id_log,))
 
         conn.commit()
 
-        data_formatada = str(ultima_data_hora)[:16]
-        return True, f"Sucesso! {len(logs)} edição(ões) salva(s) em {data_formatada} foram desfeitas."
+        data_formatada = str(ultima_data_hora)[:19]
+        return True, f"Sucesso! {alteracoes_revertidas} alteração(ões) realizada(s) em {data_formatada} foram desfeitas."
     except Exception as e:
+        conn.rollback()
         print(f"Erro ao reverter banco: {e}")
-        return False, f"Erro interno: {e}"
+        return False, f"Erro interno na reversão: {e}"
     finally:
         conn.close()
 

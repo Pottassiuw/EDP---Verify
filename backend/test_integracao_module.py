@@ -1,8 +1,15 @@
 """Testes do módulo de integração COFFEE → INPUT."""
+import os
+import tempfile
 import pandas as pd
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+# Blindagem global: impede que a execução de testes afete o banco de dados real
+_tmp_test_dir = tempfile.mkdtemp(prefix="edp_integracao_test_")
+os.environ.setdefault("INPUT_DATA_DIR", _tmp_test_dir)
+os.environ.setdefault("COFFEE_DATA_DIR", _tmp_test_dir)
 
 
 def _client():

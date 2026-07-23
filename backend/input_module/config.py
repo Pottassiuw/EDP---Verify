@@ -313,8 +313,10 @@ MAP_FILTROS = {
     "Ocorrências-12M": "OCO_12M",  # Corrigido: Estava 'Ocorrencias-12M'
     "Ocorrências-3M": "OCO_3M",  # Corrigido: Estava 'Ocorrencias-3M'
     "DEC Prog. CHI": "DEC_PROG_CHI",  # Corrigido: Ajuste de capitalização
-    "Projeto Construção": "Projeto_Construcao",
     "Data Envio Projeto": "Data_Envio_Projeto",
+    "Data Envio Projeto-DDPM": "Data_Envio_Projeto",
+    "Data_Envio_Projeto-DDPM": "Data_Envio_Projeto",
+    "Data Envio Projeto DDPM": "Data_Envio_Projeto",
     "Observação": "Observacao",
 }
 
