@@ -7,3 +7,4 @@ python-dotenv==1.2.2
 httpx==0.28.1
 databricks-sql-connector==4.4.0
 pyarrow==25.0.0
+pywin32>=306
