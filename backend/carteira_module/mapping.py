@@ -18,7 +18,10 @@ def de_para_regional(csd: str | None) -> str | None:
 
 
 def _texto(valor) -> str | None:
-    if valor is None:
+    # `valor != valor` detecta NaN (IEEE754: e o unico valor que nao e igual
+    # a si mesmo) sem precisar importar pandas/numpy neste modulo puro. Sem
+    # isso, DataFrame.to_dict("records") vaza float('nan') como string "nan".
+    if valor is None or valor != valor:
         return None
     texto = str(valor).strip()
     return texto or None

@@ -39,7 +39,15 @@ def carregar_staging(conn: sqlite3.Connection, notas: list[dict]) -> None:
     from carteira_module import mapping
     conn.execute("DROP TABLE IF EXISTS nota_carteira_staging")
     colunas = ", ".join(_COLUNAS_NEGOCIO) + ", hash_conteudo"
-    conn.execute(f"CREATE TABLE nota_carteira_staging ({colunas})")
+    # id_onr como PK: da um indice a staging de graca, essencial para o
+    # UPDATE...FROM de reconciliar() nao virar table scan por linha em
+    # bases grandes (achado real: sem indice, ~98k linhas travou por
+    # minutos com o UPDATE anterior baseado em subquery correlacionada).
+    definicao = ", ".join(
+        f"{c} INTEGER PRIMARY KEY" if c == "id_onr" else c
+        for c in _COLUNAS_NEGOCIO
+    ) + ", hash_conteudo"
+    conn.execute(f"CREATE TABLE nota_carteira_staging ({definicao})")
     marcadores = ", ".join(["?"] * (len(_COLUNAS_NEGOCIO) + 1))
     linhas = [
         tuple(nota.get(c) for c in _COLUNAS_NEGOCIO) + (mapping.hash_conteudo(nota),)
@@ -84,19 +92,17 @@ def reconciliar(conn: sqlite3.Connection, agora: str) -> dict:
             f"WHERE s.id_onr NOT IN (SELECT id_onr FROM nota_carteira)",
             (agora, agora, agora),
         )
-        # UPDATE alteradas
-        sets = ", ".join(f"{c} = (SELECT s.{c} FROM nota_carteira_staging s "
-                         f"WHERE s.id_onr = nota_carteira.id_onr)"
-                         for c in _COLUNAS_NEGOCIO if c != "id_onr")
+        # UPDATE alteradas: um unico UPDATE...FROM (JOIN real via indice
+        # PK de staging), nao uma subquery correlacionada por coluna —
+        # a versao anterior era O(linhas x colunas), inviavel em ~98k linhas.
+        sets = ", ".join(f"{c} = s.{c}" for c in _COLUNAS_NEGOCIO if c != "id_onr")
         conn.execute(
             f"UPDATE nota_carteira SET {sets}, "
-            f"hash_conteudo = (SELECT s.hash_conteudo FROM nota_carteira_staging s "
-            f"WHERE s.id_onr = nota_carteira.id_onr), "
+            f"hash_conteudo = s.hash_conteudo, "
             f"sincronizado_em = ?, atualizado_em = ?, ausente_na_origem_em = NULL "
-            f"WHERE id_onr IN ("
-            f"  SELECT s.id_onr FROM nota_carteira_staging s "
-            f"  JOIN nota_carteira n ON n.id_onr = s.id_onr "
-            f"  WHERE n.hash_conteudo <> s.hash_conteudo)",
+            f"FROM nota_carteira_staging s "
+            f"WHERE nota_carteira.id_onr = s.id_onr "
+            f"AND nota_carteira.hash_conteudo <> s.hash_conteudo",
             (agora, agora),
         )
         # limpar tombstone de quem reapareceu inalterado

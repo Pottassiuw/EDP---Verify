@@ -89,6 +89,18 @@ def test_normalizar_linha_sap_pendente_e_quantidade_sentinela():
     assert n["quantidade_valida"] == 0
 
 
+def test_normalizar_linha_trata_nan_do_pandas_como_ausente():
+    """Bug real achado na validacao visual da Fase 1b: DataFrame.to_dict('records')
+    preserva float('nan') para celulas vazias; 'valor is None' nao pega NaN, entao
+    a coluna virava a string literal "nan" (visivel no Explorador/Sheet)."""
+    from carteira_module import mapping
+    n = mapping.normalizar_linha(
+        _origem_exemplo(Status_SAP=float('nan'), dispositivo_protecao=float('nan'))
+    )
+    assert n["status_sap"] is None
+    assert n["dispositivo_protecao"] is None
+
+
 def test_hash_estavel_e_sensivel():
     from carteira_module import mapping
     a = mapping.normalizar_linha(_origem_exemplo())
