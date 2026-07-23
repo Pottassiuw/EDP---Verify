@@ -11,8 +11,11 @@ export const colunasCarteira: ColumnDef<NotaCarteira>[] = [
   { accessorKey: 'regional', header: 'Regional',
     cell: ({ row }) => row.original.regional ?? '—' },
   { accessorKey: 'quantidade', header: 'Qtd',
-    cell: ({ row }) => (row.original.quantidade_valida
-      ? row.original.quantidade : '—') },
+    cell: ({ row }) => (
+      <span className="num-cell">
+        {row.original.quantidade_valida ? row.original.quantidade : '—'}
+      </span>
+    ) },
   { accessorKey: 'status_sap', header: 'Status',
     cell: ({ row }) => row.original.status_sap ?? '—' },
   { id: 'situacao', header: 'Situação',

@@ -10,7 +10,7 @@ export function CarteiraSection({ sub, setSub }: {
   setSub: (s: CarteiraSubPage) => void;
 }): React.JSX.Element {
   return (
-    <div className="edp-page" style={{ height: '100%', overflow: 'auto' }}>
+    <div className="edp-page carteira-scope" style={{ height: '100%', overflow: 'auto' }}>
       <PageHeader
         eyebrow="Databricks · base COFFEE"
         title="Carteira de Notas"

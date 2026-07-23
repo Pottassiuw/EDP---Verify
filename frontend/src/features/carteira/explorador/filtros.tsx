@@ -25,7 +25,7 @@ export function FiltrosCarteiraBar({ filtros, onChange }: {
         <SelectTrigger className="edp" style={{ width: 200 }}>
           <SelectValue placeholder="Regional" />
         </SelectTrigger>
-        <SelectContent className="edp">
+        <SelectContent className="edp carteira-scope">
           <SelectItem value={TODOS}>Todas as regionais</SelectItem>
           {REGIONAIS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
         </SelectContent>
@@ -35,7 +35,7 @@ export function FiltrosCarteiraBar({ filtros, onChange }: {
         <SelectTrigger className="edp" style={{ width: 180 }}>
           <SelectValue placeholder="Situação" />
         </SelectTrigger>
-        <SelectContent className="edp">
+        <SelectContent className="edp carteira-scope">
           <SelectItem value={TODOS}>Todas as situações</SelectItem>
           {Object.entries(SITUACAO_INFO).map(([id, info]) =>
             <SelectItem key={id} value={id}>{info.rotulo}</SelectItem>)}

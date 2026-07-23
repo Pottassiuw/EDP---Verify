@@ -27,7 +27,7 @@ export function TabelaCarteira({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="carteira-table" style={{ overflowX: 'auto' }}>
         <Table>
           <TableHeader>
             {tabela.getHeaderGroups().map((hg) => (

@@ -352,6 +352,162 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
 
 
 
+/* ============================================================
+   Carteira de Notas — direção visual Supabaze (DESIGN.md).
+   Escopo isolado: só esta seção herda a paleta; o resto do app
+   segue no tema EDP (.edp) até a migração completa (decisão
+   registrada em docs/superpowers/specs/2026-07-22-carteira-de-
+   notas-design.md). Sempre clara — o compromisso de canvas
+   branco do DESIGN.md é não-negociável, independente do tema
+   dark/light escolhido pelo usuário no resto do app.
+   Aplicada via .carteira-scope no container raiz da seção, e
+   replicada em conteúdo portalizado (Sheet/Select) que renderiza
+   fora da árvore DOM da seção — mesma ressalva já válida pro .edp
+   em conteúdo do Radix.
+   UNLAYERED de propósito: `:root, .edp { --bg: ... }` (linha ~92)
+   também é unlayered; CSS sem layer sempre vence CSS com layer,
+   não importa a especificidade — dentro de @layer components
+   este override nunca teria efeito contra o `.edp` ancestral. */
+.carteira-scope {
+  color-scheme: light;
+
+  /* — canvas & superfícies — */
+  --bg: #ffffff;
+  --bg-2: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --surface-3: #ededed;
+  --line: #dfdfdf;
+  --line-2: #c7c7c7;
+  --zebra: rgba(23,23,23,0.025);
+
+  /* — texto — */
+  --text: #171717;
+  --text-dim: #707070;
+  --text-mute: #9a9a9a;
+
+  /* — marca: verde-esmeralda, único evento cromático — */
+  --green: #3ecf8e;
+  --green-2: #24b47e;
+  --green-3: #1f8c63; /* leitura como texto/número sobre branco — green/green-2 não passam AA como cor de texto */
+  --accent: #3ecf8e;
+  --accent-2: #24b47e;
+  --accent-tint: rgba(62,207,142,0.12);
+  --tint-green: rgba(62,207,142,0.12);
+
+  /* — status (uso restrito a badges/indicadores, nunca botões —
+     DESIGN.md: "purples, yellows, pinks belong inside chart points
+     and integration logos only"). Tons ajustados a partir dos
+     valores literais do DESIGN.md para vencer contraste AA (4.5:1)
+     como texto pequeno sobre a própria tinta — os valores puros do
+     spec (accent-yellow #ffdb13, accent-crimson #e2005a) são claros
+     demais/limítrofes para isso. — */
+  --indigo: #644fc1;  /* accent-violet, literal — já passa AA (5.9:1) */
+  --tint-indigo: rgba(100,79,193,0.12);
+  --amber: #92400e;   /* derivado de accent-yellow, escurecido p/ AA (7:1) */
+  --tint-amber: rgba(255,219,19,0.16);
+  --red: #c40050;     /* derivado de accent-crimson, escurecido p/ margem AA (6.1:1) */
+  --tint-red: rgba(196,0,80,0.10);
+  --blue: #054cff;    /* accent-indigo, literal — reservado p/ Fase 3 (charts) */
+
+  /* — sombras: elevação Supabaze (níveis 1–3 do DESIGN.md) — */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow:    0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.12);
+
+  /* — geometria: 6px é o raio-assinatura de botão do DESIGN.md — */
+  --radius: 6px;
+  --r-sm: 6px;
+  --r:     8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  /* — bridge shadcn: texto quase-preto sobre o verde, nunca branco
+     (idiossincrasia explícita do DESIGN.md: "the button reads as a
+     lit surface with dark type, not a colored chip").
+     Precisa redeclarar TODA a ponte aqui, não só os tokens crus: uma
+     custom property herdada (ex.: --background definida em .edp como
+     var(--bg)) já resolveu seu valor no ancestral e não recalcula ao
+     --bg mudar num descendente — só a redeclaração local recomputa. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--text);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-dim);
+  --muted: var(--bg-2);
+  --muted-foreground: var(--text-dim);
+  --sh-accent: var(--bg-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--red);
+  --destructive-foreground: #ffffff;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--accent);
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* badge "no_plano": pill-tag-green do DESIGN.md — preenchimento
+   sólido + texto quase-preto (não a convenção tint+texto-colorido
+   herdada do tema escuro, que falha AA em canvas branco). */
+.carteira-scope [data-variant="situPlano"] {
+  background: var(--green);
+  color: var(--text);
+}
+
+/* tabela do explorador/sincronização: header mono uppercase +
+   hairline + zebra sutil + hover — mesma linguagem do .edp-table,
+   tokens Supabaze. */
+.carteira-table thead th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  border-bottom: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.carteira-table tbody tr { border-bottom: 1px solid var(--line); transition: background-color 120ms ease; }
+.carteira-table tbody tr:nth-child(even) { background: var(--zebra); }
+.carteira-table tbody tr:hover { background: var(--tint-green); }
+.carteira-table .num-cell { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* primeiro KPI (total na carteira) ganha leve destaque — disciplina
+   Supabaze de "um evento verde por viewport": só o número principal
+   usa o tom de marca, os demais ficam monocromáticos. */
+.carteira-scope .edp-stat:first-child .edp-num { color: var(--green-3); }
+
+/* indicador de frescor da sincronização — o "dot" é o evento
+   cromático repetido do DESIGN.md (wordmark, CTA); aqui carrega
+   informação real: verde = sincronizado, âmbar pulsante = em curso. */
+.carteira-sync-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px var(--tint-green);
+  flex-shrink: 0;
+}
+.carteira-sync-dot[data-estado="sincronizando"] {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px var(--tint-amber);
+  animation: carteira-pulse 1.1s ease-in-out infinite;
+}
+@keyframes carteira-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carteira-sync-dot[data-estado="sincronizando"] { animation: none; }
+}
+
 /* O container fixo da sidebar (shadcn) tem uma `border-r` que renderiza como
    uma linha escura na fronteira sidebar↔conteúdo (confirmado por geometria:
    container=256px, inner=255px → 1px de borda). A separação visual já vem da

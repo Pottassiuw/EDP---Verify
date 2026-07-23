@@ -15,14 +15,24 @@ export function Sincronizacao(): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)', padding: 'var(--pad)' }}>
       <div style={{ display: 'flex', gap: 'var(--gap)', flexWrap: 'wrap', alignItems: 'center' }}>
-        <StatTile label="Último refresh (origem)" value={estado.data?.ultimo_refresh_marker ?? '—'} />
+        <StatTile
+          label="Último refresh (origem)"
+          value={(
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className="carteira-sync-dot"
+                    data-estado={sincronizando ? 'sincronizando' : 'ok'}
+                    aria-hidden="true" />
+              {estado.data?.ultimo_refresh_marker ?? '—'}
+            </span>
+          )}
+        />
         <StatTile label="Última estratégia" value={ultima?.estrategia ?? '—'} />
         <Button onClick={sincronizar} disabled={sincronizando}
                 style={{ marginLeft: 'auto' }}>
           {sincronizando ? 'Sincronizando…' : 'Sincronizar agora'}
         </Button>
       </div>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="carteira-table" style={{ overflowX: 'auto' }}>
         <Table>
           <TableHeader>
             <TableRow>

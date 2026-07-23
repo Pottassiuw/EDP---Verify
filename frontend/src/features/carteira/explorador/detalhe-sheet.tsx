@@ -30,7 +30,7 @@ export function DetalheSheet({ idOnr, onClose }: {
   const info = data ? SITUACAO_INFO[data.situacao] : null;
   return (
     <Sheet open={idOnr !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent className="edp">
+      <SheetContent className="edp carteira-scope">
         <SheetHeader>
           <SheetTitle>Nota ONR {idOnr}</SheetTitle>
         </SheetHeader>
