@@ -450,3 +450,12 @@ def test_rotas_mover_e_divergencias(carteira_tmp, monkeypatch, tmp_path):
 
     assert cli.get("/api/carteira/movimentacoes").status_code == 200
     assert cli.get("/api/carteira/divergencias").status_code == 200
+
+
+def test_normalizar_regional_dashboard():
+    from carteira_module import config
+    assert config.normalizar_regional_dashboard("GUARULHOS") == "Guarulhos"
+    assert config.normalizar_regional_dashboard("Poá-Suzano") == "Poa/Suzano"
+    assert config.normalizar_regional_dashboard("SÃO JOSÉ DOS CAMPOS") == "São José dos Campos"
+    assert config.normalizar_regional_dashboard("Litoral Norte") == "Litoral Norte"
+    assert config.normalizar_regional_dashboard(None) is None
