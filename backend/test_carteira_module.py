@@ -369,3 +369,50 @@ def test_preview_classifica_movivel_e_bloqueada(carteira_tmp, monkeypatch, tmp_p
     assert prev[1]["proposta"]["Conjunto"] == "POSTE"
     assert prev[2]["movivel"] is False   # sem SAP real
     assert prev[2]["motivo_bloqueio"]
+
+
+def test_mover_para_plano_insere_e_registra(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    from carteira_module import db, mapping, movimentacao
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="700500", conjunto="POSTE")),
+    ])
+    conn.close()
+    res = movimentacao.mover_para_plano(
+        [1], {"Mes_Execucao_Planejado": "jul-2026", "Status_Obra": "Planejada"},
+        usuario="teste")
+    assert res["inseridas"] == 1 and res["lote_id"]
+    # gravou no plano com origem carteira
+    iconn = idb.get_db_connection()
+    row = iconn.execute("SELECT origem, Conjunto FROM notas WHERE Numero_Nota=700500").fetchone()
+    iconn.close()
+    assert row[0] == "carteira" and row[1] == "POSTE"
+    # gravou movimentacao
+    cconn = db.conectar()
+    n = cconn.execute("SELECT COUNT(*) FROM plano_movimentacoes WHERE id_onr=1").fetchone()[0]
+    cconn.close()
+    assert n == 1
+
+
+def test_mover_all_or_nothing(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    from carteira_module import db, mapping, movimentacao
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="700600")),
+        mapping.normalizar_linha(_origem_exemplo(id_onr=2, id_sap="10000000")),  # bloqueada
+    ])
+    conn.close()
+    with pytest.raises(movimentacao.MovimentacaoBloqueadaErro):
+        movimentacao.mover_para_plano([1, 2], {"Mes_Execucao_Planejado": "jul-2026"},
+                                      usuario="teste")
+    # nada inserido (all-or-nothing)
+    iconn = idb.get_db_connection()
+    total = iconn.execute("SELECT COUNT(*) FROM notas").fetchone()[0]
+    iconn.close()
+    assert total == 0

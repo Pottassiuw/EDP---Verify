@@ -94,3 +94,53 @@ def preview(id_onrs: list[int]) -> list[dict]:
             "avisos": avisos(nota),
         })
     return resultado
+
+
+class MovimentacaoBloqueadaErro(Exception):
+    """Alguma nota do lote não é movível — lote abortado (all-or-nothing)."""
+
+
+def mover_para_plano(id_onrs: list[int], campos_usuario: dict,
+                     usuario: str) -> dict:
+    from input_module import service as input_service
+    prev = preview(id_onrs)
+    bloqueadas = [p for p in prev if not p["movivel"]]
+    if bloqueadas:
+        detalhe = "; ".join(f"{p['id_onr']}: {p['motivo_bloqueio']}" for p in bloqueadas)
+        raise MovimentacaoBloqueadaErro(detalhe)
+
+    conn = db.conectar()
+    try:
+        achadas = repository.obter_muitas(conn, id_onrs)
+    finally:
+        conn.close()
+    notas = [achadas[i] for i in id_onrs]
+    novas = [mapear_nova_nota(n, campos_usuario) for n in notas]
+    inseridas = input_service.criar_notas(novas, usuario=usuario, origem="carteira")
+
+    lote_id = uuid.uuid4().hex[:12]
+    agora = datetime.datetime.now().isoformat(timespec="seconds")
+    movimentos = [{
+        "id_onr": n["id_onr"], "numero_nota": n["id_sap"], "acao": "entrada",
+        "usuario": usuario, "lote_id": lote_id,
+        "mes_execucao": campos_usuario.get("Mes_Execucao_Planejado"),
+        "status_obra": campos_usuario.get("Status_Obra"),
+        "snapshot": json.dumps(campos_usuario, ensure_ascii=False),
+        "movido_em": agora,
+    } for n in notas]
+    conn = db.conectar()
+    try:
+        db.registrar_movimentacao(conn, movimentos)
+        conn.commit()
+    finally:
+        conn.close()
+    return {"inseridas": inseridas, "lote_id": lote_id}
+
+
+def listar_divergencias() -> list[dict]:
+    numeros = input_db.listar_numeros_nota()
+    conn = db.conectar()
+    try:
+        return repository.listar_divergencias(conn, numeros)
+    finally:
+        conn.close()
