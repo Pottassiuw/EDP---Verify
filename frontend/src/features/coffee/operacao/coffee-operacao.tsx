@@ -3,7 +3,13 @@ import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '../confirm-modal';
+import {
+  CoffeeNotaInspector,
+  type InspectorAction,
+} from '../components/coffee-nota-inspector';
 import { formatRelativeTime } from '../format';
+import { MoverPlanoModal, type MoverAlvo } from '../mover-plano-modal';
+import type { NotaRevisao } from '../types';
 import { OperacaoBatchBar } from './components/operacao-batch-bar';
 import { OperacaoComposer } from './components/operacao-composer';
 import { OperacaoKanban } from './components/operacao-kanban';
@@ -20,10 +26,14 @@ export function CoffeeOperacao(): React.JSX.Element {
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [selectedPk, setSelectedPk] = React.useState<number | null>(null);
   const [pendingRemoval, setPendingRemoval] = React.useState<number[] | null>(null);
+  const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
   const lastTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const itens = quadro.data?.itens ?? [];
   const selectedItems = itens.filter(
     (item) => selected.has(item.nota_pk ?? item.entrada_id),
+  );
+  const selectedItem = itens.find(
+    (item) => (item.nota_pk ?? item.entrada_id) === selectedPk,
   );
   const waitingSapIds = itens
     .filter((item) => item.etapa === 'aguardando_sap')
@@ -53,6 +63,35 @@ export function CoffeeOperacao(): React.JSX.Element {
   function openInspector(pk: number, trigger: HTMLButtonElement): void {
     lastTriggerRef.current = trigger;
     setSelectedPk(pk);
+  }
+
+  function closeInspector(): void {
+    setSelectedPk(null);
+    window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+  }
+
+  function handleInspectorAction(
+    action: InspectorAction,
+    revisao: NotaRevisao,
+  ): void {
+    const pk = revisao.coffee.pk;
+    if (action === 'gerar') {
+      generate([pk]);
+      return;
+    }
+    if (action === 'atualizar') {
+      updateSap([pk]);
+      return;
+    }
+    if (action === 'remover') {
+      setPendingRemoval([pk]);
+      return;
+    }
+    if (action === 'mover') {
+      setMoverAlvo({ pks: [pk], revisao });
+      return;
+    }
+    toast.error('Ação indisponível na Operação.');
   }
 
   function mutationError(action: string, error: unknown): void {
@@ -167,6 +206,18 @@ export function CoffeeOperacao(): React.JSX.Element {
         busy={remover.isPending}
         onConfirm={confirmRemoval}
         onCancel={() => setPendingRemoval(null)}
+      />
+      <MoverPlanoModal
+        alvo={moverAlvo}
+        onClose={() => setMoverAlvo(null)}
+        onSucesso={() => { void quadro.refetch(); }}
+      />
+      <CoffeeNotaInspector
+        pk={selectedPk}
+        etapa={selectedItem?.etapa}
+        open={selectedPk !== null}
+        onClose={closeInspector}
+        onAction={handleInspectorAction}
       />
     </div>
   );

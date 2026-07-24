@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useCoffeePortalTheme } from './use-coffee-portal-theme';
 
 export interface MoverAlvo {
   pks: number[];
@@ -46,6 +47,7 @@ function camposIniciais(revisao: NotaRevisao | null): CamposManuais {
 
 export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: MoverPlanoModalProps): React.JSX.Element {
   const qc = useQueryClient();
+  const portalTheme = useCoffeePortalTheme();
   const [campos, setCampos] = React.useState<CamposManuais>(() => camposIniciais(alvo?.revisao ?? null));
   React.useEffect(() => { setCampos(camposIniciais(alvo?.revisao ?? null)); }, [alvo]);
   const setCampo = (campo: keyof CamposManuais) => (v: string) =>
@@ -77,7 +79,7 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
 
   return (
     <Dialog open={alvo !== null} onOpenChange={(next) => { if (!next && !mutacao.isPending) onClose(); }}>
-      <DialogContent className="w-[480px]">
+      <DialogContent {...portalTheme} className="edp w-[480px]">
         <DialogHeader>
           <DialogTitle>
             {atualizar ? 'Atualizar dados no plano' : emLote
@@ -108,7 +110,8 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
             <Label htmlFor="mp-mes">Data de execução planejada</Label>
             <MesExecucaoPicker id="mp-mes" value={campos.Mes_Execucao_Planejado}
                                onChange={setCampo('Mes_Execucao_Planejado')}
-                               valorNeutro="-" rotuloNeutro="Sem planejamento" />
+                               valorNeutro="-" rotuloNeutro="Sem planejamento"
+                               contentProps={{ ...portalTheme, className: 'edp' }} />
           </div>
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-obra">Status da obra</Label>
