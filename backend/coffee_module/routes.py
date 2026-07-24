@@ -239,12 +239,14 @@ def gerar_operacao(pedido: OperacaoIdsPedido):
 def atualizar_sap_operacao(pedido: OperacaoIdsPedido):
     _garantir_banco()
     ids = _validar_ids(pedido.ids)
-    return {
-        "job_id": jobs.iniciar_atualizacao_sap(
+    try:
+        job_id = jobs.iniciar_atualizacao_sap(
             ids,
             trace=db.trace_atual(),
         )
-    }
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"job_id": job_id}
 
 
 @router.post("/operacao/remover")

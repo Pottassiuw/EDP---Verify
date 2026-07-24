@@ -58,6 +58,15 @@ cd ../backend && uvicorn main:app
 O FastAPI serve `frontend/dist/` como estático e expõe a API no mesmo
 processo (porta 8000).
 
+## Hub COFFEE
+
+O fluxo de COFFEE é dividido em **Verificar**, **Abrir**, **Operação**,
+**Concluídas** e **Logs**. Verificar encaminha as notas selecionadas à fila
+persistida de Operação, exibida como Kanban (Fila, Prontas para gerar,
+Processando e Aguardando SAP). Concluídas é o histórico separado: notas
+geradas podem ser arquivadas e somente notas corrigidas podem ser movidas para
+o plano.
+
 ## API
 
 | Ação                  | Requisição                     | Retorno |

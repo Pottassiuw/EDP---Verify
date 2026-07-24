@@ -72,7 +72,7 @@ export function CoffeeNotaInspector({
   pk,
   etapa,
   showArchive = false,
-  showMove = true,
+  showMove = false,
   open,
   onClose,
   onAction,
@@ -247,7 +247,9 @@ export function CoffeeNotaInspector({
                 <Archive /> Arquivar
               </Button>
             )}
-            {showMove && (
+            {showMove
+              && etapa === undefined
+              && revisao.data.coffee.classificacao === 'corrigida' && (
               <Button
                 size="sm"
                 disabled={!revisao.data.pode_mover}

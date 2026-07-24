@@ -8,7 +8,6 @@ import {
   type InspectorAction,
 } from '../components/coffee-nota-inspector';
 import { formatRelativeTime } from '../format';
-import { MoverPlanoModal, type MoverAlvo } from '../mover-plano-modal';
 import type { NotaRevisao } from '../types';
 import { OperacaoBatchBar } from './components/operacao-batch-bar';
 import { OperacaoComposer } from './components/operacao-composer';
@@ -29,7 +28,6 @@ export function CoffeeOperacao(): React.JSX.Element {
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [selectedPk, setSelectedPk] = React.useState<number | null>(null);
   const [pendingRemoval, setPendingRemoval] = React.useState<number[] | null>(null);
-  const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
   const lastTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const legacyMigrationStarted = React.useRef(false);
   const itens = quadro.data?.itens ?? [];
@@ -120,10 +118,6 @@ export function CoffeeOperacao(): React.JSX.Element {
     }
     if (action === 'remover') {
       setPendingRemoval([pk]);
-      return;
-    }
-    if (action === 'mover') {
-      setMoverAlvo({ pks: [pk], revisao });
       return;
     }
     toast.error('Ação indisponível na Operação.');
@@ -241,11 +235,6 @@ export function CoffeeOperacao(): React.JSX.Element {
         busy={remover.isPending}
         onConfirm={confirmRemoval}
         onCancel={() => setPendingRemoval(null)}
-      />
-      <MoverPlanoModal
-        alvo={moverAlvo}
-        onClose={() => setMoverAlvo(null)}
-        onSucesso={() => { void quadro.refetch(); }}
       />
       <CoffeeNotaInspector
         pk={selectedPk}

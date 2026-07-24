@@ -15,14 +15,26 @@ def adicionar_entradas(
     ids: list[int],
     origem: str,
     operacao_id: str,
-) -> None:
-    for entrada_id in dict.fromkeys(ids):
+) -> list[int]:
+    itens_existentes = {
+        identificador
+        for item in db.listar_itens_operacao()
+        for identificador in (item["entrada_id"], item["nota_pk"])
+        if identificador is not None
+    }
+    entradas_novas = [
+        int(entrada_id)
+        for entrada_id in dict.fromkeys(ids)
+        if int(entrada_id) not in itens_existentes
+    ]
+    for entrada_id in entradas_novas:
         db.upsert_item_operacao(
-            entrada_id=int(entrada_id),
+            entrada_id=entrada_id,
             etapa="fila",
             origem=origem,
             operacao_id=operacao_id,
         )
+    return entradas_novas
 
 
 def aplicar_consulta(
@@ -39,6 +51,16 @@ def aplicar_consulta(
     )
     if db.origem_atual(pk) is None:
         db.definir_origem(pk, origem)
+    item_atual = next(
+        (
+            item
+            for item in db.listar_itens_operacao()
+            if item["entrada_id"] == int(entrada_id) or item["nota_pk"] == pk
+        ),
+        None,
+    )
+    if item_atual is not None and item_atual["etapa"] == "processando":
+        return "processando"
     etapa = etapa_da_classificacao(classificacao)
     if etapa is None:
         db.remover_item_operacao(pk)
@@ -77,6 +99,19 @@ def marcar_processando(pks: list[int], operacao_id: str) -> None:
             origem=item["origem"],
             operacao_id=operacao_id,
         )
+
+
+def validar_aguardando_sap(pks: list[int]) -> None:
+    itens = {
+        item["nota_pk"] or item["entrada_id"]: item
+        for item in db.listar_itens_operacao()
+    }
+    for pk in pks:
+        item = itens.get(int(pk))
+        if item is None or item["etapa"] != "aguardando_sap":
+            raise ValueError(
+                f"Nota {pk} nÃ£o estÃ¡ aguardando atualizaÃ§Ã£o do SAP."
+            )
 
 
 def reverter_processando_operacao(operacao_id: str, mensagem: str) -> None:

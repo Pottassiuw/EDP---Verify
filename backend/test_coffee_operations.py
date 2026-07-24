@@ -125,6 +125,63 @@ def test_rota_operacao_remover_exige_justificativa(operation_client):
     assert resposta.status_code == 400
 
 
+def test_rota_operacao_atualizar_sap_rejeita_etapa_invalida(
+    operation_client,
+):
+    operation_service.adicionar_entradas([101], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        101, _nota(101, None), "avulsa", "seed"
+    )
+
+    resposta = operation_client.post(
+        "/api/coffee/operacao/atualizar-sap",
+        json={"ids": [101]},
+    )
+
+    assert resposta.status_code == 409
+    assert db.listar_operacoes_ativas() == []
+
+
+def test_rota_operacao_atualizar_sap_conclui_nota_aguardando(
+    operation_client,
+    monkeypatch,
+):
+    operation_service.adicionar_entradas([202], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        202, _nota(202, config.SAP_PENDENTE), "avulsa", "seed"
+    )
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: _nota(int(ident), 17200202),
+    )
+
+    resposta = operation_client.post(
+        "/api/coffee/operacao/atualizar-sap",
+        json={"ids": [202]},
+    )
+
+    assert resposta.status_code == 200
+    assert _aguardar(resposta.json()["job_id"])["estado"] == "concluido"
+    assert db.listar_itens_operacao() == []
+
+
+def test_rota_operacao_remover_remove_notas_da_fila(operation_client):
+    operation_service.adicionar_entradas([303], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        303, _nota(303, None), "avulsa", "seed"
+    )
+
+    resposta = operation_client.post(
+        "/api/coffee/operacao/remover",
+        json={"ids": [303], "justificativa": "Não será mais necessária."},
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["removidas"] == 1
+    assert db.listar_itens_operacao() == []
+
+
 def test_rota_local_reconsulta_e_atualiza_o_quadro(
     operation_client,
     monkeypatch,
@@ -310,6 +367,32 @@ def test_geracao_operacao_reverte_apenas_cartoes_do_job_se_thread_falha(
     assert itens[404]["etapa"] == "processando"
     assert itens[404]["operacao_id"] == "outra-operacao"
     assert db.listar_operacoes_ativas() == []
+
+
+def test_reconsulta_nao_altera_item_processando_nem_permite_geracao_duplicada(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    operation_service.adicionar_entradas([505], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        505, _nota(505, None), "avulsa", "seed"
+    )
+    db.criar_operacao("geracao-ativa", "geracao", 1)
+    operation_service.marcar_processando([505], "geracao-ativa")
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: pytest.fail("A nota ativa não pode ser reconsultada."),
+    )
+
+    job_id = jobs.iniciar_consulta_operacao([505], "avulsa")
+
+    assert _aguardar(job_id)["estado"] == "concluido"
+    item = db.listar_itens_operacao()[0]
+    assert item["etapa"] == "processando"
+    assert item["operacao_id"] == "geracao-ativa"
+    with pytest.raises(ValueError, match="não está pronta"):
+        jobs.iniciar_geracao_operacao([505])
 
 
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):

@@ -264,6 +264,18 @@ As antigas telas separadas de Geradas, Corrigidas e Pendentes, o modal de
 gerar/consultar, a tabela legada, o drawer de logs e a ficha de revisão
 foram substituídos pelo Kanban, inspector e página Concluídas.
 
+## COFFEE: handoff e limites de ações
+
+O handoff de Verificar para Operação não abre modal: ele encaminha a seleção
+para a fila persistida e o Kanban acompanha Fila, Prontas para gerar,
+Processando e Aguardando SAP. Concluídas mantém o histórico separado; a
+seleção em lote é reconciliada aos filtros visíveis, portanto busca, período
+ou classificação nunca permitem mover itens ocultos para o plano.
+
+O inspector na Operação é somente operacional (gerar, atualizar SAP e
+remover). Arquivar notas geradas e mover notas corrigidas para o plano são
+ações exclusivas de Concluídas.
+
 ## Hooks compartilhados
 
 - **`use-mobile.ts`** (`useIsMobile`) — hook usado pelo `Sidebar` do

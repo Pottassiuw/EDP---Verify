@@ -76,11 +76,17 @@ def iniciar_consulta_operacao(
     origem: str = "avulsa",
     trace: str | None = None,
 ) -> str:
-    job_id, snapshot = _novo_job("consulta", len(ids))
-    operation_service.adicionar_entradas(ids, origem, job_id)
+    job_id = uuid.uuid4().hex
+    ids_a_consultar = operation_service.adicionar_entradas(
+        ids,
+        origem,
+        job_id,
+    )
+    with _LOCK:
+        snapshot = db.criar_operacao(job_id, "consulta", len(ids_a_consultar))
     threading.Thread(
         target=_rodar_consulta_operacao,
-        args=(job_id, snapshot, list(ids), origem, trace),
+        args=(job_id, snapshot, ids_a_consultar, origem, trace),
         daemon=True,
     ).start()
     return job_id
@@ -262,6 +268,7 @@ def iniciar_atualizacao_sap(
     pks: list[int],
     trace: str | None = None,
 ) -> str:
+    operation_service.validar_aguardando_sap(pks)
     job_id, snapshot = _novo_job("atualizacao_sap", len(pks))
     threading.Thread(
         target=_rodar_atualizacao_sap,

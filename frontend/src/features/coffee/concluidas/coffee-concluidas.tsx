@@ -71,11 +71,14 @@ export function CoffeeConcluidas({
       ))
   ), [filtro, notas, periodo, query]);
 
-  const correctedPks = React.useMemo(() => new Set(
-    notas
+  const selectablePks = React.useMemo(() => new Set(
+    filtered
       .filter((nota) => nota.classificacao === 'corrigida')
       .map((nota) => nota.pk),
-  ), [notas]);
+  ), [filtered]);
+  const visibleSelected = React.useMemo(() => new Set(
+    [...selected].filter((pk) => selectablePks.has(pk)),
+  ), [selectablePks, selected]);
 
   React.useEffect(() => {
     if (
@@ -89,10 +92,10 @@ export function CoffeeConcluidas({
 
   React.useEffect(() => {
     setSelected((current) => {
-      const next = new Set([...current].filter((pk) => correctedPks.has(pk)));
+      const next = new Set([...current].filter((pk) => selectablePks.has(pk)));
       return next.size === current.size ? current : next;
     });
-  }, [correctedPks]);
+  }, [selectablePks]);
 
   const archiveMutation = useMutation({
     mutationFn: ({ pk, justificativa }: { pk: number; justificativa: string }) => (
@@ -115,7 +118,7 @@ export function CoffeeConcluidas({
   });
 
   function toggle(pk: number): void {
-    if (!correctedPks.has(pk)) return;
+    if (!selectablePks.has(pk)) return;
 
     setSelected((current) => {
       const next = new Set(current);
@@ -212,15 +215,15 @@ export function CoffeeConcluidas({
         <div className="flex-1" />
         <Button
           size="sm"
-          disabled={selected.size === 0}
-          onClick={() => setMoverAlvo({ pks: [...selected], revisao: null })}
+          disabled={visibleSelected.size === 0}
+          onClick={() => setMoverAlvo({ pks: [...visibleSelected], revisao: null })}
         >
-          Mover para Plano ({selected.size})
+          Mover para Plano ({visibleSelected.size})
         </Button>
       </div>
       <ConcluidasList
         notas={filtered}
-        selected={selected}
+        selected={visibleSelected}
         onToggle={toggle}
         onOpen={openInspector}
       />
