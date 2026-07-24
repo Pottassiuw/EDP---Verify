@@ -39,6 +39,7 @@ export type InspectorAction =
 interface CoffeeNotaInspectorProps {
   pk: number | null;
   etapa?: OperacaoEtapa;
+  showArchive?: boolean;
   open: boolean;
   onClose: () => void;
   onAction: (action: InspectorAction, revisao: NotaRevisao) => void;
@@ -69,6 +70,7 @@ function nextStep(etapa: OperacaoEtapa | undefined, classificacao: string): stri
 export function CoffeeNotaInspector({
   pk,
   etapa,
+  showArchive = false,
   open,
   onClose,
   onAction,
@@ -232,7 +234,9 @@ export function CoffeeNotaInspector({
                 <Trash2 /> Remover
               </Button>
             )}
-            {etapa === undefined && revisao.data.coffee.classificacao === 'gerada' && (
+            {showArchive
+              && etapa === undefined
+              && revisao.data.coffee.classificacao === 'gerada' && (
               <Button
                 variant="ghost"
                 size="sm"
