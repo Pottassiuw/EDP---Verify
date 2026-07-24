@@ -173,11 +173,13 @@ def listar_notas(status: str | None = None) -> list:
     params: list = []
     if status == "a_gerar":
         clausulas.append("a_gerar = 1")
-    elif status == "gerada":
+    elif status == "concluida":
         clausulas.append("classificacao IN ('gerada', 'corrigida')")
-    elif status:
+    elif status in {"gerada", "corrigida", "pendente", "nao_gerada"}:
         clausulas.append("classificacao = ?")
         params.append(status)
+    elif status:
+        clausulas.append("1 = 0")
     clausulas.append("(arquivado IS NULL OR arquivado = 0)")
     sql += " WHERE " + " AND ".join(clausulas)
     rows = conn.execute(sql, tuple(params)).fetchall()

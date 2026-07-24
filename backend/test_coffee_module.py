@@ -1350,3 +1350,16 @@ def test_rota_corrigir_local_lote_dispara_job(coffee_cliente, monkeypatch):
 
     logs = db.listar_logs(tipo="acao_usuario")
     assert any(l["acao"] == "correcao_local_lote" for l in logs)
+
+
+def test_listar_notas_separa_geradas_corrigidas_e_concluidas(coffee_tmp):
+    from coffee_module import db
+
+    db.upsert_nota(101, 17100101, {"id_sap": 17100101})
+    db.upsert_nota(202, 10000000, {"id_sap": 10000000})
+    db.definir_origem(202, "verificar")
+    db.upsert_nota(202, 17100202, {"id_sap": 17100202})
+
+    assert [n["pk"] for n in db.listar_notas("gerada")] == [101]
+    assert [n["pk"] for n in db.listar_notas("corrigida")] == [202]
+    assert {n["pk"] for n in db.listar_notas("concluida")} == {101, 202}
