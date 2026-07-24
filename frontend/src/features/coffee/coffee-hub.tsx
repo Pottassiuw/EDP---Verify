@@ -1,28 +1,49 @@
 import React from 'react';
-import type { Note, CoffeeSubPage } from '../../types';
+import type { CoffeeConclusaoFiltro, CoffeeSubPage, Note } from '../../types';
 
 import { CoffeeAbrir } from './coffee-abrir';
-import { CoffeeGeradas } from './coffee-geradas';
-import { CoffeeCorrigidas } from './coffee-corrigidas';
-import { CoffeePendentes } from './coffee-pendentes';
+import { CoffeeConcluidas } from './concluidas/coffee-concluidas';
+import { CoffeeOperacao } from './operacao/coffee-operacao';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 import { COFFEE_SUBS } from './subs';
 import { SegTabs } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 
+<<<<<<< HEAD
+=======
+export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
+  { id: "verificar", label: "Verificar" },
+  { id: "abrir", label: "Abrir" },
+  { id: "operacao", label: "Operação" },
+  { id: "concluidas", label: "Concluídas" },
+  { id: "logs", label: "Logs" },
+];
+
+>>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
 interface CoffeeHubProps {
   notes: Note[];
   sub: CoffeeSubPage;
   setSub: (s: CoffeeSubPage) => void;
   triage: TriageHandoff;
   coffeeReturn: { noteId: string; noteRef: string } | null;
+  concluidasHandoff: { filtro: CoffeeConclusaoFiltro; id: number } | null;
+  onIrParaInput?: () => void;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
-  onIrParaInput?: () => void;
 }
 
-export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem, onIrParaInput }: CoffeeHubProps): React.JSX.Element {
+export function CoffeeHub({
+  notes,
+  sub,
+  setSub,
+  triage,
+  coffeeReturn,
+  concluidasHandoff,
+  onIrParaInput,
+  onClearReturn,
+  onBackToTriagem,
+}: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -59,12 +80,13 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
         <CoffeeAbrir notes={notes}
                      coffeeReturn={coffeeReturn} onClearReturn={onClearReturn}
                      onBackToTriagem={onBackToTriagem} />
-      ) : sub === "geradas" ? (
-        <CoffeeGeradas onIrParaInput={onIrParaInput} />
-      ) : sub === "corrigidas" ? (
-        <CoffeeCorrigidas onIrParaInput={onIrParaInput} />
-      ) : sub === "pendentes" ? (
-        <CoffeePendentes onIrParaInput={onIrParaInput} />
+      ) : sub === "operacao" ? (
+        <CoffeeOperacao />
+      ) : sub === "concluidas" ? (
+        <CoffeeConcluidas
+          concluidasHandoff={concluidasHandoff}
+          onIrParaInput={onIrParaInput}
+        />
       ) : sub === "verificar" ? (
         <CoffeeVerificar triage={triage} />
       ) : sub === "logs" ? (

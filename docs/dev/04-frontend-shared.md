@@ -43,9 +43,10 @@ O `id` incremental força o `Overview` do Input a remontar
 (`key={filtrosHandoff?.id}`) mesmo quando os filtros mudam para o
 mesmo conjunto de valores duas vezes seguidas — ver
 [03-frontend-input.md](./03-frontend-input.md#handoff-de-filtros).
-`onIrParaCoffee` troca `coffeeSub` para `"corrigidas"` e a seção para
-`"coffee"` diretamente (não passa pelo handoff — é navegação simples,
-sem filtros).
+`onIrParaCoffee` abre `coffeeSub` em `"concluidas"`, cria um handoff com o
+filtro `"corrigida"` e troca a seção para `"coffee"`. Assim, o relatório
+leva o usuário diretamente ao histórico filtrado de notas corrigidas fora do
+plano.
 
 ## Dashboard de Relatórios (features/relatorios/)
 
@@ -223,11 +224,10 @@ manual:
   para os 8 call sites conhecidos em `shared.tsx` e `dashboard.tsx`.
 - **`progress.tsx`** — a prop `indicatorClassName`
   (`progress.tsx:9,25`) não existe no output padrão do CLI; foi
-  adicionada no SP2b para que os 4 call sites de barra de progresso possam
-  colorir o indicador via `className` em vez de cor hardcoded. Apenas um deles
-  (`coffee-pendentes.tsx:164`) usa cor condicional (verde quando concluído vs. accent
-  enquanto rodando); os outros três (`upload-screen.tsx`, `kpi-drawer.tsx`,
-  `coffee-abrir.tsx`) usam uma cor fixa.
+  adicionada no SP2b para que call sites possam colorir o indicador via
+  `className` em vez de cor hardcoded. Hoje `upload-screen.tsx`,
+  `kpi-drawer.tsx` e `coffee-abrir.tsx` usam a prop; o painel de malha fina
+  usa o indicador padrão.
 
 Os demais componentes lidos para esta doc — `select.tsx`, `sheet.tsx`,
 `dialog.tsx`, `alert-dialog.tsx` — são majoritariamente stock: mesma
@@ -329,6 +329,44 @@ cache continuam na tela normalmente, e são trocados só quando a
 resposta nova chega (padrão SWR: "stale-while-revalidate"). Sem
 `staleTime`, esse mesmo refetch por foco reexecutava a busca a cada
 troca de aba, mesmo com o dado ainda válido.
+
+## COFFEE: operação e conclusões
+
+O hub COFFEE usa as subseções **Verificar**, **Abrir**, **Operação**,
+**Concluídas** e **Logs**. Verificar encaminha seleções para a fila de
+Operação; Concluídas separa as classificações gerada e corrigida, sem
+misturar o histórico com a fila ativa.
+
+As queries React Query do fluxo são `['coffee', 'operacao']` para o quadro
+e jobs ativos, `['coffee', 'concluidas']` para o histórico,
+`['coffee', 'revisao', pk]` para a ficha da nota e
+`['coffee', 'nota', pk, 'logs']` para os últimos logs no inspector. As
+mutações invalidam essas chaves pontualmente, em vez de replicar estado de
+servidor em Context.
+
+A fila e os jobs de operação são persistidos em SQLite. Por isso o Kanban
+continua mostrando a situação da operação depois de atualizar o navegador;
+quando o backend reinicia, jobs em execução são marcados como interrompidos
+e as notas retornam ao estado recuperável indicado pela API.
+
+`useCoffeePortalTheme` repassa tema resolvido, densidade e as variáveis de
+accent atuais para conteúdo portalizado de `Sheet`, `Dialog`, `AlertDialog`
+e `Select`, mantendo Sistema, Claro e Escuro coerentes fora da raiz `.edp`.
+As antigas telas separadas de Geradas, Corrigidas e Pendentes, o modal de
+gerar/consultar, a tabela legada, o drawer de logs e a ficha de revisão
+foram substituídos pelo Kanban, inspector e página Concluídas.
+
+## COFFEE: handoff e limites de ações
+
+O handoff de Verificar para Operação não abre modal: ele encaminha a seleção
+para a fila persistida e o Kanban acompanha Fila, Prontas para gerar,
+Processando e Aguardando SAP. Concluídas mantém o histórico separado; a
+seleção em lote é reconciliada aos filtros visíveis, portanto busca, período
+ou classificação nunca permitem mover itens ocultos para o plano.
+
+O inspector na Operação é somente operacional (gerar, atualizar SAP e
+remover). Arquivar notas geradas e mover notas corrigidas para o plano são
+ações exclusivas de Concluídas.
 
 ## Hooks compartilhados
 

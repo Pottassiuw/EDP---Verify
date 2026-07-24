@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { CoffeeLog } from './types';
 import { BASE as API_BASE, coffeeFetch } from '../../api';
 
@@ -52,4 +53,25 @@ export function useCoffeeLogs(params?: UseCoffeeLogsParams): UseCoffeeLogsResult
   }, [key, tick]);
 
   return { logs, loading, refresh };
+}
+
+export const NOTA_LOGS_KEY = (pk: number | null) =>
+  ['coffee', 'nota', pk, 'logs'] as const;
+
+export function useCoffeeNotaLogs(pk: number | null) {
+  return useQuery({
+    queryKey: NOTA_LOGS_KEY(pk),
+    queryFn: async (): Promise<CoffeeLog[]> => {
+      const response = await fetch(
+        `${API_BASE}/coffee/logs?nota_pk=${pk}&limit=50`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!response.ok) {
+        throw new Error(`GET /coffee/logs -> ${response.status}`);
+      }
+      const body = await response.json() as { logs: CoffeeLog[] };
+      return body.logs;
+    },
+    enabled: pk !== null,
+  });
 }

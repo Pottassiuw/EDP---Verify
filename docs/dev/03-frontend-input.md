@@ -241,7 +241,7 @@ o Input em si não guarda essa informação.
   vez.
 - `manage.tsx:124,132` — a exclusão em lote e o "desfazer" usam
   `window.confirm` nativo, diferente do `ConfirmModal` (`AlertDialog`)
-  usado no módulo COFFEE (`coffee-pendentes.tsx`, documentado em
+  usado no módulo COFFEE pela Operação e por Concluídas (documentado em
   `02-frontend-coffee.md`) para o mesmo tipo de ação destrutiva —
   inconsistência de padrão de UI entre módulos, sem campo de
   justificativa nem estilo consistente com o resto do app.

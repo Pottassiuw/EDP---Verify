@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import { useCoffeePortalTheme } from './use-coffee-portal-theme';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function ConfirmModal({
   open, title, message, confirmLabel = "Confirmar", tone = "default",
   requireJustification = false, busy = false, onConfirm, onCancel,
 }: ConfirmModalProps): React.JSX.Element {
+  const portalTheme = useCoffeePortalTheme();
   const [justificativa, setJustificativa] = React.useState("");
 
   React.useEffect(() => {
@@ -31,7 +33,10 @@ export function ConfirmModal({
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => { if (!next && !busy) onCancel(); }}>
-      <AlertDialogContent className="w-[420px] max-w-[92vw] gap-[12px] p-[20px]">
+      <AlertDialogContent
+        {...portalTheme}
+        className="edp w-[420px] max-w-[92vw] gap-[12px] p-[20px]"
+      >
         <AlertDialogHeader>
           <AlertDialogTitle className="edp-title text-[17px]">{title}</AlertDialogTitle>
           {message && <div className="text-[13px] text-text-mute">{message}</div>}
