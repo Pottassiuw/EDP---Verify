@@ -139,6 +139,48 @@ def test_geracao_operacao_rejeita_selecao_mista_sem_mutar_fila_ou_job(
     assert db.listar_operacoes_ativas() == []
 
 
+def test_geracao_operacao_interrompe_job_se_transicao_falha_apos_criacao(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    operation_service.adicionar_entradas([303], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        303, _nota(303, None), "avulsa", "seed"
+    )
+    validar_prontas = operation_service.validar_prontas
+    criar_operacao = db.criar_operacao
+    chamadas_validacao = 0
+    operacoes_criadas = []
+
+    def falhar_na_segunda_validacao(pks):
+        nonlocal chamadas_validacao
+        chamadas_validacao += 1
+        if chamadas_validacao == 2:
+            raise ValueError("Nota 303 deixou de estar pronta.")
+        validar_prontas(pks)
+
+    def registrar_operacao(operacao_id, tipo, total):
+        operacoes_criadas.append(operacao_id)
+        return criar_operacao(operacao_id, tipo, total)
+
+    monkeypatch.setattr(
+        operation_service,
+        "validar_prontas",
+        falhar_na_segunda_validacao,
+    )
+    monkeypatch.setattr(db, "criar_operacao", registrar_operacao)
+
+    with pytest.raises(ValueError, match="deixou de estar pronta"):
+        jobs.iniciar_geracao_operacao([303])
+
+    operacao = db.obter_operacao(operacoes_criadas[0])
+    assert chamadas_validacao == 2
+    assert operacao["estado"] == "interrompida"
+    assert "deixou de estar pronta" in operacao["erros"][0]["msg"]
+    assert db.listar_itens_operacao()[0]["etapa"] == "pronta"
+    assert db.listar_operacoes_ativas() == []
+
+
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):
     operation_service.adicionar_entradas([101], "avulsa", "job-a")
     etapa = operation_service.aplicar_consulta(

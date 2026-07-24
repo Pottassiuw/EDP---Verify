@@ -206,12 +206,20 @@ def iniciar_geracao_operacao(
 ) -> str:
     operation_service.validar_prontas(pks)
     job_id, snapshot = _novo_job("geracao", len(pks))
-    operation_service.marcar_processando(pks, job_id)
-    threading.Thread(
-        target=_rodar_geracao_operacao,
-        args=(job_id, snapshot, list(pks), trace),
-        daemon=True,
-    ).start()
+    try:
+        operation_service.marcar_processando(pks, job_id)
+        threading.Thread(
+            target=_rodar_geracao_operacao,
+            args=(job_id, snapshot, list(pks), trace),
+            daemon=True,
+        ).start()
+    except Exception as exc:
+        snapshot["estado"] = "interrompida"
+        snapshot["erros"].append({
+            "msg": f"Não foi possível iniciar a geração: {exc}",
+        })
+        _salvar(job_id, snapshot)
+        raise
     return job_id
 
 
