@@ -1,6 +1,6 @@
 import pytest
 
-from coffee_module import config, db
+from coffee_module import config, db, operation_service
 
 
 @pytest.fixture
@@ -58,3 +58,51 @@ def test_recovery_interrompe_job_e_retorna_processando_para_pronta(
     item = db.listar_itens_operacao()[0]
     assert item["etapa"] == "pronta"
     assert item["erro"] == "Operação interrompida; reconsulte antes de tentar novamente."
+
+
+def _nota(pk, sap, **fields):
+    return {
+        "pk": pk,
+        "id_sap": sap,
+        "arquivado": False,
+        "local_instalacao": fields.get("local_instalacao"),
+        "fields": {"id_sap": sap, **fields},
+    }
+
+
+def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):
+    operation_service.adicionar_entradas([101], "avulsa", "job-a")
+    etapa = operation_service.aplicar_consulta(
+        101, _nota(101, None, alimentador="ABC01"), "avulsa", "job-a"
+    )
+    assert etapa == "pronta"
+    assert db.listar_itens_operacao()[0]["etapa"] == "pronta"
+
+
+def test_consulta_move_placeholder_para_aguardando(coffee_operation_tmp):
+    operation_service.adicionar_entradas([202], "verificar", "job-b")
+    etapa = operation_service.aplicar_consulta(
+        202, _nota(202, config.SAP_PENDENTE), "verificar", "job-b"
+    )
+    assert etapa == "aguardando_sap"
+
+
+def test_consulta_remove_sap_real_do_quadro(coffee_operation_tmp):
+    operation_service.adicionar_entradas([303], "avulsa", "job-c")
+    etapa = operation_service.aplicar_consulta(
+        303, _nota(303, 17300303), "avulsa", "job-c"
+    )
+    assert etapa is None
+    assert db.listar_itens_operacao() == []
+
+
+def test_falha_de_geracao_retorna_para_pronta(coffee_operation_tmp):
+    operation_service.adicionar_entradas([404], "avulsa", "job-d")
+    operation_service.aplicar_consulta(
+        404, _nota(404, None), "avulsa", "job-d"
+    )
+    operation_service.marcar_processando([404], "job-e")
+    operation_service.aplicar_falha(404, "pronta", "timeout")
+    item = db.listar_itens_operacao()[0]
+    assert item["etapa"] == "pronta"
+    assert item["erro"] == "timeout"
