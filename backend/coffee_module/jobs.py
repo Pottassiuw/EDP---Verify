@@ -214,6 +214,10 @@ def iniciar_geracao_operacao(
             daemon=True,
         ).start()
     except Exception as exc:
+        operation_service.reverter_processando_operacao(
+            job_id,
+            "Operação interrompida antes de iniciar; tente novamente.",
+        )
         snapshot["estado"] = "interrompida"
         snapshot["erros"].append({
             "msg": f"Não foi possível iniciar a geração: {exc}",

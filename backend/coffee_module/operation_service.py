@@ -79,6 +79,21 @@ def marcar_processando(pks: list[int], operacao_id: str) -> None:
         )
 
 
+def reverter_processando_operacao(operacao_id: str, mensagem: str) -> None:
+    for item in db.listar_itens_operacao():
+        if (
+            item["etapa"] == "processando"
+            and item["operacao_id"] == operacao_id
+        ):
+            db.upsert_item_operacao(
+                entrada_id=item["entrada_id"],
+                nota_pk=item["nota_pk"],
+                etapa="pronta",
+                origem=item["origem"],
+                erro=mensagem,
+            )
+
+
 def aplicar_geracao_sucesso(pk: int, operacao_id: str) -> None:
     itens = {item["nota_pk"]: item for item in db.listar_itens_operacao()}
     item = itens.get(int(pk))

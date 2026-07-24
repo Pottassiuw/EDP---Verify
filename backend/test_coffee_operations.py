@@ -181,6 +181,53 @@ def test_geracao_operacao_interrompe_job_se_transicao_falha_apos_criacao(
     assert db.listar_operacoes_ativas() == []
 
 
+def test_geracao_operacao_reverte_apenas_cartoes_do_job_se_thread_falha(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    operation_service.adicionar_entradas([303, 404], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        303, _nota(303, None), "avulsa", "seed"
+    )
+    operation_service.aplicar_consulta(
+        404, _nota(404, None), "avulsa", "seed"
+    )
+    operation_service.marcar_processando([404], "outra-operacao")
+    criar_operacao = db.criar_operacao
+    operacoes_criadas = []
+
+    class ThreadComFalha:
+        def __init__(self, **kwargs):
+            pass
+
+        def start(self):
+            raise RuntimeError("falha ao iniciar worker")
+
+    def registrar_operacao(operacao_id, tipo, total):
+        operacoes_criadas.append(operacao_id)
+        return criar_operacao(operacao_id, tipo, total)
+
+    monkeypatch.setattr(jobs.threading, "Thread", ThreadComFalha)
+    monkeypatch.setattr(db, "criar_operacao", registrar_operacao)
+
+    with pytest.raises(RuntimeError, match="falha ao iniciar worker"):
+        jobs.iniciar_geracao_operacao([303])
+
+    operacao = db.obter_operacao(operacoes_criadas[0])
+    itens = {
+        item["nota_pk"]: item
+        for item in db.listar_itens_operacao()
+    }
+    assert operacao["estado"] == "interrompida"
+    assert "falha ao iniciar worker" in operacao["erros"][0]["msg"]
+    assert itens[303]["etapa"] == "pronta"
+    assert itens[303]["operacao_id"] is None
+    assert "interrompida" in itens[303]["erro"].lower()
+    assert itens[404]["etapa"] == "processando"
+    assert itens[404]["operacao_id"] == "outra-operacao"
+    assert db.listar_operacoes_ativas() == []
+
+
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):
     operation_service.adicionar_entradas([101], "avulsa", "job-a")
     etapa = operation_service.aplicar_consulta(
