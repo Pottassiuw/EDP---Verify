@@ -55,7 +55,16 @@ def aplicar_consulta(
     return etapa
 
 
+def validar_prontas(pks: list[int]) -> None:
+    itens = {item["nota_pk"]: item for item in db.listar_itens_operacao()}
+    for pk in pks:
+        item = itens.get(int(pk))
+        if item is None or item["etapa"] != "pronta":
+            raise ValueError(f"Nota {pk} não está pronta para gerar.")
+
+
 def marcar_processando(pks: list[int], operacao_id: str) -> None:
+    validar_prontas(pks)
     itens = {item["nota_pk"]: item for item in db.listar_itens_operacao()}
     for pk in pks:
         item = itens.get(int(pk))

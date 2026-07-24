@@ -117,6 +117,28 @@ def test_job_atualizacao_remove_nota_quando_sap_fica_real(
     assert db.listar_notas("corrigida")[0]["pk"] == 202
 
 
+def test_geracao_operacao_rejeita_selecao_mista_sem_mutar_fila_ou_job(
+    coffee_operation_tmp,
+):
+    operation_service.adicionar_entradas([303, 999], "avulsa", "seed")
+    operation_service.aplicar_consulta(
+        303, _nota(303, None), "avulsa", "seed"
+    )
+    operation_service.aplicar_consulta(
+        999, _nota(999, config.SAP_PENDENTE), "avulsa", "seed"
+    )
+
+    with pytest.raises(ValueError, match="Nota 999"):
+        jobs.iniciar_geracao_operacao([303, 999])
+
+    etapas = {
+        item["nota_pk"]: item["etapa"]
+        for item in db.listar_itens_operacao()
+    }
+    assert etapas == {303: "pronta", 999: "aguardando_sap"}
+    assert db.listar_operacoes_ativas() == []
+
+
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):
     operation_service.adicionar_entradas([101], "avulsa", "job-a")
     etapa = operation_service.aplicar_consulta(

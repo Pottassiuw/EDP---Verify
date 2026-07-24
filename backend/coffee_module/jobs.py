@@ -204,6 +204,7 @@ def iniciar_geracao_operacao(
     pks: list[int],
     trace: str | None = None,
 ) -> str:
+    operation_service.validar_prontas(pks)
     job_id, snapshot = _novo_job("geracao", len(pks))
     operation_service.marcar_processando(pks, job_id)
     threading.Thread(
