@@ -132,11 +132,10 @@ manual:
   para os 8 call sites conhecidos em `shared.tsx` e `dashboard.tsx`.
 - **`progress.tsx`** — a prop `indicatorClassName`
   (`progress.tsx:9,25`) não existe no output padrão do CLI; foi
-  adicionada no SP2b para que os 4 call sites de barra de progresso possam
-  colorir o indicador via `className` em vez de cor hardcoded. Apenas um deles
-  (`coffee-pendentes.tsx:164`) usa cor condicional (verde quando concluído vs. accent
-  enquanto rodando); os outros três (`upload-screen.tsx`, `kpi-drawer.tsx`,
-  `coffee-abrir.tsx`) usam uma cor fixa.
+  adicionada no SP2b para que call sites possam colorir o indicador via
+  `className` em vez de cor hardcoded. Hoje `upload-screen.tsx`,
+  `kpi-drawer.tsx` e `coffee-abrir.tsx` usam a prop; o painel de malha fina
+  usa o indicador padrão.
 
 Os demais componentes lidos para esta doc — `select.tsx`, `sheet.tsx`,
 `dialog.tsx`, `alert-dialog.tsx` — são majoritariamente stock: mesma
