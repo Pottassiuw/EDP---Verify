@@ -40,6 +40,7 @@ interface CoffeeNotaInspectorProps {
   pk: number | null;
   etapa?: OperacaoEtapa;
   showArchive?: boolean;
+  showMove?: boolean;
   open: boolean;
   onClose: () => void;
   onAction: (action: InspectorAction, revisao: NotaRevisao) => void;
@@ -71,6 +72,7 @@ export function CoffeeNotaInspector({
   pk,
   etapa,
   showArchive = false,
+  showMove = true,
   open,
   onClose,
   onAction,
@@ -245,13 +247,15 @@ export function CoffeeNotaInspector({
                 <Archive /> Arquivar
               </Button>
             )}
-            <Button
-              size="sm"
-              disabled={!revisao.data.pode_mover}
-              onClick={() => onAction('mover', revisao.data)}
-            >
-              {revisao.data.ja_no_plano ? 'Atualizar plano' : 'Mover para plano'}
-            </Button>
+            {showMove && (
+              <Button
+                size="sm"
+                disabled={!revisao.data.pode_mover}
+                onClick={() => onAction('mover', revisao.data)}
+              >
+                {revisao.data.ja_no_plano ? 'Atualizar plano' : 'Mover para plano'}
+              </Button>
+            )}
           </footer>
         )}
       </SheetContent>

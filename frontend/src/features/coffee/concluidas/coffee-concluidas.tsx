@@ -71,11 +71,11 @@ export function CoffeeConcluidas({
       ))
   ), [filtro, notas, periodo, query]);
 
-  const visibleCorrected = React.useMemo(() => new Set(
-    filtered
+  const correctedPks = React.useMemo(() => new Set(
+    notas
       .filter((nota) => nota.classificacao === 'corrigida')
       .map((nota) => nota.pk),
-  ), [filtered]);
+  ), [notas]);
 
   React.useEffect(() => {
     if (
@@ -89,10 +89,10 @@ export function CoffeeConcluidas({
 
   React.useEffect(() => {
     setSelected((current) => {
-      const next = new Set([...current].filter((pk) => visibleCorrected.has(pk)));
+      const next = new Set([...current].filter((pk) => correctedPks.has(pk)));
       return next.size === current.size ? current : next;
     });
-  }, [visibleCorrected]);
+  }, [correctedPks]);
 
   const archiveMutation = useMutation({
     mutationFn: ({ pk, justificativa }: { pk: number; justificativa: string }) => (
@@ -115,7 +115,7 @@ export function CoffeeConcluidas({
   });
 
   function toggle(pk: number): void {
-    if (!visibleCorrected.has(pk)) return;
+    if (!correctedPks.has(pk)) return;
 
     setSelected((current) => {
       const next = new Set(current);
@@ -140,6 +140,10 @@ export function CoffeeConcluidas({
     revisao: NotaRevisao,
   ): void {
     if (action === 'mover') {
+      if (revisao.coffee.classificacao !== 'corrigida') {
+        toast.error('Somente notas corrigidas podem ser movidas para o plano.');
+        return;
+      }
       setMoverAlvo({ pks: [revisao.coffee.pk], revisao });
       return;
     }
@@ -224,6 +228,7 @@ export function CoffeeConcluidas({
         pk={selectedPk}
         open={selectedPk !== null}
         showArchive={notas.find((nota) => nota.pk === selectedPk)?.classificacao === 'gerada'}
+        showMove={notas.find((nota) => nota.pk === selectedPk)?.classificacao === 'corrigida'}
         onClose={closeInspector}
         onAction={handleInspectorAction}
       />
