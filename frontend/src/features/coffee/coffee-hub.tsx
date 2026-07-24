@@ -24,6 +24,7 @@ interface CoffeeHubProps {
   triage: TriageHandoff;
   coffeeReturn: { noteId: string; noteRef: string } | null;
   concluidasHandoff: { filtro: CoffeeConclusaoFiltro; id: number } | null;
+  onIrParaInput?: () => void;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
 }
@@ -35,6 +36,7 @@ export function CoffeeHub({
   triage,
   coffeeReturn,
   concluidasHandoff,
+  onIrParaInput,
   onClearReturn,
   onBackToTriagem,
 }: CoffeeHubProps): React.JSX.Element {
@@ -77,7 +79,10 @@ export function CoffeeHub({
       ) : sub === "operacao" ? (
         <CoffeeOperacao />
       ) : sub === "concluidas" ? (
-        <CoffeeConcluidas concluidasHandoff={concluidasHandoff} />
+        <CoffeeConcluidas
+          concluidasHandoff={concluidasHandoff}
+          onIrParaInput={onIrParaInput}
+        />
       ) : sub === "verificar" ? (
         <CoffeeVerificar triage={triage} />
       ) : sub === "logs" ? (

@@ -255,6 +255,10 @@ function AppContent(): React.JSX.Element {
                         triage={triage}
                         coffeeReturn={coffeeReturn}
                         concluidasHandoff={coffeeConcluidasHandoff}
+                        onIrParaInput={() => {
+                          setInputSub("visao");
+                          changeSection("input");
+                        }}
                         onClearReturn={() => setCoffeeReturn(null)}
                         onBackToTriagem={() => { setCoffeeSub("verificar"); }} />}
           </React.Suspense>
