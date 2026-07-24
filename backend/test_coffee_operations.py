@@ -1,6 +1,8 @@
+import time
+
 import pytest
 
-from coffee_module import config, db, operation_service
+from coffee_module import client, config, db, jobs, operation_service
 
 
 @pytest.fixture
@@ -68,6 +70,51 @@ def _nota(pk, sap, **fields):
         "local_instalacao": fields.get("local_instalacao"),
         "fields": {"id_sap": sap, **fields},
     }
+
+
+def _aguardar(job_id: str, limite: float = 2.0) -> dict:
+    fim = time.time() + limite
+    while time.time() < fim:
+        job = jobs.obter_job(job_id)
+        if job and job["estado"] != "rodando":
+            return job
+        time.sleep(0.01)
+    raise TimeoutError(job_id)
+
+
+def test_job_consulta_persiste_e_atualiza_quadro(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: _nota(int(ident), None, alimentador="ABC01"),
+    )
+    job_id = jobs.iniciar_consulta_operacao([101], "avulsa")
+    job = _aguardar(job_id)
+    assert job["estado"] == "concluido"
+    assert db.obter_operacao(job_id) is not None
+    assert db.listar_itens_operacao()[0]["etapa"] == "pronta"
+
+
+def test_job_atualizacao_remove_nota_quando_sap_fica_real(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    operation_service.adicionar_entradas([202], "verificar", "seed")
+    operation_service.aplicar_consulta(
+        202, _nota(202, config.SAP_PENDENTE), "verificar", "seed"
+    )
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: _nota(int(ident), 17200202),
+    )
+    job_id = jobs.iniciar_atualizacao_sap([202])
+    assert _aguardar(job_id)["estado"] == "concluido"
+    assert db.listar_itens_operacao() == []
+    assert db.listar_notas("corrigida")[0]["pk"] == 202
 
 
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):

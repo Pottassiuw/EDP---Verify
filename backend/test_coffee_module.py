@@ -983,8 +983,10 @@ def test_registrar_log_carimba_trace(coffee_tmp):
 
 
 def test_middleware_carimba_trace_na_requisicao(coffee_cliente):
-    from coffee_module import db
-    coffee_cliente.post("/api/coffee/buscar", json={"ids": ["1"]})
+    from coffee_module import db, jobs
+
+    resposta = coffee_cliente.post("/api/coffee/buscar", json={"ids": ["1"]})
+    _aguardar_job(jobs, resposta.json()["job_id"])
     lote = [l for l in db.listar_logs(tipo="acao_usuario") if l["acao"] == "busca_lote"]
     assert lote and lote[0]["trace_id"] is not None
 
