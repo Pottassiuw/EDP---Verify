@@ -1,6 +1,7 @@
 import time
 
 import pytest
+from fastapi.testclient import TestClient
 
 from coffee_module import client, config, db, jobs, operation_service
 
@@ -80,6 +81,89 @@ def _aguardar(job_id: str, limite: float = 2.0) -> dict:
             return job
         time.sleep(0.01)
     raise TimeoutError(job_id)
+
+
+@pytest.fixture
+def operation_client(coffee_operation_tmp, monkeypatch):
+    from coffee_module import routes
+    from main import app
+
+    routes._estado["inicializado"] = False
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: _nota(int(ident), None, alimentador="ABC01"),
+    )
+    return TestClient(app)
+
+
+def test_rotas_operacao_consultar_e_listar(operation_client):
+    resposta = operation_client.post(
+        "/api/coffee/operacao/consultar",
+        json={"ids": [101]},
+    )
+    assert resposta.status_code == 200
+    _aguardar(resposta.json()["job_id"])
+    quadro = operation_client.get("/api/coffee/operacao").json()
+    assert quadro["contagens"]["pronta"] == 1
+    assert quadro["itens"][0]["nota"]["pk"] == 101
+
+
+def test_rota_operacao_rejeita_lista_vazia(operation_client):
+    resposta = operation_client.post(
+        "/api/coffee/operacao/gerar",
+        json={"ids": []},
+    )
+    assert resposta.status_code == 400
+
+
+def test_rota_operacao_remover_exige_justificativa(operation_client):
+    resposta = operation_client.post(
+        "/api/coffee/operacao/remover",
+        json={"ids": [101], "justificativa": ""},
+    )
+    assert resposta.status_code == 400
+
+
+def test_rota_local_reconsulta_e_atualiza_o_quadro(
+    operation_client,
+    monkeypatch,
+):
+    local = {"value": "ABC01001"}
+    monkeypatch.setattr(
+        client,
+        "alterar_local",
+        lambda ident, value: local.update(value=value),
+    )
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: _nota(
+            int(ident),
+            None,
+            local_instalacao=local["value"],
+            alimentador="ABC01",
+        ),
+    )
+    operation_service.adicionar_entradas([101], "avulsa", "setup")
+    operation_service.aplicar_consulta(
+        101,
+        _nota(101, None, local_instalacao="ANTIGO"),
+        "avulsa",
+        "setup",
+    )
+
+    resposta = operation_client.post(
+        "/api/coffee/local-instalacao",
+        json={"id": 101, "local": "XYZ02002"},
+    )
+
+    assert resposta.status_code == 200
+    quadro = operation_client.get("/api/coffee/operacao").json()
+    assert (
+        quadro["itens"][0]["nota"]["dados_json"]["local_instalacao"]
+        == "XYZ02002"
+    )
 
 
 def test_job_consulta_persiste_e_atualiza_quadro(
