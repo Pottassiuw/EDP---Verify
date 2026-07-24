@@ -4,7 +4,7 @@
 
 **Branch:** `codex/coffee-operacao-kanban`
 
-**Status:** design aprovado em conversa; aguardando revisão desta especificação
+**Status:** aprovado pelo usuário em 2026-07-24
 
 ## Contexto
 
