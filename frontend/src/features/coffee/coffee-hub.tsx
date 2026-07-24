@@ -1,10 +1,9 @@
 import React from 'react';
-import type { Note, CoffeeSubPage } from '../../types';
+import type { CoffeeConclusaoFiltro, CoffeeSubPage, Note } from '../../types';
 
 import { CoffeeAbrir } from './coffee-abrir';
-import { CoffeeGeradas } from './coffee-geradas';
-import { CoffeeCorrigidas } from './coffee-corrigidas';
-import { CoffeePendentes } from './coffee-pendentes';
+import { CoffeeConcluidas } from './concluidas/coffee-concluidas';
+import { CoffeeOperacao } from './operacao/coffee-operacao';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 import { SegTabs } from '@/components/branded/section';
@@ -12,11 +11,10 @@ import { Button } from '@/components/ui/button';
 
 export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
   { id: "verificar", label: "Verificar" },
-  { id: "abrir",     label: "Abrir" },
-  { id: "geradas",   label: "Gerar" },
-  { id: "corrigidas",label: "Corrigidas" },
-  { id: "pendentes", label: "Pendentes" },
-  { id: "logs",      label: "Logs" },
+  { id: "abrir", label: "Abrir" },
+  { id: "operacao", label: "Operação" },
+  { id: "concluidas", label: "Concluídas" },
+  { id: "logs", label: "Logs" },
 ];
 
 interface CoffeeHubProps {
@@ -25,12 +23,21 @@ interface CoffeeHubProps {
   setSub: (s: CoffeeSubPage) => void;
   triage: TriageHandoff;
   coffeeReturn: { noteId: string; noteRef: string } | null;
+  concluidasHandoff: { filtro: CoffeeConclusaoFiltro; id: number } | null;
   onClearReturn: () => void;
   onBackToTriagem: () => void;
-  onIrParaInput?: () => void;
 }
 
-export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearReturn, onBackToTriagem, onIrParaInput }: CoffeeHubProps): React.JSX.Element {
+export function CoffeeHub({
+  notes,
+  sub,
+  setSub,
+  triage,
+  coffeeReturn,
+  concluidasHandoff,
+  onClearReturn,
+  onBackToTriagem,
+}: CoffeeHubProps): React.JSX.Element {
 
   return (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -67,12 +74,10 @@ export function CoffeeHub({ notes, sub, setSub, triage, coffeeReturn, onClearRet
         <CoffeeAbrir notes={notes}
                      coffeeReturn={coffeeReturn} onClearReturn={onClearReturn}
                      onBackToTriagem={onBackToTriagem} />
-      ) : sub === "geradas" ? (
-        <CoffeeGeradas onIrParaInput={onIrParaInput} />
-      ) : sub === "corrigidas" ? (
-        <CoffeeCorrigidas onIrParaInput={onIrParaInput} />
-      ) : sub === "pendentes" ? (
-        <CoffeePendentes onIrParaInput={onIrParaInput} />
+      ) : sub === "operacao" ? (
+        <CoffeeOperacao />
+      ) : sub === "concluidas" ? (
+        <CoffeeConcluidas concluidasHandoff={concluidasHandoff} />
       ) : sub === "verificar" ? (
         <CoffeeVerificar triage={triage} />
       ) : sub === "logs" ? (

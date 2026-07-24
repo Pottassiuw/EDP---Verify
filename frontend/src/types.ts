@@ -6,7 +6,28 @@ export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
 export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
-export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
+export type CoffeeSubPage =
+  | "abrir"
+  | "operacao"
+  | "concluidas"
+  | "verificar"
+  | "logs";
+export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
+
+export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
+  if (value === "geradas" || value === "pendentes") return "operacao";
+  if (value === "corrigidas") return "concluidas";
+  if (
+    value === "abrir"
+    || value === "operacao"
+    || value === "concluidas"
+    || value === "verificar"
+    || value === "logs"
+  ) {
+    return value;
+  }
+  return "verificar";
+}
 
 export interface NoteError {
   rule: RuleKey;
