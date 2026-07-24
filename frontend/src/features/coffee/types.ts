@@ -13,7 +13,9 @@ export interface CoffeeNota {
 }
 
 export interface CoffeeJob {
-  estado: "rodando" | "concluido";
+  id?: string;
+  tipo?: "consulta" | "geracao" | "atualizacao_sap" | string;
+  estado: "rodando" | "concluido" | "interrompido";
   total: number;
   feitas: number;
   erros: Array<{ pk: number | string; msg: string }>;
@@ -23,6 +25,33 @@ export interface CoffeeJob {
   geradas?: number[];
   divergentes?: Array<{ id: number; local_atual: string | null }>;
   iniciado_em: string;
+  atualizado_em?: string;
+}
+
+export type OperacaoEtapa =
+  | "fila"
+  | "pronta"
+  | "processando"
+  | "aguardando_sap";
+
+export type OperacaoOrigem = "avulsa" | "verificar";
+
+export interface CoffeeOperacaoItem {
+  entrada_id: number;
+  nota_pk: number | null;
+  etapa: OperacaoEtapa;
+  origem: OperacaoOrigem | null;
+  operacao_id: string | null;
+  erro: string | null;
+  criado_em: string;
+  atualizado_em: string;
+  nota: CoffeeNota | null;
+}
+
+export interface CoffeeOperacaoQuadro {
+  itens: CoffeeOperacaoItem[];
+  operacoes_ativas: CoffeeJob[];
+  contagens: Record<OperacaoEtapa, number>;
 }
 
 export interface CoffeeLog {

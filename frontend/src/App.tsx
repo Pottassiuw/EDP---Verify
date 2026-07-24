@@ -1,5 +1,6 @@
 ﻿import React from 'react';
-import type { Note, Source, AppSection, CoffeeSubPage } from './types';
+import { normalizeCoffeeSubPage } from './types';
+import type { Note, Source, AppSection, CoffeeConclusaoFiltro, CoffeeSubPage } from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
 import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
@@ -76,7 +77,15 @@ function AppContent(): React.JSX.Element {
   const [source, setSource] = React.useState<Source>(_snap?.source ?? "api");
   const [section, setSection] = React.useState<AppSection>("relatorios");
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
-  const [coffeeSub, setCoffeeSub] = usePersistedState<CoffeeSubPage>("edp_coffee_sub", "verificar");
+  const [storedCoffeeSub, setStoredCoffeeSub] =
+    usePersistedState<string>("edp_coffee_sub", "verificar");
+  const coffeeSub = normalizeCoffeeSubPage(storedCoffeeSub);
+  const setCoffeeSub = React.useCallback(
+    (sub: CoffeeSubPage): void => setStoredCoffeeSub(sub),
+    [setStoredCoffeeSub],
+  );
+  const [coffeeConcluidasHandoff, setCoffeeConcluidasHandoff] =
+    React.useState<{ filtro: CoffeeConclusaoFiltro; id: number } | null>(null);
   const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
   const [filtrosHandoff, setFiltrosHandoff] =
     React.useState<{ estado: FiltersState; id: number } | null>(null);
@@ -100,6 +109,10 @@ function AppContent(): React.JSX.Element {
     if (screen !== "dashboard" || notes.length === 0) return;
     gravarSnapshot({ notes, completed: [...completed], dupResolved: [...dupResolved], file, source, screen });
   }, [notes, completed, dupResolved, file, source, screen]);
+
+  React.useEffect(() => {
+    if (storedCoffeeSub !== coffeeSub) setStoredCoffeeSub(coffeeSub);
+  }, [coffeeSub, setStoredCoffeeSub, storedCoffeeSub]);
 
   function changeSection(s: AppSection): void {
     if (s !== "coffee") setCoffeeReturn(null);
@@ -225,7 +238,14 @@ function AppContent(): React.JSX.Element {
               <RelatoriosSection
                 onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
                 onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
-                onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}
+                onIrParaCoffee={() => {
+                  setCoffeeConcluidasHandoff((prev) => ({
+                    filtro: "corrigida",
+                    id: (prev?.id ?? 0) + 1,
+                  }));
+                  setCoffeeSub("concluidas");
+                  changeSection("coffee");
+                }}
               />
             ) : section === "input" ? (
               <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
@@ -234,9 +254,13 @@ function AppContent(): React.JSX.Element {
                         sub={coffeeSub} setSub={setCoffeeSub}
                         triage={triage}
                         coffeeReturn={coffeeReturn}
+                        concluidasHandoff={coffeeConcluidasHandoff}
+                        onIrParaInput={() => {
+                          setInputSub("visao");
+                          changeSection("input");
+                        }}
                         onClearReturn={() => setCoffeeReturn(null)}
-                        onBackToTriagem={() => { setCoffeeSub("verificar"); }}
-                        onIrParaInput={() => { setInputSub("visao"); changeSection("input"); }} />}
+                        onBackToTriagem={() => { setCoffeeSub("verificar"); }} />}
           </React.Suspense>
         </SidebarInset>
       </SidebarProvider>

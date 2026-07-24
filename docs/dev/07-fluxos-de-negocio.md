@@ -17,29 +17,20 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
    ([`01-frontend-verificar.md`](01-frontend-verificar.md)). O backend
    roda as regras de validação (coordenada, referência, imagens,
    executor, local, tipo, SAP, setor, prioridade) e detecta duplicatas.
-2. **Correção ou fila COFFEE** — notas com erro corrigível ficam
-   disponíveis para correção manual na tela; ao marcar uma nota "a
-   gerar", o `POST /marcar-gerar` grava `origem='verificar'`
-   (`backend/coffee_module/routes.py:179`). `classify.classificar`
-   trata qualquer `origem` diferente de `'avulsa'` (incluindo
-   `'verificar'` ou `None`) como `corrigida` ao sair de `pendente`.
-   Reabrir a nota na Verificar remove-a da fila: o frontend envia
-   `a_gerar=false` com a justificativa automática "Nota reaberta na
-   Verificar" (`frontend/src/App.tsx:133`), que a rota exige para
-   qualquer remoção da fila.
-3. **Pendente** — a nota aparece no hub COFFEE
-   ([`02-frontend-coffee.md`](02-frontend-coffee.md)) com
-   `classificacao='pendente'` (`id_sap == SAP_PENDENTE`, isto é
-   `10000000`).
-4. **Geração** — o usuário dispara geração avulsa (`/regerar`) ou em
-   lote (`/gerar-lote` → `jobs._rodar_geracao`,
-   [`05-backend-coffee-module.md`](05-backend-coffee-module.md)). O
-   COFFEE só processa notas **desarquivadas**; ver a regra detalhada
-   na seção seguinte.
-5. **Gerada / corrigida** — quando o COFFEE atribui o SAP real e
-   arquiva a nota, ela é reclassificada como `gerada` (geração avulsa)
-   ou `corrigida` (veio de um erro da Verificar), conforme
-   `classify.classificar`.
+2. **Correção ou fila COFFEE** — notas escolhidas na triagem são
+   encaminhadas para a fila persistida da página Operação. O
+   `POST /marcar-gerar` registra `origem='verificar'`; reabrir a nota
+   remove o card com a justificativa automática exigida pela rota.
+3. **Operação** — a pessoa consulta IDs e acompanha os cards em Fila,
+   Prontas para gerar, Processando e Aguardando SAP. Uma nota com
+   `id_sap == SAP_PENDENTE` (`10000000`) permanece em Aguardando SAP até
+   nova consulta.
+4. **Geração** — a página chama `POST /operacao/gerar` apenas para cards
+   Prontos. O COFFEE só processa notas **desarquivadas**; ver a regra
+   detalhada na seção seguinte.
+5. **Gerada / corrigida** — quando o COFFEE atribui o SAP real, a
+   atualização SAP remove o card da operação e a nota aparece em
+   Concluídas, classificada conforme `classify.classificar`.
 6. **Nota real no SAP** — fim do ciclo: a nota tem `id_sap` real e está
    arquivada no COFFEE.
 7. **COFFEE → Plano (opcional)** — com a nota já gerada (`id_sap`
@@ -55,9 +46,8 @@ pelo frontend. Para os detalhes internos de cada módulo, ver
 
 O COFFEE só gera notas que estejam **desarquivadas** — é ele quem
 atribui o SAP real e arquiva a nota sozinho ao concluir. Por isso,
-tanto a geração em lote (`jobs._rodar_geracao`,
-`backend/coffee_module/jobs.py:97-98`) quanto o `POST /regerar`
-unitário (`backend/coffee_module/routes.py:201-202`) sempre chamam
+tanto a geração da Operação (`jobs._executar_geracao`) quanto o
+`POST /regerar` unitário sempre chamam
 `client.definir_sap(ident, SAP_PENDENTE)` **e**
 `client.desarquivar(ident)` juntos, nunca só um: uma nota arquivada com
 SAP pendente fica presa até ser desarquivada. As exceções de
@@ -94,36 +84,20 @@ tabela abaixo) que detecta a mudança comparando `versao`
 |---|---|---|
 | 220ms | `frontend/src/features/verificar/upload-screen.tsx:23` | Progresso "falso" da barra de upload (`setPct(65)` depois de 220ms) — não é polling real, é feedback visual enquanto o upload real roda. |
 | 250ms × índice | `frontend/src/api.ts:20` | Ao abrir N notas no COFFEE de uma vez, cada `window.open` é escalonado 250ms depois do anterior, para não disparar o bloqueador de pop-up do navegador. |
-| 600ms | `frontend/src/features/coffee/coffee-gerar-modal.tsx:162,166` | Retry de polling de status durante geração em lote; desiste após 10 falhas consecutivas. |
-| 2000ms (2s) | `frontend/src/features/coffee/coffee-pendentes.tsx:87-111` | Polling de status de um job de busca em lote, até `job.estado === "concluido"`. |
-| 3000ms (3s) | `frontend/src/features/coffee/coffee-pendentes.tsx:103` | Banner "Busca concluída" volta ao estado `idle` automaticamente. |
+| 800ms | `frontend/src/features/coffee/operacao/use-coffee-operacao.ts` | Refetch do quadro enquanto existir job com estado `rodando`. |
 | 10_000ms (10s) | `frontend/src/features/coffee/coffee-logs.tsx:60` | Refresh automático dos logs quando o toggle "ao vivo" está ligado. |
 | 60_000ms (60s) | `frontend/src/features/input/use-input-data.ts:29-35` | Verifica se a base de dados do Input foi sincronizada em outra sessão (compara `versao`); se sim, invalida `INPUT_DADOS_KEY` em background e avisa via `toast.info`. |
 
 ## Pontos de atenção
 
-- **Nenhum mecanismo central de polling.** Cada feature com polling
-  real contra o servidor (geração em lote, busca em lote, logs ao
-  vivo, staleness do Input) implementa seu próprio
-  `setInterval`/`setTimeout` isolado, com valores diferentes
-  escolhidos independentemente. Não há um hook ou utilitário
-  compartilhado — mudar a estratégia de polling (por exemplo trocar
-  por WebSocket) exigiria tocar em quatro arquivos distintos
-  (`coffee-gerar-modal.tsx`, `coffee-pendentes.tsx`,
-  `coffee-logs.tsx`, `use-input-data.ts`; o timer de 220ms do upload
-  não conta, é só feedback visual client-side, ver tabela acima).
-- **Retry com limite fixo, sem backoff.** O polling de geração em lote
-  (`coffee-gerar-modal.tsx:162-166`) desiste após 10 falhas
-  consecutivas, mas sempre no mesmo intervalo de 600ms — não há
-  backoff exponencial, então uma falha temporária de rede consome o
-  orçamento de retries tão rápido quanto uma falha persistente.
+- **Polling descentralizado.** Operação usa `refetchInterval` do React
+  Query; logs ao vivo e staleness do Input ainda usam timers próprios.
+  Uma migração para WebSocket ou SSE continuaria exigindo mudanças em
+  mais de uma feature.
 - **Regra de desarquivar duplicada em dois lugares.** A sequência
-  `definir_sap(SAP_PENDENTE)` + `desarquivar()` está implementada tanto
-  em `jobs._rodar_geracao` (`backend/coffee_module/jobs.py:97-98`)
-  quanto em `routes.regerar` (`backend/coffee_module/routes.py:201-202`),
-  com o mesmo comentário copiado nos dois lugares — uma mudança na
-  regra (por exemplo, um novo status intermediário) precisa ser
-  aplicada nos dois pontos manualmente.
+  `definir_sap(SAP_PENDENTE)` + `desarquivar()` aparece em
+  `jobs._executar_geracao` e em `routes.regerar`. Uma mudança na regra
+  precisa ser aplicada nos dois pontos manualmente.
 - **Duas fontes de "a base mudou".** A staleness do Input é detectada
   por polling client-side comparando `versao`
   (`use-input-data.ts`), enquanto a sincronização em si roda

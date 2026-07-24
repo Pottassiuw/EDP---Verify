@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
   SelectSeparator, SelectTrigger, SelectValue,
@@ -39,10 +40,14 @@ interface MesExecucaoPickerProps {
   rotuloNeutro: string;
   id?: string;
   className?: string;
+  contentProps?: Omit<
+    React.ComponentProps<typeof SelectContent>,
+    'children'
+  >;
 }
 
 export function MesExecucaoPicker({
-  value, onChange, valorNeutro, rotuloNeutro, id, className,
+  value, onChange, valorNeutro, rotuloNeutro, id, className, contentProps,
 }: MesExecucaoPickerProps): React.JSX.Element {
   const anoAtual = new Date().getFullYear();
   const { meses, futuros } = construirOpcoesMes(anoAtual);
@@ -55,7 +60,10 @@ export function MesExecucaoPicker({
       <SelectTrigger id={id} className={className}>
         <SelectValue placeholder={rotuloNeutro} />
       </SelectTrigger>
-      <SelectContent className={CLASSE_SELECT_MONO}>
+      <SelectContent
+        {...contentProps}
+        className={cn(CLASSE_SELECT_MONO, contentProps?.className)}
+      >
         <SelectItem value={SENTINELA_NEUTRO}>{rotuloNeutro}</SelectItem>
         <SelectSeparator />
         <SelectGroup>

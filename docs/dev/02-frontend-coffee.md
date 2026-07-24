@@ -2,247 +2,113 @@
 
 ## O que faz
 
-COFFEE é a integração com o sistema SAP homônimo: gera notas reais a
-partir de notas triadas, consulta o status de cada nota (gerada, pendente,
-corrigida, não gerada), permite corrigir o local de instalação de notas já
-consultadas e reabrir/arquivar notas pendentes. Também expõe um histórico
-de logs por ação (geração, consulta, alteração de local, transições de
-status) para auditoria.
+COFFEE concentra a triagem de notas, a operação de geração e o histórico das
+notas concluídas. A operação é uma fila persistida: a pessoa consulta IDs,
+acompanha a situação das notas e executa geração ou atualização do SAP sem
+perder o progresso ao atualizar o navegador.
+
+## Navegação
+
+`coffee-hub.tsx` é a casca da feature. Ele recebe a subpágina de `App.tsx` e
+renderiza uma de cinco seções por `SegTabs`:
+
+- **Verificar** — reusa a triagem de planilha e encaminha notas para a fila
+  COFFEE.
+- **Abrir** — abre IDs manualmente no COFFEE; a lista fica no navegador.
+- **Operação** — o Kanban da fila ativa.
+- **Concluídas** — histórico separado de notas geradas e corrigidas.
+- **Logs** — auditoria filtrável das ações e chamadas de integração.
 
 ## Arquivos principais
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `frontend/src/features/coffee/coffee-hub.tsx` | Casca da feature: cabeçalho, `SegTabs` de navegação entre sub-abas (`verificar`/`abrir`/`geradas`/`corrigidas`/`pendentes`/`logs`) e roteamento condicional para o componente de cada aba. |
-| `frontend/src/features/coffee/coffee-gerar-modal.tsx` | Modal de "Gerar / Consultar notas": entrada de IDs, consulta individual (`EDPApi.consultarNota`), edição do local de instalação (`maskLocal`/`unmaskLocal`), geração em lote com polling de job. |
-| `frontend/src/features/coffee/coffee-pendentes.tsx` | Lista de notas pendentes (SAP `10000000`): busca em lote com polling de job, seleção múltipla, arquivamento individual e em lote via `ConfirmModal`, e "Revisar Nota" (o CTA de mover fica desabilitado pelo `pode_mover=false` da própria revisão, já que a nota ainda não tem SAP real). |
-| `frontend/src/features/coffee/coffee-geradas.tsx` | Lista de notas "a gerar" (fila) e "geradas": abre o modal de gerar/consultar, remove da fila ou arquiva, ambos com justificativa via `ConfirmModal`; "Revisar Nota"/"Mover para o Plano" individual na zona "Notas Geradas". |
-| `frontend/src/features/coffee/coffee-corrigidas.tsx` | Lista de notas que transitaram de SAP pendente para SAP real; busca local por ID/SAP, cópia de IDs para a área de transferência, seleção múltipla e "Revisar Nota"/"Mover para o Plano" (individual e em lote). |
-| `frontend/src/features/coffee/coffee-abrir.tsx` | Monta uma lista de IDs (independente do backend, via `localStorage`) e abre cada um no COFFEE em nova aba, tudo de uma vez ou em blocos configuráveis. |
-| `frontend/src/features/coffee/coffee-logs.tsx` | Tela de histórico de logs: filtros por passo/nota/usuário/limite/período, StatTiles de resumo, toggle "ao vivo" com refresh automático. |
-| `frontend/src/features/coffee/confirm-modal.tsx` | `AlertDialog` genérico de confirmação com campo de justificativa opcional/obrigatória; usado por `coffee-pendentes.tsx` e `coffee-geradas.tsx`. |
-| `frontend/src/features/coffee/coffee-log-drawer.tsx` | `Sheet` lateral com o histórico de logs de uma única nota (`LogTable` compacto), aberto a partir do botão "Ver logs" das tabelas de lista. |
-| `frontend/src/features/coffee/coffee-verificar.tsx` | Sub-aba "Verificar" dentro do hub COFFEE: repassa o `TriageHandoff` recebido de `App.tsx` para `UploadScreen`/`Dashboard` da feature Verificar (reuso direto, sem lógica própria). |
-| `frontend/src/features/coffee/coffee-notas-table.tsx` | Tabela compartilhada de notas COFFEE (`CoffeeNotasTable`), `StatusBadge`, `formatRelativeTime`, e os botões reutilizáveis `AbrirCoffeeBtn`/`LogsBtn`/`RevisarNotaBtn`. |
-| `frontend/src/features/coffee/coffee-log-table.tsx` | Tabela/timeline de logs (`LogTable`), agrupamento por `trace_id` (`agruparLogs`), filtro por passo (`grupoNoPasso`) e derivação da classificação atual da nota (`classeAtual`). |
-| `frontend/src/features/coffee/revisar-nota-sheet.tsx` | `RevisarNotaSheet`: `Sheet` lateral com os dados de uma nota (`GET /api/integracao/nota/{pk}/revisao`) — identificação, proposta de plano, dados SAP (IW28) e dados brutos do COFFEE — e o CTA "Mover para o Plano"/"Atualizar dados". |
-| `frontend/src/features/coffee/mover-plano-modal.tsx` | `MoverPlanoModal`: `Dialog` de confirmação (individual ou em lote) para `POST /api/integracao/mover-para-plano`; coleta os campos manuais do plano (mês de execução, status da obra, observação, check) e, em caso de sucesso, oferece a ação de toast "Ver no plano". |
+| `coffee-hub.tsx` | Cabeçalho, navegação das cinco subseções e handoffs de Verificar/Relatórios. |
+| `operacao/coffee-operacao.tsx` | Orquestra quadro, seleção em lote, confirmações, inspector e ações da fila. |
+| `operacao/use-coffee-operacao.ts` | Query do quadro e mutations de consultar, gerar, atualizar SAP e remover. |
+| `operacao/components/operacao-composer.tsx` | Entrada de IDs; informa válidos, repetidos e inválidos antes da consulta. |
+| `operacao/components/operacao-kanban.tsx` | Quatro colunas responsivas, sem drag and drop: Fila, Prontas, Processando e Aguardando SAP. |
+| `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, atividade, edição de local e ações contextuais. |
+| `concluidas/coffee-concluidas.tsx` | Histórico, filtros, arquivamento de geradas e movimento de corrigidas para o Plano. |
+| `concluidas/components/concluidas-list.tsx` | Lista responsiva de concluídas e seleção restrita às corrigidas. |
+| `coffee-abrir.tsx` | Lista local de IDs e abertura escalonada no COFFEE. |
+| `coffee-logs.tsx` e `coffee-log-table.tsx` | Filtros e linha do tempo de auditoria por `trace_id`. |
+| `confirm-modal.tsx` | Confirmação com justificativa obrigatória quando a ação exige auditoria. |
+| `mover-plano-modal.tsx` | Formulário de integração com o Plano do Input. |
 
-## Navegação e sub-abas
+## Operação: Kanban persistido
 
-`coffee-hub.tsx` organiza a feature em seis sub-abas via `SegTabs`
-(`COFFEE_SUBS`, `coffee-hub.tsx:13-20`): **Verificar**, **Abrir**,
-**Gerar** (rota interna `geradas`), **Corrigidas**, **Pendentes** e
-**Logs**. O estado da aba ativa (`sub`) e o `setSub` vêm de fora (de
-`App.tsx`), então o hub em si não guarda navegação própria — é só um
-`switch` (`coffee-hub.tsx:65-79`) que renderiza um dos seis componentes de
-tela. A aba **Verificar** é a única com um cabeçalho extra condicional
-(nome do arquivo carregado + indicador "API" + botão "Nova planilha"),
-mostrado apenas quando `sub === "verificar"` e `triage.screen ===
-"dashboard"`.
+O botão **Adicionar notas** abre o composer na própria página. IDs separados
+por espaço, vírgula, ponto e vírgula ou linha são analisados antes de enviar;
+somente números positivos e únicos seguem para `POST /api/coffee/operacao/consultar`.
 
-Cada sub-aba mostra:
-- **Verificar** — a triagem da planilha (mesma tela da feature Verificar,
-  documentada em `01-frontend-verificar.md`), embutida para permitir
-  enviar notas direto para o COFFEE sem trocar de módulo.
-- **Abrir** — lista de IDs para abrir manualmente no COFFEE (sem dados do
-  backend, só `localStorage`).
-- **Gerar** (`CoffeeGeradas`) — fila "a gerar" + lista de notas já
-  geradas.
-- **Corrigidas** — notas que voltaram do COFFEE com SAP real após terem
-  sido pendentes.
-- **Pendentes** — notas com SAP `10000000` (placeholder), aguardando
-  virar SAP real.
-- **Logs** — histórico de ações sobre notas COFFEE, com filtros.
+O Kanban não permite arrastar cards. A API e a máquina de estados definem a
+etapa de cada item:
 
-## Fluxo: Gerar / Consultar notas
+| Coluna | Significado | Ações principais |
+|---|---|---|
+| Fila | Consulta em andamento ou nota que precisa de nova tentativa. | Reconsultar ou remover. |
+| Prontas para gerar | Nota elegível e sem SAP real. | Gerar, editar local, remover. |
+| Processando | Geração em andamento. | Acompanhar no card e no inspector. |
+| Aguardando SAP | Placeholder `10000000`; falta consultar o SAP real. | Atualizar SAP ou remover. |
 
-**Aparência do modal**: o `DialogContent` compartilhado
-(`components/ui/dialog.tsx`) foi ajustado para o sistema do `DESIGN.md`
-— superfície elevada (`bg-surface` em vez de `bg-background`), borda
-hairline (`--line` em vez do anel `--line-2`), raio `--r-lg` e sombra
-`--shadow-lg`. O mesmo ajuste vale para o `AlertDialogContent`
-(`components/ui/alert-dialog.tsx`, usado pelo `ConfirmModal`), então os
-dois modais coffee ficam consistentes. A largura do modal de geração é
-fluida (`w-[clamp(560px,72vw,1120px)]`, `coffee-gerar-modal.tsx:210`) em
-vez de fixa, com `sm:max-w-[94vw]` para vencer o cap `sm:max-w-lg` do
-primitivo. Tipografia segue a regra do módulo: dados/máquina em mono
-(IDs, SAP, local, **status**) e texto humano (título, botões) em Inter.
+`useCoffeeOperacao` consulta `['coffee', 'operacao']` e faz refetch a cada
+800 ms somente enquanto houver operação com estado `rodando`. O quadro vem do
+SQLite com cards e snapshots de jobs, portanto recarregar a página preserva o
+progresso. Em reinício do backend, jobs pendentes são marcados como
+interrompidos e itens que estavam em processamento voltam a Prontas com erro
+recuperável.
 
-`coffee-gerar-modal.tsx` é aberto a partir de `coffee-geradas.tsx` (botão
-"Gerar / Consultar notas" ou "Gerar fila (N)"). O usuário cola IDs no
-campo de texto (espaço, vírgula ou quebra de linha aceitos como
-separador, `parseIds`, `coffee-gerar-modal.tsx:44-49`); cada ID vira uma
-linha na tabela e dispara `consultar(id)`, que chama
-`EDPApi.consultarNota(id)` e preenche PK, ID SAP, classificação,
-`arquivado` e local de instalação atual. A lista de linhas persiste em
-`sessionStorage` (`edp_coffee_gerar_rows`) enquanto o modal está aberto,
-e linhas que ficaram travadas em `"consultando"` são re-consultadas
-automaticamente ao reabrir o modal (`coffee-gerar-modal.tsx:85-94`).
+O estado legado do antigo modal, `sessionStorage['edp_coffee_gerar_rows']`, é
+migrado na primeira montagem de Operação. A chave só é removida depois de a
+consulta ser aceita; se a mutation falhar, os dados ficam na sessão para uma
+tentativa futura.
 
-**Edição do local de instalação**: o campo é mascarado no formato
-3-2-resto (ex.: `ABC-12-3456`) via `maskLocal`/`unmaskLocal`
-(`coffee-gerar-modal.tsx:9-17`):
-```ts
-function maskLocal(v: string): string {
-  const c = v.toUpperCase().replace(/[^0-9A-Z]/g, "");
-  const a = c.slice(0, 3), b = c.slice(3, 5), rest = c.slice(5);
-  return [a, b, rest].filter(Boolean).join("-");
-}
-function unmaskLocal(v: string): string {
-  return v.toUpperCase().replace(/[^0-9A-Z]/g, "");
-}
-```
-`maskLocal` primeiro remove tudo que não é dígito/letra maiúscula
-(normalizando para maiúsculas), depois fatia em 3 caracteres, 2
-caracteres e o resto, juntando com `-` (partes vazias são descartadas —
-por isso o hífen só aparece conforme o usuário digita). `unmaskLocal`
-faz o caminho inverso: só normaliza, sem inserir separadores. O valor
-sem máscara é o que vai para o backend (`POST /coffee/local-instalacao`,
-`coffee-gerar-modal.tsx:135-149`); o valor mascarado só existe no input
-enquanto `editando` é `true`. Um comentário `ponytail` no topo do arquivo
-(`coffee-gerar-modal.tsx:9`) já marca essa máscara como fixa 3-2-resto —
-apertar a regra se o formato do local mudar.
+## Inspector da nota
 
-**Geração em lote com polling**: `gerar()` (`coffee-gerar-modal.tsx:173-203`)
-reúne os IDs com `estado === "ok"`, chama `POST /coffee/gerar-lote` e
-recebe um `job_id`, que é então acompanhado por `pollJob`
-(`coffee-gerar-modal.tsx:152-171`): a cada tick, faz `GET
-/coffee/job/{jobId}`; se `estado === "concluido"`, resolve a Promise; caso
-contrário, agenda outro tick com `window.setTimeout(tick, 600)`
-(`coffee-gerar-modal.tsx:162`). Se a requisição falhar, incrementa um
-contador de falhas consecutivas e tenta de novo após os mesmos `600ms`
-(`coffee-gerar-modal.tsx:166`) — só desiste e rejeita a Promise quando
-`falhas >= 10` (`coffee-gerar-modal.tsx:165`). Ao concluir, todas as
-linhas são reconsultadas e um toast resume sucessos/erros/arquivadas.
+Abrir um card ou uma linha de Concluídas mostra `CoffeeNotaInspector` em um
+`Sheet`. Em telas menores que o breakpoint desktop ele ocupa a largura útil;
+no desktop fica limitado a `clamp(420px, 38vw, 620px)`. Ao fechar, o foco volta
+ao botão que abriu a ficha.
 
-## Fluxo: Pendentes / Buscar
+A ficha busca `['coffee', 'revisao', pk]` e
+`['coffee', 'nota', pk, 'logs']`, mostra resumo e atividade e indica o próximo
+passo. O local de instalação pode ser alterado apenas para cards em Fila ou
+Prontas; o valor digitado permanece no campo se a mutation falhar. Conforme a
+origem da ficha, os botões oferecem gerar, atualizar SAP, remover, arquivar ou
+mover para o Plano. Arquivar só aparece para uma nota gerada em Concluídas.
 
-`coffee-pendentes.tsx` lista notas pendentes e permite disparar uma
-"busca em lote" que reconsulta o SAP para as notas selecionadas (ou
-todas, se nada estiver selecionado). `iniciarBusca()`
-(`coffee-pendentes.tsx:67-118`) chama `POST /coffee/buscar` com os IDs e
-recebe um `job_id`; o progresso é então acompanhado por polling: a cada
-`2000ms` (`window.setInterval(..., 2000)`, `coffee-pendentes.tsx:87-111`),
-faz `GET /coffee/job/{jobId}` e atualiza uma barra de progresso
-(`feitas`/`total`). Quando `job.estado === "concluido"`
-(`coffee-pendentes.tsx:97`), o `setInterval` é limpo, a lista é
-recarregada (`refetch()`), a seleção é limpa e um toast "Busca concluída"
-aparece; o banner de status volta para `"idle"` `3000ms` depois
-(`setTimeout(() => setBuscaEstado("idle"), 3000)`,
-`coffee-pendentes.tsx:103`), deixando o resultado visível por um tempo
-antes de sumir. Erros de rede durante o polling também interrompem o
-timer e voltam o estado para `"idle"`, mostrando a mensagem de erro
-abaixo dos controles.
+`useCoffeePortalTheme` propaga tema resolvido, densidade e accent para o
+`Sheet`, `Dialog`, `AlertDialog` e `Select` portalizados. Assim, os modos
+Sistema, Claro e Escuro e as preferências de densidade/acento também se aplicam
+fora da raiz visual do app.
 
-O `ConfirmModal` (`frontend/src/features/coffee/confirm-modal.tsx`) é
-usado aqui para arquivamento — individual (um clique no ícone de arquivo
-de uma linha) e em lote (botão "Arquivar selecionadas"), ambos exigindo
-justificativa (`requireJustification`, tom `"danger"`). É um componente
-específico desta feature (não documentado em `04-frontend-shared.md`):
-um wrapper fino sobre o `AlertDialog` de `components/ui/alert-dialog`,
-com um `textarea` de justificativa que fica vazio a cada abertura
-(`confirm-modal.tsx:25-27`) e desabilita o botão de confirmar enquanto
-`busy` ou enquanto a justificativa é obrigatória e está vazia. O
-arquivamento em lote (`arquivarLote`, `coffee-pendentes.tsx:44-65`) roda
-sequencialmente (`for...of` com `await`), não em paralelo — um comentário
-`ponytail` (`coffee-pendentes.tsx:48`) já sinaliza trocar por um endpoint
-de lote real se o volume passar de ~50 notas por vez.
+## Concluídas e Plano
 
-## Fluxo: Revisar Nota e Mover para o Plano
+`CoffeeConcluidas` consulta `['coffee', 'concluidas']` e separa o histórico
+por **Todas**, **Geradas** e **Corrigidas**. A busca cobre ID, SAP e local; o
+filtro de período usa `classificacao_em` e indica o fallback para a última
+consulta quando esse dado antigo não existir.
 
-Fecha o ciclo entre COFFEE e Input: uma nota já gerada (SAP real) pode
-ser conferida e enviada como registro do plano do Input sem sair da
-tela COFFEE. As duas peças (`RevisarNotaBtn` no `actionColumn` de
-`Corrigidas`/`Gerar`/`Pendentes`, `RevisarNotaSheet`,
-`MoverPlanoModal`) são as mesmas em todas as telas — só o ponto de
-entrada (botão de olho na linha da tabela) e a disponibilidade do
-lote mudam por tela.
+Notas geradas podem ser arquivadas após justificativa. Apenas corrigidas podem
+ser selecionadas e movidas, individualmente ou em lote, para o Plano. O
+`MoverPlanoModal` invalida `INPUT_DADOS_KEY` e a revisão de cada nota movida e
+oferece a navegação para a Visão Geral do Input.
 
-**Individual**: clicar em `RevisarNotaBtn` (ícone de olho) guarda o
-`pk` clicado em `revisaoPk`, abrindo o `RevisarNotaSheet`, que busca
-`GET /api/integracao/nota/{pk}/revisao` (`use-nota-revisao.ts`,
-documentado no backend em `08-integracao-coffee-input.md`) e mostra
-identificação, proposta de plano, dados do IW28 e dados brutos do
-COFFEE. O botão do rodapé do sheet ("Mover para o Plano" ou "Atualizar
-dados", conforme `revisao.ja_no_plano`) fica desabilitado quando
-`revisao.pode_mover === false` (nota ainda pendente no COFFEE — caso
-comum em `coffee-pendentes.tsx`), mostrando `revisao.motivo_bloqueio`.
-Clicar nele fecha o sheet (`onMover`) e abre o `MoverPlanoModal` já
-com o `alvo` `{ pks: [pk], revisao }`, prefiltrado com os campos atuais
-do plano se a nota já estiver lá (`camposIniciais`,
-`mover-plano-modal.tsx`).
-
-**Em lote (só Corrigidas)**: `coffee-corrigidas.tsx` ganha seleção via
-`CoffeeNotasTable` (`selectable`/`selectedPks`/`onToggleSelect`/
-`onToggleAll`, mesmo padrão já usado em `coffee-pendentes.tsx`) e um
-botão "Mover p/ Plano (N)" no cabeçalho, que abre o mesmo
-`MoverPlanoModal` com `alvo = { pks: [...selecionadas], revisao: null }`
-— sem revisão prefixada, o modal cai no modo "lote" (`emLote`,
-`mover-plano-modal.tsx:53`), aplicando os mesmos campos manuais a
-todas as notas selecionadas via `POST /api/integracao/mover-para-plano`.
-
-**Sucesso e navegação para o Input**: `MoverPlanoModal` invalida
-`INPUT_DADOS_KEY` (a mesma chave de `use-input-data.ts`, ver
-`03-frontend-input.md`) e a `REVISAO_KEY` de cada `pk` movido, então
-mostra um `toast.success` com a ação "Ver no plano" quando o chamador
-passa `onIrParaInput`. Esse callback nasce em `App.tsx` (`onIrParaInput
-={() => { setInputSub("visao"); setSection("input"); }}`), desce por
-`coffee-hub.tsx` (prop `onIrParaInput`) até as três telas de lista —
-clicar em "Ver no plano" troca de módulo (`section`) e sub-aba
-(`inputSub`) para a Visão Geral do Input, onde a nota recém-movida já
-aparece (mesmo cache que o COFFEE acabou de invalidar). Não há
-nenhuma marca visual na nota do Input indicando que ela veio do COFFEE
-— ver observação em `03-frontend-input.md`.
-
-## Timings (tabela consolidada desta feature)
+## Logs e timings
 
 | Valor | Onde | O que faz |
 |---|---|---|
-| `600ms` | `coffee-gerar-modal.tsx:162,166` | Intervalo entre tentativas do polling de status de uma geração em lote (`pollJob`); desiste após 10 falhas consecutivas (`falhas >= 10`). |
-| `2000ms` | `coffee-pendentes.tsx:87-111` | Intervalo do polling de status do job de busca em lote (`window.setInterval`), até `job.estado === "concluido"`. |
-| `3000ms` | `coffee-pendentes.tsx:103` | Após a busca concluir, o banner "Busca concluída" volta ao estado `idle` (`setTimeout`). |
-| `10_000ms` | `coffee-logs.tsx:60` | Com o toggle "ao vivo" ligado, refresh automático da lista de logs (`window.setInterval(refresh, 10_000)`). |
-| `250ms` | `frontend/src/api.ts:20` | Ao abrir várias notas no COFFEE de uma vez, cada `window.open` é escalonado `i * 250` depois do anterior, para não disparar o bloqueador de pop-up. |
-
-Timing adicional encontrado fora do Step 1:
-- **`api.ts:12-18`** — não é um timer, mas está ligado ao mesmo fluxo de
-  abertura em lote: um `window.alert` de aviso ("vamos abrir N abas...")
-  dispara uma única vez por sessão (`coffeeWarned`, flag em módulo) quando
-  `list.length > 3`, antes de escalonar os `window.open`.
+| `800ms` | `operacao/use-coffee-operacao.ts` | Atualiza o quadro enquanto houver job ativo. |
+| `10_000ms` | `coffee-logs.tsx` | Atualiza os logs quando o toggle Ao vivo está ligado. |
+| `250ms × índice` | `frontend/src/api.ts` | Escalona abertura de múltiplas abas COFFEE. |
 
 ## Pontos de atenção
 
-- `coffee-gerar-modal.tsx:94` — o `useEffect` de hidratação/reconsulta ao
-  abrir o modal tem `// eslint-disable-line react-hooks/exhaustive-deps`
-  e só depende de `open`; `consultar` e `idsIniciais` ficam de fora da
-  lista de dependências deliberadamente, mas isso significa que um
-  `idsIniciais` diferente passado com o modal já aberto não dispara nova
-  consulta.
-- `coffee-gerar-modal.tsx:299` — o botão "Salvar" da edição de local fica
-  desabilitado quando `unmaskLocal(r.localEditado ?? "") === (r.localAtual
-  ?? "")`, comparando o valor sem máscara com o valor cru vindo do
-  backend; se o backend já devolver o local com separadores diferentes de
-  `-`, essa comparação pode nunca bater e o botão nunca habilita mesmo
-  após uma edição real.
-- `coffee-pendentes.tsx:20,40-42` — o `timerRef` do polling só é limpo no
-  `useEffect` de unmount do componente e nos `.then`/`.catch` do próprio
-  polling; se o usuário trocar de sub-aba enquanto a busca está rodando
-  (desmontando `CoffeePendentes`), o cleanup do `useEffect` cobre isso,
-  mas não há como cancelar a busca do lado do backend — o job continua
-  rodando no servidor mesmo com a UI já desmontada.
-- `coffee-abrir.tsx:64,67` — `block` (tamanho do bloco de abertura) é
-  limitado a `1..50` (`setBlockClamped`), mas não há aviso equivalente ao
-  de `api.ts:12-18` nesta tela: abrir "próximas N" com N alto ainda passa
-  pelo mesmo `coffeeWarned` global de `openCoffee`, então o aviso só
-  aparece na primeira vez da sessão inteira, não por ação.
-- `coffee-logs.tsx:39-44` — a lista de usuários para o filtro é buscada
-  uma vez ao montar (`GET /coffee/logs/usuarios`) e falhas são
-  silenciadas (`.catch(() => {})`), deixando o `<Select>` de usuário sem
-  opções e sem qualquer indicação de erro ao operador.
-- `coffee-log-table.tsx:103` — o cabeçalho de um grupo de log
-  (`cabecalho`) é escolhido como a primeira `acao_usuario` com `nota_pk
-  === null`, senão a primeira `acao_usuario` qualquer, senão o primeiro
-  log da lista; se um `trace_id` não tiver nenhuma `acao_usuario` (só
-  `api_call`/`transicao`), o cabeçalho vira um log técnico que pode não
-  fazer sentido como resumo da linha do tempo para o usuário.
+- Não há suite de testes frontend configurada; build e verificação manual do
+  preview são a cobertura atual da interface.
+- `CoffeeLogs` ainda usa um hook baseado em `fetch` e estado local para a
+  listagem geral. Já o inspector usa React Query para os logs de uma nota.
+- A conexão com COFFEE/SAP é externa. Falhas de mutation são exibidas com uma
+  próxima ação, mas operações que já alcançaram o sistema externo podem exigir
+  uma reconsulta para refletir o estado final.
