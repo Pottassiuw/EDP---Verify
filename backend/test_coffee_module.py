@@ -490,16 +490,17 @@ def test_obter_nota_ignora_arquivada(monkeypatch, tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_rota_marcar_gerar_nota_existente(coffee_cliente):
+def test_rota_marcar_gerar_sap_real_existente_sai_da_fila(coffee_cliente):
     from coffee_module import db
     db.upsert_nota(355617, 17247854, {"id_sap": 17247854})
     r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
     assert r.status_code == 200 and r.json()["ok"] is True
-    assert db.listar_notas("a_gerar")[0]["pk"] == 355617
+    assert db.listar_notas("a_gerar") == []
+    assert db.obter_nota(355617)["a_gerar"] is False
     assert any(l["acao"] == "marcar_gerar" for l in db.listar_logs(tipo="acao_usuario"))
 
 
-def test_rota_marcar_gerar_busca_se_ausente(coffee_cliente, monkeypatch):
+def test_rota_marcar_gerar_sap_real_busca_e_desmarca(coffee_cliente, monkeypatch):
     from coffee_module import client, db
     monkeypatch.setattr(
         client, "buscar_nota",
@@ -509,7 +510,8 @@ def test_rota_marcar_gerar_busca_se_ausente(coffee_cliente, monkeypatch):
     r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 355617, "a_gerar": True})
     assert r.status_code == 200
     assert db.nota_existe(355617) is True
-    assert db.listar_notas("a_gerar")[0]["pk"] == 355617
+    assert db.listar_notas("a_gerar") == []
+    assert db.obter_nota(355617)["a_gerar"] is False
 
 
 def test_rota_marcar_gerar_falha_busca_502(coffee_cliente, monkeypatch):
@@ -867,8 +869,8 @@ def test_geracao_marca_origem_avulsa(coffee_tmp, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_marcar_gerar_usa_pk_resolvido_nao_o_id(coffee_cliente, monkeypatch):
-    """id de entrada (999) != pk real (355617): a flag a_gerar deve ir pro pk."""
+def test_marcar_gerar_desmarca_pk_resolvido_nao_o_id(coffee_cliente, monkeypatch):
+    """id de entrada (999) != pk real (355617): desmarca o pk resolvido."""
     from coffee_module import client, db
     monkeypatch.setattr(
         client, "buscar_nota",
@@ -877,8 +879,8 @@ def test_marcar_gerar_usa_pk_resolvido_nao_o_id(coffee_cliente, monkeypatch):
     )
     r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 999, "a_gerar": True})
     assert r.status_code == 200
-    aged = db.listar_notas("a_gerar")
-    assert len(aged) == 1 and aged[0]["pk"] == 355617
+    assert db.listar_notas("a_gerar") == []
+    assert db.obter_nota(355617)["a_gerar"] is False
 
 
 def test_marcar_gerar_grava_origem_verificar(coffee_cliente, monkeypatch):
