@@ -1,6 +1,6 @@
 """MÃ¡quina de estados da pÃ¡gina OperaÃ§Ã£o do mÃ³dulo COFFEE."""
 
-from coffee_module import config, db
+from coffee_module import db
 
 
 def etapa_da_classificacao(classificacao: str) -> str | None:
