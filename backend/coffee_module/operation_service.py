@@ -17,16 +17,27 @@ def adicionar_entradas(
     operacao_id: str,
 ) -> list[int]:
     itens_existentes = {
-        identificador
+        identificador: item
         for item in db.listar_itens_operacao()
         for identificador in (item["entrada_id"], item["nota_pk"])
         if identificador is not None
     }
-    entradas_novas = [
-        int(entrada_id)
-        for entrada_id in dict.fromkeys(ids)
-        if int(entrada_id) not in itens_existentes
-    ]
+    entradas_novas: list[int] = []
+    for entrada_id in dict.fromkeys(ids):
+        item_existente = itens_existentes.get(int(entrada_id))
+        if item_existente is None:
+            entradas_novas.append(int(entrada_id))
+            continue
+        if item_existente["etapa"] != "fila" or not item_existente["erro"]:
+            continue
+        db.upsert_item_operacao(
+            entrada_id=item_existente["entrada_id"],
+            nota_pk=item_existente["nota_pk"],
+            etapa="fila",
+            origem=item_existente["origem"],
+            operacao_id=operacao_id,
+        )
+        entradas_novas.append(item_existente["entrada_id"])
     for entrada_id in entradas_novas:
         db.upsert_item_operacao(
             entrada_id=entrada_id,

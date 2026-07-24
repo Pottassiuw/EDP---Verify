@@ -12,8 +12,8 @@ comparar duplicatas lado a lado e abrir notas direto no COFFEE.
 │       ├── features/
 │       │   ├── verificar/      triagem de notas (dashboard, upload,
 │       │   │                   KPIs, comparação de duplicatas)
-│       │   ├── coffee/         hub COFFEE (gerar, corrigidas,
-│       │   │                   pendentes, logs, abrir)
+│       │   ├── coffee/         hub COFFEE (verificar, abrir,
+│       │   │                   operação, concluídas, logs)
 │       │   ├── input/          gestão de notas do departamento
 │       │   └── configuracoes/  preferências (tema, densidade, cor)
 │       ├── components/

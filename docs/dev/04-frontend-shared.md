@@ -30,9 +30,10 @@ O `id` incremental força o `Overview` do Input a remontar
 (`key={filtrosHandoff?.id}`) mesmo quando os filtros mudam para o
 mesmo conjunto de valores duas vezes seguidas — ver
 [03-frontend-input.md](./03-frontend-input.md#handoff-de-filtros).
-`onIrParaCoffee` troca `coffeeSub` para `"corrigidas"` e a seção para
-`"coffee"` diretamente (não passa pelo handoff — é navegação simples,
-sem filtros).
+`onIrParaCoffee` abre `coffeeSub` em `"concluidas"`, cria um handoff com o
+filtro `"corrigida"` e troca a seção para `"coffee"`. Assim, o relatório
+leva o usuário diretamente ao histórico filtrado de notas corrigidas fora do
+plano.
 
 ## Configurações (features/configuracoes/)
 

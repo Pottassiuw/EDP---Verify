@@ -395,6 +395,33 @@ def test_reconsulta_nao_altera_item_processando_nem_permite_geracao_duplicada(
         jobs.iniciar_geracao_operacao([505])
 
 
+def test_reconsulta_reenvia_fila_com_erro_e_avanca_para_pronta(
+    coffee_operation_tmp,
+    monkeypatch,
+):
+    db.upsert_item_operacao(
+        entrada_id=606,
+        etapa="fila",
+        origem="avulsa",
+        operacao_id="consulta-com-erro",
+        erro="timeout",
+    )
+    chamadas: list[int] = []
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda ident: chamadas.append(int(ident)) or _nota(int(ident), None),
+    )
+
+    job_id = jobs.iniciar_consulta_operacao([606], "avulsa")
+
+    assert _aguardar(job_id)["estado"] == "concluido"
+    assert chamadas == [606]
+    item = db.listar_itens_operacao()[0]
+    assert item["etapa"] == "pronta"
+    assert item["operacao_id"] == job_id
+
+
 def test_consulta_move_sem_sap_para_pronta(coffee_operation_tmp):
     operation_service.adicionar_entradas([101], "avulsa", "job-a")
     etapa = operation_service.aplicar_consulta(
