@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeLog } from './types';
-import { formatRelativeTime } from './coffee-notas-table';
+import { formatRelativeTime } from './format';
 import { useSettings } from '../../context/settings-context';
 
 const TIMELINE_STYLE = `

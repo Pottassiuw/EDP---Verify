@@ -239,6 +239,32 @@ resposta nova chega (padrão SWR: "stale-while-revalidate"). Sem
 `staleTime`, esse mesmo refetch por foco reexecutava a busca a cada
 troca de aba, mesmo com o dado ainda válido.
 
+## COFFEE: operação e conclusões
+
+O hub COFFEE usa as subseções **Verificar**, **Abrir**, **Operação**,
+**Concluídas** e **Logs**. Verificar encaminha seleções para a fila de
+Operação; Concluídas separa as classificações gerada e corrigida, sem
+misturar o histórico com a fila ativa.
+
+As queries React Query do fluxo são `['coffee', 'operacao']` para o quadro
+e jobs ativos, `['coffee', 'concluidas']` para o histórico,
+`['coffee', 'revisao', pk]` para a ficha da nota e
+`['coffee', 'nota', pk, 'logs']` para os últimos logs no inspector. As
+mutações invalidam essas chaves pontualmente, em vez de replicar estado de
+servidor em Context.
+
+A fila e os jobs de operação são persistidos em SQLite. Por isso o Kanban
+continua mostrando a situação da operação depois de atualizar o navegador;
+quando o backend reinicia, jobs em execução são marcados como interrompidos
+e as notas retornam ao estado recuperável indicado pela API.
+
+`useCoffeePortalTheme` repassa tema resolvido, densidade e as variáveis de
+accent atuais para conteúdo portalizado de `Sheet`, `Dialog`, `AlertDialog`
+e `Select`, mantendo Sistema, Claro e Escuro coerentes fora da raiz `.edp`.
+As antigas telas separadas de Geradas, Corrigidas e Pendentes, o modal de
+gerar/consultar, a tabela legada, o drawer de logs e a ficha de revisão
+foram substituídos pelo Kanban, inspector e página Concluídas.
+
 ## Hooks compartilhados
 
 - **`use-mobile.ts`** (`useIsMobile`) — hook usado pelo `Sidebar` do

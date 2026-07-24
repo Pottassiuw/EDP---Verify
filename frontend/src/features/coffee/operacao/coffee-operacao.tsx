@@ -15,6 +15,9 @@ import { OperacaoComposer } from './components/operacao-composer';
 import { OperacaoKanban } from './components/operacao-kanban';
 import { useCoffeeOperacao } from './use-coffee-operacao';
 
+const LEGACY_ROWS_KEY = 'edp_coffee_gerar_rows';
+const LEGACY_MIGRATED_KEY = 'edp_coffee_gerar_rows_migrated';
+
 export function CoffeeOperacao(): React.JSX.Element {
   const {
     quadro,
@@ -28,6 +31,7 @@ export function CoffeeOperacao(): React.JSX.Element {
   const [pendingRemoval, setPendingRemoval] = React.useState<number[] | null>(null);
   const [moverAlvo, setMoverAlvo] = React.useState<MoverAlvo | null>(null);
   const lastTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const legacyMigrationStarted = React.useRef(false);
   const itens = quadro.data?.itens ?? [];
   const selectedItems = itens.filter(
     (item) => selected.has(item.nota_pk ?? item.entrada_id),
@@ -46,6 +50,37 @@ export function CoffeeOperacao(): React.JSX.Element {
     ),
     null,
   );
+
+  React.useEffect(() => {
+    if (legacyMigrationStarted.current) return;
+
+    legacyMigrationStarted.current = true;
+    if (sessionStorage.getItem(LEGACY_MIGRATED_KEY) === '1') return;
+
+    try {
+      const raw = sessionStorage.getItem(LEGACY_ROWS_KEY);
+      const rows = raw
+        ? (JSON.parse(raw) as Array<{ id?: unknown }>)
+        : [];
+      const ids = rows
+        .map((row) => Number(row.id))
+        .filter((id) => Number.isFinite(id) && id > 0);
+
+      if (ids.length === 0) {
+        sessionStorage.setItem(LEGACY_MIGRATED_KEY, '1');
+        return;
+      }
+
+      consultar.mutate([...new Set(ids)], {
+        onSuccess: () => {
+          sessionStorage.removeItem(LEGACY_ROWS_KEY);
+          sessionStorage.setItem(LEGACY_MIGRATED_KEY, '1');
+        },
+      });
+    } catch {
+      sessionStorage.setItem(LEGACY_MIGRATED_KEY, '1');
+    }
+  }, [consultar]);
 
   function clearSelection(): void {
     setSelected(new Set());
