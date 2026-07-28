@@ -6,8 +6,10 @@
 "configuracoes"`. `AppContent` inicializa `section` com
 `useState<AppSection>("relatorios")` — a home do app é o dashboard de
 Relatórios (`features/relatorios/relatorios-section.tsx`), não mais o
-COFFEE. O item "Relatórios" no `app-sidebar.tsx` fica acima de COFFEE,
-sem sub-abas (ícone `ChartNoAxesCombined` do lucide).
+COFFEE. `RelatoriosPage` persiste a subaba em `edp_relatorios_page`, e o
+item expansível "Relatórios" no `app-sidebar.tsx` espelha Dashboard geral,
+Carteira por regional, Mensalização, Financeiro, Postergações e Exportar.
+Os detalhes do módulo estão em [09-frontend-relatorios.md](./09-frontend-relatorios.md).
 
 ### Handoff de filtros pro Input
 

@@ -6,6 +6,13 @@ export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
 export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
+export type RelatoriosPage =
+  | "dashboard"
+  | "regional"
+  | "mensalizacao"
+  | "financeiro"
+  | "postergacoes"
+  | "exportar";
 export type CoffeeSubPage =
   | "abrir"
   | "operacao"
@@ -13,6 +20,20 @@ export type CoffeeSubPage =
   | "verificar"
   | "logs";
 export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
+
+export function normalizeRelatoriosPage(value: string): RelatoriosPage {
+  if (
+    value === "dashboard"
+    || value === "regional"
+    || value === "mensalizacao"
+    || value === "financeiro"
+    || value === "postergacoes"
+    || value === "exportar"
+  ) {
+    return value;
+  }
+  return "dashboard";
+}
 
 export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
   if (value === "geradas" || value === "pendentes") return "operacao";
@@ -153,4 +174,3 @@ export interface KpiDrawerProps {
   selectedNotes?: Note[];
   onRemoveSelected?: (id: string) => void;
 }
-

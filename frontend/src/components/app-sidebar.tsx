@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartNoAxesCombined, ChevronDown } from 'lucide-react';
-import type { AppSection, CoffeeSubPage } from '../types';
+import type { AppSection, CoffeeSubPage, RelatoriosPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -10,6 +10,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { COFFEE_SUBS } from '../features/coffee/coffee-hub';
+import { RELATORIOS_TABS } from '../features/relatorios/navigation';
 // ponytail: import estático de INPUT_SUBS puxa input-section pro bundle do sidebar
 // (mesmo tradeoff do COFFEE_SUBS acima); extrair input/subs.ts se o bundle pesar.
 import { INPUT_SUBS } from '../features/input/input-section';
@@ -45,13 +46,29 @@ const IconGear = (): React.JSX.Element => (
 interface AppSidebarProps {
   section: AppSection;
   setSection: (s: AppSection) => void;
+  relatoriosPage: RelatoriosPage;
+  setRelatoriosPage: (page: RelatoriosPage) => void;
   coffeeSub: CoffeeSubPage;
   setCoffeeSub: (s: CoffeeSubPage) => void;
   inputSub: AbaInput;
   setInputSub: (s: AbaInput) => void;
 }
 
-export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, inputSub, setInputSub }: AppSidebarProps): React.JSX.Element {
+export function AppSidebar({
+  section,
+  setSection,
+  relatoriosPage,
+  setRelatoriosPage,
+  coffeeSub,
+  setCoffeeSub,
+  inputSub,
+  setInputSub,
+}: AppSidebarProps): React.JSX.Element {
+  function selectRelatoriosPage(page: RelatoriosPage): void {
+    setRelatoriosPage(page);
+    setSection("relatorios");
+  }
+
   function selectSub(sub: CoffeeSubPage): void {
     setCoffeeSub(sub);
     setSection("coffee");
@@ -84,14 +101,37 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, input
           <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip="Relatórios"
-                isActive={section === "relatorios"}
-                onClick={() => setSection("relatorios")}
-              >
-                <ChartNoAxesCombined size={16} />
-                <span>Relatórios</span>
-              </SidebarMenuButton>
+              <Collapsible defaultOpen className="group/relatorios">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Relatórios"
+                    isActive={section === "relatorios"}
+                    onClick={() => setSection("relatorios")}
+                  >
+                    <ChartNoAxesCombined size={16} />
+                    <span>Relatórios</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/relatorios:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {RELATORIOS_TABS.map((tab) => (
+                      <SidebarMenuSubItem key={tab.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "relatorios" && relatoriosPage === tab.id}
+                          onClick={() => selectRelatoriosPage(tab.id)}
+                        >
+                          {tab.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
             </SidebarMenuItem>
 
             <SidebarMenuItem>

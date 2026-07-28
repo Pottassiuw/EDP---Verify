@@ -1,6 +1,8 @@
 ﻿import React from 'react';
-import { normalizeCoffeeSubPage } from './types';
-import type { Note, Source, AppSection, CoffeeConclusaoFiltro, CoffeeSubPage } from './types';
+import { normalizeCoffeeSubPage, normalizeRelatoriosPage } from './types';
+import type {
+  Note, Source, AppSection, CoffeeConclusaoFiltro, CoffeeSubPage, RelatoriosPage,
+} from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
 import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
@@ -76,6 +78,13 @@ function AppContent(): React.JSX.Element {
   const [file, setFile] = React.useState(_snap?.file ?? "");
   const [source, setSource] = React.useState<Source>(_snap?.source ?? "api");
   const [section, setSection] = React.useState<AppSection>("relatorios");
+  const [storedRelatoriosPage, setStoredRelatoriosPage] =
+    usePersistedState<string>("edp_relatorios_page", "dashboard");
+  const relatoriosPage = normalizeRelatoriosPage(storedRelatoriosPage);
+  const setRelatoriosPage = React.useCallback(
+    (page: RelatoriosPage): void => setStoredRelatoriosPage(page),
+    [setStoredRelatoriosPage],
+  );
   const [coffeeReturn, setCoffeeReturn] = React.useState<{ noteId: string; noteRef: string } | null>(null);
   const [storedCoffeeSub, setStoredCoffeeSub] =
     usePersistedState<string>("edp_coffee_sub", "verificar");
@@ -113,6 +122,10 @@ function AppContent(): React.JSX.Element {
   React.useEffect(() => {
     if (storedCoffeeSub !== coffeeSub) setStoredCoffeeSub(coffeeSub);
   }, [coffeeSub, setStoredCoffeeSub, storedCoffeeSub]);
+
+  React.useEffect(() => {
+    if (storedRelatoriosPage !== relatoriosPage) setStoredRelatoriosPage(relatoriosPage);
+  }, [relatoriosPage, setStoredRelatoriosPage, storedRelatoriosPage]);
 
   function changeSection(s: AppSection): void {
     if (s !== "coffee") setCoffeeReturn(null);
@@ -230,12 +243,15 @@ function AppContent(): React.JSX.Element {
          style={{ height: "100vh", overflow: "hidden", background: "var(--bg)", ...accentStyle } as CssVars}>
       <SidebarProvider style={{ height: "100%", minHeight: 0 }}>
         <AppSidebar section={section} setSection={changeSection}
+                    relatoriosPage={relatoriosPage} setRelatoriosPage={setRelatoriosPage}
                     coffeeSub={coffeeSub} setCoffeeSub={setCoffeeSub}
                     inputSub={inputSub} setInputSub={setInputSub} />
         <SidebarInset style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <React.Suspense fallback={<SectionLoading />}>
             {section === "relatorios" ? (
               <RelatoriosSection
+                page={relatoriosPage}
+                setPage={setRelatoriosPage}
                 onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
                 onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
                 onIrParaCoffee={() => {
