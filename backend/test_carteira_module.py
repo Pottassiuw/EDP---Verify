@@ -523,3 +523,32 @@ def test_dashboard_montar_junta_base_e_meta():
     sem_meta = {p["plano"]: p for p in out["base_por_plano_sem_meta"]}
     assert sem_meta["PODA DE ARVORES - OPEX"]["base_disponivel"] == 7.0
     assert all(p["plano"] != "PODA DE ARVORES - OPEX" for p in out["por_plano"])
+
+
+def test_rota_dashboard(carteira_tmp, monkeypatch, tmp_path):
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    from input_module import db as idb
+    idb.inicializar_banco()
+    import datetime
+    iconn = idb.get_db_connection()
+    iconn.execute("INSERT INTO metas_plano(Ano,Mes,Regional,Plano,Meta) VALUES(?,?,?,?,?)",
+                  (datetime.datetime.now().year, 1, "Guarulhos", "POSTES - CAPEX", 40))
+    iconn.execute("INSERT INTO planos_depara(Plano,Nome_Curto,Unidade,Area,Modular_RS,Ordem_Exibicao) "
+                  "VALUES('POSTES - CAPEX','POSTE','Und.','Construção',6921,1)")
+    iconn.commit(); iconn.close()
+    from carteira_module import db, mapping, routes
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=1, id_sap="800", CSD="GUARULHOS",
+            conjunto="46", **{"descrição_conjunto": "POSTES - CAPEX"}, quantidade=15, Status_SAP="Pendente")),
+    ])
+    conn.close()
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    app = FastAPI(); app.include_router(routes.router)
+    r = TestClient(app).get("/api/carteira/dashboard?mes=1")
+    assert r.status_code == 200
+    corpo = r.json()
+    postes = next(p for p in corpo["por_plano"] if p["plano"] == "POSTES - CAPEX")
+    assert postes["meta"] == 40.0
+    assert postes["base_disponivel"] == 15.0

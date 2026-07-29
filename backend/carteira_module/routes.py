@@ -44,6 +44,12 @@ def resumo():
     return service.resumo()
 
 
+@router.get("/dashboard")
+def dashboard(ano: int | None = None, mes: int | None = None,
+              regional: str | None = None):
+    return service.dashboard(ano, mes, regional)
+
+
 @router.get("/sincronizacao")
 def sincronizacao():
     return service.estado_sincronizacao()
