@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { normalizeCoffeeSubPage, normalizeRelatoriosPage } from './types';
 import type {
   AppSection,
@@ -85,7 +85,7 @@ function AppContent(): React.JSX.Element {
   const [dupResolved, setDupResolved] = React.useState<Set<string>>(() => new Set(_snap?.dupResolved ?? []));
   const [file, setFile] = React.useState(_snap?.file ?? "");
   const [source, setSource] = React.useState<Source>(_snap?.source ?? "api");
-  const [section, setSection] = React.useState<AppSection>("relatorios");
+  const [section, setSection] = usePersistedState<AppSection>("edp_active_section", "relatorios");
   const [storedRelatoriosPage, setStoredRelatoriosPage] =
     usePersistedState<string>("edp_relatorios_page", "dashboard");
   const relatoriosPage = normalizeRelatoriosPage(storedRelatoriosPage);

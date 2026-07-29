@@ -3,7 +3,7 @@ import type { AbaInput } from './types';
 import { toast } from 'sonner';
 import { getUsuario, setUsuario, InputApi } from './api';
 import { useSincronizacaoAutomatica, useInputData, useRecarregarInput, useNetworkSync } from './use-input-data';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Overview } from './overview';
 import { Manage } from './manage';
 import { Ramal } from './ramal';
@@ -11,7 +11,7 @@ import { Reports } from './reports';
 import { Logs } from './logs';
 import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
-import { SegTabs } from '@/components/branded/section';
+import { PageHeader, SegTabs } from '@/components/branded/section';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
 import { INPUT_SUBS } from './subs';
 
@@ -56,79 +56,107 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
     }
   }, []);
 
-  // Handoff da home (Relatórios): ao navegar "ver plano / ver notas do mês",
-  // aplica os filtros recebidos ao estado compartilhado da barra de filtros.
   React.useEffect(() => {
     if (filtrosHandoff) setEstadoFiltros(filtrosHandoff.estado);
-  }, [filtrosHandoff?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filtrosHandoff?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useSincronizacaoAutomatica(dados?.meta.versao);
   const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
 
   return (
-    <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden">
-      <div className="shrink-0 bg-surface border-b-[1px] border-b-line">
-        <div className="pt-[13px] px-[22px] pb-[11px] flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex flex-col gap-[2px]">
-            <span className="edp-eyebrow">Módulo Input</span>
-            <strong className="edp-title text-[16px]">Gestão de Notas</strong>
+    <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden h-full">
+      <PageHeader
+        eyebrow="Rede EDP · SQLite Local"
+        title="Gestão de Notas"
+        subtitle="Controle unificado de notas, alterações, base ramal e indicadores."
+        action={
+          <div className="flex items-center gap-3 flex-wrap">
+            {sincronizando ? (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber/10 border border-amber/30 text-amber text-xs font-medium animate-pulse">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
+                <span>Sincronizando com a rede...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 border border-green/20 text-green text-xs font-medium">
+                <div className="carteira-sync-dot" />
+                <span>Base Sincronizada</span>
+              </div>
+            )}
+            <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
           </div>
-          {sincronizando ? (
-            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-amber/10 border border-amber/30 text-amber text-[12px] font-medium animate-pulse">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
-              <span>Sincronizando com a rede... (Não feche)</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-[6px] px-[12px] py-[5px] rounded-full bg-green/10 border border-green/20 text-green text-[12px] font-medium">
-              <div className="h-2 w-2 rounded-full bg-green animate-pulse" />
-              <span>Sincronizado com a rede</span>
-            </div>
-          )}
-        </div>
-        <div className="py-[0px] px-[22px] border-t-[1px] border-t-line">
-          <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
-        </div>
-      </div>
+        }
+      />
 
       {dados && (sub === 'visao' || sub === 'gerenciar' || sub === 'ramal' || sub === 'relatorios') && (
-        <div className="shrink-0 bg-surface border-b-[1px] border-b-line px-[22px] py-[12px]">
+        <div className="shrink-0 bg-surface border-b border-line px-6 py-3">
           <Filters registros={dados.registros} estado={estadoFiltros} setEstado={setEstadoFiltros} />
         </div>
       )}
 
       {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
-        <div className="py-[8px] px-[18px] bg-tint-amber text-[13px]">
-          Importação inicial pendente: a rede da EDP estava indisponível.{' '}
-          <Button variant="outline" size="sm" onClick={() => { void (async () => {
-            const { InputApi } = await import('./api');
-            try { await InputApi.migrar(); await recarregar(); toast.success('Importação reprocessada'); }
-            catch (e) { toast.error('Falha na importação', { description: e instanceof Error ? e.message : String(e) }); }
-          })(); }}>Tentar importar de novo</Button>
+        <div className="mx-6 mt-3 p-3 rounded-md bg-amber/10 border border-amber/30 text-amber text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber" />
+            <span>Importação inicial pendente: a rede da EDP estava indisponível.</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              void (async () => {
+                const { InputApi } = await import('./api');
+                try {
+                  await InputApi.migrar();
+                  await recarregar();
+                  toast.success('Importação reprocessada');
+                } catch (e) {
+                  toast.error('Falha na importação', { description: e instanceof Error ? e.message : String(e) });
+                }
+              })();
+            }}
+          >
+            <RefreshCw className="mr-1.5 h-3 w-3" />
+            Tentar Importar
+          </Button>
         </div>
       )}
+
       {basesAusentes.length > 0 && (
-        <div className="py-[6px] px-[18px] text-[12px] text-amber">
-          {basesAusentes.length} de {dados!.meta.bases.length} bases da rede indisponíveis — indicadores parciais.
+        <div className="mx-6 mt-2 px-3 py-1.5 rounded-md bg-amber/10 border border-amber/20 text-amber text-xs flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span>{basesAusentes.length} de {dados!.meta.bases.length} bases da rede indisponíveis — exibindo indicadores parciais.</span>
         </div>
       )}
 
-      {isLoading && <div className="p-[24px] text-text-dim">Carregando notas…</div>}
+      {isLoading && (
+        <div className="p-8 flex items-center justify-center gap-2 text-text-dim text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+          <span>Carregando notas...</span>
+        </div>
+      )}
+
       {error != null && !dados && (
-        <div className="p-[24px] text-red">
-          Backend indisponível. O módulo Input exige o backend rodando (porta 8000). Detalhe: {String((error as Error).message)}
-        </div>
-      )}
-      {error != null && dados && (
-        <div className="py-[6px] px-[18px] text-[12px] text-amber">
-          {`Backend indisponível — mostrando dados salvos${dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.`}
+        <div className="m-6 p-4 rounded-md bg-red/10 border border-red/20 text-red text-sm flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Backend indisponível. O módulo Input exige o backend rodando na porta 8000. Detalhe: {String((error as Error).message)}</span>
         </div>
       )}
 
-      {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
-      {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
-      {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} estadoFiltros={estadoFiltros} />}
-      {dados && sub === 'relatorios' && <Reports dados={dados} estadoFiltros={estadoFiltros} />}
-      {dados && sub === 'logs' && <Logs />}
-      {dados && sub === 'config' && <Settings dados={dados} />}
+      {error != null && dados && (
+        <div className="mx-6 mt-2 px-3 py-1.5 rounded-md bg-amber/10 border border-amber/20 text-amber text-xs">
+          Backend indisponível — mostrando dados salvos{dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.
+        </div>
+      )}
+
+      <div className="flex-1 min-h-0 overflow-auto">
+        {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
+        {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'relatorios' && <Reports dados={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'logs' && <Logs />}
+        {dados && sub === 'config' && <Settings dados={dados} />}
+      </div>
     </div>
   );
 }

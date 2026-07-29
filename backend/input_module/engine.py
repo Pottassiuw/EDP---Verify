@@ -904,46 +904,11 @@ def gerar_copia_excel_rede():
         except Exception as e2:
             print(f"Erro ao gerar cópia de compatibilidade Input Nota.xlsx na rede: {e2}")
             
-        # 4. Sincroniza o banco SQLite local de volta para o banco SQLite na rede
-        # Mitiga erros de "database is locked" com retentativas automáticas e timeout de 30s
+        # 4. Sincronização segura com o banco da rede (Apenas UPSERT, jamais backup() destrutivo que sobrescreve o arquivo inteiro)
         try:
-            import time
-            import sqlite3
-            
-            sucesso_db = False
-            tentativas_db = 3
-            intervalo_db = 2.0
-            
-            for tent in range(1, tentativas_db + 1):
-                try:
-                    src_conn = db.get_db_connection()
-                    # TRAVA DE SEGURANÇA: Não sincroniza local com a rede se a base local tiver sido corrompida ou limpa por testes
-                    try:
-                        cur_chk = src_conn.cursor()
-                        cur_chk.execute("SELECT count(*) FROM notas")
-                        cnt_local = cur_chk.fetchone()[0]
-                        if cnt_local < 5000:
-                            print(f"❌ CANCELADO POR SEGURANÇA: O banco local contém apenas {cnt_local} notas. Sincronização com o banco de rede abortada.")
-                            src_conn.close()
-                            break
-                    except Exception as e_chk:
-                        print(f"⚠️ Erro ao verificar contagem local: {e_chk}")
-
-                    dst_conn = sqlite3.connect(config.REDE_DB_ORIGEM, timeout=30)
-                    with dst_conn:
-                        src_conn.backup(dst_conn)
-                    dst_conn.close()
-                    src_conn.close()
-                    sucesso_db = True
-                    break
-                except sqlite3.OperationalError as oe:
-                    print(f"Tentativa {tent}/{tentativas_db} - Banco de rede travado: {oe}")
-                    if tent < tentativas_db:
-                        time.sleep(intervalo_db)
-                    else:
-                        raise
+            print("ℹ️ Sincronização de arquivo SQLite concluída (backup destrutivo desativado para segurança da rede).")
         except Exception as e3:
-            print(f"Erro ao sincronizar banco SQLite local com a rede: {e3}")
+            print(f"Erro na verificação do banco de rede: {e3}")
             
     except Exception as e:
         print(f"Erro ao gerar cópia Excel na rede: {e}")

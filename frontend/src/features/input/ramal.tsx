@@ -187,19 +187,19 @@ export function Ramal({
   const comSelecao = modo === 'lote' || modo === 'exclusao';
 
   return (
-    <div className="edp-page">
-      <div className="flex items-center gap-[12px] flex-wrap">
+    <div className="p-6 flex flex-col gap-6 max-w-full">
+      <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo do ramal" />
       </div>
 
-      {isLoading && <div className="p-[24px] text-text-dim">Carregando notas ramal…</div>}
+      {isLoading && <div className="p-8 text-center text-text-dim text-sm">Carregando notas ramal...</div>}
       {error != null && !dadosRamal && (
-        <div className="p-[24px] text-red">
+        <div className="p-4 rounded-md bg-red/10 border border-red/20 text-red text-sm">
           Erro ao carregar ramal: {String((error as Error).message)}
         </div>
       )}
       {error != null && dadosRamal && (
-        <div className="py-[6px] px-[18px] text-[12px] text-amber">
+        <div className="px-3 py-1.5 rounded-md bg-amber/10 border border-amber/20 text-amber text-xs">
           {`Backend indisponível — mostrando dados salvos${dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.`}
         </div>
       )}
@@ -209,11 +209,13 @@ export function Ramal({
       {/* VISÃO GERAL — DataGrid com keyboard nav, resize, soma/média */}
       {modo === 'visao' && dadosRamal && (
         <React.Fragment>
-          <div className="flex items-baseline gap-[9px]">
-            <span className="edp-num">{registros.length.toLocaleString('pt-BR')}</span>
-            <span className="edp-eyebrow">notas ramal</span>
+          <div className="flex items-baseline gap-3 bg-surface p-4 rounded-lg border border-line shadow-sm">
+            <span className="edp-num text-2xl font-bold tracking-tight text-foreground">{registros.length.toLocaleString('pt-BR')}</span>
+            <span className="edp-eyebrow text-xs text-text-mute uppercase tracking-wider font-mono">notas cadastradas no ramal</span>
           </div>
-          <DataGrid registros={registrosComoNotaInput} colunas={COLUNAS_RAMAL} />
+          <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
+            <DataGrid registros={registrosComoNotaInput} colunas={COLUNAS_RAMAL} />
+          </div>
         </React.Fragment>
       )}
 
