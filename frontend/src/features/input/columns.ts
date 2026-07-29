@@ -19,6 +19,7 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'Local_Instalacao', label: 'Local Instalação', editavel: true, largura: 170 },
   { key: 'Planejado_DDPM', label: 'Planejado', numeric: true, editavel: true },
   { key: 'Mes_Execucao_Planejado', label: 'Mês Execução Planejado', editavel: true },
+  { key: 'Data_Nota_SAP', label: 'Data Nota SAP', largura: 120 },
   { key: 'Data_Envio_Projeto', label: 'Data Envio Projeto', editavel: true },
   { key: 'Centro_Responsavel', label: 'Centro Responsável' },
   { key: 'Prioridade_Nota', label: 'Prioridade Nota', editavel: true, opcoes: 'prioridade' },

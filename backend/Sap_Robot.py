@@ -39,6 +39,10 @@ CAMINHO_SAP_LOGON = r"C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe"
 # Descobre a pasta onde o script está rodando e procura o arquivo JSON
 caminho_script = os.path.dirname(os.path.abspath(__file__))
 caminho_credenciais = os.path.join(caminho_script, 'credenciais.json')
+caminho_credenciais_alt = r"c:\Users\E713105\Documents\INPUT SQL\credenciais.json"
+
+if not os.path.exists(caminho_credenciais) and os.path.exists(caminho_credenciais_alt):
+    caminho_credenciais = caminho_credenciais_alt
 
 # Tenta ler o arquivo de senhas
 try:
@@ -47,7 +51,7 @@ try:
         LOGIN_SAP = segredos['LOGIN_SAP']
         SENHA_SAP = segredos['SENHA_SAP']
 except FileNotFoundError:
-    print(f"❌ ERRO FATAL: Arquivo 'credenciais.json' não encontrado na pasta {caminho_script}.")
+    print(f"❌ ERRO FATAL: Arquivo 'credenciais.json' não encontrado na pasta {caminho_script} nem em {caminho_credenciais_alt}.")
     print("Crie o arquivo com suas credenciais antes de rodar o robô.")
     os._exit(1)
 except KeyError as e:

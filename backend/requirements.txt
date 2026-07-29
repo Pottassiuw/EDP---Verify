@@ -8,3 +8,4 @@ httpx==0.28.1
 databricks-sql-connector==4.4.0
 pyarrow==25.0.0
 pywin32>=306
+pyperclip>=1.8.2

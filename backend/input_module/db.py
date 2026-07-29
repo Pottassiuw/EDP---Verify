@@ -29,17 +29,45 @@ def get_db_connection() -> sqlite3.Connection:
 
 
 def migrar_da_rede_se_preciso() -> str:
-    """Primeira execução: copia o banco da rede para o diretório local.
+    """Primeira execução ou recuperação: copia o banco da rede para o diretório local.
+
+    Se o banco local já existir mas estiver zerado/incompleto (< 100 notas), e a rede tiver
+    a base completa (>= 100 notas), restaura automaticamente da rede.
 
     Retorna "ja-existe", "migrado" ou "rede-indisponivel".
     """
     destino = obter_caminho_banco()
-    if os.path.exists(destino):
-        return "ja-existe"
     if not os.path.exists(config.REDE_DB_ORIGEM):
         return "rede-indisponivel"
+
+    if os.path.exists(destino):
+        try:
+            conn = sqlite3.connect(destino, timeout=5)
+            cur = conn.cursor()
+            cur.execute("SELECT count(*) FROM notas")
+            cnt = cur.fetchone()[0]
+            conn.close()
+            if cnt >= 100:
+                return "ja-existe"
+
+            # Banco local tem poucas notas. Verifica se a rede tem uma base real para restaurar
+            conn_net = sqlite3.connect(config.REDE_DB_ORIGEM, timeout=5)
+            cur_net = conn_net.cursor()
+            cur_net.execute("SELECT count(*) FROM notas")
+            cnt_net = cur_net.fetchone()[0]
+            conn_net.close()
+
+            if cnt_net < 100:
+                # Tanto o local quanto a rede são pequenos/ambientes de teste
+                return "ja-existe"
+
+            print(f"⚠️ Banco local '{destino}' tem apenas {cnt} notas. Restaurando base completa ({cnt_net} notas) da rede...")
+        except Exception as e:
+            print(f"⚠️ Erro ao verificar contagem ({e}). Seguiu com migração padrão...")
+
     config.data_dir().mkdir(parents=True, exist_ok=True)
     shutil.copy2(config.REDE_DB_ORIGEM, destino)
+    print(f"✅ Banco de dados restaurado da rede com sucesso ({destino})!")
     return "migrado"
 
 

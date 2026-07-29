@@ -75,45 +75,61 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <span className="edp-eyebrow">Hierarquia manual</span>
-        <CardTitle className="edp-title text-[15px]">Vincular nota-mãe</CardTitle>
+    <Card className="border border-line bg-surface shadow-sm">
+      <CardHeader className="pb-3">
+        <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Hierarquia Manual</span>
+        <CardTitle className="text-base font-semibold text-foreground">Vincular Nota-Mãe e Filhas</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-[10px] items-end mb-[14px]">
-          <div className="flex flex-col gap-[4px]">
-            <Label htmlFor="hier-nota-mae">Nota Mãe</Label>
-            <Input id="hier-nota-mae" value={maeInput} placeholder="ex: 100123456"
-                   onChange={(e) => setMaeInput(e.target.value)}
-                   onKeyDown={(e) => { if (e.key === 'Enter') void buscar(); }}
-                   className="w-[180px]" />
+        <div className="flex gap-3 items-end mb-4 flex-wrap">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="hier-nota-mae" className="text-xs text-text-dim">Nota Mãe (ID)</Label>
+            <Input
+              id="hier-nota-mae"
+              value={maeInput}
+              placeholder="ex: 100123456"
+              onChange={(e) => setMaeInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void buscar(); }}
+              className="w-48 h-9 text-xs bg-bg-2 border-line font-mono"
+            />
           </div>
-          <Button size="sm" variant="outline" disabled={buscando || !maeInput.trim()}
-                  onClick={() => void buscar()}>
-            {buscando ? 'Buscando…' : 'Buscar'}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-3 text-xs"
+            disabled={buscando || !maeInput.trim()}
+            onClick={() => void buscar()}
+          >
+            {buscando ? 'Buscando...' : 'Buscar Nota'}
           </Button>
         </div>
 
         {hierarquia && (
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-3 pt-2 border-t border-line">
             {hierarquia.filhas.length > 0 && (
-              <p className="text-[12.5px] text-text-dim m-[0px]">
-                Filhas atuais: {hierarquia.filhas.map((f) => f.Numero_Nota).join(', ')}
-              </p>
+              <div className="text-xs text-text-dim flex items-center gap-1.5 bg-surface-2 p-2.5 rounded-md border border-line">
+                <span className="font-semibold text-foreground">Filhas atuais ({hierarquia.filhas.length}):</span>
+                <span className="font-mono text-accent">{hierarquia.filhas.map((f) => f.Numero_Nota).join(', ')}</span>
+              </div>
             )}
             {candidatas.length > 0 ? (
               <React.Fragment>
-                <span className="text-[12.5px]">
-                  {candidatas.length} candidata(s) — mesmo conjunto, órfãs:
+                <span className="text-xs text-text-dim font-medium">
+                  {candidatas.length} nota(s) candidata(s) órfãs no mesmo conjunto:
                 </span>
-                <div className="max-h-[200px] overflow-y-auto flex flex-col gap-[4px]">
+                <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5 p-2 bg-bg-2/50 rounded-md border border-line">
                   {candidatas.map((r) => (
-                    <label key={r.Numero_Nota}
-                           className="flex gap-[8px] items-center text-[12.5px] cursor-pointer">
-                      <input type="checkbox" checked={filhasSelecionadas.has(r.Numero_Nota)}
-                             onChange={() => toggleFilha(r.Numero_Nota)} />
-                      <span className="edp-mono">{r.Numero_Nota}</span>
+                    <label
+                      key={r.Numero_Nota}
+                      className="flex gap-2.5 items-center text-xs p-1.5 rounded hover:bg-surface transition-colors cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        className="rounded border-line text-accent focus:ring-accent"
+                        checked={filhasSelecionadas.has(r.Numero_Nota)}
+                        onChange={() => toggleFilha(r.Numero_Nota)}
+                      />
+                      <span className="font-mono text-foreground font-semibold">{r.Numero_Nota}</span>
                       <span className="text-text-dim">
                         {String(r['Status_Nota'] ?? '-')} · {String(r['Conjunto'] ?? '-')}
                       </span>
@@ -121,14 +137,18 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
                   ))}
                 </div>
                 <div>
-                  <Button size="sm" disabled={vinculando || filhasSelecionadas.size === 0}
-                          onClick={() => void vincular()}>
-                    🔗 Vincular selecionadas ({filhasSelecionadas.size})
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    disabled={vinculando || filhasSelecionadas.size === 0}
+                    onClick={() => void vincular()}
+                  >
+                    Vincular Selecionadas ({filhasSelecionadas.size})
                   </Button>
                 </div>
               </React.Fragment>
             ) : (
-              <p className="text-[12.5px] text-text-dim m-[0px]">
+              <p className="text-xs text-text-mute italic m-0">
                 Nenhuma nota órfã candidata no mesmo conjunto.
               </p>
             )}

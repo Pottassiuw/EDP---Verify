@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download, RefreshCw, CheckCircle2, GitMerge } from 'lucide-react';
 import type { InputDataset, NotaInput } from './types';
 import { InputApi, baixarBlob } from './api';
 import { toast } from 'sonner';
@@ -55,17 +55,21 @@ export function Overview({ dados, estado }: OverviewProps): React.JSX.Element {
   const filtrado = filtrados.length !== dados.registros.length;
 
   return (
-    <div className="edp-page">
-      <div className="flex items-end justify-between gap-[16px] flex-wrap">
-        <div className="flex items-baseline gap-[9px]">
-          <span className="edp-num">{filtrados.length.toLocaleString('pt-BR')}</span>
-          <span className="edp-eyebrow">
-            {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} registros` : 'registros'}
+    <div className="p-6 flex flex-col gap-6 max-w-full">
+      <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
+        <div className="flex items-baseline gap-3">
+          <span className="edp-num text-2xl font-bold tracking-tight text-foreground">
+            {filtrados.length.toLocaleString('pt-BR')}
+          </span>
+          <span className="edp-eyebrow text-xs text-text-mute uppercase tracking-wider font-mono">
+            {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} notas encontradas` : 'notas cadastradas'}
           </span>
         </div>
-        <div className="flex gap-[8px]">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
+            className="h-9 px-3 text-xs"
             disabled={dados.meta.sincronizando}
             onClick={() => {
               toast.promise(
@@ -83,28 +87,53 @@ export function Overview({ dados, estado }: OverviewProps): React.JSX.Element {
           >
             {dados.meta.sincronizando ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 Sincronizando...
               </>
             ) : (
-              'Sincronizar SAP'
+              <>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Sincronizar SAP
+              </>
             )}
           </Button>
-          <Button disabled={exportando || filtrados.length === 0}
-                  onClick={() => { void exportar(); }}>
-            {exportando ? 'Gerando…' : 'Exportar Excel'}
+          <Button
+            size="sm"
+            className="h-9 px-3 text-xs"
+            disabled={exportando || filtrados.length === 0}
+            onClick={() => { void exportar(); }}
+          >
+            {exportando ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                Exportar Excel
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <DataGrid registros={filtrados} colunas={COLUNAS} />
+      <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
+        <DataGrid registros={filtrados} colunas={COLUNAS} />
+      </div>
 
-      <div className="edp-mono text-[11px] text-text-mute py-[2px] px-[0px]">
-        {vinculoStatus === null
-          ? 'verificando vínculos Nota_Mae…'
-          : vinculoStatus.atualizadas > 0
-            ? `${vinculoStatus.atualizadas} vínculo(s) Nota_Mae aplicados · ${vinculoStatus.hora}`
-            : `✓ nenhum vínculo Nota_Mae pendente · ${vinculoStatus.hora}`}
+      <div className="flex items-center justify-between text-xs text-text-mute font-mono px-3 py-2 bg-surface-2/50 rounded-md border border-line">
+        <div className="flex items-center gap-2">
+          <GitMerge className="h-3.5 w-3.5 text-accent shrink-0" />
+          <span>
+            {vinculoStatus === null
+              ? 'Verificando vínculos Nota_Mae...'
+              : vinculoStatus.atualizadas > 0
+                ? `${vinculoStatus.atualizadas} vínculo(s) Nota_Mae aplicados · ${vinculoStatus.hora}`
+                : `Nenhum vínculo Nota_Mae pendente · ${vinculoStatus.hora}`}
+          </span>
+        </div>
+        <CheckCircle2 className="h-3.5 w-3.5 text-green shrink-0" />
       </div>
 
       <HierarquiaCard registros={dados.registros} recarregar={recarregar} />

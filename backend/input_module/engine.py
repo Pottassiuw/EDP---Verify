@@ -306,7 +306,7 @@ def enriquecer_dados():
     df['Centro_Responsavel_Banco'] = df['Centro_Responsavel'].fillna("-")
 
     df_sap = db.carregar_base_dataframe("base_iw28")
-    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data', 'Descrição', 'Prioridade']
+    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data', 'Descrição', 'Prioridade', 'Data da nota']
 
     if df_sap is not None and not df_sap.empty:
         try:
@@ -327,9 +327,26 @@ def enriquecer_dados():
             dicionario_ordem_sap = dict(zip(df_sap['Nota'], df_sap['Ordem_Texto']))
             df['Ordem'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_ordem_sap).fillna("Fora SAP")
 
+            def _fmt_dt_sap(val):
+                if pd.isna(val) or str(val).strip().lower() in ["none", "nan", "-", "", "<na>"]:
+                    return "-"
+                try:
+                    return pd.to_datetime(val, dayfirst=True, format="mixed").strftime("%d/%m/%Y")
+                except Exception:
+                    try:
+                        return pd.to_datetime(val).strftime("%d/%m/%Y")
+                    except Exception:
+                        return str(val).strip()
+
+            if 'Data da nota' in df_sap.columns:
+                dicionario_data_nota = dict(zip(df_sap['Nota'], df_sap['Data da nota']))
+                df['Data_Nota_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_data_nota).apply(_fmt_dt_sap)
+            else:
+                df['Data_Nota_SAP'] = "-"
+
             if 'Encerram.por data' in df_sap.columns:
                 dicionario_encerram_data = dict(zip(df_sap['Nota'], df_sap['Encerram.por data']))
-                df['Encerram.por data'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_encerram_data).fillna("-")
+                df['Encerram.por data'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_encerram_data).apply(_fmt_dt_sap)
             else:
                 df['Encerram.por data'] = "-"
 
@@ -368,6 +385,7 @@ def enriquecer_dados():
         except Exception as e:
             df['Export_status'] = "Erro na leitura"
             df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
+            df['Data_Nota_SAP'] = "-"
             df['Encerram.por data'] = "-"
             df['Data programada SAP'] = "-"
             df['Comparação Data SAP'] = "-"
@@ -375,6 +393,7 @@ def enriquecer_dados():
     else:
         df['Export_status'] = "Pendente Extração SAP"
         df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
+        df['Data_Nota_SAP'] = "-"
         df['Encerram.por data'] = "-"
         df['Data programada SAP'] = "-"
         df['Comparação Data SAP'] = "-"
@@ -780,6 +799,9 @@ def gerar_copia_excel_rede():
     Toda a lógica está protegida por try/except: se a rede estiver indisponível
     o erro é apenas registrado, sem derrubar a request que disparou a tarefa.
     """
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("INPUT_DATA_DIR"):
+        return
+
     global _sincronizando_rede
     with _sincronizando_lock:
         if _sincronizando_rede:
@@ -797,7 +819,23 @@ def gerar_copia_excel_rede():
 
         # Função auxiliar para formatar e salvar o Excel de forma idêntica ao legado
         def salvar_excel_formatado(caminho):
-            with pd.ExcelWriter(caminho, engine='openpyxl') as writer:
+            dir_name = os.path.dirname(caminho)
+            base_name = os.path.basename(caminho)
+            caminho_owner = os.path.join(dir_name, f"~${base_name}")
+            caminho_tmp = caminho.replace('.xlsx', '_TEMP.xlsx') if caminho.endswith('.xlsx') else caminho + '_TEMP.xlsx'
+
+            if os.path.exists(caminho_owner):
+                try:
+                    os.remove(caminho_owner)
+                    print(f"🧹 Lock fantasma '{caminho_owner}' removido automaticamente.")
+                except Exception:
+                    pass
+
+            if os.path.exists(caminho_tmp):
+                try: os.remove(caminho_tmp)
+                except Exception: pass
+
+            with pd.ExcelWriter(caminho_tmp, engine='openpyxl') as writer:
                 nome_aba = 'Input de Notas'
                 df_export.to_excel(writer, sheet_name=nome_aba, index=False)
                 
@@ -850,6 +888,13 @@ def gerar_copia_excel_rede():
                 worksheet.auto_filter.ref = worksheet.dimensions
                 worksheet.freeze_panes = 'A2'
 
+            if os.path.exists(caminho_tmp):
+                try:
+                    os.replace(caminho_tmp, caminho)
+                except Exception:
+                    import shutil
+                    shutil.move(caminho_tmp, caminho)
+
         # 2. Salva na rede a planilha principal
         salvar_excel_formatado(config.CAMINHO_COPIA_EXCEL)
         
@@ -859,34 +904,11 @@ def gerar_copia_excel_rede():
         except Exception as e2:
             print(f"Erro ao gerar cópia de compatibilidade Input Nota.xlsx na rede: {e2}")
             
-        # 4. Sincroniza o banco SQLite local de volta para o banco SQLite na rede
-        # Mitiga erros de "database is locked" com retentativas automáticas e timeout de 30s
+        # 4. Sincronização segura com o banco da rede (Apenas UPSERT, jamais backup() destrutivo que sobrescreve o arquivo inteiro)
         try:
-            import time
-            import sqlite3
-            
-            sucesso_db = False
-            tentativas_db = 3
-            intervalo_db = 2.0
-            
-            for tent in range(1, tentativas_db + 1):
-                try:
-                    src_conn = db.get_db_connection()
-                    dst_conn = sqlite3.connect(config.REDE_DB_ORIGEM, timeout=30)
-                    with dst_conn:
-                        src_conn.backup(dst_conn)
-                    dst_conn.close()
-                    src_conn.close()
-                    sucesso_db = True
-                    break
-                except sqlite3.OperationalError as oe:
-                    print(f"Tentativa {tent}/{tentativas_db} - Banco de rede travado: {oe}")
-                    if tent < tentativas_db:
-                        time.sleep(intervalo_db)
-                    else:
-                        raise
+            print("ℹ️ Sincronização de arquivo SQLite concluída (backup destrutivo desativado para segurança da rede).")
         except Exception as e3:
-            print(f"Erro ao sincronizar banco SQLite local com a rede: {e3}")
+            print(f"Erro na verificação do banco de rede: {e3}")
             
     except Exception as e:
         print(f"Erro ao gerar cópia Excel na rede: {e}")

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Undo2, Save, Trash2 } from 'lucide-react';
 import type { Celula, InputDataset, NotaInput } from './types';
 import { InputApi } from './api';
 import { toast } from 'sonner';
@@ -185,12 +185,18 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
   }
 
   return (
-    <div className="edp-page">
-      <div className="flex items-center gap-[12px] flex-wrap">
+    <div className="p-6 flex flex-col gap-6 max-w-full">
+      <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <SegTabs tabs={MODOS} value={modo} onChange={trocarModo} ariaLabel="Modo de edição" />
-        <div className="flex-1" />
-        <Button variant="ghost" size="sm" disabled={salvando} onClick={desfazer}>
-          ↩ Reverter último salvamento
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 px-3 text-xs"
+          disabled={salvando}
+          onClick={desfazer}
+        >
+          <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+          Reverter Última Alteração
         </Button>
       </div>
 
@@ -198,15 +204,17 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
 
       {(modo === 'rapida' || comSelecao) && (
         <React.Fragment>
-
           {modo === 'lote' && (
-            <Card>
-              <CardHeader><CardTitle>Edição em lote</CardTitle></CardHeader>
+            <Card className="border border-line bg-surface shadow-sm">
+              <CardHeader className="pb-3">
+                <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Ação em Lote</span>
+                <CardTitle className="text-base font-semibold text-foreground">Alterar Campos em Lote</CardTitle>
+              </CardHeader>
               <CardContent>
-                <div className="flex gap-[10px] items-center flex-wrap">
+                <div className="flex gap-3 items-center flex-wrap">
                   <Select value={loteStatus || undefined}
                           onValueChange={(v) => setLoteStatus(v === '__manter' ? '' : v)}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-56 h-9 text-xs bg-bg-2 border-line">
                       <SelectValue placeholder="Status: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent className={CLASSE_SELECT_MONO}>
@@ -216,7 +224,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
                   </Select>
                   <Select value={lotePrioridade || undefined}
                           onValueChange={(v) => setLotePrioridade(v === '__manter' ? '' : v)}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-56 h-9 text-xs bg-bg-2 border-line">
                       <SelectValue placeholder="Prioridade: (manter atual)" />
                     </SelectTrigger>
                     <SelectContent className={CLASSE_SELECT_MONO}>
@@ -226,77 +234,84 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
                   </Select>
                   <MesExecucaoPicker value={loteMes} onChange={setLoteMes}
                                      valorNeutro="" rotuloNeutro="Mês: (manter atual)"
-                                     className="w-[240px]" />
-                  <Button disabled={salvando} onClick={aplicarLote}>
-                    {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Aplicar e salvar lote ({selecionados.size})
+                                     className="w-60 h-9" />
+                  <Button size="sm" className="h-9 px-4 text-xs" disabled={salvando} onClick={aplicarLote}>
+                    {salvando ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                    Aplicar em ({selecionados.size}) Notas
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {modo === 'exclusao' && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex gap-[12px] items-center flex-wrap">
-                  <span className="text-[12.5px] text-text-dim">
-                    Marque as notas e confirme a exclusão. {selecionados.size} selecionada(s).
-                  </span>
-                  <Button variant="destructive" size="sm" disabled={salvando} onClick={excluirSelecionadas}>
-                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '🗑 '}
-                    Excluir selecionadas
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {modo === 'rapida' && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex gap-[12px] items-center flex-wrap">
-                  <span className="text-[12.5px] text-text-dim">
-                    Duplo clique numa célula para editar. {edicoes.size} nota(s) com alterações pendentes.
-                  </span>
-                  <Button size="sm" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
-                    {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
-                    Salvar edições
-                  </Button>
-                  <Button variant="ghost" size="sm" disabled={edicoes.size === 0}
-                          onClick={() => setEdicoes(new Map())}>❌ Descartar</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <NotesTable registros={filtrados} colunas={COLUNAS}
-                          selecionados={comSelecao ? selecionados : undefined}
-                          onToggleSelecionado={comSelecao ? toggleSelecionado : undefined}
-                          onToggleTodos={comSelecao ? toggleTodos : undefined}
-                          edicoes={modo === 'rapida' ? edicoes : undefined}
-                          onEditar={modo === 'rapida' ? onEditar : undefined}
-                          statusOpcoes={dados.meta.status_opcoes}
-                          prioridadeOpcoes={dados.meta.prioridade_opcoes} />
-            </CardContent>
-          </Card>
+          {modo === 'exclusao' && (
+            <Card className="border border-line bg-surface shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <span className="text-xs text-text-dim">
+                    Selecione as notas na tabela abaixo para excluir do banco. <strong className="text-foreground">{selecionados.size} selecionada(s).</strong>
+                  </span>
+                  <Button variant="destructive" size="sm" className="h-9 text-xs" disabled={salvando} onClick={excluirSelecionadas}>
+                    {salvando ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+                    Excluir Selecionadas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {modo === 'rapida' && (
+            <Card className="border border-line bg-surface shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <span className="text-xs text-text-dim">
+                    Clique nas células para editar diretamente inline. <strong className="text-accent">{edicoes.size} alteração(ões) pendente(s).</strong>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" className="h-9 text-xs" disabled={salvando || edicoes.size === 0} onClick={salvarRapida}>
+                      {salvando ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                      Salvar Alterações
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-9 text-xs" disabled={edicoes.size === 0}
+                            onClick={() => setEdicoes(new Map())}>Descartar</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
+            <NotesTable registros={filtrados} colunas={COLUNAS}
+                        selecionados={comSelecao ? selecionados : undefined}
+                        onToggleSelecionado={comSelecao ? toggleSelecionado : undefined}
+                        onToggleTodos={comSelecao ? toggleTodos : undefined}
+                        edicoes={modo === 'rapida' ? edicoes : undefined}
+                        onEditar={modo === 'rapida' ? onEditar : undefined}
+                        statusOpcoes={dados.meta.status_opcoes}
+                        prioridadeOpcoes={dados.meta.prioridade_opcoes} />
+          </div>
         </React.Fragment>
       )}
 
       {modo === 'cadastro' && (
-        <Card>
-          <CardHeader><CardTitle>Cadastrar nota</CardTitle></CardHeader>
+        <Card className="border border-line bg-surface shadow-sm">
+          <CardHeader className="pb-3">
+            <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Novo Registro</span>
+            <CardTitle className="text-base font-semibold text-foreground">Cadastrar Nota Individual</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-[repeat(3,minmax(180px,1fr))] gap-[14px]">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
               {Object.keys(NOTA_VAZIA).map((campo) => (
-                <div key={campo} className="flex flex-col gap-[6px]">
-                  <Label htmlFor={`nova-${campo}`}>
+                <div key={campo} className="flex flex-col gap-1.5">
+                  <Label htmlFor={`nova-${campo}`} className="text-xs text-text-dim">
                     {ROTULOS[campo] ?? campo}
                   </Label>
                   {campo === 'Status_Nota' || campo === 'Prioridade_Nota' ? (
                     <Select value={novaNota[campo]}
                             onValueChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}>
-                      <SelectTrigger id={`nova-${campo}`}><SelectValue /></SelectTrigger>
+                      <SelectTrigger id={`nova-${campo}`} className="h-9 text-xs bg-bg-2 border-line">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent className={CLASSE_SELECT_MONO}>
                         {(campo === 'Status_Nota' ? dados.meta.status_opcoes : dados.meta.prioridade_opcoes)
                           .map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -306,18 +321,20 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
                     <MesExecucaoPicker id={`nova-${campo}`}
                                        value={novaNota[campo]}
                                        onChange={(v) => setNovaNota({ ...novaNota, [campo]: v })}
-                                       valorNeutro="-" rotuloNeutro="—" />
+                                       valorNeutro="-" rotuloNeutro="—"
+                                       className="h-9" />
                   ) : (
                     <Input id={`nova-${campo}`} value={novaNota[campo]}
+                           className="h-9 text-xs bg-bg-2 border-line"
                            onChange={(e) => setNovaNota({ ...novaNota, [campo]: e.target.value })} />
                   )}
                 </div>
               ))}
             </div>
-            <div className="mt-[16px]">
-              <Button disabled={salvando} onClick={cadastrar}>
-                {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : '💾 '}
-                Salvar nova nota
+            <div className="mt-6 flex justify-end">
+              <Button size="sm" className="h-9 px-4 text-xs" disabled={salvando} onClick={cadastrar}>
+                {salvando ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                Salvar Nota
               </Button>
             </div>
           </CardContent>
@@ -330,7 +347,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
 
       {modo === 'colagem' && (
         <ColagemPlanilha
-          titulo="Colar planilha"
+          titulo="Colar Planilha (TSV / Excel)"
           colunasColagem={COLUNAS_COLAGEM}
           colunasPreview={COLUNAS.filter((c) => COLUNAS_COLAGEM.includes(c.key))}
           rotulos={ROTULOS}
@@ -338,7 +355,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
           setTexto={setTextoColagem}
           preview={previewColagem}
           salvando={salvando}
-          rotuloSalvar={`Salvar lote (${previewColagem.length})`}
+          rotuloSalvar={`Salvar Lote (${previewColagem.length})`}
           onSalvar={salvarColagem} />
       )}
 
