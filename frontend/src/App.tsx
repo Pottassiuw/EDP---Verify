@@ -1,10 +1,14 @@
 ﻿import React from 'react';
-<<<<<<< HEAD
-import type { Note, Source, AppSection, CoffeeSubPage, RelatoriosSubPage, CarteiraSubPage } from './types';
-=======
 import { normalizeCoffeeSubPage } from './types';
-import type { Note, Source, AppSection, CoffeeConclusaoFiltro, CoffeeSubPage } from './types';
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
+import type {
+  AppSection,
+  CarteiraSubPage,
+  CoffeeConclusaoFiltro,
+  CoffeeSubPage,
+  Note,
+  RelatoriosSubPage,
+  Source,
+} from './types';
 import type { AbaInput } from './features/input/types';
 import type { FiltersState } from './features/input/filters';
 import { filtroPorMes, filtroPorPlano, type Filtro } from './features/input/lib';
@@ -257,10 +261,6 @@ function AppContent(): React.JSX.Element {
                 sub={relatoriosSub} setSub={setRelatoriosSub}
                 onVerNotasDoMes={(mes, ano) => irParaInputFiltrado([filtroPorMes(mes, ano)])}
                 onVerPlano={(plano, regional) => irParaInputFiltrado(filtroPorPlano(plano, regional))}
-<<<<<<< HEAD
-                onIrParaCoffee={() => { setCoffeeSub("corrigidas"); changeSection("coffee"); }}
-                onVerForaDoPlano={irParaCarteiraForaDoPlano}
-=======
                 onIrParaCoffee={() => {
                   setCoffeeConcluidasHandoff((prev) => ({
                     filtro: "corrigida",
@@ -269,7 +269,7 @@ function AppContent(): React.JSX.Element {
                   setCoffeeSub("concluidas");
                   changeSection("coffee");
                 }}
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
+                onVerForaDoPlano={irParaCarteiraForaDoPlano}
               />
             ) : section === "input" ? (
               <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />

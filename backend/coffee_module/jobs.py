@@ -8,23 +8,6 @@ from coffee_module import client, config, db, operation_service
 _LOCK = threading.Lock()
 
 
-<<<<<<< HEAD
-def iniciar_busca(ids: list, trace: str | None = None, usuario: str | None = None) -> str:
-    job_id = uuid.uuid4().hex
-    with _LOCK:
-        _JOBS[job_id] = {
-            "estado": "rodando",
-            "total": len(ids),
-            "feitas": 0,
-            "erros": [],
-            "iniciado_em": datetime.datetime.now().isoformat(),
-        }
-    threading.Thread(target=_rodar, args=(job_id, list(ids), trace, usuario), daemon=True).start()
-    return job_id
-
-
-def _rodar(job_id: str, ids: list, trace: str | None = None, usuario: str | None = None) -> None:
-=======
 def _novo_job(tipo: str, total: int) -> tuple[str, dict]:
     job_id = uuid.uuid4().hex
     with _LOCK:
@@ -54,11 +37,15 @@ def obter_job(job_id: str) -> dict | None:
     return {**operacao, "estado": estado_api}
 
 
-def iniciar_busca(ids: list, trace: str | None = None) -> str:
+def iniciar_busca(
+    ids: list,
+    trace: str | None = None,
+    usuario: str | None = None,
+) -> str:
     job_id, snapshot = _novo_job("busca", len(ids))
     threading.Thread(
         target=_rodar,
-        args=(job_id, snapshot, list(ids), trace),
+        args=(job_id, snapshot, list(ids), trace, usuario),
         daemon=True,
     ).start()
     return job_id
@@ -69,8 +56,8 @@ def _rodar(
     snapshot: dict,
     ids: list,
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> None:
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
     db.definir_trace(trace)
     db.definir_usuario(usuario)
     for ident in ids:
@@ -90,22 +77,11 @@ def _rodar(
     _concluir(job_id, snapshot)
 
 
-<<<<<<< HEAD
-def obter_job(job_id: str):
-    with _LOCK:
-        job = _JOBS.get(job_id)
-        return dict(job) if job else None
-
-
-def iniciar_geracao(ids: list, justificativa: str | None = None,
-                    trace: str | None = None, usuario: str | None = None) -> str:
-=======
 def iniciar_consulta_operacao(
     ids: list[int],
     origem: str = "avulsa",
     trace: str | None = None,
 ) -> str:
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
     job_id = uuid.uuid4().hex
     ids_a_consultar = operation_service.adicionar_entradas(
         ids,
@@ -113,22 +89,6 @@ def iniciar_consulta_operacao(
         job_id,
     )
     with _LOCK:
-<<<<<<< HEAD
-        _JOBS[job_id] = {
-            "estado": "rodando",
-            "total": len(ids),
-            "feitas": 0,
-            "erros": [],
-            "iniciado_em": datetime.datetime.now().isoformat(),
-        }
-    threading.Thread(target=_rodar_geracao, args=(job_id, list(ids), trace, usuario),
-                     daemon=True).start()
-    return job_id
-
-
-def _rodar_geracao(job_id: str, ids: list, trace: str | None = None,
-                   usuario: str | None = None) -> None:
-=======
         snapshot = db.criar_operacao(job_id, "consulta", len(ids_a_consultar))
     threading.Thread(
         target=_rodar_consulta_operacao,
@@ -145,9 +105,7 @@ def _rodar_consulta_operacao(
     origem: str,
     trace: str | None,
 ) -> None:
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
     db.definir_trace(trace)
-    db.definir_usuario(usuario)
     for ident in ids:
         try:
             nota = client.buscar_nota(ident)
@@ -165,41 +123,16 @@ def _rodar_consulta_operacao(
     _concluir(job_id, snapshot)
 
 
-<<<<<<< HEAD
-def iniciar_correcao_local(itens: list, gerar_apos: bool = False,
-                           trace: str | None = None, usuario: str | None = None) -> str:
-    """Corrige em lote locais de instalacao com '9' extra (malha fina)."""
-    job_id = uuid.uuid4().hex
-    with _LOCK:
-        _JOBS[job_id] = {
-            "estado": "rodando",
-            "total": len(itens),
-            "feitas": 0,
-            "erros": [],
-            "corrigidas": [],
-            "ja_corrigidas": [],
-            "divergentes": [],
-            "geradas": [],
-            "iniciado_em": datetime.datetime.now().isoformat(),
-        }
-    threading.Thread(target=_rodar_correcao_local,
-                     args=(job_id, [dict(i) for i in itens], gerar_apos, trace, usuario),
-                     daemon=True).start()
-    return job_id
-
-
-def _rodar_correcao_local(job_id: str, itens: list, gerar_apos: bool,
-                          trace: str | None = None, usuario: str | None = None) -> None:
-=======
 def iniciar_geracao(
     ids: list,
     justificativa: str | None = None,
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> str:
     job_id, snapshot = _novo_job("geracao_legada", len(ids))
     threading.Thread(
         target=_rodar_geracao,
-        args=(job_id, snapshot, list(ids), trace),
+        args=(job_id, snapshot, list(ids), trace, usuario),
         daemon=True,
     ).start()
     return job_id
@@ -262,8 +195,10 @@ def _rodar_geracao(
     snapshot: dict,
     ids: list,
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> None:
     db.definir_trace(trace)
+    db.definir_usuario(usuario)
     for ident in ids:
         try:
             resultado = _executar_geracao(ident)
@@ -379,6 +314,7 @@ def iniciar_correcao_local(
     itens: list,
     gerar_apos: bool = False,
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> str:
     """Corrige em lote locais de instalacao com '9' extra (malha fina)."""
     job_id, snapshot = _novo_job("correcao_local", len(itens))
@@ -391,7 +327,14 @@ def iniciar_correcao_local(
     _salvar(job_id, snapshot)
     threading.Thread(
         target=_rodar_correcao_local,
-        args=(job_id, snapshot, [dict(item) for item in itens], gerar_apos, trace),
+        args=(
+            job_id,
+            snapshot,
+            [dict(item) for item in itens],
+            gerar_apos,
+            trace,
+            usuario,
+        ),
         daemon=True,
     ).start()
     return job_id
@@ -403,8 +346,8 @@ def _rodar_correcao_local(
     itens: list,
     gerar_apos: bool,
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> None:
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
     db.definir_trace(trace)
     db.definir_usuario(usuario)
     for item in itens:

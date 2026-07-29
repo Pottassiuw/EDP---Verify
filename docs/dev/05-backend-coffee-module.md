@@ -111,38 +111,10 @@ tabelas criadas/migradas em `inicializar_banco()`:
 - **`notas_coffee`** — uma linha por `pk` de nota, com `id_sap`,
   `id_sap_anterior` (snapshot para a classificação), `arquivado`,
   `classificacao`, `dados_json` (fields brutos), `a_gerar` (flag da fila),
-  `origem` (`"avulsa"` | `"verificar"` | `NULL`), `classificacao_em`
+  `origem` (`"avulsa"` | `"verificar"` | `NULL`) e `classificacao_em`
   (timestamp da última mudança de classificação, preservado entre
-  re-buscas que não mudam a classe) e `usuario` — o **dono** da nota
-  (quem trouxe primeiro), não um log de quem mexeu por último.
+  re-buscas que não mudam a classe).
 - **`coffee_logs`** — log de auditoria (`api_call` / `acao_usuario` /
-<<<<<<< HEAD
-  `transicao`), com `usuario` (identidade da requisição — ver
-  "Identidade do usuário" abaixo) e `trace_id` (correlaciona um lote e
-  suas chamadas filhas, setado via `contextvars` em
-  `definir_trace()`/`trace_atual()`).
-
-### Identidade do usuário (`_usuario_atual`/`definir_usuario`)
-
-`db._usuario_atual()` (`db.py`) resolve a identidade da operação atual
-nesta ordem: (1) o contextvar `_usuario_req`, setado por
-`db.definir_usuario(usuario)`; (2) fallback best-effort via
-`getpass.getuser()` (nunca levanta). `definir_usuario()` é chamado em
-dois pontos: a dependência `usuario_coffee` de `routes.py` (lê o header
-`X-User`, `None` se ausente/vazio) no início de cada request, e cada
-`_rodar*` de `jobs.py` (recebe `usuario` como argumento e o propaga na
-thread do job antes do loop de IDs — contextvars não atravessam threads
-sozinhos). Hoje o app roda localmente (um usuário por processo), então
-o fallback `getpass` raramente entra em jogo; o desenho já deixa o
-código pronto para um deploy multi-usuário em servidor, onde o header
-`X-User` é a única fonte confiável.
-
-`upsert_nota()`/`registrar_erro()` gravam `usuario=_usuario_atual()` só
-na *primeira* vez que o `pk` aparece (`COALESCE(notas_coffee.usuario,
-excluded.usuario)` no `ON CONFLICT`) — quem trouxe a nota primeiro
-continua sendo o dono mesmo que outro usuário rebusque/atualize a
-mesma nota depois.
-=======
   `transicao`), com `usuario` (best-effort via `getpass.getuser()`, nunca
   levanta) e `trace_id` (correlaciona um lote e suas chamadas filhas,
   setado via `contextvars` em `definir_trace()`/`trace_atual()`).
@@ -150,7 +122,6 @@ mesma nota depois.
   progresso, erro e resultado.
 - **`coffee_fila_operacao`** — cards da fila com entrada original, PK
   resolvida, etapa, origem, job associado e erro recuperável.
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
 
 `upsert_nota()` (`db.py:102`) é o ponto único de escrita de notas: lê o
 `id_sap`/`classificacao`/`origem` anteriores, chama `classify.classificar()`
@@ -172,33 +143,11 @@ plano do Input.
 
 ## routes.py
 
-Router `/api/coffee` com `dependencies=[Depends(usuario_coffee)]` — a
-identidade (`X-User` → `db.definir_usuario()`) é garantida em toda rota
-do módulo, inclusive rotas futuras, sem opt-in por assinatura. Só as
-rotas que usam o *valor* do usuário (`/buscar`, `/notas`, `/gerar-lote`,
-`/corrigir-local-lote` — repassam para jobs/filtro) redeclaram
-`Depends(usuario_coffee)` como parâmetro; o FastAPI cacheia a dependency
-por request, então ela não roda duas vezes.
-
-`usuario_coffee` **precisa ser `async def`**: dependency síncrona roda em
-`run_in_threadpool` numa cópia de contexto descartada, então o
-`ContextVar.set()` nunca chegaria ao corpo da rota (o dono seria gravado
-com o fallback `getpass` e a nota sumiria da lista do requisitante).
-Async roda no task do request; o endpoint sync herda o contexto via
-`copy_context`. Regressão coberta por
-`test_rota_consultar_grava_dono_do_header` /
-`test_rota_buscar_log_acao_com_usuario_do_header`
-(`test_coffee_module.py`).
-Mapeamento para o frontend (`02-frontend-coffee.md`):
+Router `/api/coffee` (prefixo). Mapeamento para o frontend
+(`02-frontend-coffee.md`):
 
 | Rota | O que faz | Usado por |
 |---|---|---|
-<<<<<<< HEAD
-| `POST /buscar` | Dispara `jobs.iniciar_busca` para uma lista de IDs, propagando o usuário do header para a thread do job. | `coffee-pendentes.tsx` |
-| `GET /job/{job_id}` | Consulta estado de um job (busca ou geração). | `coffee-pendentes.tsx`, `coffee-gerar-modal.tsx` |
-| `GET /notas` | Lista notas, filtrável por `status` (`pendente`/`gerada`/`a_gerar`/...) **e** por dono: com `X-User` presente, só devolve notas do próprio usuário ou sem dono (`(usuario = ? OR usuario IS NULL)`, notas legadas pré-migração ficam visíveis a todos até alguém rebuscá-las). | `coffee-geradas.tsx`, `coffee-corrigidas.tsx`, `coffee-pendentes.tsx` |
-| `GET /consultar/{id}` | Busca síncrona de uma nota (sem job) para o modal. 404 se o id não existe no COFFEE, 502 para falha real da API. | `coffee-gerar-modal.tsx` (`EDPApi.consultarNota`) |
-=======
 | `GET /operacao` | Retorna cards, contagens e snapshots dos jobs ativos da fila persistida. | `operacao/use-coffee-operacao.ts` |
 | `POST /operacao/consultar` | Cria cards na Fila e inicia consulta em lote. | `operacao/coffee-operacao.tsx` |
 | `POST /operacao/gerar` | Valida cards Prontos, inicia geração e os marca Processando. | `operacao/coffee-operacao.tsx` |
@@ -207,7 +156,6 @@ Mapeamento para o frontend (`02-frontend-coffee.md`):
 | `GET /job/{job_id}` | Consulta um snapshot de job diretamente. | Compatibilidade e diagnóstico. |
 | `GET /notas` | Lista notas; `status=concluida` retorna geradas e corrigidas. | `concluidas/concluidas-api.ts` |
 | `GET /consultar/{id}` | Busca síncrona de uma nota; permanece como rota de compatibilidade. | Integrações legadas/manual. |
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
 | `POST /sap` | Define `id_sap` de uma nota diretamente. | uso interno/manual |
 | `POST /desarquivar` | Desarquiva uma nota diretamente. | uso interno/manual |
 | `POST /local-instalacao` | Corrige o local e reconsulta o card/ficha. | `components/coffee-nota-inspector.tsx` |

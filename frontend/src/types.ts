@@ -5,13 +5,12 @@ export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
-<<<<<<< HEAD
-export type AppSection = "relatorios" | "coffee" | "input" | "carteira" | "configuracoes";
-export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
-export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
-export type CarteiraSubPage = "explorador" | "sincronizacao" | "divergencias";
-=======
-export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
+export type AppSection =
+  | "relatorios"
+  | "coffee"
+  | "input"
+  | "carteira"
+  | "configuracoes";
 export type CoffeeSubPage =
   | "abrir"
   | "operacao"
@@ -19,6 +18,8 @@ export type CoffeeSubPage =
   | "verificar"
   | "logs";
 export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
+export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
+export type CarteiraSubPage = "explorador" | "sincronizacao" | "divergencias";
 
 export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
   if (value === "geradas" || value === "pendentes") return "operacao";
@@ -34,7 +35,6 @@ export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
   }
   return "verificar";
 }
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
 
 export interface NoteError {
   rule: RuleKey;

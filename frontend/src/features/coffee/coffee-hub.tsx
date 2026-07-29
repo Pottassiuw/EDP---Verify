@@ -10,17 +10,7 @@ import { COFFEE_SUBS } from './subs';
 import { SegTabs } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 
-<<<<<<< HEAD
-=======
-export const COFFEE_SUBS: { id: CoffeeSubPage; label: string }[] = [
-  { id: "verificar", label: "Verificar" },
-  { id: "abrir", label: "Abrir" },
-  { id: "operacao", label: "Operação" },
-  { id: "concluidas", label: "Concluídas" },
-  { id: "logs", label: "Logs" },
-];
 
->>>>>>> 83352dd24ea3cf5f538bc8cd5cd9da2523692499
 interface CoffeeHubProps {
   notes: Note[];
   sub: CoffeeSubPage;

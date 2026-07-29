@@ -5,8 +5,7 @@ import type { CoffeeSubPage } from '../../types';
 export const COFFEE_SUBS: { id: CoffeeSubPage; rotulo: string }[] = [
   { id: 'verificar', rotulo: 'Verificar' },
   { id: 'abrir', rotulo: 'Abrir' },
-  { id: 'geradas', rotulo: 'Gerar' },
-  { id: 'corrigidas', rotulo: 'Corrigidas' },
-  { id: 'pendentes', rotulo: 'Pendentes' },
+  { id: 'operacao', rotulo: 'Operação' },
+  { id: 'concluidas', rotulo: 'Concluídas' },
   { id: 'logs', rotulo: 'Logs' },
 ];
