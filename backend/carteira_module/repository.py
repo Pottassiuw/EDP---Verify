@@ -206,6 +206,19 @@ def obter(conn, id_onr: int, numeros_no_plano: set[int]) -> dict | None:
     return dict(row) if row else None
 
 
+def obter_por_id_sap(conn: sqlite3.Connection, numero: int) -> dict | None:
+    row = conn.execute(
+        "SELECT id_onr, descricao_conjunto, conjunto, sintoma, "
+        "componente_novo, kit, n_trafo, dispositivo_protecao, "
+        "status_sap, prioridade_sap, sincronizado_em, ausente_na_origem_em "
+        "FROM nota_carteira "
+        "WHERE id_sap = ? AND sap_real = 1 "
+        "ORDER BY sincronizado_em DESC, id_onr ASC LIMIT 1",
+        (str(numero),),
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def resumo(conn, numeros_no_plano: set[int]) -> dict:
     _preparar_plano(conn, numeros_no_plano)
     base = (f"SELECT n.regional AS regional, ({_SITUACAO_SQL}) AS situacao "

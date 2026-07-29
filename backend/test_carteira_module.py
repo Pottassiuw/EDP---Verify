@@ -192,6 +192,49 @@ def test_reconciliar_detecta_alteracao(carteira_tmp):
     conn.close()
 
 
+def test_obter_por_id_sap_filtra_sap_real_e_desempata(carteira_tmp):
+    from carteira_module import db, mapping, repository
+
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(
+            id_onr=30, id_sap="700500", conjunto="ANTIGO",
+        )),
+        mapping.normalizar_linha(_origem_exemplo(
+            id_onr=20, id_sap="700500", conjunto="DESEMPATE",
+        )),
+        mapping.normalizar_linha(_origem_exemplo(
+            id_onr=25, id_sap="700500", conjunto="MESMA_DATA",
+        )),
+        mapping.normalizar_linha(_origem_exemplo(
+            id_onr=10, id_sap="700500", conjunto="SAP_NAO_REAL",
+        )),
+    ])
+    conn.execute(
+        "UPDATE nota_carteira SET sincronizado_em=? WHERE id_onr=?",
+        ("2026-07-28T08:00:00", 30),
+    )
+    conn.execute(
+        "UPDATE nota_carteira SET sincronizado_em=? WHERE id_onr IN (?,?)",
+        ("2026-07-29T08:00:00", 20, 25),
+    )
+    conn.execute(
+        "UPDATE nota_carteira SET sap_real=0, sincronizado_em=? WHERE id_onr=?",
+        ("2026-07-30T08:00:00", 10),
+    )
+    conn.commit()
+
+    encontrada = repository.obter_por_id_sap(conn, 700500)
+    ausente = repository.obter_por_id_sap(conn, 999999)
+    conn.close()
+
+    assert encontrada is not None
+    assert encontrada["id_onr"] == 20
+    assert encontrada["conjunto"] == "DESEMPATE"
+    assert encontrada["sincronizado_em"] == "2026-07-29T08:00:00"
+    assert ausente is None
+
+
 def test_listar_filtra_por_situacao_e_regional(carteira_tmp):
     from carteira_module import db, mapping, repository
     conn = db.conectar()

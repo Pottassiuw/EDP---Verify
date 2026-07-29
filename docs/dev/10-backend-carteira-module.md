@@ -14,7 +14,8 @@ Reutiliza `databricks_module` para leitura; não fala com o Databricks fora do
   (`sap_real`, `quantidade_valida`), `hash_conteudo`, drop de PII.
 - `situacao.py` — função pura: `cancelada`/`executada`/`no_plano`/`fora_do_plano`.
 - `repository.py` — SQL: staging, reconciliação idempotente (insert/update/
-  tombstone), listagem (filtros+paginação+situação via TEMP TABLE), resumo.
+  tombstone), listagem (filtros+paginação+situação via TEMP TABLE), resumo e
+  lookup determinístico por número SAP.
 - `sync.py` — orquestração: skip-signal (`Atualizacao`), leitura injetável,
   reconcile transacional, single-flight, registro de execuções.
 - `service.py` — casos de uso; `routes.py` — endpoints finos `/api/carteira`.
@@ -38,6 +39,14 @@ Derivada em tempo de leitura cruzando `nota_carteira.id_sap` com o conjunto de
 `Numero_Nota` do plano (`input_module.db.listar_numeros_nota`). A mesma lógica
 existe em `situacao.py` (pura) e no `CASE` do `repository.py` (para filtrar/
 paginar em SQL).
+
+## Lookup SAP para enriquecimento (Fase 4B)
+
+`repository.obter_por_id_sap(conn, numero)` lê somente `nota_carteira`. Aceita
+apenas `sap_real=1` e, se houver duplicidade de `id_sap`, escolhe
+deterministicamente o registro por `sincronizado_em DESC, id_onr ASC`. Retorna
+o identificador interno e os campos de enriquecimento permitidos, além dos
+marcadores de sincronização/tombstone; não consulta `notas_sp` nem expõe PII.
 
 ## Movimentação (Fase 2)
 
