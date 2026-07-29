@@ -114,3 +114,48 @@ export interface Movimentacao {
 }
 
 export type Divergencia = NotaCarteira & { tipo_divergencia: 'cancelada' | 'ausente_na_origem' };
+
+export interface MesMensalizacao {
+  mes: number;
+  meta: number;
+  carteira: number;
+  executado: number;
+}
+
+export interface LinhaPlano {
+  plano: string;
+  nome_curto: string | null;
+  area: string | null;
+  meta: number;
+  planejado: number;
+  base_disponivel: number;
+  gap: number;
+  cobertura_pct: number | null;
+  suficiente: boolean;
+}
+
+export interface LinhaRegional {
+  regional: string;
+  meta: number;
+  planejado: number;
+  base_disponivel: number;
+  gap: number;
+  cobertura_pct: number | null;
+}
+
+export interface LinhaBaseSemMeta {
+  plano: string;
+  nome_curto: string | null;
+  area: string | null;
+  base_disponivel: number;
+}
+
+export interface DashboardCarteira {
+  hero: { meta: number; carteira: number; executado: number };
+  mensalizacao: MesMensalizacao[];
+  por_plano: LinhaPlano[];
+  por_regional: LinhaRegional[];
+  base_por_plano_sem_meta: LinhaBaseSemMeta[];
+  regionais_disponiveis: string[];
+  versao: string;
+}

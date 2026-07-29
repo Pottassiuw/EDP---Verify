@@ -1,6 +1,6 @@
 import { getUsuario } from '../input/api';
 import type {
-  Divergencia, EstadoSync, ExecucaoSync, FiltrosCarteira, MoverPedido,
+  DashboardCarteira, Divergencia, EstadoSync, ExecucaoSync, FiltrosCarteira, MoverPedido,
   MoverResultado, Movimentacao, NotaCarteira, PaginaNotas, PreviewItem,
   ResumoCarteira,
 } from './types';
@@ -61,4 +61,12 @@ export const CarteiraApi = {
   movimentacoes: (idOnr?: number) =>
     req<Movimentacao[]>(`/movimentacoes${idOnr ? `?id_onr=${idOnr}` : ''}`),
   divergencias: () => req<Divergencia[]>('/divergencias'),
+  dashboard: (params: { ano?: number; mes?: number; regional?: string } = {}) => {
+    const sp = new URLSearchParams();
+    if (params.ano) sp.set('ano', String(params.ano));
+    if (params.mes) sp.set('mes', String(params.mes));
+    if (params.regional) sp.set('regional', params.regional);
+    const qs = sp.toString();
+    return req<DashboardCarteira>(`/dashboard${qs ? `?${qs}` : ''}`);
+  },
 };
