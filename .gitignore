@@ -28,3 +28,9 @@ backend/data/
 
 # Worktrees isolados (subagent-driven-development)
 .worktrees/
+
+# Graphify: manter saídas portáveis; ignorar cache e caminhos da máquina
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.vocab.txt
