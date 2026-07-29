@@ -509,6 +509,7 @@ def test_dashboard_montar_superset_funde_base_em_visao_anual():
         "regionais": [{"regional": "Guarulhos", "meta": 40.0, "carteira": 30.0,
                        "saldo": -10.0, "pct_disp": 0.75}],
         "financeiro_ano": {"meta_rs": 1.0, "carteira_rs": 2.0},
+        "avisos": {"executadas_sem_data": 2},
         "regionais_disponiveis": ["Guarulhos"],
     }
     base_bruta = [
@@ -522,6 +523,7 @@ def test_dashboard_montar_superset_funde_base_em_visao_anual():
     # superset: contrato de Relatórios preservado
     assert out["ano"] == 2026 and out["mes_referencia"] == 1
     assert out["financeiro_ano"] == {"meta_rs": 1.0, "carteira_rs": 2.0}
+    assert out["avisos"] == {"executadas_sem_data": 2}
     assert "por_plano" not in out and "por_regional" not in out
 
     # base fundida NA linha do visao_anual (meta>0)
@@ -582,7 +584,7 @@ def test_rota_dashboard(carteira_tmp, monkeypatch, tmp_path):
     # superset do contrato de Relatorios
     for chave in ("ano", "mes_referencia", "hero", "visao_anual",
                   "mensalizacao", "regionais", "financeiro_ano",
-                  "metas_info", "regionais_disponiveis"):
+                  "avisos", "metas_info", "regionais_disponiveis"):
         assert chave in corpo, chave
     postes = next(l for l in corpo["visao_anual"] if l["plano"] == "POSTES - CAPEX")
     assert postes["meta"] == 40.0

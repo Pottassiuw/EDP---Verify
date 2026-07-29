@@ -15,6 +15,18 @@ export interface ResumoCritico {
   planosAbaixoMeta: number;
 }
 
+export function criarAvisoExecutadasSemData(quantidade: number): string | null {
+  if (quantidade <= 0) {
+    return null;
+  }
+
+  if (quantidade === 1) {
+    return 'Neste ano, 1 nota executada sem data de encerramento SAP foi contabilizada no mês planejado.';
+  }
+
+  return `Neste ano, ${quantidade} notas executadas sem data de encerramento SAP foram contabilizadas no mês planejado.`;
+}
+
 export function criarPlanosRelatorio(
   regional: string | null,
   linhas: LinhaAnual[],

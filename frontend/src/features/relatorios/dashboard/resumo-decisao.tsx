@@ -31,7 +31,7 @@ export function ResumoDecisao({
   const dadosDoMes = dashboard.mensalizacao.find((item) => item.mes === mes) ?? dashboard.hero;
   const disponibilidade = dadosDoMes.meta > 0 ? dadosDoMes.carteira / dadosDoMes.meta : null;
   const resumoCritico = calcularResumoCritico(planos);
-  const postergadas = mes === dashboard.mes_corrente ? dashboard.hero.postergadas : null;
+  const postergadas = mes === dashboard.mes_referencia ? dashboard.hero.postergadas : null;
 
   // Fase 4a: cobertura possível agregada a partir da camada base (carteira).
   const planosComMeta = planos.filter((plano) => plano.meta > 0);

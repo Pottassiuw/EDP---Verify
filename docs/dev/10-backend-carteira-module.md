@@ -89,8 +89,10 @@ Relatórios (convergência é Fase 4).
 **fundir a camada base** (`base_disponivel`/`cobertura_pct`/`suficiente`)
 **dentro** de cada `visao_anual[]` e `regionais[]` do `montar_dashboard`,
 preservando todo o contrato de Relatórios (`ano`, `mes_referencia`,
-`regional`, `hero`, `mensalizacao`, `financeiro_ano`, `regionais_disponiveis`)
-+ `base_por_plano_sem_meta`. `service.dashboard` acrescenta `metas_info`
+`regional`, `hero`, `mensalizacao`, `financeiro_ano`, `avisos`,
+`regionais_disponiveis`) + `base_por_plano_sem_meta`. O campo
+`avisos.executadas_sem_data` é repassado sem alteração. `service.dashboard`
+acrescenta `metas_info`
 (via `metas.sincronizar_se_preciso`, idempotente por mtime) e a rota
 `GET /dashboard` responde ETag/304 por `versao` composto.
 

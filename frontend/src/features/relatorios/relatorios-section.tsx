@@ -6,6 +6,7 @@ import { FiltrosGlobais } from './filtros-globais';
 import { RELATORIOS_TABS, TITULOS_RELATORIOS } from './navigation';
 import { RelatoriosPageContent } from './relatorios-page-content';
 import { PlanoInspector } from './plano-inspector';
+import { criarAvisoExecutadasSemData } from './relatorios-data';
 import type { PlanoRelatorio } from './relatorios-data';
 import { useRelatoriosData } from './use-relatorios-data';
 import type { RelatoriosPage } from '@/types';
@@ -31,7 +32,10 @@ export function RelatoriosSection({
   const [planoSelecionado, setPlanoSelecionado] = React.useState<PlanoRelatorio | null>(null);
   const dados = useRelatoriosData(regional, mesSelecionado);
   const dashboard = dados.dashboard;
-  const mes = mesSelecionado ?? dashboard?.mes_corrente ?? new Date().getMonth() + 1;
+  const avisoExecutadasSemData = dashboard
+    ? criarAvisoExecutadasSemData(dashboard.avisos.executadas_sem_data)
+    : null;
+  const mes = mesSelecionado ?? dashboard?.mes_referencia ?? new Date().getMonth() + 1;
   const planos = React.useMemo(
     () => filtrarPlanos(dados.planos, busca),
     [busca, dados.planos],
@@ -70,6 +74,10 @@ export function RelatoriosSection({
         <Banner tipo="err">
           Metas de {dashboard.metas_info.atualizadas_em ?? '—'}: {dashboard.metas_info.erro}
         </Banner>
+      )}
+
+      {avisoExecutadasSemData && (
+        <Banner tipo="err">{avisoExecutadasSemData}</Banner>
       )}
 
       {dados.isLoading && <p className="edp-mono text-sm text-text-mute">Carregando relatórios…</p>}

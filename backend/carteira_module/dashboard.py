@@ -78,5 +78,6 @@ def montar(dash: dict, base_bruta: list[dict], unidade_por_plano: dict,
         "mensalizacao": dash.get("mensalizacao", []),
         "regionais": regionais,
         "financeiro_ano": dash.get("financeiro_ano", {}),
+        "avisos": dash.get("avisos", {"executadas_sem_data": 0}),
         "base_por_plano_sem_meta": base_sem_meta,
     }

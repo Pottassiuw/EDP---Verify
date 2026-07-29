@@ -11,6 +11,13 @@ local; as bases de cruzamento também foram migradas para SQLite (ver
 "Cache SQLite" abaixo). O resultado consolidado é exposto ao frontend
 via `/api/input/*`.
 
+## Origem das extrações SAP
+
+IW28, IW38 e IW66 são lidas e gravadas sob a raiz única
+`\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM\INPUT SQL\Arquivos_SAP`.
+`config.REDE_ARQUIVOS_SAP` é a fonte dos três caminhos; não monte caminhos
+SAP diretamente a partir de `REDE_INPUT_SQL`.
+
 ## Arquivos principais
 
 | Arquivo | Responsabilidade |
@@ -259,6 +266,14 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 | `GET /ramal`, `POST /ramal/bulk`, `DELETE /ramal` | CRUD da tabela `notas_ramal` (obras de ramal, schema paralelo ao de `notas`). |
 | `POST /hierarquia`, `GET /hierarquia/{numero_nota}` | Vínculo nota-mãe/nota-filha (`Nota_Mae`). |
 | `POST /migrar` | Força nova tentativa de migração do banco a partir da rede. |
+
+### Regra de executado em Relatórios
+
+Executado reconhece o código exato 99 em `Status_Final`; `Status_Nota` só é
+fallback quando o consolidado está ausente, e `ENCE EXEC` continua válido.
+Sem `Encerram.por data`, a execução usa `Mes_Execucao_Planejado` e o payload
+incrementa `avisos.executadas_sem_data`, contado por nota no ano e no filtro
+regional ativo.
 
 Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:83`), que
 invalida o cache do engine e agenda `engine.gerar_copia_excel_rede()`
