@@ -1,7 +1,7 @@
 # Carteira de Notas — Fase 4b (Enriquecimento Input/COFFEE com Databricks) — Spec
 
 Data: 2026-07-29
-Status: rascunho para brainstorm (decisões-chave marcadas "a confirmar")
+Status: aprovado para planejamento (decisões confirmadas em 2026-07-29)
 Base: design geral (`2026-07-22-carteira-de-notas-design.md`, §11 Impacto,
 §12 Fase 4) + projeção da carteira (Fase 1, `nota_carteira` em `carteira.db`)
 + discovery (`docs/dev/databricks-schema-discovery.md`).
@@ -27,15 +27,18 @@ enriquecidas (Conjunto etc.)". O ganho: triagem (Verificar) e geração
 (COFFEE) passam a ver a classificação real da nota sem consultar o
 Databricks em runtime.
 
-## 2. Decisões (a confirmar com o usuário)
+## 2. Decisões confirmadas
 
-| Decisão | Proposta (recomendada) | Alternativa |
-|---|---|---|
-| Chave do join Input↔carteira | `numero_nota` (SAP) quando `sap_real=1`; senão sem enriquecimento (nota do Input não tem `id_onr`). **A confirmar:** o Input tem como casar `id_onr`? Se não, só notas com SAP real enriquecem. | Materializar `id_onr` no Input via alguma ponte |
-| Colunas a expor | `descricao_conjunto` (=Conjunto/rubrica), `conjunto`, `sintoma`, `componente_novo`, `kit`, `n_trafo`, `dispositivo_protecao`, `status_sap`, `prioridade_sap` | subconjunto menor (só Conjunto) |
-| notas_sp (enriquecimento profundo) | **Fora do 4b** — 4b usa só o que `nota_carteira` já projeta; `notas_sp` (join `ID_ONR`, novo pull do Databricks) é fatia posterior (4b-2) | trazer `notas_sp` já no 4b |
-| Onde aparece | Detalhe da nota (Input `revisar-nota-sheet` / COFFEE detalhe) como bloco read-only "Dados da base COFFEE"; **não** em colunas da tabela (evita poluir a grid) | coluna Conjunto na tabela do Input |
-| Sentido | **Read-only display.** NÃO copiar os campos para dentro de `notas` do Input (isso é o que a movimentação mover-para-plano já faz, com `origem`). 4b é só leitura enriquecida. | persistir cópia (rejeitado: duplica estado, viola situação-derivada) |
+| Decisão | Escolha |
+|---|---|
+| Chave do join | Input usa `Numero_Nota` e COFFEE usa `coffee.id_sap`; ambos consultam `nota_carteira.id_sap`, exclusivamente com `sap_real=1`. Não será criada ponte por `id_onr`. |
+| Campos read-only | `descricao_conjunto` (rubrica), `conjunto`, `sintoma`, `componente_novo`, `kit`, `n_trafo`, `dispositivo_protecao`, `status_sap` e `prioridade_sap`. |
+| `notas_sp` | **Fora da 4b.** A fase usa somente o que `nota_carteira` já projeta; o novo pull e a decisão de PII ficam isolados em uma futura 4b-2. |
+| Onde aparece | Somente nos detalhes do Input e do COFFEE, no card read-only "Dados da base COFFEE". Nenhum campo de enriquecimento entra nas grids. |
+| Composição visual | Card hierárquico: rubrica em destaque, conjunto abaixo, estado da base e grade responsiva com os demais campos. |
+| Estados indisponíveis | Distinguir sem correspondência, tombstone e base nunca sincronizada; tombstone preserva os últimos dados com aviso e data. |
+| Sentido da integração | Somente leitura. Nenhum campo será copiado para `notas` do Input ou para o banco do COFFEE. |
+| Estratégia de entrega | Concluir 4b-backend e 4b-frontend antes de iniciar a fundação visual 4c. |
 
 ## 3. Estado atual (dado real)
 
@@ -56,67 +59,116 @@ Databricks em runtime.
 ## 4. Escopo
 
 **Entra:**
-- Backend (carteira_module): `GET /api/carteira/notas/por-sap/{numero}` (ou
-  reuso do `GET /notas/{id_onr}` existente + um lookup por `id_sap`) →
-  devolve o bloco de enriquecimento de uma nota (as colunas do §2).
+- Backend (carteira_module): `GET /api/carteira/notas/por-sap/{numero}` →
+  devolve o estado do enriquecimento e, quando existente, as colunas do §2.
 - Frontend: bloco read-only "Dados da base COFFEE" no detalhe da nota do
-  **Input** (`revisar-nota-sheet`) e do **COFFEE** (detalhe), carregado
-  sob demanda (React Query, staleTime alto — dado muda só no sync).
-- Degradação: nota sem SAP real ou ausente da base ⇒ bloco mostra
-  "sem correspondência na base COFFEE" (não erro).
+  **Input** e no `CoffeeNotaInspector`, carregado sob demanda (React Query,
+  `staleTime` alto — o dado muda somente durante a sincronização da Carteira).
+- O Input ainda não possui inspector de nota. A 4b cria um
+  `InputNotaInspector` em Sheet, aberto por um botão acessível numa coluna
+  utilitária estreita da grade da Visão Geral. A coluna contém apenas a ação
+  "Abrir detalhes"; nenhum dado enriquecido entra na tabela. O clique na linha
+  inteira não será capturado, preservando a seleção estilo planilha. O Sheet
+  apresenta primeiro um resumo dos campos que já existem em `NotaInput` e,
+  abaixo, o card de enriquecimento.
+- Degradação explícita para sem correspondência, tombstone, base não
+  sincronizada e erro real.
 
 **NÃO entra:**
 - `notas_sp` (pull novo do Databricks) — fatia 4b-2, exige decidir colunas
   PII (Solicitante etc. **nunca** projetadas) e novo mapeamento.
 - Persistir/copiar colunas em `notas` do Input (é a movimentação, não 4b).
-- Coluna Conjunto na grid do Input (a confirmar; default é só no detalhe).
+- Colunas de enriquecimento nas grids do Input ou do COFFEE.
 
 ## 5. Arquitetura
 
-- **Reuso:** `carteira_module.repository` já sabe ler `nota_carteira` +
-  cruzar com o plano. Adicionar `obter_por_id_sap(conn, numero) -> dict|None`
-  (lookup por `id_sap` com `sap_real=1`; se houver duplicata id_sap — sabido
-  1.548 no subset SP — desempatar pelo mais recente, como o dedupe do sync).
-- **Endpoint fino** no carteira_module (valida → service → responde), ETag
-  por `versao` da carteira.
-- **Frontend:** hook `useCarteiraEnriquecimento(numeroSap)` (carteira/api);
-  o detalhe do Input/COFFEE o chama. Cross-feature: Input/COFFEE importam
-  `CarteiraApi` (mesmo precedente da 4a).
+- **Repositório:** adicionar `obter_por_id_sap(conn, numero) -> dict|None`,
+  sempre filtrando `sap_real=1`. Se `id_sap` estiver duplicado, usar
+  `ORDER BY sincronizado_em DESC, id_onr ASC LIMIT 1`: projeção mais recente,
+  com desempate estável.
+- **Service:** distinguir a Carteira nunca sincronizada de uma busca válida
+  sem correspondência e mapear o resultado para o contrato público.
+- **Endpoint fino:** validar → chamar o service → responder. Ausência esperada
+  retorna `200`, não `404`; falha real de leitura continua sendo erro. ETag usa
+  a `versao` da Carteira e aceita `304`.
+- **Frontend:** `useCarteiraEnriquecimento(numeroSap)` e
+  `CarteiraEnriquecimentoCard` pertencem à feature Carteira. Input e COFFEE
+  consomem essa fronteira; não duplicam hook nem apresentação.
+- **Carregamento:** a query só é habilitada quando o detalhe está aberto e há
+  número SAP válido. O skeleton fica dentro do card e não bloqueia o restante
+  do inspector.
+
+### 5.1 Contrato do endpoint
+
+```json
+{
+  "numero_sap": 12345678,
+  "estado": "encontrada",
+  "dados": {
+    "descricao_conjunto": "Poda de vegetação",
+    "conjunto": "SJC-04",
+    "sintoma": "Galho na rede",
+    "componente_novo": "Rede primária",
+    "kit": "KIT-PODA-03",
+    "n_trafo": "TR-4481",
+    "dispositivo_protecao": "Religador R-12",
+    "status_sap": "Liberada",
+    "prioridade_sap": 1
+  },
+  "ausente_na_origem_em": null,
+  "versao": "..."
+}
+```
+
+`estado` admite `encontrada`, `ausente_na_origem`, `sem_correspondencia` e
+`base_nao_sincronizada`. `dados` é `null` nos dois últimos estados.
 
 ## 6. Edge cases → estratégia
 
 | Caso | Estratégia |
 |---|---|
-| Nota sem SAP real (`sap_real=0`) | sem join possível; bloco "sem correspondência" |
-| `id_sap` duplicado na base | desempate determinístico (mais recente), como o dedupe do sync |
-| Nota ausente da base (tombstone) | mostrar dado da última projeção + aviso "ausente na origem desde X" |
-| Carteira nunca sincronizada | bloco "base não sincronizada" (link p/ Sincronização) |
+| Nota sem SAP real ou sem registro correspondente | card neutro "Sem correspondência na base COFFEE"; não é erro |
+| `id_sap` duplicado na base | projeção com `sincronizado_em` mais recente; `id_onr` crescente desempata |
+| Nota ausente da base (tombstone) | mostrar a última projeção + aviso âmbar "Ausente na origem desde X" |
+| Carteira nunca sincronizada | card "Base não sincronizada" com link para Carteira → Sincronização |
+| Erro real de leitura | alerta claro dentro do card + ação "Tentar novamente" |
 | PII | as colunas do §2 **não** incluem matriculaSAP/nomeColaborador/colaborador/Solicitante — manter assim |
 
 ## 7. Impacto nos módulos
 
 | Módulo | Mudança |
 |---|---|
-| `carteira_module` | `repository.obter_por_id_sap` + endpoint de enriquecimento |
-| `input_module` | **nenhuma** no backend; front do detalhe ganha o bloco (consome CarteiraApi) |
-| `coffee_module` | idem: detalhe ganha o bloco (opcional, se o COFFEE tiver detalhe de nota) |
+| `carteira_module` | `repository.obter_por_id_sap`, service de estado e endpoint de enriquecimento |
+| `input_module` | **nenhuma** no backend; frontend ganha `InputNotaInspector` e a ação acessível na grade |
+| `coffee_module` | **nenhuma** no backend; `CoffeeNotaInspector` ganha o card usando `coffee.id_sap` |
+| `features/carteira` | API, hook, tipos e card read-only reutilizável |
 | Docs | `docs/dev/10-backend-carteira-module.md` (endpoint), `03-frontend-input.md`, `02-frontend-coffee.md` |
 
-## 8. Divisão em planos (quando greenlit)
+## 8. Divisão em planos
 
 - **4b-backend:** `repository.obter_por_id_sap`, endpoint, testes.
-- **4b-frontend:** bloco read-only no detalhe do Input + COFFEE; hook;
-  passe visual (skill frontend-design); docs.
+- **4b-frontend:** API/hook/card; novo inspector do Input; integração no
+  inspector do COFFEE; validação visual; docs.
 - **4b-2 (futuro):** `notas_sp` via Databricks (novo mapping + decisão PII).
+
+Os dois planos são sequenciais: backend antes de frontend. A 4c só começa
+depois de ambos concluídos e validados.
 
 ## 9. Critérios de aceite
 
-- Detalhe de uma nota do Input com SAP real mostra Conjunto/rubrica +
-  sintoma/componente/kit/proteção reais da base COFFEE.
-- Nota sem SAP / ausente / base não sincronizada ⇒ mensagem honesta, sem erro.
+- Detalhes do Input e do COFFEE com SAP real mostram os nove campos aprovados
+  no card hierárquico.
+- A grade do Input mantém a interação de planilha e ganha somente uma ação
+  acessível para abrir o inspector; nenhum campo enriquecido vira coluna.
+- Sem correspondência, tombstone e base não sincronizada têm apresentações
+  distintas; apenas falha real oferece retry.
 - Nenhuma coluna PII exposta; `input_module` intocado no backend; boundary
   preservado.
-- Testes backend do lookup verdes; build/vitest verdes; docs atualizados.
+- Testes backend cobrem filtro `sap_real`, duplicata, tombstone, base vazia,
+  contrato e ETag. Testes frontend cobrem os quatro estados, retry,
+  carregamento sob demanda e integração nos dois inspectors.
+- Suíte backend, build e vitest verdes; docs 02/03/10 atualizados na mesma
+  entrega.
 
 ## 10. Riscos
 

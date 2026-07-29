@@ -1,7 +1,7 @@
 # Carteira de Notas — Fase 4c (Migração Visual Supabaze) — Spec
 
 Data: 2026-07-29
-Status: rascunho para brainstorm (decisões-chave marcadas "a confirmar")
+Status: aprovado para planejamento (decisões confirmadas em 2026-07-29)
 Base: design geral (`2026-07-22-carteira-de-notas-design.md`, §8 "O restante
 do app migra depois (fase 4)"), [[design-md-supabaze-authoritative]],
 `docs/dev/11-frontend-carteira.md` (armadilhas do `.carteira-scope`).
@@ -16,25 +16,29 @@ telas novas (Carteira). Elimina a inconsistência visual aceita nas Fases 1–3.
 
 DESIGN.md (Supabaze) é a direção autoritativa; `app.css` (`.edp`) é legado a
 migrar. Hoje só a Carteira aplica Supabaze (via `.carteira-scope`, 4 arquivos).
-O restante — **63 arquivos** `.tsx` usam classes `edp-*` — segue no visual
+O restante — **61 arquivos** `.tsx` usam classes `edp-*` — segue no visual
 legado, incluindo o **Relatórios recém-recomposto** (o codex reusou
 `.edp-page`/`.edp-panel`/`.edp-stat`/`.edp-table` de propósito) e partes da
 própria Carteira (Explorador, Mover, Divergências).
 
-Distribuição da dívida (`grep edp- **/*.tsx`):
-- `features/input` (12), `features/relatorios/*` (~17 somando subpastas),
-  `features/verificar` (6), `features/coffee/*` (~10), `features/carteira/*`
-  (~11 — Explorador/Dashboard/Mover/Divergências ainda com resíduo `.edp`).
+Distribuição da dívida (`rg -l "edp-" frontend/src --glob "*.tsx"`):
+- `features/input` (10), `features/relatorios` (20),
+  `features/verificar` (6), `features/coffee` (14), `features/carteira` (10)
+  e `components/branded` (1). Explorador/Dashboard/Mover/Divergências ainda
+  carregam resíduo `.edp` dentro da Carteira.
 
-## 2. Decisões (a confirmar com o usuário)
+## 2. Decisões confirmadas
 
-| Decisão | Proposta (recomendada) | Alternativa |
-|---|---|---|
-| Estratégia de escopo | **Promover Supabaze a padrão global** (mover os tokens Supabaze para `:root` em `app.css`) e migrar feature-a-feature, aposentando o `.carteira-scope` no fim. | Manter escopos por feature (`.input-scope`, etc.) — mais isolado, mas multiplica a armadilha do scope |
-| Ordem de migração | Por feature, guiada por risco/visibilidade: **1) Carteira (fechar resíduo)** → 2) Relatórios (acabou de mudar, alinhar) → 3) Input → 4) COFFEE → 5) Verificar | outra ordem |
-| `app.css` `.edp` | Manter durante a transição; **remover só quando 0 arquivos referenciarem** (evita quebrar meio-migrado) | remover cedo (arriscado) |
-| Cores | Só tokens de design (CLAUDE.md proíbe cor arbitrária). Toda cor `.edp` vira token Supabaze equivalente; nenhum hex novo. | — |
-| shadcn | Onde `.edp-*` reimplementa um primitivo (tabela, painel, stat), trocar por `ui/`/`branded/` correspondente, não recriar. | manter `.edp` classes só re-tematizadas |
+| Decisão | Escolha |
+|---|---|
+| Estratégia de escopo | Promover Supabaze a padrão global em `:root` desde a fundação 4c-0, com a ponte completa do shadcn. |
+| Compatibilidade | Manter `.edp` como adaptador temporário para features ainda não migradas; remover `.carteira-scope` e o adaptador somente no lote final. |
+| Ordem | `4c-0` fundação → `4c-1` Carteira → `4c-2` Relatórios → `4c-3` Input → `4c-4` COFFEE → `4c-5` Verificar → `4c-fim` limpeza. |
+| Empacotamento | Lotes independentes e sequenciais. A Fase 4b é concluída antes da 4c; a 4c nunca vira um único commit. |
+| Cores | Somente tokens de design. Toda cor legada vira token Supabaze equivalente; nenhum hex arbitrário novo. |
+| Componentes | Onde `.edp-*` reimplementa um primitivo, usar `components/ui/`; composições maiores e reutilizáveis ficam em `components/branded/`. |
+| Tema e densidade | Preservar `Sistema`/`Claro`/`Escuro`, os acentos configuráveis e `compact`/`cozy`. O claro segue o canvas branco autoritativo; o escuro traduz a mesma linguagem neutra/verde usando os tokens `canvas-night` do DESIGN.md, sem manter a antiga paleta índigo/ciano. |
+| Limite funcional | A migração altera somente a pele. Comportamento, fluxo, conteúdo e acessibilidade permanecem iguais. |
 
 ## 3. Estado atual (armadilhas já mapeadas)
 
@@ -64,15 +68,29 @@ UX, isso é trabalho à parte (não 4c).
 ## 5. Arquitetura da migração
 
 - **Passo 0 (fundação):** promover os tokens Supabaze de `.carteira-scope`
-  para `:root`/`.edp` global em `app.css`, respeitando as 3 armadilhas.
+  para `:root` em `app.css`, respeitando as 3 armadilhas. `.edp` referencia
+  esses tokens como camada de compatibilidade para as telas ainda legadas,
+  sem manter uma segunda fonte de verdade. Como o App inteiro nasce dentro de
+  `<div className="edp" data-theme data-density>`, a fundação também define
+  os variantes Supabaze de tema/densidade nesse adaptador. No lote final, os
+  atributos permanecem no container raiz mesmo após a classe `.edp` sair.
   Ponto de não-regressão: a Carteira (que já é Supabaze) deve ficar
   **idêntica** após a promoção.
+- **Impacto deliberado da fundação:** a troca de tokens recolore todas as
+  features já em `4c-0`; os lotes seguintes substituem a anatomia `.edp-*`.
+  Por isso a fundação exige smoke visual de todas as seções e de pelo menos um
+  portal crítico por seção, não apenas da Carteira.
 - **Passo N (por feature):** para cada feature, substituir `edp-page`/
   `edp-panel`/`edp-stat`/`edp-table`/… pelos equivalentes
   `branded/section` (PageHeader/StatTile/SegTabs) + `ui/` (Table/Card/…) já
   usados na Carteira. Rodar build + comparar screenshot antes/depois.
-- **Passo final:** quando `grep edp- **/*.tsx` = 0, remover as classes
-  `.edp-*` órfãs de `app.css` e aposentar `.carteira-scope`.
+- **Passo final:** quando
+  `rg -n "edp-" frontend/src --glob "*.tsx"` não retornar ocorrências,
+  remover as classes `.edp-*` órfãs de `app.css`, aposentar
+  `.carteira-scope`, remover a classe raiz `.edp` e seu adaptador temporário.
+  `data-theme` e `data-density` permanecem no container raiz. Helpers de
+  portal só saem se não tiverem mais função e depois de validar Select, Sheet,
+  Tooltip, Dialog e Sonner no lote correspondente.
 
 ## 6. Impacto nos módulos
 
@@ -82,28 +100,47 @@ UX, isso é trabalho à parte (não 4c).
 | features (todas) | classes `.edp-*` → `branded/`+`ui/` + tokens; sem mudança de lógica |
 | Docs | `04-frontend-shared.md` (tokens globais), `11-frontend-carteira.md` (aposentar scope), docs por feature migrada |
 
-## 7. Divisão em planos (quando greenlit)
+## 7. Divisão em planos
 
-Um plano por lote, na ordem do §2:
-- **4c-0:** globalizar tokens Supabaze (fundação) + validar Carteira idêntica.
+Um plano e um commit revisável por lote, na ordem do §2:
+- **4c-0:** globalizar tokens Supabaze, aceitar a recoloração controlada do app
+  inteiro e executar smoke visual de todas as seções; Carteira deve permanecer
+  idêntica.
 - **4c-1:** Carteira (fechar resíduo Explorador/Mover/Divergências).
 - **4c-2:** Relatórios (6 telas). **4c-3:** Input. **4c-4:** COFFEE.
   **4c-5:** Verificar.
-- **4c-fim:** remover `.edp-*` e `.carteira-scope`; docs.
+- **4c-fim:** remover `.edp-*`, `.carteira-scope`, a classe raiz `.edp` e seu
+  adaptador; preservar `data-theme`/`data-density`; atualizar docs.
+
+Cada lote começa somente após o anterior passar pelos gates do §8. Não há
+execução paralela entre lotes.
 
 ## 8. Critérios de aceite (por lote)
 
-- Zero mudança de comportamento (só visual); build + vitest verdes.
+- Escopo confirmado como visual; lógica, conteúdo, navegação e ações
+  permanecem inalterados.
+- Build, vitest e tipagem verdes.
+- Em `4c-0`, screenshots smoke de Carteira, Relatórios, Input, COFFEE e
+  Verificar em claro e escuro; Carteira deve permanecer idêntica e as demais
+  seções podem mudar apenas por causa do novo mapeamento de tokens.
 - Paridade/upgrade visual validado com screenshot real (Puppeteer + Chrome,
-  padrão das Fases 1b/2b/3b) contra o design Supabaze.
+  padrão das Fases 1b/2b/3b) contra o design Supabaze, incluindo os portais
+  usados pela feature.
 - Nenhuma cor arbitrária; só tokens (CLAUDE.md).
 - Acessibilidade Radix preservada (CLAUDE.md).
-- Ao final: `grep edp- **/*.tsx` = 0; `app.css` sem classes `.edp-*` órfãs.
+- Manual da feature e `docs/dev/04-frontend-shared.md` atualizados no mesmo
+  commit quando o lote alterar seu contrato visual compartilhado.
+- Ao final: `rg -n "edp-" frontend/src --glob "*.tsx"` sem saída; `app.css`
+  sem classes `.edp-*`, `.carteira-scope` ou adaptador raiz `.edp`; o
+  container raiz continua expondo `data-theme` e `data-density`.
 
 ## 9. Riscos
 
-- **Escala (63 arquivos):** fazer em lotes pequenos e auditáveis; nunca
+- **Escala (61 arquivos):** fazer em lotes pequenos e auditáveis; nunca
   migrar tudo num commit. Cada lote reversível.
+- **Blast radius da fundação global:** a recoloração acontece antes da troca
+  de anatomia das features; mitigar com screenshots smoke de todas as seções,
+  validação de portais e rollback isolado do lote 4c-0.
 - **Regressão de portal Radix** (tema não desce no Select/Sheet/Tooltip):
   as 3 armadilhas do §3 são o guia; validar portais explicitamente.
 - **Relatórios acabou de ser recomposto** — migrar cedo (4c-2) evita
