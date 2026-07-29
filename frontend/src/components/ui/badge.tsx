@@ -26,6 +26,10 @@ const badgeVariants = cva(
         prioMed: "inline-flex items-center justify-center min-w-[26px] h-[26px] px-[7px] rounded-[7px] font-mono text-[13px] font-semibold border bg-tint-amber text-amber",
         prioLow: "inline-flex items-center justify-center min-w-[26px] h-[26px] px-[7px] rounded-[7px] font-mono text-[13px] font-semibold border bg-tint-green text-green",
         prioNone: "inline-flex items-center justify-center min-w-[26px] h-[26px] px-[7px] rounded-[7px] font-mono text-[13px] font-semibold border border-line bg-surface-2 text-text-mute",
+        situPlano: "inline-flex items-center gap-[5px] font-mono text-[10.5px] font-semibold tracking-[0.08em] uppercase py-[3px] px-[8px] rounded-[5px] whitespace-nowrap border-transparent bg-tint-green text-green",
+        situExec: "inline-flex items-center gap-[5px] font-mono text-[10.5px] font-semibold tracking-[0.08em] uppercase py-[3px] px-[8px] rounded-[5px] whitespace-nowrap border-transparent bg-tint-indigo text-indigo",
+        situFora: "inline-flex items-center gap-[5px] font-mono text-[10.5px] font-semibold tracking-[0.08em] uppercase py-[3px] px-[8px] rounded-[5px] whitespace-nowrap border-transparent bg-tint-amber text-amber",
+        situCancel: "inline-flex items-center gap-[5px] font-mono text-[10.5px] font-semibold tracking-[0.08em] uppercase py-[3px] px-[8px] rounded-[5px] whitespace-nowrap border-transparent bg-tint-red text-red",
       },
     },
     defaultVariants: {

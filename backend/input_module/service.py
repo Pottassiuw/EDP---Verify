@@ -52,7 +52,8 @@ class NotasDuplicadasErro(Exception):
     """Numero_Nota repetido no lote ou já existente no banco."""
 
 
-def _preparar_novas(notas: list[NovaNota], df_banco: pd.DataFrame) -> pd.DataFrame:
+def _preparar_novas(notas: list[NovaNota], df_banco: pd.DataFrame,
+                    origem: str) -> pd.DataFrame:
     """Valida duplicatas e completa Regional/ID_Cronologia (Input/app.py:640-728)."""
     numeros = [n.Numero_Nota for n in notas]
     repetidas_lote = {str(n) for n in numeros if numeros.count(n) > 1}
@@ -72,13 +73,14 @@ def _preparar_novas(notas: list[NovaNota], df_banco: pd.DataFrame) -> pd.DataFra
         registro["Regional"] = config.DE_PARA_REGIONAL.get(str(nota.Local_Instalacao)[:3], "-")
         registro["Centro_Responsavel"] = "-"
         registro["Status_Anterior"] = "-"
+        registro["origem"] = origem
         linhas.append(registro)
     return pd.DataFrame(linhas)
 
 
-def criar_notas(notas: list[NovaNota], usuario: str) -> int:
+def criar_notas(notas: list[NovaNota], usuario: str, origem: str = "manual") -> int:
     """Insere notas novas no plano; levanta NotasDuplicadasErro em conflito."""
-    df_novas = _preparar_novas(notas, db.carregar_dados())
+    df_novas = _preparar_novas(notas, db.carregar_dados(), origem)
     db.salvar_em_massa(df_novas)
     return len(df_novas)
 

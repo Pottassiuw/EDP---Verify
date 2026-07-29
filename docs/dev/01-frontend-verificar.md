@@ -136,8 +136,7 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   grupos individualmente ou todos de uma vez, uma switch "Gerar após
   corrigir", e confirma a ação via `AlertDialog` antes de disparar
   `POST /coffee/corrigir-local-lote` (`corrigirLocalLote` em `api.ts`).
-  O progresso é acompanhado por polling de `GET /coffee/job/{id}`
-  (mesmo padrão de `pollJob` usado em `coffee-gerar-modal.tsx`), com uma
+  O progresso é acompanhado por polling de `GET /coffee/job/{id}`, com uma
   barra `Progress` enquanto roda e chips de resultado ao concluir
   (corrigidas / já corrigidas / divergentes / geradas / erros). Grupos
   corrigidos com sucesso somem da lista (`tratados`), sem precisar

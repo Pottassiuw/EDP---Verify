@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoffeeNota } from './types';
-import { BASE as API_BASE } from '../../api';
+import { BASE as API_BASE, coffeeFetch } from '../../api';
 
 interface UseCoffeeNotasResult {
   notas: CoffeeNota[];
@@ -26,7 +26,7 @@ export function useCoffeeNotas(status?: string): UseCoffeeNotasResult {
       ? `${API_BASE}/coffee/notas?status=${encodeURIComponent(status)}`
       : `${API_BASE}/coffee/notas`;
 
-    fetch(url, { headers: { Accept: "application/json" } })
+    coffeeFetch(url, { headers: { Accept: "application/json" } })
       .then((res) => {
         if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
         return res.json();

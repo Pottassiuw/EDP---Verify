@@ -212,14 +212,27 @@ importar internals de rotas:
   zera esse estado (usado por `POST /migrar`).
 - `NovaNota` (Pydantic) — schema de uma nota nova, mesmos campos/defaults
   usados pelos endpoints `POST /notas` e `POST /notas/bulk`.
-- `criar_notas(notas: list[NovaNota], usuario: str) -> int` — valida
-  duplicatas (no lote e contra o banco), completa `Regional`
-  (derivado de `Local_Instalacao[:3]` via `config.DE_PARA_REGIONAL`) e
-  `ID_Cronologia`, grava via `db.salvar_em_massa()` e retorna a
-  quantidade inserida. Levanta `NotasDuplicadasErro` em conflito.
+- `criar_notas(notas: list[NovaNota], usuario: str, origem: str = "manual")
+  -> int` — valida duplicatas (no lote e contra o banco), completa
+  `Regional` (derivado de `Local_Instalacao[:3]` via
+  `config.DE_PARA_REGIONAL`), `ID_Cronologia` e `origem`, grava via
+  `db.salvar_em_massa()` e retorna a quantidade inserida. Levanta
+  `NotasDuplicadasErro` em conflito.
 
 `routes.py` apenas delega para essas funções e traduz
 `NotasDuplicadasErro` em `HTTPException(409, ...)`.
+
+### Coluna `origem` (Fase 2 da Carteira)
+
+A tabela `notas` tem uma coluna `origem` que rastreia como a nota entrou
+no plano: `"manual"` (rotas `POST /notas` e `/notas/bulk`, default de
+`criar_notas`), `"coffee"` (`integracao_module` — ponte COFFEE→plano),
+`"carteira"` (`carteira_module` — mover-para-plano da Carteira de Notas).
+Notas legadas (anteriores à coluna) ficam `NULL`. Migração aditiva
+idempotente em `inicializar_banco` (checa `PRAGMA table_info(notas)`
+antes do `ALTER TABLE ... ADD COLUMN`), no mesmo padrão de `Check`/
+`Status_Anterior`/`Nota_Mae`. `salvar_em_massa` inclui `origem` na lista
+`colunas_upsert`.
 
 ## routes.py
 
@@ -231,7 +244,7 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 |---|---|
 | `GET /notas` | Lista o dataset enriquecido (`engine.get_dataset()`) + metadados (opções de status/prioridade, status das bases, última alteração, colunas do painel, `versao`). Responde `ETag: W/"<versao>"` (`db.obter_versao_dataset()`) e `Cache-Control: no-cache`; se `If-None-Match` bater com o ETag atual, devolve `304` sem chamar `engine.get_dataset()` — o navegador serve o corpo do cache HTTP local ao `fetch`, sem re-enviar o dataset pela rede. |
 | `GET /sync` | Retorna `ultima_alteracao` e `versao` (`db.obter_versao_dataset()`), usado para polling leve — o frontend compara `versao` a cada 60s para saber se precisa revalidar (ver `03-frontend-input.md`). |
-| `GET /relatorios/dashboard?regional=<opcional>` | Home do app. Chama `metas.sincronizar_se_preciso()` (no-op se o mtime não mudou), monta o payload via `relatorios.montar_dashboard()` a partir de `engine.get_dataset()` + `db.carregar_dados_ramal()` + `db.carregar_metas()` + `db.carregar_planos_depara()` + `db.carregar_postergacoes()`, e anexa `regionais_disponiveis`/`metas_info`. O payload traz `hero.postergadas` (soma do mês corrente) e `visao_anual[].postergado` (soma do ano por plano) — ambos respeitam o filtro de `regional`. Mesmo contrato de ETag/304 de `GET /notas`; como o sync de metas grava em `log_arquivos`, a versão computada logo depois já reflete uma reimportação — o ETag nunca serve payload velho pós-sync. |
+| `GET /relatorios/dashboard?regional=<opcional>&mes=<opcional, 1-12>` | Home do app. `mes` seleciona o mês de referência do hero/regionais (padrão: mês corrente do servidor); fora de `1..12` retorna `422`. Chama `metas.sincronizar_se_preciso()` (no-op se o mtime não mudou), monta o payload via `relatorios.montar_dashboard(..., mes_referencia=...)` a partir de `engine.get_dataset()` + `db.carregar_dados_ramal()` + `db.carregar_metas()` + `db.carregar_planos_depara()` + `db.carregar_postergacoes()`, e anexa `regionais_disponiveis`/`metas_info`. O payload traz `mes_referencia` (renomeado de `mes_corrente`), `hero.postergadas` (soma do mês de referência) e `visao_anual[].postergado` (soma do ano por plano) — ambos respeitam o filtro de `regional`. Mesmo contrato de ETag/304 de `GET /notas`, mas o ETag agora inclui `versao-mes-regional` (`routes.py:79`) — cada combinação de filtro tem sua própria entidade cacheável, então trocar de mês/regional nunca serve payload de outra combinação. Como o sync de metas grava em `log_arquivos`, a versão computada logo depois já reflete uma reimportação — o ETag nunca serve payload velho pós-sync. |
 | `POST /metas/sincronizar` | Força `metas.sincronizar_se_preciso(forcar=True)` (ignora mtime) e devolve o estado; usado pelo botão "Sincronizar agora" em Configurações. |
 | `GET /logs`, `GET /logs/arquivos`, `GET /logs/nota/{numero}` | Log de alterações e de substituição de arquivos. |
 | `PATCH /notas` | Edição parcial (`db.aplicar_edicoes`), com diff campo a campo e log; exige header `X-User`. |
@@ -358,10 +371,13 @@ completamente as tabelas `metas_plano`, `planos_depara` e
   com o apelido; demais em colisão usam o nome longo sem " - CAPEX").
 - `metas_postergadas` — quantidade postergada por Ano/Mês/Regional/Plano,
   lida da aba `Postergadas` do mesmo Excel (`metas._postergadas`). O grão
-  é o **mês de onde a nota saiu** (from-month) — uma nota planejada para
-  julho e empurrada para setembro conta como postergada em julho, não em
-  setembro. `df_postergacoes` é opcional (`None` mantém a tabela intocada,
-  retrocompatível com o replace de metas puro); o sync sempre a passa.
+  é o **mês de destino** (`Mês de Execução Planejado - DDPM`, o mês para
+  onde a nota foi replanejada) — o arquivo real **não guarda o mês de
+  origem**, então a postergada conta no mês destino, não no de onde saiu.
+  A quantidade é a **soma de `Planejado-DDPM`**; regional e plano vêm de
+  `Regional` e `Projeto Construção`. `df_postergacoes` é opcional (`None`
+  mantém a tabela intocada, retrocompatível com o replace de metas puro);
+  o sync sempre a passa.
 
 Não há merge/upsert — o que o Excel diz é tudo; dados que saíram do
 Excel são apagados (garantindo que o banco reflete fielmente a fonte de
@@ -370,14 +386,12 @@ a exceção cai no mesmo `try/except` de `sincronizar_se_preciso` — a última
 sincronização boa (metas **e** postergadas) é preservada, e o erro aparece
 em `metas_info.erro` no dashboard.
 
-**Nomes de coluna não verificados contra o arquivo real:** o parser em
-`metas._postergadas` assume colunas `Regionais`, `Mês De`, `Plano`, `Qtd`
-(espelhando o padrão da aba `base`), mas o arquivo real vive apenas na
-máquina que hospeda o servidor em produção (`e713611`) e não estava
-acessível no ambiente onde esta funcionalidade foi implementada. Confirmar
-os nomes reais na primeira sincronização em produção — um nome divergente
-não derruba o dashboard (vira erro visível no card de metas), mas a
-quantidade postergada ficará zerada até o ajuste.
+Os nomes de coluna foram verificados contra o arquivo real. `_postergadas`
+resolve cada coluna pelo helper `_coluna`, que casa por nome **normalizado**
+(colapsa espaço duplo, quebra de linha e caixa) — o arquivo real usa
+cabeçalhos como `Projeto\nConstrução` e `Mês de Execução  Planejado - DDPM`
+(espaço duplo), que quebravam o casamento por nome exato. Coluna realmente
+ausente vira `KeyError` claro, degradado em aviso no card de metas.
 
 ### Versionamento: log_arquivos e obter_versao_dataset
 

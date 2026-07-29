@@ -64,11 +64,22 @@ Erros:
 
 ### `GET /api/integracao/resumo-fora-do-plano`
 
-Contador para o card "corrigidas fora do plano" da home (Relatórios):
+Contador para o botão "N nota(s) fora do plano" da home (Relatórios):
 `{corrigidas_fora_do_plano: N}` — notas COFFEE com SAP real
 (`service._sap_real`), não arquivadas (`coffee_db.listar_notas()` já
 exclui), cujo `id_sap` não existe na tabela `notas` do plano
 (`input_db.carregar_dados()`, lida uma única vez — sem N+1 por nota).
+
+Opcionalmente filtrado pelo header `X-User` (a rota reusa a dependency
+`usuario_coffee` de `coffee_module/routes.py`): quando presente,
+`service.contar_fora_do_plano(usuario)` repassa o filtro direto para o
+SQL de `coffee_db.listar_notas(usuario=...)` — só as notas do próprio
+usuário **ou** sem dono (mesma regra estrita de visibilidade, ver
+`05-backend-coffee-module.md`); sem o header, conta todas — mesmo
+contrato "sem X-User = sem filtro" que a rota já tinha antes desta
+mudança. O frontend (`EDPApi.resumoForaDoPlano`) sempre envia o header
+via `coffeeFetch()` (`02-frontend-coffee.md`), então na prática o card
+de Relatórios já mostra o número do usuário logado.
 
 ### `POST /api/integracao/mover-para-plano`
 

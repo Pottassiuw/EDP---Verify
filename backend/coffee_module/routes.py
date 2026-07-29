@@ -1,12 +1,28 @@
 """Rotas /api/coffee/* -- fundacao do hub COFFEE."""
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
-from coffee_module import client, config, db, jobs
+from coffee_module import client, config, db, jobs, operation_service
 
-router = APIRouter(prefix="/api/coffee")
+async def usuario_coffee(x_user: Optional[str] = Header(default=None, alias="X-User")) -> Optional[str]:
+    """Identidade do dono das notas: header X-User quando presente, senão None (fallback local).
+
+    PRECISA ser async: dependency síncrona roda em run_in_threadpool numa cópia
+    de contexto descartada — o set da contextvar nunca chegaria ao corpo da
+    rota. Async roda no task do request; o endpoint sync herda o contexto
+    (copy_context) e _usuario_atual() enxerga o valor.
+    """
+    usuario = x_user.strip() if x_user and x_user.strip() else None
+    db.definir_usuario(usuario)
+    return usuario
+
+
+# dependencies= garante a identidade em TODA rota do módulo (rota nova incluída);
+# rotas que precisam do valor declaram Depends(usuario_coffee) — o FastAPI
+# cacheia a dependency por request, então ela não roda duas vezes.
+router = APIRouter(prefix="/api/coffee", dependencies=[Depends(usuario_coffee)])
 
 _estado = {"inicializado": False}
 
@@ -33,6 +49,15 @@ class IdPedido(BaseModel):
 class LocalPedido(BaseModel):
     id: int
     local: str
+
+
+class OperacaoIdsPedido(BaseModel):
+    ids: list[int]
+
+
+class OperacaoRemoverPedido(BaseModel):
+    ids: list[int]
+    justificativa: str
 
 
 class ArquivarPedido(BaseModel):
@@ -66,14 +91,23 @@ class CorrigirLocalPedido(BaseModel):
     gerar_apos: bool = False
 
 
+def _validar_ids(ids: list[int]) -> list[int]:
+    unicos = list(dict.fromkeys(ids))
+    if not unicos:
+        raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
+    if any(ident <= 0 for ident in unicos):
+        raise HTTPException(status_code=400, detail="IDs devem ser positivos.")
+    return unicos
+
+
 @router.post("/buscar")
-def buscar(pedido: BuscaPedido):
+def buscar(pedido: BuscaPedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.ids:
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
     db.registrar_log("acao_usuario", "busca_lote", None,
                      {"ids": pedido.ids, "total": len(pedido.ids)}, True)
-    return {"job_id": jobs.iniciar_busca(pedido.ids, trace=db.trace_atual())}
+    return {"job_id": jobs.iniciar_busca(pedido.ids, trace=db.trace_atual(), usuario=usuario)}
 
 
 @router.get("/job/{job_id}")
@@ -85,9 +119,9 @@ def job(job_id: str):
 
 
 @router.get("/notas")
-def notas(status: Optional[str] = None):
+def notas(status: Optional[str] = None, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
-    return {"registros": db.listar_notas(status)}
+    return {"registros": db.listar_notas(status, usuario=usuario)}
 
 
 @router.get("/consultar/{id}")
@@ -128,10 +162,130 @@ def desarquivar(pedido: IdPedido):
 @router.post("/local-instalacao")
 def local_instalacao(pedido: LocalPedido):
     _garantir_banco()
-    client.alterar_local(pedido.id, pedido.local)
-    db.registrar_log("acao_usuario", "alterar_local", pedido.id,
-                     {"id": pedido.id, "local": pedido.local}, True)
+    try:
+        client.alterar_local(pedido.id, pedido.local)
+    except Exception as exc:  # noqa: BLE001
+        db.registrar_log(
+            "acao_usuario",
+            "alterar_local",
+            pedido.id,
+            {"id": pedido.id, "local": pedido.local},
+            False,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Não foi possível alterar o local na API COFFEE.",
+        ) from exc
+    try:
+        nota = client.buscar_nota(pedido.id)
+    except Exception as exc:  # noqa: BLE001
+        db.registrar_log(
+            "acao_usuario",
+            "alterar_local",
+            pedido.id,
+            {"id": pedido.id, "local": pedido.local},
+            False,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "O local foi alterado na API COFFEE, mas a nota não pôde "
+                "ser reconsultada. Tente consultar novamente."
+            ),
+        ) from exc
+
+    item = next(
+        (
+            atual
+            for atual in db.listar_itens_operacao()
+            if atual["nota_pk"] == nota["pk"]
+            or atual["entrada_id"] == pedido.id
+        ),
+        None,
+    )
+    origem = (
+        (item or {}).get("origem")
+        or db.origem_atual(nota["pk"])
+        or "avulsa"
+    )
+    operation_service.aplicar_consulta(pedido.id, nota, origem, None)
+    db.registrar_log(
+        "acao_usuario",
+        "alterar_local",
+        nota["pk"],
+        {"id": pedido.id, "local": pedido.local},
+        True,
+    )
     return {"ok": True}
+
+
+@router.get("/operacao")
+def obter_operacao():
+    _garantir_banco()
+    return operation_service.listar_quadro()
+
+
+@router.post("/operacao/consultar")
+def consultar_operacao(pedido: OperacaoIdsPedido):
+    _garantir_banco()
+    ids = _validar_ids(pedido.ids)
+    job_id = jobs.iniciar_consulta_operacao(
+        ids,
+        origem="avulsa",
+        trace=db.trace_atual(),
+    )
+    return {"job_id": job_id}
+
+
+@router.post("/operacao/gerar")
+def gerar_operacao(pedido: OperacaoIdsPedido):
+    _garantir_banco()
+    ids = _validar_ids(pedido.ids)
+    try:
+        job_id = jobs.iniciar_geracao_operacao(
+            ids,
+            trace=db.trace_atual(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"job_id": job_id}
+
+
+@router.post("/operacao/atualizar-sap")
+def atualizar_sap_operacao(pedido: OperacaoIdsPedido):
+    _garantir_banco()
+    ids = _validar_ids(pedido.ids)
+    try:
+        job_id = jobs.iniciar_atualizacao_sap(
+            ids,
+            trace=db.trace_atual(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"job_id": job_id}
+
+
+@router.post("/operacao/remover")
+def remover_operacao(pedido: OperacaoRemoverPedido):
+    _garantir_banco()
+    ids = _validar_ids(pedido.ids)
+    justificativa = pedido.justificativa.strip()
+    if not justificativa:
+        raise HTTPException(
+            status_code=400,
+            detail="Justificativa obrigatória.",
+        )
+    for pk in ids:
+        db.remover_item_operacao(pk)
+        db.marcar_gerar(pk, False)
+        db.registrar_log(
+            "acao_usuario",
+            "remover_fila_operacao",
+            pk,
+            {"justificativa": justificativa},
+            True,
+        )
+    return {"ok": True, "removidas": len(ids)}
 
 
 @router.get("/logs")
@@ -174,7 +328,11 @@ def marcar_gerar(pedido: MarcarGerarPedido):
         try:
             nota = client.buscar_nota(pedido.id)
             pk = nota["pk"]
-            db.upsert_nota(pk, nota["id_sap"], nota["fields"])
+            classificacao = db.upsert_nota(
+                pk,
+                nota["id_sap"],
+                nota["fields"],
+            )
         except client.NotaNaoEncontradaErro as exc:
             db.registrar_log("acao_usuario", "marcar_gerar", pedido.id,
                              {"id": pedido.id, "a_gerar": pedido.a_gerar,
@@ -187,7 +345,21 @@ def marcar_gerar(pedido: MarcarGerarPedido):
             raise HTTPException(status_code=502,
                                 detail="Nao foi possivel buscar a nota na API COFFEE.")
         db.definir_origem(pk, "verificar")
-    db.marcar_gerar(pk, pedido.a_gerar)
+        etapa = operation_service.etapa_da_classificacao(classificacao)
+        if etapa is None:
+            db.remover_item_operacao(pk)
+            db.marcar_gerar(pk, False)
+        else:
+            db.upsert_item_operacao(
+                entrada_id=pk,
+                nota_pk=pk,
+                etapa=etapa,
+                origem="verificar",
+            )
+            db.marcar_gerar(pk, etapa == "pronta")
+    else:
+        db.remover_item_operacao(pk)
+        db.marcar_gerar(pk, False)
     db.registrar_log("acao_usuario", "marcar_gerar", pk,
                      {"id": pedido.id, "a_gerar": pedido.a_gerar,
                       "justificativa": pedido.justificativa}, True)
@@ -227,7 +399,7 @@ def regerar(pedido: RegerarPedido):
 
 
 @router.post("/gerar-lote")
-def gerar_lote(pedido: GerarLotePedido):
+def gerar_lote(pedido: GerarLotePedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.ids:
         raise HTTPException(status_code=400, detail="Lista de IDs vazia.")
@@ -235,11 +407,11 @@ def gerar_lote(pedido: GerarLotePedido):
                      {"ids": pedido.ids, "total": len(pedido.ids),
                       "justificativa": pedido.justificativa}, True)
     return {"job_id": jobs.iniciar_geracao(pedido.ids, pedido.justificativa,
-                                           trace=db.trace_atual())}
+                                           trace=db.trace_atual(), usuario=usuario)}
 
 
 @router.post("/corrigir-local-lote")
-def corrigir_local_lote(pedido: CorrigirLocalPedido):
+def corrigir_local_lote(pedido: CorrigirLocalPedido, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
     if not pedido.itens:
         raise HTTPException(status_code=400, detail="Lista de itens vazia.")
@@ -253,4 +425,4 @@ def corrigir_local_lote(pedido: CorrigirLocalPedido):
                       "gerar_apos": pedido.gerar_apos}, True)
     return {"job_id": jobs.iniciar_correcao_local(
         [item.model_dump() for item in pedido.itens],
-        pedido.gerar_apos, trace=db.trace_atual())}
+        pedido.gerar_apos, trace=db.trace_atual(), usuario=usuario)}

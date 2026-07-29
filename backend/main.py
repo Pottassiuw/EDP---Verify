@@ -5,10 +5,13 @@ import re
 import uuid
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+
+load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 
 from coffee_module import db as _coffee_db
 
@@ -329,6 +332,12 @@ app.include_router(coffee_router)
 from integracao_module.routes import router as integracao_router
 
 app.include_router(integracao_router)
+
+from carteira_module.routes import router as carteira_router
+from carteira_module import db as _carteira_db
+
+_carteira_db.inicializar_banco()
+app.include_router(carteira_router)
 
 
 DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"

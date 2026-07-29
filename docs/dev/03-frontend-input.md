@@ -26,15 +26,17 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
 | `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
+| `frontend/src/features/input/cache.ts` | Snapshots do dataset em IndexedDB via Dexie (tabela `snapshots`, uma linha por dataset: `input-dados`, `ramal-dados`). Best-effort: falha de IndexedDB equivale a cache vazio. |
 | `frontend/src/features/input/ui.ts` | Constantes de estilo compartilhadas: `CLASSE_SELECT_MONO` para `SelectContent` mono-styling, usada por `filters.tsx`, `manage.tsx` e `ramal.tsx`. Nota: `MesExecucaoPicker` (agora em `components/branded/`) declara sua própria instância internamente. |
 | `frontend/src/components/branded/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", movido para `components/branded/` para reutilização entre features (Input e futura integração COFFEE). |
 | `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
 
 ## Fluxo: Overview e sub-navegação
 
-`input-section.tsx` define as seis sub-abas do módulo em `INPUT_SUBS`
-(`input-section.tsx:15-22`): Visão Geral, Gerenciar, Ramal, Relatórios,
-Logs e Configurações, renderizadas pelo `SegTabs`
+As seis sub-abas do módulo vivem em `INPUT_SUBS`
+(`features/input/subs.ts`, módulo leve que o `app-sidebar.tsx` importa
+sem puxar a feature pro bundle inicial): Visão Geral, Gerenciar, Ramal,
+Relatórios, Logs e Configurações, renderizadas pelo `SegTabs`
 (`input-section.tsx:51`). O estado da aba ativa (`sub`/`setSub`) chega
 via props — quem decide e persiste a aba ativa é o componente pai, o
 mesmo padrão do hub COFFEE documentado em `02-frontend-coffee.md`.
@@ -51,6 +53,25 @@ indisponível (com botão "Tentar importar de novo" que chama
 (`basesAusentes`, `input-section.tsx:65-69`). Não há mais um banner de
 "dados desatualizados por outra sessão" — ver "Sincronização SAP"
 abaixo, que agora revalida em background sem intervenção do usuário.
+
+Os hooks `useInputData`/`useRamalData` hidratam o React Query com o
+snapshot do IndexedDB no mount (`use-input-data.ts:22-32`,
+`use-ramal-data.ts:19-29`): `lerSnapshot` (`cache.ts:27-38`) busca a
+linha salva e, se a query ainda não tiver dado, um `setQueryData` com
+`updatedAt` do snapshot marca o dado como stale — o próprio React
+Query dispara a revalidação em background, sem estado manual. Cada
+resposta boa da rede regrava o snapshot dentro do `queryFn`
+(`gravarSnapshot`, `cache.ts:40-48`, chamado em `use-input-data.ts:12`
+e `use-ramal-data.ts:12`). O banner "Backend indisponível — mostrando
+dados salvos de {data}" usa `dataUpdatedAt` do próprio `useQuery` — não
+um state paralelo — porque esse campo já reflete tanto o `updatedAt`
+do seed quanto o de cada fetch bem-sucedido; `input-section.tsx:120-124`
+mostra esse banner para a base principal, e `ramal.tsx:201-205` replica
+o mesmo padrão na aba Ramal (erro bloqueante só quando
+`error != null && !dadosRamal`, `ramal.tsx:196-200`), que antes não
+tinha essa paridade. O cache não participa de escrita de notas (edições
+continuam exigindo backend); o poll de `/sync` segue sendo o
+invalidador entre sessões.
 
 ## Fluxo: Edição em lote (manage.tsx)
 
@@ -220,7 +241,7 @@ o Input em si não guarda essa informação.
   vez.
 - `manage.tsx:124,132` — a exclusão em lote e o "desfazer" usam
   `window.confirm` nativo, diferente do `ConfirmModal` (`AlertDialog`)
-  usado no módulo COFFEE (`coffee-pendentes.tsx`, documentado em
+  usado no módulo COFFEE pela Operação e por Concluídas (documentado em
   `02-frontend-coffee.md`) para o mesmo tipo de ação destrutiva —
   inconsistência de padrão de UI entre módulos, sem campo de
   justificativa nem estilo consistente com o resto do app.

@@ -5,8 +5,57 @@ export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
 export type Source = "api";
-export type AppSection = "relatorios" | "coffee" | "input" | "configuracoes";
-export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
+export type AppSection =
+  | "relatorios"
+  | "coffee"
+  | "input"
+  | "carteira"
+  | "configuracoes";
+export type RelatoriosPage =
+  | "dashboard"
+  | "regional"
+  | "mensalizacao"
+  | "financeiro"
+  | "postergacoes"
+  | "exportar";
+export type CoffeeSubPage =
+  | "abrir"
+  | "operacao"
+  | "concluidas"
+  | "verificar"
+  | "logs";
+export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
+export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
+export type CarteiraSubPage = "dashboard" | "explorador" | "sincronizacao" | "divergencias";
+
+export function normalizeRelatoriosPage(value: string): RelatoriosPage {
+  if (
+    value === "dashboard"
+    || value === "regional"
+    || value === "mensalizacao"
+    || value === "financeiro"
+    || value === "postergacoes"
+    || value === "exportar"
+  ) {
+    return value;
+  }
+  return "dashboard";
+}
+
+export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
+  if (value === "geradas" || value === "pendentes") return "operacao";
+  if (value === "corrigidas") return "concluidas";
+  if (
+    value === "abrir"
+    || value === "operacao"
+    || value === "concluidas"
+    || value === "verificar"
+    || value === "logs"
+  ) {
+    return value;
+  }
+  return "verificar";
+}
 
 export interface NoteError {
   rule: RuleKey;
@@ -132,4 +181,3 @@ export interface KpiDrawerProps {
   selectedNotes?: Note[];
   onRemoveSelected?: (id: string) => void;
 }
-

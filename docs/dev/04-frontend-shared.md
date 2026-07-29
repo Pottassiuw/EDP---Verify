@@ -6,8 +6,12 @@
 "configuracoes"`. `AppContent` inicializa `section` com
 `useState<AppSection>("relatorios")` — a home do app é o dashboard de
 Relatórios (`features/relatorios/relatorios-section.tsx`), não mais o
-COFFEE. O item "Relatórios" no `app-sidebar.tsx` fica acima de COFFEE,
-sem sub-abas (ícone `ChartNoAxesCombined` do lucide).
+COFFEE. `RelatoriosPage` persiste a subaba em `edp_relatorios_page`, e o
+item expansível "Relatórios" no `app-sidebar.tsx` espelha Dashboard geral,
+Carteira por regional, Mensalização, Financeiro, Postergações e Exportar.
+Os detalhes do módulo estão em [09-frontend-relatorios.md](./09-frontend-relatorios.md).
+O `app-sidebar.tsx` também tem o grupo **Carteira** (Databricks) com as
+sub-abas de `features/carteira/subs.ts` — ver [11-frontend-carteira.md](./11-frontend-carteira.md).
 
 ### Handoff de filtros pro Input
 
@@ -30,9 +34,84 @@ O `id` incremental força o `Overview` do Input a remontar
 (`key={filtrosHandoff?.id}`) mesmo quando os filtros mudam para o
 mesmo conjunto de valores duas vezes seguidas — ver
 [03-frontend-input.md](./03-frontend-input.md#handoff-de-filtros).
-`onIrParaCoffee` troca `coffeeSub` para `"corrigidas"` e a seção para
-`"coffee"` diretamente (não passa pelo handoff — é navegação simples,
-sem filtros).
+`onIrParaCoffee` abre `coffeeSub` em `"concluidas"`, cria um handoff com o
+filtro `"corrigida"` e troca a seção para `"coffee"`. Assim, o relatório
+leva o usuário diretamente ao histórico filtrado de notas corrigidas fora do
+plano.
+
+## Dashboard de Relatórios (features/relatorios/)
+
+A seção home (`relatorios-section.tsx`) tem o título fixo "Dashboard
+Geral" com subtítulo "Plano de Recomposição \<ano>" (`PageHeader`,
+`relatorios-section.tsx:54`) e organiza o conteúdo em duas partes:
+uma barra de resumo fixa mais uma navegação por três sub-abas
+(`SegTabs`, ligada ao estado de sub-aba que vem de `App.tsx`/
+`AppSidebar` — ver seção anterior).
+
+**Filtros no cabeçalho** (`relatorios-section.tsx:59-90`) — dois
+`Select` lado a lado:
+- **Mês** — "Mês atual" (sentinel `'atual'`, mapeado para `mes: null`)
+  ou um dos 12 meses do ano corrente. Vira o parâmetro `mes` de
+  `InputApi.dashboardRelatorios({ regional, mes })`
+  (`features/input/api.ts`), repassado ao backend como querystring
+  (`GET /relatorios/dashboard?mes=`, ver `06-backend-input-module.md`).
+  Selecionar um mês passado/futuro re-projeta o hero e os cards de
+  regional para aquele mês, sem sair da sub-aba atual.
+- **Regional** — inalterado (SP/todas ou uma das 6 regionais).
+
+`useDashboardRelatorios(regional, mes)` (`use-dashboard.ts`) inclui
+`mes` na `queryKey` (`['relatorios-dashboard', regional, mes]`) —
+trocar de mês gera uma entrada de cache própria no React Query, sem
+invalidar as demais combinações já buscadas.
+
+**Resumo fixo** (`resumo-fixo.tsx:22-46`) — barra sempre visível
+mostrando resumo do mês (o mês de referência escolhido, `data.mes_referencia`
+— campo renomeado de `mes_corrente`): rótulo do mês, %Disp (com cor de
+farol `farol()`, `resumo-fixo.tsx:29`), Exec (% execução), Gap R$
+extraído do `financeiroAno` (`resumo-fixo.tsx:36`) e botão para
+alertas.
+
+**Navegação por sub-abas** (`SegTabs<RelatoriosSubPage>`,
+`relatorios-section.tsx:111`) — três visões mutuamente exclusivas;
+a aba ativa (`sub`) e sua persistência vêm de fora (`App.tsx`, ver
+seção anterior), não de `useState` local:
+
+- **Aba Mês** (`aba-mes.tsx`) — padrão ao carregar. Exibe: hero
+  do mês (KPIs executado/meta), alertas de carteiras abaixo da meta
+  (`AlertasCarteira`) e cards de saldo por regional (`RegionaisCards`).
+  O botão de atalho para o COFFEE mudou de "N corrigidas no COFFEE
+  fora do plano →" para **"N nota(s) fora do plano →"**
+  (`relatorios-section.tsx:124`) — o contador em si
+  (`useForaDoPlano`/`GET /integracao/resumo-fora-do-plano`) agora é
+  por usuário (ver `08-integracao-coffee-input.md`), então o rótulo
+  genérico evita insinuar que é uma contagem global.
+- **Aba Planos** (`aba-planos.tsx`) — tabela anual (visão de
+  todos os planos da carteira, `TabelaAnual`) mais financeiro
+  completo do ano (Carteira/Meta/Gap RS).
+- **Aba Mensalização** (`aba-mensalizacao.tsx`) — gráfico de
+  evolução mensal (`MensalizacaoChart`) mais tabela de detalhes
+  mensais (`TabelaMensal`), ambos recebendo `data.mes_referencia`.
+
+**Relocação do Financeiro do ano:** mudou de feature integrada no hero
+(antes) para feature específica da aba Planos (agora). A barra resumo
+exibe apenas o Gap R$ como métrica rápida.
+
+**Rótulo "qtd DDPM":** todo número de quantidade planejada (hero,
+`StatTile`s, `RegionaisCards`, `TabelaMensal`, `MensalizacaoChart`) traz
+o sufixo "qtd DDPM" no texto ou em `title`/`aria-label` — deixa
+explícito que aqueles números vêm do campo `Planejado_DDPM` (unidade
+por plano) e não são contagem de notas nem valor em R$ (esse último só
+aparece nos blocos "financeiro"/Gap R$).
+
+**Gráfico de mensalização (`mensalizacao-chart.tsx`):** reescrito de
+SVG artesanal para `recharts` (`BarChart`) sobre a composição
+`ChartContainer`/`ChartTooltip`/`ChartLegend` de `components/ui/chart.tsx`
+(shadcn "chart"), com `CHART_CONFIG` mapeando `meta`/`carteira`/
+`executado` para os tokens `--surface-2`/`--accent`/`--green-2`. Mantém
+o comportamento anterior (mês de referência destacado via
+`ReferenceArea`, executado zerado para meses futuros) mas ganha
+tooltip/legenda acessíveis "de fábrica" via Radix/recharts em vez de
+`<title>` de SVG. Nova dependência: `recharts` (`package.json`).
 
 ## Configurações (features/configuracoes/)
 
@@ -115,6 +194,10 @@ Por decisão registrada em CLAUDE.md desde o SP1, `src/components/ui/`
 tematizar, redimensionar ou ajustar comportamento padrão de um
 primitivo, em vez de mantido intocado como em outros projetos shadcn.
 
+`chart.tsx` foi adicionado via `npx shadcn@latest add chart` (dependência
+`recharts`) para o gráfico de mensalização de Relatórios — stock, sem
+customização própria; ver "Dashboard de Relatórios" acima.
+
 Dois componentes têm customização real, ambas adicionadas no SP2b
 (`docs/superpowers/specs/2026-07-08-sp2b-shadcn-component-swaps-design.md`)
 para reproduzir exatamente um padrão visual que antes era CSS/JSX
@@ -132,11 +215,10 @@ manual:
   para os 8 call sites conhecidos em `shared.tsx` e `dashboard.tsx`.
 - **`progress.tsx`** — a prop `indicatorClassName`
   (`progress.tsx:9,25`) não existe no output padrão do CLI; foi
-  adicionada no SP2b para que os 4 call sites de barra de progresso possam
-  colorir o indicador via `className` em vez de cor hardcoded. Apenas um deles
-  (`coffee-pendentes.tsx:164`) usa cor condicional (verde quando concluído vs. accent
-  enquanto rodando); os outros três (`upload-screen.tsx`, `kpi-drawer.tsx`,
-  `coffee-abrir.tsx`) usam uma cor fixa.
+  adicionada no SP2b para que call sites possam colorir o indicador via
+  `className` em vez de cor hardcoded. Hoje `upload-screen.tsx`,
+  `kpi-drawer.tsx` e `coffee-abrir.tsx` usam a prop; o painel de malha fina
+  usa o indicador padrão.
 
 Os demais componentes lidos para esta doc — `select.tsx`, `sheet.tsx`,
 `dialog.tsx`, `alert-dialog.tsx` — são majoritariamente stock: mesma
@@ -238,6 +320,44 @@ cache continuam na tela normalmente, e são trocados só quando a
 resposta nova chega (padrão SWR: "stale-while-revalidate"). Sem
 `staleTime`, esse mesmo refetch por foco reexecutava a busca a cada
 troca de aba, mesmo com o dado ainda válido.
+
+## COFFEE: operação e conclusões
+
+O hub COFFEE usa as subseções **Verificar**, **Abrir**, **Operação**,
+**Concluídas** e **Logs**. Verificar encaminha seleções para a fila de
+Operação; Concluídas separa as classificações gerada e corrigida, sem
+misturar o histórico com a fila ativa.
+
+As queries React Query do fluxo são `['coffee', 'operacao']` para o quadro
+e jobs ativos, `['coffee', 'concluidas']` para o histórico,
+`['coffee', 'revisao', pk]` para a ficha da nota e
+`['coffee', 'nota', pk, 'logs']` para os últimos logs no inspector. As
+mutações invalidam essas chaves pontualmente, em vez de replicar estado de
+servidor em Context.
+
+A fila e os jobs de operação são persistidos em SQLite. Por isso o Kanban
+continua mostrando a situação da operação depois de atualizar o navegador;
+quando o backend reinicia, jobs em execução são marcados como interrompidos
+e as notas retornam ao estado recuperável indicado pela API.
+
+`useCoffeePortalTheme` repassa tema resolvido, densidade e as variáveis de
+accent atuais para conteúdo portalizado de `Sheet`, `Dialog`, `AlertDialog`
+e `Select`, mantendo Sistema, Claro e Escuro coerentes fora da raiz `.edp`.
+As antigas telas separadas de Geradas, Corrigidas e Pendentes, o modal de
+gerar/consultar, a tabela legada, o drawer de logs e a ficha de revisão
+foram substituídos pelo Kanban, inspector e página Concluídas.
+
+## COFFEE: handoff e limites de ações
+
+O handoff de Verificar para Operação não abre modal: ele encaminha a seleção
+para a fila persistida e o Kanban acompanha Fila, Prontas para gerar,
+Processando e Aguardando SAP. Concluídas mantém o histórico separado; a
+seleção em lote é reconciliada aos filtros visíveis, portanto busca, período
+ou classificação nunca permitem mover itens ocultos para o plano.
+
+O inspector na Operação é somente operacional (gerar, atualizar SAP e
+remover). Arquivar notas geradas e mover notas corrigidas para o plano são
+ações exclusivas de Concluídas.
 
 ## Hooks compartilhados
 

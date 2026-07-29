@@ -119,7 +119,7 @@ cd frontend && npm run build                    # type-check (tsc) + build
 
 | Módulo | Caminho | O que faz | Doc detalhado |
 |---|---|---|---|
-| Relatórios | `frontend/src/features/relatorios/` | Home do app: dashboard vivo do Plano de Recomposição (hero do mês, visão anual, mensalização, saldo por regional, financeiro) | [04-frontend-shared.md](./04-frontend-shared.md) |
+| Relatórios | `frontend/src/features/relatorios/` | Central de Recomposição com Dashboard geral, carteira regional, mensalização, financeiro, postergações e exportação | [09-frontend-relatorios.md](./09-frontend-relatorios.md) |
 | Verificar | `frontend/src/features/verificar/` | Triagem da planilha, upload, KPIs, comparação de duplicatas | [01-frontend-verificar.md](./01-frontend-verificar.md) |
 | COFFEE | `frontend/src/features/coffee/` | Geração de notas no SAP via COFFEE, consulta de status, correção, logs | [02-frontend-coffee.md](./02-frontend-coffee.md) |
 | Input | `frontend/src/features/input/` | Gestão de notas do departamento, edição em lote, sincronização SAP | [03-frontend-input.md](./03-frontend-input.md) |
@@ -128,6 +128,9 @@ cd frontend && npm run build                    # type-check (tsc) + build
 | Backend — input_module | `backend/input_module/` | Cruzamento IW28/IW38/IW66, cache SQLite, sincronização SAP | [06-backend-input-module.md](./06-backend-input-module.md) |
 | Fluxos de negócio | (cross-cutting) | Ciclo de vida de uma nota, regra de geração COFFEE, timings consolidados | [07-fluxos-de-negocio.md](./07-fluxos-de-negocio.md) |
 | Backend — integracao_module | `backend/integracao_module/` | Ponte COFFEE → Input: monta revisão de uma nota gerada e move (cria/atualiza) o registro correspondente no plano | [08-integracao-coffee-input.md](./08-integracao-coffee-input.md) |
+| Backend — databricks_module | `backend/databricks_module/` | Integração genérica e reutilizável com o Databricks SQL Warehouse (client, config, descoberta de schema); base da Carteira de Notas | [09-backend-databricks-module.md](./09-backend-databricks-module.md) |
+| Backend — carteira_module | `backend/carteira_module/` | Projeção local da base COFFEE (Databricks), sync idempotente, situação derivada e API do explorador da Carteira de Notas | [10-backend-carteira-module.md](./10-backend-carteira-module.md) |
+| Carteira | `frontend/src/features/carteira/` | Explorador da base COFFEE (Databricks): tabela paginada, filtros, situação, detalhe e sincronização — primeira feature na direção visual Supabaze (DESIGN.md) | [11-frontend-carteira.md](./11-frontend-carteira.md) |
 | Backend — core (Verificar) | `backend/main.py` | Endpoints `/api/upload`, `/api/data`, `/api/complete`, `/api/duplicata`; monta os routers de `coffee_module`/`input_module` | (sem doc dedicado — coberto neste overview e em 07) |
 
 ## Pontos de atenção
@@ -147,8 +150,3 @@ cd frontend && npm run build                    # type-check (tsc) + build
   um scheduler de verdade: é um `while True` que testa `hour == 3 and
   minute == 0` a cada 30 segundos e depois dorme 61 minutos para não
   repetir no mesmo minuto.
-- `frontend/src/components/app-sidebar.tsx:13-15` — comentário `ponytail`
-  já documenta que o import estático de `INPUT_SUBS` (de
-  `features/input/input-section`) puxa a feature Input inteira para o
-  bundle do sidebar, junto com `COFFEE_SUBS`; a extração de um
-  `input/subs.ts` fica marcada como próximo passo se o bundle pesar.

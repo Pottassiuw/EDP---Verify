@@ -6,7 +6,7 @@ import { InputApi } from '../input/api';
 export function useDashboardRelatorios(regional: string | null) {
   return useQuery({
     queryKey: ['relatorios-dashboard', regional],
-    queryFn: () => InputApi.dashboardRelatorios(regional ?? undefined),
+    queryFn: () => InputApi.dashboardRelatorios({ regional: regional ?? undefined }),
     staleTime: 60_000,
   });
 }

@@ -154,6 +154,8 @@ def inicializar_banco() -> None:
         cursor.execute('ALTER TABLE notas ADD COLUMN Status_Anterior TEXT DEFAULT "-"')
     if "Nota_Mae" not in colunas_existentes:
         cursor.execute("ALTER TABLE notas ADD COLUMN Nota_Mae TEXT DEFAULT '-'")
+    if "origem" not in colunas_existentes:
+        cursor.execute("ALTER TABLE notas ADD COLUMN origem TEXT")
 
     # Índices para acelerar auditoria e logs
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_alteracoes_nota ON log_alteracoes(Numero_Nota)')
@@ -442,7 +444,7 @@ def salvar_em_massa(df: pd.DataFrame) -> None:
         "Numero_Nota", "Status_Obra", "Conjunto", "Circuito", "Local_Instalacao",
         "Regional", "Planejado_DDPM", "Mes_Execucao_Planejado", "Data_Envio_Projeto",
         "Status_Nota", "Prioridade_Nota", "Observacao", "Check", "Status_Anterior",
-        "Centro_Responsavel"
+        "Centro_Responsavel", "origem"
     ]
 
     # Garante que todas as colunas necessárias existam antes de criar os registros
@@ -990,3 +992,19 @@ def gravar_estado_metas(arquivo_mtime: float, erro: str | None) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def listar_numeros_nota() -> set[int]:
+    """Contrato estreito de leitura: numeros de nota presentes no plano.
+
+    Usado por outros modulos (ex.: Carteira) para derivar situacao sem
+    duplicar SQL do engine. Devolve set vazio se o banco ainda nao existe.
+    """
+    if not os.path.exists(obter_caminho_banco()):
+        return set()
+    conn = get_db_connection()
+    try:
+        linhas = conn.execute("SELECT Numero_Nota FROM notas").fetchall()
+    finally:
+        conn.close()
+    return {int(linha[0]) for linha in linhas if linha[0] is not None}

@@ -95,16 +95,19 @@ def mover_para_plano(pks: list[int], campos_usuario: dict, usuario: str,
             "Já no plano: " + ", ".join(str(n["id_sap"]) for n in ja_existem))
     novas = [mapping.montar_nova_nota(n, iw28.obter_por_nota(n["id_sap"]), campos_usuario)
              for n in notas]
-    inseridas = input_service.criar_notas(novas, usuario=usuario)
+    inseridas = input_service.criar_notas(novas, usuario=usuario, origem="coffee")
     coffee_db.registrar_log("acao_usuario", "mover_para_plano", None,
                             {"pks": list(pks),
                              "saps": [n["id_sap"] for n in notas]}, True)
     return {"inseridas": inseridas, "atualizadas": 0}
 
 
-def contar_fora_do_plano() -> int:
-    """Notas COFFEE com SAP real, não arquivadas, ainda ausentes do plano."""
-    candidatas = [n for n in coffee_db.listar_notas() if _sap_real(n)]
+def contar_fora_do_plano(usuario: str | None = None) -> int:
+    """Notas COFFEE com SAP real, não arquivadas, ainda ausentes do plano.
+
+    Quando usuario é informado, restringe às notas do próprio dono (ou sem dono).
+    """
+    candidatas = [n for n in coffee_db.listar_notas(usuario=usuario) if _sap_real(n)]
     if not candidatas:
         return 0
     df_plano = input_db.carregar_dados()

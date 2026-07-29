@@ -1,16 +1,20 @@
 import os
 import sys
 import sqlite3
+from pathlib import Path
 
 # --- BLINDAGEM DE SEGURANÇA ---
 # Exige autorização explícita via variável de ambiente para impedir apagar banco acidentalmente
-if os.environ.get("ALLOW_SEED") != "1" and os.environ.get("FORCE_SEED") != "1":
+if os.environ.get("ALLOW_SEED") != "1" and os.environ.get("FORCE_SEED") != "1" and os.environ.get("SEED_FORCE") != "1":
     print("[BLOQUEADO] OPERACAO CANCELADA POR SEGURANCA:")
     print("   O script seed_db.py apaga e reinicia tabelas com dados de teste.")
     print("   Para autorizar a execucao, defina a variavel de ambiente ALLOW_SEED=1 (ou FORCE_SEED=1).")
     sys.exit(1)
 
-db_path = 'backend/data/notas_departamento.db'
+# Respeita INPUT_DATA_DIR (mesma lógica de input_module/config.py)
+data_dir = Path(os.environ.get(
+    "INPUT_DATA_DIR", str(Path(__file__).resolve().parent / "data")))
+db_path = data_dir / "notas_departamento.db"
 
 # Connect to database
 if os.path.exists(db_path):
@@ -30,10 +34,6 @@ if os.path.exists(db_path):
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
-
-# Clean existing records first to avoid constraint errors
-cursor.execute("DELETE FROM notas")
-cursor.execute("DELETE FROM notas_ramal")
 
 # Seed data for 'notas'
 # Columns: Numero_Nota, ID_Cronologia, Status_Obra, Conjunto, Circuito, Local_Instalacao, Regional, Planejado_DDPM, Mes_Execucao_Planejado, Data_Envio_Projeto, Centro_Responsavel, Status_Nota, Prioridade_Nota, Observacao, "Check", Status_Anterior, Nota_Mae
@@ -55,6 +55,24 @@ notas_data = [
     # Another 2026 note (Litoral Norte)
     (100008, 8, "Em Andamento", "CARAGUA", "195-CARAG", "195-LITORAL1", "Litoral Norte", 22000.0, "2026-10-01", "20/05/2026", "-", 11, "Urgente", "Reforço de rede no Litoral", "-", "-", "-"),
 ]
+
+# Guarda: recusa apagar um banco que parece de produção. O seed cria poucas
+# notas; se o alvo já tiver mais que isso, exige SEED_FORCE=1 explícito.
+try:
+    notas_existentes = cursor.execute("SELECT COUNT(*) FROM notas").fetchone()[0]
+except sqlite3.OperationalError:
+    notas_existentes = 0  # banco novo: tabela ainda não existe
+
+if notas_existentes > len(notas_data) and os.environ.get("SEED_FORCE") != "1":
+    conn.close()
+    raise SystemExit(
+        f"Abortado: '{db_path}' já tem {notas_existentes} notas (parece produção). "
+        "Rode com SEED_FORCE=1 para sobrescrever mesmo assim."
+    )
+
+# Clean existing records first to avoid constraint errors
+cursor.execute("DELETE FROM notas")
+cursor.execute("DELETE FROM notas_ramal")
 
 cursor.executemany("""
     INSERT INTO notas (

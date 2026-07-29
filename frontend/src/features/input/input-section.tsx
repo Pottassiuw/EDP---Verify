@@ -13,15 +13,7 @@ import { Settings } from './settings';
 import { Button } from '@/components/ui/button';
 import { SegTabs } from '@/components/branded/section';
 import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
-
-export const INPUT_SUBS: { id: AbaInput; rotulo: string }[] = [
-  { id: 'visao', rotulo: 'Visão Geral' },
-  { id: 'gerenciar', rotulo: 'Gerenciar' },
-  { id: 'ramal', rotulo: 'Ramal' },
-  { id: 'relatorios', rotulo: 'Relatórios' },
-  { id: 'logs', rotulo: 'Logs' },
-  { id: 'config', rotulo: 'Configurações' },
-];
+import { INPUT_SUBS } from './subs';
 
 interface InputSectionProps {
   sub: AbaInput;
@@ -30,7 +22,7 @@ interface InputSectionProps {
 }
 
 export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
-  const { data: dados, isLoading, error } = useInputData();
+  const { data: dados, isLoading, error, dataUpdatedAt } = useInputData();
   const recarregar = useRecarregarInput();
   const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
     try {
@@ -120,9 +112,14 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
       )}
 
       {isLoading && <div className="p-[24px] text-text-dim">Carregando notas…</div>}
-      {error != null && (
+      {error != null && !dados && (
         <div className="p-[24px] text-red">
           Backend indisponível. O módulo Input exige o backend rodando (porta 8000). Detalhe: {String((error as Error).message)}
+        </div>
+      )}
+      {error != null && dados && (
+        <div className="py-[6px] px-[18px] text-[12px] text-amber">
+          {`Backend indisponível — mostrando dados salvos${dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.`}
         </div>
       )}
 
