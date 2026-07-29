@@ -1,3 +1,5 @@
+import type { DashboardRelatorios, LinhaBaseSemMeta } from '../relatorios/types';
+
 export type SituacaoCarteira =
   | 'cancelada' | 'executada' | 'no_plano' | 'fora_do_plano';
 
@@ -122,40 +124,10 @@ export interface MesMensalizacao {
   executado: number;
 }
 
-export interface LinhaPlano {
-  plano: string;
-  nome_curto: string | null;
-  area: string | null;
-  meta: number;
-  planejado: number;
-  base_disponivel: number;
-  gap: number;
-  cobertura_pct: number | null;
-  suficiente: boolean;
-}
-
-export interface LinhaRegional {
-  regional: string;
-  meta: number;
-  planejado: number;
-  base_disponivel: number;
-  gap: number;
-  cobertura_pct: number | null;
-}
-
-export interface LinhaBaseSemMeta {
-  plano: string;
-  nome_curto: string | null;
-  area: string | null;
-  base_disponivel: number;
-}
-
-export interface DashboardCarteira {
-  hero: { meta: number; carteira: number; executado: number };
-  mensalizacao: MesMensalizacao[];
-  por_plano: LinhaPlano[];
-  por_regional: LinhaRegional[];
+// Fase 4a: o dashboard da Carteira e o de Relatórios convergem para um único
+// contrato (superset). A base disponível vive dentro de visao_anual/regionais
+// (ver relatorios/types.ts); a Carteira só acrescenta os extras abaixo.
+export type DashboardCarteira = DashboardRelatorios & {
   base_por_plano_sem_meta: LinhaBaseSemMeta[];
-  regionais_disponiveis: string[];
   versao: string;
-}
+};

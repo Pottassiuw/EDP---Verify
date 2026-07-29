@@ -31,13 +31,17 @@ export function DashboardCarteiraView({ onDrill }: {
   const drillPlano = (_plano: string): void => onDrill({ situacao: 'fora_do_plano' });
   const drillRegional = (regional: string): void => onDrill({ regional, situacao: 'fora_do_plano' });
 
+  // Fase 4a: a base vive dentro de visao_anual; só planos com meta entram na
+  // distribuição por plano (paridade com o antigo por_plano, filtrado meta>0).
+  const planosComMeta = data.visao_anual.filter((l) => l.meta > 0);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)', padding: 'var(--pad)' }}>
       <KpisDashboard dados={data} />
-      <HeatmapCobertura porRegional={data.por_regional} onDrill={drillRegional} />
+      <HeatmapCobertura porRegional={data.regionais} onDrill={drillRegional} />
       <Evolucao meses={data.mensalizacao} />
-      <DistribuicaoPlano linhas={data.por_plano} onDrill={drillPlano} />
-      <DistribuicaoRegional linhas={data.por_regional} onDrill={drillRegional} />
+      <DistribuicaoPlano linhas={planosComMeta} onDrill={drillPlano} />
+      <DistribuicaoRegional linhas={data.regionais} onDrill={drillRegional} />
     </div>
   );
 }

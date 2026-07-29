@@ -1,5 +1,6 @@
 """Rotas da Carteira (FastAPI). Endpoints finos: validam e chamam o service."""
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException, Query,
+                     Request, Response)
 from pydantic import BaseModel, Field
 
 from carteira_module import db, movimentacao, service
@@ -45,9 +46,16 @@ def resumo():
 
 
 @router.get("/dashboard")
-def dashboard(ano: int | None = None, mes: int | None = None,
+def dashboard(request: Request, response: Response,
+              ano: int | None = None, mes: int | None = None,
               regional: str | None = None):
-    return service.dashboard(ano, mes, regional)
+    etag = f'W/"{service.versao_dashboard()}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    corpo = service.dashboard(ano, mes, regional)
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache"
+    return corpo
 
 
 @router.get("/sincronizacao")

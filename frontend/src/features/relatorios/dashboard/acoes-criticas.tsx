@@ -11,9 +11,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { fmtPct, fmtQtd, fmtRS } from '../fmt';
+import { farol, FAROL_COR, fmtPct, fmtQtd, fmtRS } from '../fmt';
 import { ordenarPlanos, type PlanoRelatorio } from '../relatorios-data';
 import { EstadoVazio, TituloPainel } from '../relatorios-ui';
+
+function corCobertura(pct: number | null | undefined): string | undefined {
+  const f = farol(pct ?? null);
+  return f === null ? undefined : FAROL_COR[f];
+}
 
 export function AcoesCriticas({
   planos,
@@ -67,7 +72,18 @@ export function AcoesCriticas({
                   <TableCell className="text-right edp-mono text-red">{fmtQtd(plano.deficit)}</TableCell>
                   <TableCell className="text-right edp-mono text-red">{fmtPct(plano.pct_disp)}</TableCell>
                   <TableCell className="text-right edp-mono text-red">{fmtRS(plano.gapFinanceiro)}</TableCell>
-                  <TableCell><span className="text-xs text-text-mute">Não confirmável</span></TableCell>
+                  <TableCell>
+                    {plano.cobertura_pct == null ? (
+                      <span className="text-xs text-text-mute">—</span>
+                    ) : (
+                      <div>
+                        <span className="edp-mono" style={{ color: corCobertura(plano.cobertura_pct) }}>
+                          {fmtPct(plano.cobertura_pct)}
+                        </span>
+                        <div className="text-xs text-text-mute">base {fmtQtd(plano.base_disponivel ?? 0)}</div>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       type="button"

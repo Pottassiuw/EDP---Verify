@@ -34,6 +34,9 @@ Além disso, as três extrações SAP não compartilham a mesma raiz: IW38 já u
    `ENCE EXEC` já existente, fica fora desta entrega.
 7. IW28, IW38 e IW66 devem derivar seus caminhos da raiz única:
    `\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM\INPUT SQL\Arquivos_SAP`.
+8. O frontend ainda tipa o campo antigo `mes_corrente`, embora a API devolva
+   `mes_referencia`. O contrato será alinhado ao nome real nesta entrega,
+   evitando fallbacks silenciosos e comparações com `undefined`.
 
 ## Arquitetura
 

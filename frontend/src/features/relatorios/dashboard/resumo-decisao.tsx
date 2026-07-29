@@ -5,8 +5,13 @@ import { Button } from '@/components/ui/button';
 
 import { calcularResumoCritico, type PlanoRelatorio } from '../relatorios-data';
 import { BarraDisponibilidade, BadgeDisponibilidade, TituloPainel } from '../relatorios-ui';
-import { MESES_ABREV_PT, fmtQtd, fmtRS } from '../fmt';
+import { farol, FAROL_COR, MESES_ABREV_PT, fmtPct, fmtQtd, fmtRS } from '../fmt';
 import type { DashboardRelatorios } from '../types';
+
+function corCobertura(pct: number | null): string | undefined {
+  const f = farol(pct);
+  return f === null ? undefined : FAROL_COR[f];
+}
 
 export function ResumoDecisao({
   dashboard,
@@ -27,6 +32,13 @@ export function ResumoDecisao({
   const disponibilidade = dadosDoMes.meta > 0 ? dadosDoMes.carteira / dadosDoMes.meta : null;
   const resumoCritico = calcularResumoCritico(planos);
   const postergadas = mes === dashboard.mes_corrente ? dashboard.hero.postergadas : null;
+
+  // Fase 4a: cobertura possível agregada a partir da camada base (carteira).
+  const planosComMeta = planos.filter((plano) => plano.meta > 0);
+  const baseDisponivel = planosComMeta.reduce((soma, p) => soma + (p.base_disponivel ?? 0), 0);
+  const metaTotal = planosComMeta.reduce((soma, p) => soma + p.meta, 0);
+  const carteiraTotal = planosComMeta.reduce((soma, p) => soma + p.carteira, 0);
+  const coberturaPossivel = metaTotal > 0 ? (carteiraTotal + baseDisponivel) / metaTotal : null;
 
   return (
     <div className="grid gap-4 xl:grid-cols-3">
@@ -69,20 +81,25 @@ export function ResumoDecisao({
 
       <section className="edp-panel flex flex-col gap-4">
         <TituloPainel
-          titulo="Cobertura por notas"
-          detalhe="Ligação entre planos e notas do COFFEE."
-          acao={<WalletCards className="size-4 text-amber" aria-hidden="true" />}
+          titulo="Cobertura possível"
+          detalhe="Planejado + base fora do plano (COFFEE), sobre a meta."
+          acao={<WalletCards className="size-4 text-text-dim" aria-hidden="true" />}
         />
-        <div className="rounded-edp border border-line bg-tint-amber p-3 text-xs leading-5 text-text-dim">
-          O contrato atual não fornece notas candidatas por plano. A cobertura não é inferida automaticamente.
+        <div className="grid grid-cols-2 gap-3">
+          <Resumo label="Base disponível" valor={fmtQtd(baseDisponivel)} />
+          <div className="min-w-0">
+            <p className="edp-eyebrow truncate">Cobertura possível</p>
+            <p className="mt-1 truncate text-lg font-semibold tracking-display"
+               style={{ color: corCobertura(coberturaPossivel) }}>
+              {coberturaPossivel === null ? '—' : fmtPct(coberturaPossivel)}
+            </p>
+          </div>
         </div>
         {corrigidasForaDoPlano && corrigidasForaDoPlano > 0 ? (
           <Button type="button" variant="outline" className="mt-auto border-line-2 bg-bg-2" onClick={onIrParaCoffee}>
             Ver {fmtQtd(corrigidasForaDoPlano)} corrigidas fora do plano
           </Button>
-        ) : (
-          <p className="mt-auto text-xs text-text-mute">Sem confirmação de cobertura disponível.</p>
-        )}
+        ) : null}
       </section>
     </div>
   );

@@ -11,10 +11,15 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
-import { fmtQtd, fmtRS } from './fmt';
+import { farol, FAROL_COR, fmtPct, fmtQtd, fmtRS } from './fmt';
 import type { PlanoRelatorio } from './relatorios-data';
 import { BadgeDisponibilidade } from './relatorios-ui';
 import { useRelatoriosPortalTheme } from './use-relatorios-portal-theme';
+
+function corCobertura(pct: number | null | undefined): string | undefined {
+  const f = farol(pct ?? null);
+  return f === null ? undefined : FAROL_COR[f];
+}
 
 export interface PlanoInspectorProps {
   plano: PlanoRelatorio | null;
@@ -61,18 +66,29 @@ export function PlanoInspector({
             </div>
           </div>
 
-          <div className="rounded-edp border border-line bg-tint-amber p-4">
-            <div className="flex gap-3">
-              <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber" aria-hidden="true" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-text">Cobertura por notas ainda não confirmável</p>
-                <p className="text-xs leading-5 text-text-dim">
-                  O contrato atual de Relatórios não informa quais notas do COFFEE atendem este plano.
-                  Nenhuma sugestão de cobertura foi inferida.
-                </p>
+          {plano.cobertura_pct == null ? (
+            <div className="rounded-edp border border-line bg-tint-amber p-4">
+              <div className="flex gap-3">
+                <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-text">Cobertura sem base disponível</p>
+                  <p className="text-xs leading-5 text-text-dim">
+                    Sem meta no ano ou sem notas fora do plano na base COFFEE para este plano.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <Valor label="Base disponível" valor={fmtQtd(plano.base_disponivel ?? 0)} />
+              <div className="edp-stat">
+                <span className="edp-eyebrow">Cobertura possível</span>
+                <span className="text-lg font-semibold" style={{ color: corCobertura(plano.cobertura_pct) }}>
+                  {fmtPct(plano.cobertura_pct)}
+                </span>
+              </div>
+            </div>
+          )}
 
           {corrigidasForaDoPlano !== undefined && corrigidasForaDoPlano > 0 && (
             <Button type="button" variant="outline" className="border-line-2 bg-bg-2" onClick={onIrParaCoffee}>
