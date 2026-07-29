@@ -492,16 +492,23 @@ def test_converter_ddpm():
     assert dashboard.converter_ddpm(10, None) == 10.0
 
 
-def test_dashboard_montar_junta_base_e_meta():
+def test_dashboard_montar_superset_funde_base_em_visao_anual():
     from carteira_module import dashboard
     dash = {
+        "ano": 2026, "mes_referencia": 1, "regional": None,
         "hero": {"meta": 40, "carteira": 30, "executado": 5},
         "mensalizacao": [{"mes": 1, "meta": 40, "carteira": 30, "executado": 5}],
         "visao_anual": [
             {"plano": "POSTES - CAPEX", "nome_curto": "POSTE", "area": "Construção",
-             "meta": 40.0, "carteira": 30.0},
+             "unidade": "Und.", "meta": 40.0, "carteira": 30.0, "saldo": -10.0,
+             "pct_disp": 0.75, "gap_rs": -69210.0, "postergado": 0.0},
+            {"plano": "SEM META - X", "nome_curto": "X", "area": "Outros",
+             "unidade": "Und.", "meta": 0.0, "carteira": 0.0, "saldo": 0.0,
+             "pct_disp": None, "gap_rs": 0.0, "postergado": 0.0},
         ],
-        "regionais": [{"regional": "Guarulhos", "meta": 40.0, "carteira": 30.0}],
+        "regionais": [{"regional": "Guarulhos", "meta": 40.0, "carteira": 30.0,
+                       "saldo": -10.0, "pct_disp": 0.75}],
+        "financeiro_ano": {"meta_rs": 1.0, "carteira_rs": 2.0},
         "regionais_disponiveis": ["Guarulhos"],
     }
     base_bruta = [
@@ -512,21 +519,39 @@ def test_dashboard_montar_junta_base_e_meta():
     nome_area = {"POSTES - CAPEX": ("POSTE", "Construção")}
     out = dashboard.montar(dash, base_bruta, unidade, nome_area)
 
-    postes = next(p for p in out["por_plano"] if p["plano"] == "POSTES - CAPEX")
-    assert postes["meta"] == 40.0 and postes["planejado"] == 30.0
+    # superset: contrato de Relatórios preservado
+    assert out["ano"] == 2026 and out["mes_referencia"] == 1
+    assert out["financeiro_ano"] == {"meta_rs": 1.0, "carteira_rs": 2.0}
+    assert "por_plano" not in out and "por_regional" not in out
+
+    # base fundida NA linha do visao_anual (meta>0)
+    postes = next(l for l in out["visao_anual"] if l["plano"] == "POSTES - CAPEX")
+    assert postes["saldo"] == -10.0 and postes["unidade"] == "Und."   # originais intactos
     assert postes["base_disponivel"] == 15.0
-    assert postes["gap"] == 10.0                     # meta - planejado
     assert abs(postes["cobertura_pct"] - (30 + 15) / 40) < 1e-9
-    assert postes["suficiente"] is True              # base 15 >= gap 10
+    assert postes["suficiente"] is True                               # base 15 >= gap 10
 
-    # OPEX sem meta -> só na camada base_por_plano_sem_meta
-    sem_meta = {p["plano"]: p for p in out["base_por_plano_sem_meta"]}
-    assert sem_meta["PODA DE ARVORES - OPEX"]["base_disponivel"] == 7.0
-    assert all(p["plano"] != "PODA DE ARVORES - OPEX" for p in out["por_plano"])
+    # linha meta=0 continua no visao_anual, base=0 e cobertura null
+    sem_meta = next(l for l in out["visao_anual"] if l["plano"] == "SEM META - X")
+    assert sem_meta["base_disponivel"] == 0.0 and sem_meta["cobertura_pct"] is None
+
+    # regional enriquecida
+    guarulhos = next(r for r in out["regionais"] if r["regional"] == "Guarulhos")
+    assert guarulhos["base_disponivel"] == 15.0
+    assert abs(guarulhos["cobertura_pct"] - 45 / 40) < 1e-9
+
+    # OPEX (base sem linha no visao_anual) -> só em base_por_plano_sem_meta
+    sem = {p["plano"]: p for p in out["base_por_plano_sem_meta"]}
+    assert sem["PODA DE ARVORES - OPEX"]["base_disponivel"] == 7.0
 
 
-def test_rota_dashboard(carteira_tmp, monkeypatch, tmp_path):
+def _montar_app_dashboard(monkeypatch, tmp_path):
+    """Setup comum do dashboard: input db em tmp com 1 meta + depara e 1 nota
+    fora do plano na carteira; devolve um TestClient sobre o router da carteira."""
     monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
+    # isola o Excel de controle: ausente -> sincronizar_se_preciso vira no-op
+    # (erro de arquivo inacessível) e NÃO sobrescreve as metas inseridas abaixo.
+    monkeypatch.setenv("CONTROLE_RECOMPOSICAO_PATH", str(tmp_path / "sem-controle.xlsx"))
     from input_module import db as idb
     idb.inicializar_banco()
     import datetime
@@ -546,9 +571,30 @@ def test_rota_dashboard(carteira_tmp, monkeypatch, tmp_path):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI(); app.include_router(routes.router)
-    r = TestClient(app).get("/api/carteira/dashboard?mes=1")
+    return TestClient(app)
+
+
+def test_rota_dashboard(carteira_tmp, monkeypatch, tmp_path):
+    cliente = _montar_app_dashboard(monkeypatch, tmp_path)
+    r = cliente.get("/api/carteira/dashboard?mes=1")
     assert r.status_code == 200
     corpo = r.json()
-    postes = next(p for p in corpo["por_plano"] if p["plano"] == "POSTES - CAPEX")
+    # superset do contrato de Relatorios
+    for chave in ("ano", "mes_referencia", "hero", "visao_anual",
+                  "mensalizacao", "regionais", "financeiro_ano",
+                  "metas_info", "regionais_disponiveis"):
+        assert chave in corpo, chave
+    postes = next(l for l in corpo["visao_anual"] if l["plano"] == "POSTES - CAPEX")
     assert postes["meta"] == 40.0
     assert postes["base_disponivel"] == 15.0
+    assert "cobertura_pct" in postes and "suficiente" in postes
+
+
+def test_rota_dashboard_etag_304(carteira_tmp, monkeypatch, tmp_path):
+    cliente = _montar_app_dashboard(monkeypatch, tmp_path)
+    primeira = cliente.get("/api/carteira/dashboard?mes=1")
+    etag = primeira.headers.get("ETag")
+    assert etag
+    segunda = cliente.get("/api/carteira/dashboard?mes=1",
+                          headers={"If-None-Match": etag})
+    assert segunda.status_code == 304

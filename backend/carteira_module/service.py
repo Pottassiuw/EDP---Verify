@@ -50,13 +50,14 @@ def dashboard(ano: int | None, mes: int | None, regional: str | None) -> dict:
     e adiciona a camada 'base disponivel' (fora do plano) da carteira."""
     import datetime
 
-    from input_module import engine, relatorios
+    from input_module import engine, metas, relatorios
     from carteira_module import dashboard as dash_mod
 
     agora = datetime.datetime.now()
     ano = ano or agora.year
     mes = mes or agora.month
 
+    estado_metas = metas.sincronizar_se_preciso()
     df_depara = input_db.carregar_planos_depara()
     base_dash = relatorios.montar_dashboard(
         engine.get_dataset(), input_db.carregar_dados_ramal(),
@@ -80,5 +81,10 @@ def dashboard(ano: int | None, mes: int | None, regional: str | None) -> dict:
 
     corpo = dash_mod.montar(base_dash, base_bruta, unidade_por_plano,
                             nome_area_por_plano)
+    corpo["metas_info"] = {
+        "atualizadas_em": estado_metas.get("atualizadas_em"),
+        "arquivo_mtime": estado_metas.get("arquivo_mtime"),
+        "erro": estado_metas.get("erro"),
+    }
     corpo["versao"] = f"{input_db.obter_versao_dataset()}-{db.obter_versao()}"
     return corpo
