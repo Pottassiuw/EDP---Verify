@@ -53,11 +53,19 @@ export interface ExecucaoSync {
   ausentes: number;
   erro: string | null;
   versao_resultante: string | null;
+  duracao_seg?: number | null;
+}
+
+export interface MetricasCarteira {
+  n_linhas: number;
+  tamanho_mb: number;
+  journal_mode: string;
 }
 
 export interface EstadoSync {
   ultimo_refresh_marker: string | null;
   execucoes: ExecucaoSync[];
+  metricas?: MetricasCarteira;
 }
 
 export interface FiltrosCarteira {

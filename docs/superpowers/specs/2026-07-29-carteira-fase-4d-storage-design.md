@@ -53,6 +53,45 @@ Escadinha de custo — esgotar antes de trocar de banco:
 
 Só depois, se os gatilhos persistirem: Postgres.
 
+### Implementação da escadinha + achados medidos (2026-07-29)
+
+Implementada a escadinha (opção "completa" do usuário), **guiada por benchmark
+na base real (98k linhas, 78 MB)** — que reordenou o valor de cada degrau:
+
+| Query | Antes | Depois |
+|---|---|---|
+| `COUNT` total (situação derivada) | ~166 ms/request | **0 (cache hit)** |
+| `pagina_notas` (browse) | ~560 ms (count+página) | **~380 ms** (só página) |
+| `base_por_plano` (CAST join) | 336 ms | 327 ms (~igual) |
+
+Entregue (medido-valioso, `dashboard`/`repository`/`service`/`db`):
+- **Cache do COUNT total** por `(versão_leitura, filtros)` — a versão combina
+  Input (muda com o plano → situação) + carteira (muda no sync). Remove o
+  custo dominante do request. **Maior ganho.**
+- **WAL afinado**: `journal_mode=WAL` setado 1× no init (era em todo connect —
+  com `busy_timeout` isso stalava 5 s tentando checkpoint exclusivo);
+  `synchronous=NORMAL` (par recomendado do WAL) + `busy_timeout=5000`.
+- **Instrumentação**: `GET /sincronizacao` expõe `metricas` (n_linhas,
+  tamanho_mb, journal_mode) + `duracao_seg` por execução → decidir o gate
+  com número, não achismo. Superfície na aba Sincronização.
+
+**Descartado após medir (peso morto nesta arquitetura de query):**
+- **Coluna gerada `id_sap_int` + índices compostos**: `EXPLAIN QUERY PLAN`
+  mostrou que o join olha `plano_atual` pela PK dele (o índice em `id_sap_int`
+  fica ocioso) e que o `ORDER BY id_onr` no wrapper de subquery (situação
+  derivada) impede o planner de usar os índices `(coluna, id_onr)` para
+  ordenar. Ganho ~3% num único caminho — não paga a complexidade (coluna
+  gerada + migração + bug de idempotência do `table_info` vs `table_xinfo`).
+  Revertido.
+- **Keyset pagination**: 3,4× em página profunda isolada (68→20 ms), mas
+  (a) o `COUNT` — já resolvido pelo cache — dominava o request; (b) o piso
+  real (~380 ms) é a materialização da situação derivada na query de página,
+  que o keyset não toca; (c) exigiria rework de contrato (page→cursor) + FE.
+  **Não implementado** — o gargalo verdadeiro é a arquitetura da query
+  (subquery + situação derivada + CAST no join), cuja correção é reescrita,
+  não "barato". Fica registrado como o próximo alvo real caso a leitura vire
+  gargalo medido (antes de cogitar Postgres).
+
 ## 5. Se/quando migrar — esboço (não implementar ainda)
 
 - `carteira_module.db`/`repository` já isolam o SQL num único lugar (CLAUDE.md

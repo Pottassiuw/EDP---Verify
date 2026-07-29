@@ -11,13 +11,21 @@ def caminho_banco() -> str:
 
 def conectar() -> sqlite3.Connection:
     conn = sqlite3.connect(caminho_banco(), timeout=30, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode = WAL;")
+    # journal_mode=WAL é PERSISTENTE (header do db) — setado 1× em
+    # inicializar_banco, não aqui: reexecutá-lo com outra conexão aberta
+    # tentaria um checkpoint exclusivo e esperaria busy_timeout inteiro.
+    # synchronous=NORMAL (par recomendado do WAL: fsync só no checkpoint,
+    # seguro contra crash, escrita mais rápida) e busy_timeout são
+    # per-conexão e baratos.
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def inicializar_banco() -> None:
     conn = conectar()
+    conn.execute("PRAGMA journal_mode = WAL;")  # persistente; setado 1× aqui
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS nota_carteira (

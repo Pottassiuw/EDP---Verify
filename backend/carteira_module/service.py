@@ -7,18 +7,65 @@ def _numeros_no_plano() -> set[int]:
     return input_db.listar_numeros_nota()
 
 
+# Cache do COUNT total por (versao_leitura, filtros): o COUNT com situação
+# derivada é o custo dominante do request (~166 ms em 98k). A versão de leitura
+# combina o dataset do Input (muda quando o plano muda → situação muda) e a
+# versão da carteira (muda no sync) — invalida em qualquer um dos dois (Fase 4d).
+_total_cache: dict[str, dict] = {}
+
+
+def _versao_leitura() -> str:
+    # A versão do Input entra na chave para invalidar contagens por situação
+    # quando o plano muda sem sync da carteira. Guarda por existência do arquivo
+    # (mesma cortesia de listar_numeros_nota) — NÃO chamar obter_versao_dataset
+    # com o banco ausente: get_db_connection criaria o arquivo vazio e quebraria
+    # o guard de listar_numeros_nota logo em seguida.
+    import os
+    if not os.path.exists(input_db.obter_caminho_banco()):
+        return f"0-{db.obter_versao()}"
+    return f"{input_db.obter_versao_dataset()}-{db.obter_versao()}"
+
+
+def _chave_filtros(filtros: dict) -> tuple:
+    return tuple(sorted((k, str(v)) for k, v in filtros.items()))
+
+
 def pagina_notas(filtros: dict, page: int, size: int,
                  ordenar_por: str, ordem: str) -> dict:
+    versao = _versao_leitura()
+    cache = _total_cache.get(versao)
+    if cache is None:
+        _total_cache.clear()  # versão nova invalida todo o cache antigo
+        cache = _total_cache[versao] = {}
+    chave = _chave_filtros(filtros)
+
     conn = db.conectar()
     try:
         registros, total = repository.listar(
             conn, numeros_no_plano=_numeros_no_plano(), filtros=filtros,
             page=page, size=size, ordenar_por=ordenar_por, ordem=ordem,
+            total_cache=cache.get(chave),
         )
     finally:
         conn.close()
+    cache[chave] = total
     return {"registros": registros, "total": total, "page": page,
             "size": size, "versao": db.obter_versao()}
+
+
+def metricas() -> dict:
+    """Instrumentação da projeção (Fase 4d): tamanho e motor, para decidir com
+    dado real se/quando migrar de SQLite (gate da Fase 4d storage)."""
+    import os
+    caminho = db.caminho_banco()
+    conn = db.conectar()
+    try:
+        n_linhas = conn.execute("SELECT COUNT(*) FROM nota_carteira").fetchone()[0]
+        journal = conn.execute("PRAGMA journal_mode").fetchone()[0]
+    finally:
+        conn.close()
+    tamanho_mb = round(os.path.getsize(caminho) / 1e6, 1) if os.path.exists(caminho) else 0.0
+    return {"n_linhas": n_linhas, "tamanho_mb": tamanho_mb, "journal_mode": journal}
 
 
 def detalhe(id_onr: int) -> dict | None:
@@ -37,8 +84,24 @@ def resumo() -> dict:
         conn.close()
 
 
+def _duracao_seg(inicio: str | None, fim: str | None) -> float | None:
+    import datetime
+    if not inicio or not fim:
+        return None
+    try:
+        delta = datetime.datetime.fromisoformat(fim) - datetime.datetime.fromisoformat(inicio)
+        return round(delta.total_seconds(), 1)
+    except ValueError:
+        return None
+
+
 def estado_sincronizacao() -> dict:
-    return sync.estado()
+    estado = sync.estado()
+    for execucao in estado.get("execucoes", []):
+        execucao["duracao_seg"] = _duracao_seg(
+            execucao.get("iniciado_em"), execucao.get("finalizado_em"))
+    estado["metricas"] = metricas()
+    return estado
 
 
 def disparar_sincronizacao() -> dict:
