@@ -24,7 +24,9 @@ sob a chave `edp_relatorios_page`, e `app-sidebar.tsx` usa
 `FiltrosGlobais` mantém mês, regional e busca no estado do shell:
 
 - **Regional** refaz a query de dashboard com
-  `GET /api/input/relatorios/dashboard?regional=<nome>`.
+  `GET /api/carteira/dashboard?regional=<nome>` (Fase 4a: Relatórios deriva
+  da carteira — o endpoint é superset do contrato de Relatórios, com a camada
+  base disponível/cobertura fundida em `visao_anual`/`regionais`).
 - **Mês** seleciona o recorte da série mensal devolvida pelo endpoint. O
   contrato atual não aceita mês como parâmetro; por isso, as tabelas de
   planos continuam explicitamente anuais.
@@ -53,15 +55,21 @@ centrais são:
 
 Essas regras são protegidas em `relatorios-data.test.ts`.
 
-## Limites expostos pela interface
+## Cobertura (Fase 4a — deriva da carteira)
 
-O endpoint atual informa apenas `corrigidas_fora_do_plano` em nível agregado.
-Ele não devolve a associação entre uma nota COFFEE e um plano de recomposição.
-Portanto, Dashboard e Inspector exibem “cobertura não confirmável” e nunca
-mostram notas candidatas, cobertura possível ou movimentação automática como
-se fossem dados reais.
+Desde a convergência (Fase 4a), o Dashboard (`resumo-decisao`,
+`acoes-criticas`) e o `PlanoInspector` exibem **cobertura possível** e **base
+disponível** reais, vindas da camada base do `/api/carteira/dashboard`
+(`base_disponivel`/`cobertura_pct`/`suficiente` por plano, com farol). Se a
+carteira não estiver sincronizada — ou o plano não tiver meta/base — o valor
+degrada para `—`, sem inventar número. A associação por-nota (quais notas do
+COFFEE atendem um plano) segue **não** disponível; a cobertura é agregada por
+plano (planejado + base fora do plano ÷ meta), não uma lista de notas
+candidatas.
 
-Pelo mesmo motivo, a tela Postergações só mostra totais por plano e o valor
+## Limites ainda expostos pela interface
+
+A tela Postergações só mostra totais por plano e o valor
 do mês corrente; destino, reincidência e R$ deslocado aparecem como `—` com
 a limitação descrita na UI. A tela Exportar também não chama
 `InputApi.exportar`, pois aquele endpoint exporta notas do Input e não um

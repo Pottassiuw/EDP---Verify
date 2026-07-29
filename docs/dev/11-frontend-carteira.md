@@ -30,6 +30,14 @@ só compara meta×base para conjuntos com **meta>0** (senão a base OPEX enorme
 `conjunto` do Explorador passou a casar o código **OU** a `descricao_conjunto`
 (o drill do dashboard passa a descrição = `Plano`, não o código).
 
+**Convergência (Fase 4a):** `/api/carteira/dashboard` virou **superset** do
+contrato de Relatórios (fonte única — ver `docs/dev/10`). Os componentes do
+dashboard da Carteira passaram a ler `data.visao_anual` (filtrando `meta>0`)
+e `data.regionais` — onde a base agora vive fundida — em vez das antigas
+estruturas `por_plano`/`por_regional` (removidas). `DashboardCarteira` é
+`DashboardRelatorios & {base_por_plano_sem_meta, versao}`. Refatoração de
+fonte, não de regra: números e visual idênticos à Fase 3b.
+
 ## Movimentação (Fase 2b)
 
 - **Seleção de linhas** no Explorador: TanStack Table `enableRowSelection`

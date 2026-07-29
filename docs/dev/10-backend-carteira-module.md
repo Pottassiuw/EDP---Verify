@@ -83,6 +83,22 @@ Relatórios (convergência é Fase 4).
   suficiente (`base ≥ gap`). Conjuntos **sem meta** (OPEX poda/manut) saem
   em `base_por_plano_sem_meta`. Versao composta (input+carteira) para ETag.
 
+### Superset de Relatórios (Fase 4a — convergência)
+
+`dashboard.montar` deixou de emitir `por_plano`/`por_regional` e passou a
+**fundir a camada base** (`base_disponivel`/`cobertura_pct`/`suficiente`)
+**dentro** de cada `visao_anual[]` e `regionais[]` do `montar_dashboard`,
+preservando todo o contrato de Relatórios (`ano`, `mes_referencia`,
+`regional`, `hero`, `mensalizacao`, `financeiro_ano`, `regionais_disponiveis`)
++ `base_por_plano_sem_meta`. `service.dashboard` acrescenta `metas_info`
+(via `metas.sincronizar_se_preciso`, idempotente por mtime) e a rota
+`GET /dashboard` responde ETag/304 por `versao` composto.
+
+Resultado: `/api/carteira/dashboard` é **fonte única** — superset drop-in de
+`DashboardRelatorios`, consumido tanto pelo dashboard da Carteira quanto pelos
+Relatórios (que derivam dele; `input_module` intocado, boundary preservado).
+O split `meta>0` é idêntico à Fase 3 (zero-regressão dos números).
+
 ## APIs
 
 `GET /notas` (filtros+paginação), `GET /notas/{id_onr}`, `GET /resumo`,
