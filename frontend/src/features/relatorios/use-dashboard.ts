@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { EDPApi } from '../../api';
 import { InputApi } from '../input/api';
 
-export function useDashboardRelatorios(regional: string | null, mes: number | null = null) {
+export function useDashboardRelatorios(regional: string | null) {
   return useQuery({
-    queryKey: ['relatorios-dashboard', regional, mes],
-    queryFn: () => InputApi.dashboardRelatorios({ regional: regional ?? undefined, mes: mes ?? undefined }),
+    queryKey: ['relatorios-dashboard', regional],
+    queryFn: () => InputApi.dashboardRelatorios({ regional: regional ?? undefined }),
     staleTime: 60_000,
   });
 }

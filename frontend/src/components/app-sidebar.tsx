@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChartNoAxesCombined, ChevronDown } from 'lucide-react';
-import type { AppSection, CoffeeSubPage, RelatoriosSubPage, CarteiraSubPage } from '../types';
+import type { AppSection, CarteiraSubPage, CoffeeSubPage, RelatoriosPage } from '../types';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -10,8 +10,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { COFFEE_SUBS } from '../features/coffee/subs';
+import { RELATORIOS_TABS } from '../features/relatorios/navigation';
 import { INPUT_SUBS } from '../features/input/subs';
-import { RELATORIOS_SUBS } from '../features/relatorios/subs';
 import { CARTEIRA_SUBS } from '../features/carteira/subs';
 import type { AbaInput } from '../features/input/types';
 
@@ -44,67 +44,48 @@ const IconGear = (): React.JSX.Element => (
   <svg {...svgBase}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
 );
 
-/** Item de seção com subs colapsáveis. O nome de grupo `group/nav` é o mesmo
- *  nas três instâncias: o escopo do Tailwind é por ancestral, então irmãos
- *  não interferem entre si. */
-function SidebarNavGroup<T extends string>({ icon, label, active, onSelect, subs, activeSub, onSelectSub }: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onSelect: () => void;
-  subs: { id: T; rotulo: string }[];
-  activeSub: T;
-  onSelectSub: (sub: T) => void;
-}): React.JSX.Element {
-  return (
-    <SidebarMenuItem>
-      <Collapsible defaultOpen className="group/nav">
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={label} isActive={active} onClick={onSelect}>
-            {icon}
-            <span>{label}</span>
-            <ChevronDown
-              size={14}
-              className="ml-auto transition-transform duration-200 group-data-[state=open]/nav:rotate-180"
-            />
-          </SidebarMenuButton>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {subs.map((s) => (
-              <SidebarMenuSubItem key={s.id}>
-                <SidebarMenuSubButton
-                  className="cursor-pointer"
-                  isActive={active && activeSub === s.id}
-                  onClick={() => onSelectSub(s.id)}
-                >
-                  {s.rotulo}
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            ))}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </Collapsible>
-    </SidebarMenuItem>
-  );
-}
 
 interface AppSidebarProps {
   section: AppSection;
   setSection: (s: AppSection) => void;
+  relatoriosPage: RelatoriosPage;
+  setRelatoriosPage: (page: RelatoriosPage) => void;
   coffeeSub: CoffeeSubPage;
   setCoffeeSub: (s: CoffeeSubPage) => void;
   inputSub: AbaInput;
   setInputSub: (s: AbaInput) => void;
-  relatoriosSub: RelatoriosSubPage;
-  setRelatoriosSub: (s: RelatoriosSubPage) => void;
   carteiraSub: CarteiraSubPage;
   setCarteiraSub: (s: CarteiraSubPage) => void;
 }
 
-export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, inputSub, setInputSub, relatoriosSub, setRelatoriosSub, carteiraSub, setCarteiraSub }: AppSidebarProps): React.JSX.Element {
-  function irPara<T>(setSub: (s: T) => void, alvo: AppSection): (sub: T) => void {
-    return (sub) => { setSub(sub); setSection(alvo); };
+export function AppSidebar({
+  section,
+  setSection,
+  relatoriosPage,
+  setRelatoriosPage,
+  coffeeSub,
+  setCoffeeSub,
+  inputSub,
+  setInputSub,
+  carteiraSub,
+  setCarteiraSub,
+}: AppSidebarProps): React.JSX.Element {
+  function selectRelatoriosPage(page: RelatoriosPage): void {
+    setRelatoriosPage(page);
+    setSection("relatorios");
+  }
+
+  function selectSub(sub: CoffeeSubPage): void {
+    setCoffeeSub(sub);
+    setSection("coffee");
+  }
+  function selectInputSub(sub: AbaInput): void {
+    setInputSub(sub);
+    setSection("input");
+  }
+  function selectCarteiraSub(sub: CarteiraSubPage): void {
+    setCarteiraSub(sub);
+    setSection("carteira");
   }
 
   return (
@@ -129,42 +110,141 @@ export function AppSidebar({ section, setSection, coffeeSub, setCoffeeSub, input
         <SidebarGroup>
           <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarNavGroup
-              icon={<ChartNoAxesCombined size={16} />}
-              label="Relatórios"
-              active={section === "relatorios"}
-              onSelect={() => setSection("relatorios")}
-              subs={RELATORIOS_SUBS}
-              activeSub={relatoriosSub}
-              onSelectSub={irPara(setRelatoriosSub, "relatorios")}
-            />
-            <SidebarNavGroup
-              icon={<IconCoffee />}
-              label="COFFEE"
-              active={section === "coffee"}
-              onSelect={() => setSection("coffee")}
-              subs={COFFEE_SUBS}
-              activeSub={coffeeSub}
-              onSelectSub={irPara(setCoffeeSub, "coffee")}
-            />
-            <SidebarNavGroup
-              icon={<IconInput />}
-              label="Input"
-              active={section === "input"}
-              onSelect={() => setSection("input")}
-              subs={INPUT_SUBS}
-              activeSub={inputSub}
-              onSelectSub={irPara(setInputSub, "input")}
-            />
-            <SidebarNavGroup
-              icon={<IconCarteira />}
-              label="Carteira"
-              active={section === "carteira"}
-              onSelect={() => setSection("carteira")}
-              subs={CARTEIRA_SUBS}
-              activeSub={carteiraSub}
-              onSelectSub={irPara(setCarteiraSub, "carteira")}
-            />
+            <SidebarMenuItem>
+              <Collapsible defaultOpen className="group/relatorios">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Relatórios"
+                    isActive={section === "relatorios"}
+                    onClick={() => setSection("relatorios")}
+                  >
+                    <ChartNoAxesCombined size={16} />
+                    <span>Relatórios</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/relatorios:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {RELATORIOS_TABS.map((tab) => (
+                      <SidebarMenuSubItem key={tab.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "relatorios" && relatoriosPage === tab.id}
+                          onClick={() => selectRelatoriosPage(tab.id)}
+                        >
+                          {tab.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <Collapsible defaultOpen className="group/coffee">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="COFFEE"
+                    isActive={section === "coffee"}
+                    onClick={() => setSection("coffee")}
+                  >
+                    <IconCoffee />
+                    <span>COFFEE</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/coffee:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {COFFEE_SUBS.map((s) => (
+                      <SidebarMenuSubItem key={s.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "coffee" && coffeeSub === s.id}
+                          onClick={() => selectSub(s.id)}
+                        >
+                          {s.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <Collapsible defaultOpen className="group/input">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Input"
+                    isActive={section === "input"}
+                    onClick={() => setSection("input")}
+                  >
+                    <IconInput />
+                    <span>Input</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/input:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {INPUT_SUBS.map((s) => (
+                      <SidebarMenuSubItem key={s.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "input" && inputSub === s.id}
+                          onClick={() => selectInputSub(s.id)}
+                        >
+                          {s.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <Collapsible defaultOpen className="group/carteira">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Carteira"
+                    isActive={section === "carteira"}
+                    onClick={() => setSection("carteira")}
+                  >
+                    <IconCarteira />
+                    <span>Carteira</span>
+                    <ChevronDown
+                      size={14}
+                      className="ml-auto transition-transform duration-200 group-data-[state=open]/carteira:rotate-180"
+                    />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {CARTEIRA_SUBS.map((s) => (
+                      <SidebarMenuSubItem key={s.id}>
+                        <SidebarMenuSubButton
+                          className="cursor-pointer"
+                          isActive={section === "carteira" && carteiraSub === s.id}
+                          onClick={() => selectCarteiraSub(s.id)}
+                        >
+                          {s.rotulo}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarMenuItem>
 
             <SidebarMenuItem>
               <SidebarMenuButton disabled className="opacity-40">

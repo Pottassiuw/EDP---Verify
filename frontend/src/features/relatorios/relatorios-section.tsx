@@ -1,143 +1,138 @@
 import React from 'react';
 
-import type { RelatoriosSubPage } from '../../types';
-import { PageHeader, SegTabs } from '@/components/branded/section';
-import { Button } from '@/components/ui/button';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Banner, PageHeader, SegTabs } from '@/components/branded/section';
 
-import { AbaMensalizacao } from './aba-mensalizacao';
-import { AbaMes } from './aba-mes';
-import { AbaPlanos } from './aba-planos';
-import { MESES_NOME_PT } from './fmt';
-import { ResumoFixo } from './resumo-fixo';
-import { RELATORIOS_SUBS } from './subs';
-import { useDashboardRelatorios, useForaDoPlano } from './use-dashboard';
-
-const REGIONAL_TODAS = 'todas';
-const MES_ATUAL = 'atual';
-
-// Capitaliza no texto (não via CSS): o SelectValue do trigger espelha só o
-// ItemText do Radix, sem herdar className do item.
-function capitalizar(nome: string): string {
-  return nome.charAt(0).toUpperCase() + nome.slice(1);
-}
+import { FiltrosGlobais } from './filtros-globais';
+import { RELATORIOS_TABS, TITULOS_RELATORIOS } from './navigation';
+import { RelatoriosPageContent } from './relatorios-page-content';
+import { PlanoInspector } from './plano-inspector';
+import type { PlanoRelatorio } from './relatorios-data';
+import { useRelatoriosData } from './use-relatorios-data';
+import type { RelatoriosPage } from '@/types';
 
 export interface RelatoriosSectionProps {
-  sub: RelatoriosSubPage;
-  setSub: (s: RelatoriosSubPage) => void;
+  page: RelatoriosPage;
+  setPage: (page: RelatoriosPage) => void;
   onVerNotasDoMes: (mes: number, ano: number) => void;
   onVerPlano: (plano: string, regional: string | null) => void;
   onIrParaCoffee: () => void;
-  onVerForaDoPlano?: () => void;
 }
 
 export function RelatoriosSection({
-  sub, setSub, onVerNotasDoMes, onVerPlano, onIrParaCoffee, onVerForaDoPlano,
+  page,
+  setPage,
+  onVerNotasDoMes,
+  onVerPlano,
+  onIrParaCoffee,
 }: RelatoriosSectionProps): React.JSX.Element {
   const [regional, setRegional] = React.useState<string | null>(null);
-  const [mes, setMes] = React.useState<number | null>(null);
-  const { data, isLoading, error } = useDashboardRelatorios(regional, mes);
-  const foraDoPlano = useForaDoPlano();
-
-  const totalAlertas = React.useMemo(
-    () => (data?.visao_anual ?? []).filter((l) => l.pct_disp !== null && l.pct_disp < 1).length,
-    [data],
+  const [busca, setBusca] = React.useState('');
+  const [mesSelecionado, setMesSelecionado] = React.useState<number | null>(null);
+  const [planoSelecionado, setPlanoSelecionado] = React.useState<PlanoRelatorio | null>(null);
+  const dados = useRelatoriosData(regional, mesSelecionado);
+  const dashboard = dados.dashboard;
+  const mes = mesSelecionado ?? dashboard?.mes_corrente ?? new Date().getMonth() + 1;
+  const planos = React.useMemo(
+    () => filtrarPlanos(dados.planos, busca),
+    [busca, dados.planos],
   );
+
+  function mudarRegional(valor: string | null): void {
+    setRegional(valor);
+    setPlanoSelecionado(null);
+  }
 
   return (
     <div className="edp-page">
       <PageHeader
         eyebrow="Relatórios"
-        title="Dashboard Geral"
-        subtitle={`Plano de Recomposição ${data?.ano ?? new Date().getFullYear()}`}
-        action={
-          <div className="flex items-center gap-[10px]">
-            <Select
-              value={mes === null ? MES_ATUAL : String(mes)}
-              onValueChange={(v) => setMes(v === MES_ATUAL ? null : Number(v))}
-            >
-              <SelectTrigger className="w-[160px]" aria-label="Filtrar por mês">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={MES_ATUAL}>Mês atual</SelectItem>
-                {MESES_NOME_PT.map((nome, i) => (
-                  <SelectItem key={nome} value={String(i + 1)}>{capitalizar(nome)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={regional ?? REGIONAL_TODAS}
-              onValueChange={(v) => setRegional(v === REGIONAL_TODAS ? null : v)}
-            >
-              <SelectTrigger className="w-[220px]" aria-label="Filtrar por regional">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={REGIONAL_TODAS}>SP (todas)</SelectItem>
-                {(data?.regionais_disponiveis ?? []).map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        }
+        title={TITULOS_RELATORIOS[page]}
+        subtitle={`Plano de Recomposição ${dashboard?.ano ?? new Date().getFullYear()}`}
+      />
+      <SegTabs
+        tabs={RELATORIOS_TABS}
+        value={page}
+        onChange={setPage}
+        ariaLabel="Navegação entre telas de Relatórios"
+      />
+      <FiltrosGlobais
+        ano={dashboard?.ano ?? new Date().getFullYear()}
+        mes={mes}
+        regional={regional}
+        busca={busca}
+        regionais={dashboard?.regionais_disponiveis ?? []}
+        onMesChange={setMesSelecionado}
+        onRegionalChange={mudarRegional}
+        onBuscaChange={setBusca}
       />
 
-      {data?.metas_info.erro && (
-        <span className="edp-mono text-[12px] text-amber">
-          Metas de {data.metas_info.atualizadas_em ?? '—'} (sync falhou: {data.metas_info.erro})
-        </span>
+      {dashboard?.metas_info.erro && (
+        <Banner tipo="err">
+          Metas de {dashboard.metas_info.atualizadas_em ?? '—'}: {dashboard.metas_info.erro}
+        </Banner>
       )}
 
-      {isLoading && <span className="text-text-mute">Carregando…</span>}
-      {error && (
-        <span className="text-red">
-          Erro ao carregar dashboard: {error instanceof Error ? error.message : String(error)}
-        </span>
+      {dados.isLoading && <p className="edp-mono text-sm text-text-mute">Carregando relatórios…</p>}
+      {dados.error && (
+        <Banner tipo="err">
+          Erro ao carregar relatórios: {mensagemErro(dados.error)}
+        </Banner>
+      )}
+      {dados.detalhesError && (
+        <Banner tipo="err">
+          Parte do detalhamento regional não pôde ser carregada: {mensagemErro(dados.detalhesError)}
+        </Banner>
       )}
 
-      {data && (
+      {dashboard && (
         <>
-          <ResumoFixo
-            hero={data.hero}
-            financeiroAno={data.financeiro_ano}
-            totalAlertas={totalAlertas}
-            aoVerAlertas={() => setSub('mes')}
+          {dados.isDetalheRegionalLoading && !regional && (
+            <p className="edp-mono text-xs text-text-mute">Atualizando o detalhamento por regional…</p>
+          )}
+          <RelatoriosPageContent
+            page={page}
+            dashboard={dashboard}
+            mes={mes}
+            regional={regional}
+            busca={busca}
+            planos={planos}
+            regionais={dados.resumosRegionais}
+            corrigidasForaDoPlano={dados.corrigidasForaDoPlano}
+            onSelecionarPlano={setPlanoSelecionado}
+            onSelecionarRegional={mudarRegional}
+            onSelecionarMes={setMesSelecionado}
+            onVerNotasDoMes={() => onVerNotasDoMes(mes, dashboard.ano)}
+            onIrParaCoffee={onIrParaCoffee}
           />
-          <SegTabs tabs={RELATORIOS_SUBS} value={sub} onChange={setSub}
-                   ariaLabel="Seções do dashboard" />
-
-          {sub === 'mes' && (
-            <>
-              <AbaMes
-                data={data}
-                aoVerNotas={() => onVerNotasDoMes(data.mes_referencia, data.ano)}
-                aoVerPlano={(plano) => onVerPlano(plano, regional)}
-              />
-              {!foraDoPlano.error && (foraDoPlano.data?.corrigidas_fora_do_plano ?? 0) > 0 && (
-                <div className="flex items-center gap-[10px]">
-                  <button type="button" onClick={onIrParaCoffee}
-                          className="text-left edp-mono text-[13px] text-amber hover:underline">
-                    {foraDoPlano.data?.corrigidas_fora_do_plano} nota(s) fora do plano →
-                  </button>
-                  {onVerForaDoPlano && (
-                    <Button variant="link" size="sm" onClick={onVerForaDoPlano}>
-                      Ver na carteira
-                    </Button>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-          {sub === 'planos' && (
-            <AbaPlanos data={data} aoVerPlano={(plano) => onVerPlano(plano, regional)} />
-          )}
-          {sub === 'mensalizacao' && <AbaMensalizacao data={data} />}
         </>
       )}
+
+      <PlanoInspector
+        plano={planoSelecionado}
+        corrigidasForaDoPlano={dados.corrigidasForaDoPlano}
+        onFechar={() => setPlanoSelecionado(null)}
+        onVerPlano={onVerPlano}
+        onIrParaCoffee={onIrParaCoffee}
+      />
     </div>
   );
+}
+
+function filtrarPlanos(planos: PlanoRelatorio[], busca: string): PlanoRelatorio[] {
+  const termo = busca.trim().toLocaleLowerCase('pt-BR');
+  if (!termo) {
+    return planos;
+  }
+
+  return planos.filter((plano) => [
+    plano.plano,
+    plano.nome_curto,
+    plano.area,
+    plano.regional ?? '',
+    plano.unidade,
+  ].some((valor) => valor.toLocaleLowerCase('pt-BR').includes(termo)));
+}
+
+function mensagemErro(erro: unknown): string {
+  return erro instanceof Error ? erro.message : String(erro);
 }

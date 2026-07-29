@@ -11,6 +11,13 @@ export type AppSection =
   | "input"
   | "carteira"
   | "configuracoes";
+export type RelatoriosPage =
+  | "dashboard"
+  | "regional"
+  | "mensalizacao"
+  | "financeiro"
+  | "postergacoes"
+  | "exportar";
 export type CoffeeSubPage =
   | "abrir"
   | "operacao"
@@ -20,6 +27,20 @@ export type CoffeeSubPage =
 export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
 export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
 export type CarteiraSubPage = "dashboard" | "explorador" | "sincronizacao" | "divergencias";
+
+export function normalizeRelatoriosPage(value: string): RelatoriosPage {
+  if (
+    value === "dashboard"
+    || value === "regional"
+    || value === "mensalizacao"
+    || value === "financeiro"
+    || value === "postergacoes"
+    || value === "exportar"
+  ) {
+    return value;
+  }
+  return "dashboard";
+}
 
 export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
   if (value === "geradas" || value === "pendentes") return "operacao";
@@ -160,4 +181,3 @@ export interface KpiDrawerProps {
   selectedNotes?: Note[];
   onRemoveSelected?: (id: string) => void;
 }
-

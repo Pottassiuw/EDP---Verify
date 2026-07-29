@@ -1,10 +1,5 @@
 export { MESES_ABREV_PT } from '../input/lib';
 
-export const MESES_NOME_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-] as const;
-
 export function fmtQtd(v: number): string {
   return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 }

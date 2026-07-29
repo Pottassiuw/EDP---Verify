@@ -45,7 +45,7 @@ export interface MetasInfo {
 
 export interface DashboardRelatorios {
   ano: number;
-  mes_referencia: number;
+  mes_corrente: number;
   regional: string | null;
   regionais_disponiveis: string[];
   hero: HeroMes;

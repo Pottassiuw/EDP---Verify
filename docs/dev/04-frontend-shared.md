@@ -6,21 +6,12 @@
 "configuracoes"`. `AppContent` inicializa `section` com
 `useState<AppSection>("relatorios")` — a home do app é o dashboard de
 Relatórios (`features/relatorios/relatorios-section.tsx`), não mais o
-COFFEE. O item "Relatórios" no `app-sidebar.tsx` fica acima de COFFEE,
-com sub-abas (ícone `ChartNoAxesCombined` do lucide) no mesmo padrão de
-`COFFEE_SUBS`/`INPUT_SUBS`: `RelatoriosSubPage` (`types.ts`) é
-`"mes" | "planos" | "mensalizacao"`, persistido em `App.tsx` via
-`usePersistedState<RelatoriosSubPage>("edp_relatorios_sub", "mes")` e
-repassado a `AppSidebar` (`relatoriosSub`/`setRelatoriosSub`) e a
-`RelatoriosSection` (`sub`/`setSub`) — mesma dupla fonte-de-verdade que
-já existe para COFFEE/Input, ver `02-frontend-coffee.md`. Os três
-grupos com sub-menu do `app-sidebar.tsx` usam o componente local
-`SidebarNavGroup` (extraído quando Relatórios virou a terceira cópia do
-padrão `Collapsible`/`SidebarMenuSub` — Rule of Three). As listas de
-sub-abas vivem em módulos leves `features/{relatorios,coffee,input}/subs.ts`
-(`{ id, rotulo }[]`): o sidebar importa só esses arrays, sem puxar as
-seções (e o recharts) pro bundle inicial — as três seções continuam
-chunks lazy do `React.lazy` em `App.tsx`.
+COFFEE. `RelatoriosPage` persiste a subaba em `edp_relatorios_page`, e o
+item expansível "Relatórios" no `app-sidebar.tsx` espelha Dashboard geral,
+Carteira por regional, Mensalização, Financeiro, Postergações e Exportar.
+Os detalhes do módulo estão em [09-frontend-relatorios.md](./09-frontend-relatorios.md).
+O `app-sidebar.tsx` também tem o grupo **Carteira** (Databricks) com as
+sub-abas de `features/carteira/subs.ts` — ver [11-frontend-carteira.md](./11-frontend-carteira.md).
 
 ### Handoff de filtros pro Input
 

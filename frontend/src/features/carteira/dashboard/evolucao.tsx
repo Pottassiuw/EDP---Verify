@@ -8,7 +8,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 
-import { fmtQtd, MESES_ABREV_PT, MESES_NOME_PT } from '../../relatorios/fmt';
+import { fmtQtd, MESES_ABREV_PT } from '../../relatorios/fmt';
 import type { MesMensalizacao } from '../types';
 
 const CHART_CONFIG = {
@@ -60,7 +60,7 @@ export function Evolucao({ meses }: { meses: MesMensalizacao[] }): React.JSX.Ele
               <ChartTooltipContent
                 labelFormatter={(_, payload) => {
                   const mes = payload[0]?.payload as PontoEvolucao | undefined;
-                  return mes ? MESES_NOME_PT[mes.mes - 1] : '';
+                  return mes ? MESES_ABREV_PT[mes.mes - 1] : '';
                 }}
                 formatter={(value, name, item) => (
                   <div className="flex w-full items-center gap-2">
