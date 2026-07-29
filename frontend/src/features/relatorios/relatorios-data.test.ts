@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   calcularResumoCritico,
+  criarAvisoExecutadasSemData,
   criarPlanosRelatorio,
   ordenarPlanos,
 } from './relatorios-data';
@@ -81,5 +82,23 @@ describe('ordenarPlanos', () => {
       'PL-B',
       'PL-A',
     ]);
+  });
+});
+
+describe('criarAvisoExecutadasSemData', () => {
+  it('omite o aviso quando nenhuma nota usou o mês planejado', () => {
+    expect(criarAvisoExecutadasSemData(0)).toBeNull();
+  });
+
+  it('explica o fallback no singular', () => {
+    expect(criarAvisoExecutadasSemData(1)).toBe(
+      'Neste ano, 1 nota executada sem data de encerramento SAP foi contabilizada no mês planejado.',
+    );
+  });
+
+  it('explica o fallback no plural', () => {
+    expect(criarAvisoExecutadasSemData(2)).toBe(
+      'Neste ano, 2 notas executadas sem data de encerramento SAP foram contabilizadas no mês planejado.',
+    );
   });
 });

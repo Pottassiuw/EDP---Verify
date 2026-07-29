@@ -26,7 +26,7 @@ export function ResumoDecisao({
   const dadosDoMes = dashboard.mensalizacao.find((item) => item.mes === mes) ?? dashboard.hero;
   const disponibilidade = dadosDoMes.meta > 0 ? dadosDoMes.carteira / dadosDoMes.meta : null;
   const resumoCritico = calcularResumoCritico(planos);
-  const postergadas = mes === dashboard.mes_corrente ? dashboard.hero.postergadas : null;
+  const postergadas = mes === dashboard.mes_referencia ? dashboard.hero.postergadas : null;
 
   return (
     <div className="grid gap-4 xl:grid-cols-3">

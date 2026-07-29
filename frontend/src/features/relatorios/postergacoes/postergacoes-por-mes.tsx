@@ -14,7 +14,7 @@ export function PostergacoesPorMes({ dashboard }: { dashboard: DashboardRelatori
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-6">
         {MESES_ABREV_PT.map((nome, indice) => {
           const mes = indice + 1;
-          const corrente = mes === dashboard.mes_corrente;
+          const corrente = mes === dashboard.mes_referencia;
           return (
             <div key={nome} className={`rounded-edp border p-3 ${corrente ? 'border-amber bg-tint-amber' : 'border-line bg-bg-2'}`}>
               <div className="flex items-center justify-between gap-2">
