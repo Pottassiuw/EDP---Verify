@@ -20,6 +20,9 @@ Reutiliza `databricks_module` para leitura; não fala com o Databricks fora do
 - `service.py` — casos de uso; `routes.py` — endpoints finos `/api/carteira`.
 - `movimentacao.py` (Fase 2) — mover carteira→plano: mapa `nota_carteira`→
   `NovaNota`, `preview`, `mover_para_plano` (all-or-nothing), `listar_divergencias`.
+- `dashboard.py` (Fase 3) — agregação pura do dashboard: `converter_ddpm`
+  (÷1000 se KM) + `montar` (junta meta/planejado do `montar_dashboard` com a
+  base disponível por plano/regional, calcula gap/cobertura/suficiência).
 
 ## Sincronização
 
@@ -58,13 +61,35 @@ funilam por `input_service.criar_notas(origem="carteira")`.
   tombstoned) cujo `id_sap` casa em `Numero_Nota` do plano. Só alerta,
   nunca auto-corrige.
 
+## Dashboard (Fase 3)
+
+`GET /dashboard` reusa `input_module.relatorios.montar_dashboard`
+(meta/planejado/executado por regional×plano×mês) e **adiciona a camada
+"base disponível"** (fora do plano) da `carteira.db`, sem tocar nos
+Relatórios (convergência é Fase 4).
+
+- **De-para de plano:** `nota_carteira.descricao_conjunto` == `metas.Plano`
+  == `planos_depara.Plano` (string exata).
+- **Conversão DDPM:** `planos_depara.Unidade == 'KM'` → `quantidade/1000`;
+  senão as-is (`dashboard.converter_ddpm`).
+- **De-para de regional** (`config.DE_PARA_REGIONAL_DASHBOARD`): a `regional`
+  da carteira (`GUARULHOS`, `Poá-Suzano`…) → nomes de `relatorios.REGIONAIS_CSD`
+  (`Guarulhos`, `Poa/Suzano`…).
+- **`repository.base_por_plano`**: base disponível por regional×plano (só
+  `fora_do_plano`: sap_real, quantidade_valida, não cancelada/executada, não
+  no plano, não tombstone).
+- **`dashboard.montar`**: por plano → meta, planejado, base_disponivel, gap
+  (`meta−planejado`), cobertura_pct (`(planejado+base)/meta`, farol),
+  suficiente (`base ≥ gap`). Conjuntos **sem meta** (OPEX poda/manut) saem
+  em `base_por_plano_sem_meta`. Versao composta (input+carteira) para ETag.
+
 ## APIs
 
 `GET /notas` (filtros+paginação), `GET /notas/{id_onr}`, `GET /resumo`,
-`GET /sincronizacao`, `POST /sincronizar`. Movimentação (Fase 2):
-`POST /mover/preview` (não escreve), `POST /mover-para-plano` (X-User
-obrigatório; 422 bloqueada, 409 duplicata; `pos_escrita`),
-`GET /movimentacoes`, `GET /divergencias`.
+`GET /dashboard` (Fase 3), `GET /sincronizacao`, `POST /sincronizar`.
+Movimentação (Fase 2): `POST /mover/preview` (não escreve),
+`POST /mover-para-plano` (X-User obrigatório; 422 bloqueada, 409 duplicata;
+`pos_escrita`), `GET /movimentacoes`, `GET /divergencias`.
 
 ## Testes
 
