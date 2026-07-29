@@ -1,14 +1,61 @@
 // ── Domínio ──────────────────────────────────────────────────────────────
 export type RuleKey = string;
 export type NoteStatus = "erro" | "ok";
-export type Theme = "dark" | "light";
+export type Theme = "system" | "dark" | "light";
 export type Density = "compact" | "cozy";
 export type UrgBand = "high" | "med" | "low";
-export type Source = "demo" | "api";
-export type AppSection = "coffee" | "input";
-export type CoffeeSubPage = "abrir" | "geradas" | "corrigidas" | "pendentes" | "verificar" | "logs";
-export type CoffeeLayout = "composer" | "split";
-export type CoffeeOpenMode = "all" | "block" | "links";
+export type Source = "api";
+export type AppSection =
+  | "relatorios"
+  | "coffee"
+  | "input"
+  | "carteira"
+  | "configuracoes";
+export type RelatoriosPage =
+  | "dashboard"
+  | "regional"
+  | "mensalizacao"
+  | "financeiro"
+  | "postergacoes"
+  | "exportar";
+export type CoffeeSubPage =
+  | "abrir"
+  | "operacao"
+  | "concluidas"
+  | "verificar"
+  | "logs";
+export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
+export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
+export type CarteiraSubPage = "dashboard" | "explorador" | "sincronizacao" | "divergencias";
+
+export function normalizeRelatoriosPage(value: string): RelatoriosPage {
+  if (
+    value === "dashboard"
+    || value === "regional"
+    || value === "mensalizacao"
+    || value === "financeiro"
+    || value === "postergacoes"
+    || value === "exportar"
+  ) {
+    return value;
+  }
+  return "dashboard";
+}
+
+export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
+  if (value === "geradas" || value === "pendentes") return "operacao";
+  if (value === "corrigidas") return "concluidas";
+  if (
+    value === "abrir"
+    || value === "operacao"
+    || value === "concluidas"
+    || value === "verificar"
+    || value === "logs"
+  ) {
+    return value;
+  }
+  return "verificar";
+}
 
 export interface NoteError {
   rule: RuleKey;
@@ -86,25 +133,8 @@ export interface RuleMeta {
 
 // ── Estado de Tweaks ─────────────────────────────────────────────────────
 export type Accent = [string, string, string];
-export interface TweakState {
-  theme: Theme;
-  density: Density;
-  accent: Accent;
-  showKpis: boolean;
-  coffeeLayout: CoffeeLayout;
-}
-export type SetTweak<T> = {
-  <K extends keyof T>(key: K, value: T[K]): void;
-  (edits: Partial<T>): void;
-};
 
 // ── Camada de dados / API ────────────────────────────────────────────────
-export interface EdpDemo {
-  notes: Note[];
-  file: string;
-  defaultDone: string[];
-  defaultDup: string[];
-}
 export interface FetchResult {
   notes: Note[];
   completed: Set<string>;
@@ -123,10 +153,6 @@ export interface DuplicateResult {
 }
 
 // ── Props dos componentes ────────────────────────────────────────────────
-export interface LogoProps {
-  theme?: Theme;
-  h?: number;
-}
 export interface FieldProps {
   label: string;
   accent?: boolean;
@@ -136,7 +162,6 @@ export interface FieldProps {
 export interface UploadScreenProps {
   theme?: Theme;
   onUpload: (file: File) => Promise<void>;
-  onDemo: (name?: string) => void;
 }
 export interface DuplicateCompareProps {
   note: Note;
@@ -155,32 +180,4 @@ export interface KpiDrawerProps {
   cVisible: number; // notas visíveis no filtro atual
   selectedNotes?: Note[];
   onRemoveSelected?: (id: string) => void;
-}
-
-export type TweakOption<T> = T | { value: T; label: string };
-export interface TweaksPanelProps {
-  title?: string;
-  children?: React.ReactNode;
-}
-export interface TweakSectionProps {
-  label: string;
-  children?: React.ReactNode;
-}
-export interface TweakRadioProps<T extends string> {
-  label: string;
-  value: T;
-  options: ReadonlyArray<TweakOption<T>>;
-  onChange: (v: T) => void;
-}
-export interface TweakToggleProps {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}
-export type ColorValue = string | string[];
-export interface TweakColorProps {
-  label: string;
-  value: ColorValue;
-  options?: ReadonlyArray<ColorValue>;
-  onChange: (v: ColorValue) => void;
 }

@@ -1,0 +1,162 @@
+import React from 'react';
+import type { AbaInput } from './types';
+import { toast } from 'sonner';
+import { getUsuario, setUsuario, InputApi } from './api';
+import { useSincronizacaoAutomatica, useInputData, useRecarregarInput, useNetworkSync } from './use-input-data';
+import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Overview } from './overview';
+import { Manage } from './manage';
+import { Ramal } from './ramal';
+import { Reports } from './reports';
+import { Logs } from './logs';
+import { Settings } from './settings';
+import { Button } from '@/components/ui/button';
+import { PageHeader, SegTabs } from '@/components/branded/section';
+import { Filters, FILTROS_INICIAIS, type FiltersState } from './filters';
+import { INPUT_SUBS } from './subs';
+
+interface InputSectionProps {
+  sub: AbaInput;
+  setSub: (s: AbaInput) => void;
+  filtrosHandoff?: { estado: FiltersState; id: number } | null;
+}
+
+export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
+  const { data: dados, isLoading, error, dataUpdatedAt } = useInputData();
+  const recarregar = useRecarregarInput();
+  const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
+    try {
+      const salvas = localStorage.getItem('input_estado_filtros');
+      if (salvas) {
+        const parsed = JSON.parse(salvas);
+        if (typeof parsed.busca === 'string' && typeof parsed.somente2026 === 'boolean' && Array.isArray(parsed.filtros)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      // Silencia
+    }
+    return FILTROS_INICIAIS;
+  });
+  const { sincronizando } = useNetworkSync();
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('input_estado_filtros', JSON.stringify(estadoFiltros));
+    } catch (e) {
+      // Silencia
+    }
+  }, [estadoFiltros]);
+
+  React.useEffect(() => {
+    if (!getUsuario()) {
+      InputApi.me()
+        .then(({ usuario }) => setUsuario(usuario))
+        .catch(() => setUsuario('sistema'));
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (filtrosHandoff) setEstadoFiltros(filtrosHandoff.estado);
+  }, [filtrosHandoff?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useSincronizacaoAutomatica(dados?.meta.versao);
+  const basesAusentes = dados?.meta.bases.filter((b) => !b.encontrada) ?? [];
+
+  return (
+    <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden h-full">
+      <PageHeader
+        eyebrow="Rede EDP · SQLite Local"
+        title="Gestão de Notas"
+        subtitle="Controle unificado de notas, alterações, base ramal e indicadores."
+        action={
+          <div className="flex items-center gap-3 flex-wrap">
+            {sincronizando ? (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber/10 border border-amber/30 text-amber text-xs font-medium animate-pulse">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
+                <span>Sincronizando com a rede...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 border border-green/20 text-green text-xs font-medium">
+                <div className="carteira-sync-dot" />
+                <span>Base Sincronizada</span>
+              </div>
+            )}
+            <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
+          </div>
+        }
+      />
+
+      {dados && (sub === 'visao' || sub === 'gerenciar' || sub === 'ramal' || sub === 'relatorios') && (
+        <div className="shrink-0 bg-surface border-b border-line px-6 py-3">
+          <Filters registros={dados.registros} estado={estadoFiltros} setEstado={setEstadoFiltros} />
+        </div>
+      )}
+
+      {dados && dados.meta.migracao === 'rede-indisponivel' && dados.registros.length === 0 && (
+        <div className="mx-6 mt-3 p-3 rounded-md bg-amber/10 border border-amber/30 text-amber text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber" />
+            <span>Importação inicial pendente: a rede da EDP estava indisponível.</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              void (async () => {
+                const { InputApi } = await import('./api');
+                try {
+                  await InputApi.migrar();
+                  await recarregar();
+                  toast.success('Importação reprocessada');
+                } catch (e) {
+                  toast.error('Falha na importação', { description: e instanceof Error ? e.message : String(e) });
+                }
+              })();
+            }}
+          >
+            <RefreshCw className="mr-1.5 h-3 w-3" />
+            Tentar Importar
+          </Button>
+        </div>
+      )}
+
+      {basesAusentes.length > 0 && (
+        <div className="mx-6 mt-2 px-3 py-1.5 rounded-md bg-amber/10 border border-amber/20 text-amber text-xs flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span>{basesAusentes.length} de {dados!.meta.bases.length} bases da rede indisponíveis — exibindo indicadores parciais.</span>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="p-8 flex items-center justify-center gap-2 text-text-dim text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+          <span>Carregando notas...</span>
+        </div>
+      )}
+
+      {error != null && !dados && (
+        <div className="m-6 p-4 rounded-md bg-red/10 border border-red/20 text-red text-sm flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Backend indisponível. O módulo Input exige o backend rodando na porta 8000. Detalhe: {String((error as Error).message)}</span>
+        </div>
+      )}
+
+      {error != null && dados && (
+        <div className="mx-6 mt-2 px-3 py-1.5 rounded-md bg-amber/10 border border-amber/20 text-amber text-xs">
+          Backend indisponível — mostrando dados salvos{dataUpdatedAt ? ` de ${new Date(dataUpdatedAt).toLocaleString('pt-BR')}` : ''}.
+        </div>
+      )}
+
+      <div className="flex-1 min-h-0 overflow-auto">
+        {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
+        {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'relatorios' && <Reports dados={dados} estadoFiltros={estadoFiltros} />}
+        {dados && sub === 'logs' && <Logs />}
+        {dados && sub === 'config' && <Settings dados={dados} />}
+      </div>
+    </div>
+  );
+}

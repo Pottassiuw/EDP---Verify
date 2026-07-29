@@ -9,19 +9,26 @@ comparar duplicatas lado a lado e abrir notas direto no COFFEE.
 ```
 ├── frontend/   React 18 + TypeScript + Vite + TanStack Query
 │   └── src/
-│       ├── components/   shared, dashboard, sidebar, upload-screen,
-│       │                 duplicate-compare, coffee-section, tweaks-panel
-│       ├── input/        módulo Input (gestão de notas do departamento)
-│       ├── hooks/        useTriageData (TanStack Query)
-│       ├── api.ts        integração com o backend + COFFEE/Maps
-│       ├── data.ts       dataset de demonstração (offline)
-│       └── types.ts      tipos compartilhados
+│       ├── features/
+│       │   ├── verificar/      triagem de notas (dashboard, upload,
+│       │   │                   KPIs, comparação de duplicatas)
+│       │   ├── coffee/         hub COFFEE (verificar, abrir,
+│       │   │                   operação, concluídas, logs)
+│       │   ├── input/          gestão de notas do departamento
+│       │   └── configuracoes/  preferências (tema, densidade, cor)
+│       ├── components/
+│       │   ├── ui/             shadcn (vendored, editável)
+│       │   ├── branded/        composições sobre ui/
+│       │   └── app-sidebar.tsx navegação principal
+│       ├── api.ts              integração com o backend + COFFEE/Maps
+│       └── types.ts            tipos compartilhados
 ├── backend/    FastAPI + pandas
 │   ├── main.py           endpoints /api/* + parsing da planilha
+│   ├── coffee_module/    hub COFFEE: banco SQLite, jobs, cliente da API COFFEE
 │   ├── input_module/     módulo Input: banco SQLite local + motor de
 │   │                     enriquecimento (Excels da rede EDP) + /api/input/*
-│   └── test_upload.py / test_input_module.py    testes (pytest)
-└── docs/       especificações de design
+│   └── test_*.py         testes (pytest)
+└── docs/       especificações e planos de design
 ```
 
 ## Desenvolvimento
@@ -38,9 +45,8 @@ npm install
 npm run dev
 ```
 
-Sem backend, o app funciona em **modo demo** ("ver demonstração" na tela
-inicial). A base da API é configurável via
-`localStorage.setItem('edp_api', 'http://SEU_HOST:8000/api')`.
+O app exige o backend rodando — não há modo demo. A base da API é
+configurável via `localStorage.setItem('edp_api', 'http://SEU_HOST:8000/api')`.
 
 ## Produção
 
@@ -51,6 +57,15 @@ cd ../backend && uvicorn main:app
 
 O FastAPI serve `frontend/dist/` como estático e expõe a API no mesmo
 processo (porta 8000).
+
+## Hub COFFEE
+
+O fluxo de COFFEE é dividido em **Verificar**, **Abrir**, **Operação**,
+**Concluídas** e **Logs**. Verificar encaminha as notas selecionadas à fila
+persistida de Operação, exibida como Kanban (Fila, Prontas para gerar,
+Processando e Aguardando SAP). Concluídas é o histórico separado: notas
+geradas podem ser arquivadas e somente notas corrigidas podem ser movidas para
+o plano.
 
 ## API
 

@@ -1,0 +1,90 @@
+/* react-datasheet-grid — tema EDP via tokens (classes reais confirmadas no
+   dist/style.css do pacote). Como a grade é 100% read-only, TODAS as células
+   são `disabled`; por isso estilizamos também as variantes `*-disabled`, senão
+   o DSG pinta tudo com cara de desabilitado (cinza) e a seleção some.
+   ponytail: !important pontual para vencer o stylesheet do próprio DSG. */
+
+.dsg-container { background: var(--surface); color: var(--text); font-family: var(--font-body); }
+
+/* células (normal + disabled, já que tudo é read-only) */
+.dsg-cell,
+.dsg-cell.dsg-cell-disabled {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+/* cabeçalho */
+.dsg-cell-header,
+.dsg-cell-header-container {
+  background: var(--surface-2) !important;
+  color: var(--text-dim) !important;
+  border-color: var(--line) !important;
+}
+
+/* célula ativa (foco) — chamativa em accent, incl. quando a célula é disabled */
+.dsg-active-cell,
+.dsg-active-cell-disabled {
+  border: 2px solid var(--accent) !important;
+  background: var(--accent-tint) !important;
+}
+
+/* retângulo de seleção (arrasto/Shift) — borda + preenchimento accent */
+.dsg-selection-rect,
+.dsg-selection-rect-disabled {
+  border: 2px solid var(--accent) !important;
+  background: var(--accent-tint) !important;
+}
+
+/* cabeçalho custom: ordenação (botão) + alça de redimensionamento.
+   O DSG centraliza o título num container com padding 0 10px e sem altura
+   cheia; forçamos o container a esticar e zeramos o padding pra a alça virar
+   uma faixa de altura inteira colada na borda direita da coluna. */
+.dsg-cell-header .dsg-cell-header-container {
+  padding: 0 !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  display: flex !important;
+}
+.dsg-th-wrap { display: flex; align-items: stretch; width: 100%; height: 100%; }
+.dsg-th {
+  all: unset; cursor: pointer; flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 4px; padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--text-mute);
+}
+.dsg-th:hover { color: var(--text-dim); }
+.dsg-th-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsg-th-arrow { flex-shrink: 0; color: var(--accent); font-weight: 700; }
+.dsg-th-resize {
+  width: 8px; cursor: col-resize; align-self: stretch; flex-shrink: 0;
+  border-right: 2px solid transparent;
+  touch-action: none; /* pointer capture: evita o navegador roubar o gesto */
+}
+.dsg-th-resize:hover { border-right-color: var(--accent); background: var(--accent-tint); }
+
+/* wrapper: ancora a linha-guia do resize e empilha a barra de status */
+.dsg-wrap { position: relative; display: flex; flex-direction: column; }
+.dsg-resize-guide {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--accent); pointer-events: none; z-index: 5;
+}
+
+/* barra de status com agregação da seleção (Task 3) */
+.dsg-statusbar {
+  flex-shrink: 0; padding: 5px 10px; font-size: 12px; color: var(--text-dim);
+  background: var(--surface-2); border: 1px solid var(--line); border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+.dsg-statusbar b { color: var(--text); font-weight: 600; }
+.dsg-statusbar-dim { color: var(--text-mute); }
+
+/* conteúdo read-only */
+.dsg-leitura {
+  padding: 0 8px; line-height: 32px; height: 32px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12.5px;
+}
+.dsg-leitura.is-num { font-family: var(--font-mono); }

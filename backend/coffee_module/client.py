@@ -9,20 +9,47 @@ from coffee_module import config, db
 _TIMEOUT = 120
 
 
+class NotaNaoEncontradaErro(Exception):
+    """json_all respondeu 200 com lista vazia: o id nao existe no COFFEE."""
+
+    def __init__(self, id):
+        super().__init__(f"Nota {id} nao encontrada no COFFEE.")
+        self.id = id
+
+
 def _status_de(exc: Exception):
     resp = getattr(exc, "response", None)
     return getattr(resp, "status_code", None)
+
+
+def compor_local_instalacao(fields: dict):
+    """Compoe o local de instalacao a partir dos campos decompostos da API COFFEE.
+
+    A API nao devolve um campo 'local_instalacao' pronto: ele e cidade(3) +
+    tipo_local_instalacao(2 letras) + local_instalacao_numero(8, zero a esquerda).
+    Ex.: cidade='718', tipo='ET', numero=26773 -> '718ET00026773'.
+    Retorna None se faltar algum componente.
+    """
+    cidade = fields.get("cidade")
+    tipo = fields.get("tipo_local_instalacao")
+    numero = fields.get("local_instalacao_numero")
+    if not (cidade and tipo and numero):
+        return None
+    return f"{str(cidade).zfill(3)}{tipo}{str(numero).zfill(8)}"
 
 
 def buscar_nota(id) -> dict:
     """GET json_all/{id}. Faz o duplo-parse e retorna campos-chave + fields."""
     inicio = time.perf_counter()
     try:
-        resp = httpx.get(f"{config.base_url()}/json_all/{id}", timeout=_TIMEOUT)
+        resp = httpx.get(f"{config.base_url()}/json_all/{id}", timeout=_TIMEOUT,
+                         verify=config.ssl_verify())
         resp.raise_for_status()
         bruto = resp.json()
         if isinstance(bruto, str):
             bruto = json.loads(bruto)
+        if not bruto:
+            raise NotaNaoEncontradaErro(id)
         registro = bruto[0]
         fields = registro.get("fields", {})
         tempo_ms = round((time.perf_counter() - inicio) * 1000)
@@ -32,6 +59,7 @@ def buscar_nota(id) -> dict:
             "pk": registro.get("pk"),
             "id_sap": fields.get("id_sap"),
             "arquivado": bool(fields.get("arquivado")),
+            "local_instalacao": compor_local_instalacao(fields),
             "fields": fields,
         }
     except Exception as exc:  # noqa: BLE001
@@ -45,7 +73,7 @@ def buscar_nota(id) -> dict:
 def _get_logado(acao: str, url: str, nota_pk, detalhes: dict) -> bool:
     inicio = time.perf_counter()
     try:
-        resp = httpx.get(url, timeout=_TIMEOUT)
+        resp = httpx.get(url, timeout=_TIMEOUT, verify=config.ssl_verify())
         resp.raise_for_status()
         tempo_ms = round((time.perf_counter() - inicio) * 1000)
         db.registrar_log("api_call", acao, nota_pk,

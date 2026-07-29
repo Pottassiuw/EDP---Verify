@@ -18,32 +18,57 @@ def data_dir() -> Path:
     )
 
 
+def caminho_sap_robot() -> Path:
+    """Script do robô SAP — vive em backend/Sap_Robot.py, não numa pasta de rede."""
+    return Path(
+        os.environ.get(
+            "SAP_ROBOT_PATH", str(Path(__file__).resolve().parent.parent / "Sap_Robot.py")
+        )
+    )
+
+
+def caminho_controle_recomposicao() -> Path:
+    """Planilha Controle Plano de Recomposição (OneDrive local sincronizado).
+
+    Default aponta para o perfil do usuário que hospeda o servidor hoje;
+    outra máquina sobrescreve via env CONTROLE_RECOMPOSICAO_PATH.
+    """
+    return Path(os.environ.get(
+        "CONTROLE_RECOMPOSICAO_PATH",
+        r"C:\Users\e713611\EDP\O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
+        r"\PLANO RECOMPOSIÇÃO\SP\2026\Controle Plano de Recomposição 2026.xlsx",
+    ))
+
+
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
 REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"
+REDE_ARQUIVOS_SAP = REDE_INPUT_SQL + r"\Arquivos_SAP"
+REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
 
 REDE_DB_ORIGEM = REDE_INPUT_SQL + r"\notas_departamento.db"
-CAMINHO_INDICADOR_CONTINUIDADE = (
-    REDE_INPUT_SQL + r"\Indicador base conjunto - Limite Aneel.xlsx"
-)
+REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
+
 CAMINHO_BASE_IW28 = REDE_INPUT_SQL + r"\Gerada_base_IW28.XLSX"
-CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Gerada_custo_ord_IW38.XLSX"
-CAMINHO_CLIENTES_CONJUNTO = REDE_INPUT_SQL + r"\Clientes_Conjunto.xlsx"
-CAMINHO_CUSTO_MODULAR = REDE_INPUT_SQL + r"\Custo_Modular.xlsx"
-CAMINHO_GANHOS = REDE_INPUT_SQL + r"\Ganhos.xlsx"
-CAMINHO_TABLE1 = REDE_INPUT_SQL + r"\Table1.xlsx"
+CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Arquivos_SAP\Gerada_custo_ord_IW38.XLSX"
+CAMINHO_BASE_IW66 = REDE_INPUT_SQL + r"\Gerada_medidas_IW66.XLSX"
+CAMINHO_INDICADOR_CONTINUIDADE = REDE_BASES_APOIO + r"\Indicador base conjunto - Limite Aneel.xlsx"
+CAMINHO_CLIENTES_CONJUNTO = REDE_BASES_APOIO + r"\Clientes_Conjunto.xlsx"
+CAMINHO_CUSTO_MODULAR = REDE_BASES_APOIO + r"\Custo_Modular.xlsx"
+CAMINHO_GANHOS = REDE_BASES_APOIO + r"\Ganhos.xlsx"
 CAMINHO_PROJETO_CONSTRUCAO = REDE_RAIZ + r"\config_projeto_construcao.json"
 CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
+CAMINHO_INPUT_NOTA_RAIZ = REDE_RAIZ + r"\Input Nota.xlsx"
 
 # Bases lidas pelo motor (para o meta.bases da API)
 BASES_REDE = {
     "Extração SAP IW28 (Notas)": CAMINHO_BASE_IW28,
     "Extração SAP IW38 (Ordens)": CAMINHO_CUSTO_ORD_IW38,
+    "Extração SAP IW66 (Medidas)": CAMINHO_BASE_IW66,
     "Indicador de Continuidade (Limite ANEEL)": CAMINHO_INDICADOR_CONTINUIDADE,
     "Clientes por Conjunto": CAMINHO_CLIENTES_CONJUNTO,
     "Custos Modulares e Sazonalidade": CAMINHO_CUSTO_MODULAR,
     "Ganhos (CHI-Conjunto)": CAMINHO_GANHOS,
-    "Históricos (Table1)": CAMINHO_TABLE1,
 }
 
 # Bases gerenciáveis pela aba Configurações (download/upload) — Input/app.py:792-798
@@ -52,7 +77,6 @@ BASES_APOIO = {
     "Clientes por Conjunto": CAMINHO_CLIENTES_CONJUNTO,
     "Custos Modulares e Sazonalidade": CAMINHO_CUSTO_MODULAR,
     "Ganhos (CHI-Conjunto)": CAMINHO_GANHOS,
-    "Históricos (Table1 - 12M e 3M)": CAMINHO_TABLE1,
 }
 
 # ── Dicionários de domínio (porte literal de Input/config.py) ────────────
@@ -82,7 +106,7 @@ STATUS_MAP = {
     47: "47 Enviado Execução",
     51: "51 Ordem Liberada",
     52: "52 ADS e Viabilizado",
-    53: "Programado Execução",
+    53: "53 Programado Execução",
     54: "54 Executado/Energizado",
     55: "55 Cancelado",
     56: "56 Reprogramado Execução",
@@ -93,8 +117,9 @@ STATUS_MAP = {
     61: "61 Reprogramado Estudo Proteção",
     62: "62 Obra Suspensa",
     99: "99 Encerrado",
-    999: "Ence Exec",
+    997: "SUPR CANC",
     998: "SUPR",
+    999: "ENCE EXEC",
 }
 INV_STATUS_MAP = {v: k for k, v in STATUS_MAP.items()}
 
@@ -272,6 +297,8 @@ MAP_FILTROS = {
     "Ordem Executada": "Ordem_Executada",
     "Modular": "Modular",
     "Total Planejado Modular": "Total_planejado_modular",
+    "Medida SAP": "Medida_SAP",
+    "Medida vs Planejado": "Medida_vs_Planejado",
     "Regional CSD": "Regional_CSD",
     "Nº Clientes Conjunto": "N_Clientes_Conjunto",
     "CHI": "CHI",
@@ -286,8 +313,10 @@ MAP_FILTROS = {
     "Ocorrências-12M": "OCO_12M",  # Corrigido: Estava 'Ocorrencias-12M'
     "Ocorrências-3M": "OCO_3M",  # Corrigido: Estava 'Ocorrencias-3M'
     "DEC Prog. CHI": "DEC_PROG_CHI",  # Corrigido: Ajuste de capitalização
-    "Projeto Construção": "Projeto_Construcao",
     "Data Envio Projeto": "Data_Envio_Projeto",
+    "Data Envio Projeto-DDPM": "Data_Envio_Projeto",
+    "Data_Envio_Projeto-DDPM": "Data_Envio_Projeto",
+    "Data Envio Projeto DDPM": "Data_Envio_Projeto",
     "Observação": "Observacao",
 }
 
@@ -474,19 +503,27 @@ NOMES_AMIGAVEIS.update(
         "Total_planejado_ordem": "Total Planejado Ordem (R$)",
         "Total_real_ordem": "Total Real Ordem (R$)",
         "Modular": "Modular (R$)",
+        "Data programada SAP": "Data programada SAP",
+        "Comparação Data SAP": "Comparação Data SAP",
     }
 )
 
-# Colunas exibidas/exportadas na ordem do painel (Input/app.py:172-179 — copiar literal)
+# Colunas exibidas/exportadas na ordem do painel
 COLUNAS_PAINEL = [
     "Regional",
     "Numero_Nota",
+    "Nota_Mae",
     "Status_Obra",
     "Conjunto",
     "Circuito",
     "Local_Instalacao",
     "Planejado_DDPM",
+    "Medida_SAP",
+    "Medida_vs_Planejado",
     "Mes_Execucao_Planejado",
+    "Data_Nota_SAP",
+    "Data programada SAP",
+    "Comparação Data SAP",
     "Data_Envio_Projeto",
     "Centro_Responsavel",
     "Prioridade_Nota",
@@ -518,7 +555,58 @@ COLUNAS_PAINEL = [
     "Ocorrencia",
     "DEC",
     "FEC",
-    "CHI_Conjunto",
+    "CHI_Conj",
     "Equipamento_Protecao",
-    "DEC_Prog_CHI",
 ]
+
+
+MAPA_NOMES_EXCEL_LEGADO = {
+    "Regional": "Regional",
+    "Numero_Nota": "NOTA",
+    "Nota_Mae": "Nota_Mae",
+    "Status_Obra": "Status da Obra",
+    "Conjunto": "Conjunto",
+    "Circuito": "Circuito",
+    "Local_Instalacao": "Local Instalação",
+    "Planejado_DDPM": "Planejado-DDPM",
+    "Medida_SAP": "Medida_SAP",
+    "Medida_vs_Planejado": "Medida_vs_Planejado",
+    "Mes_Execucao_Planejado": "Mês de Execução  Planejado - DDPM",
+    "Data_Nota_SAP": "Data da Nota SAP",
+    "Data programada SAP": "Data Programada SAP",
+    "Comparação Data SAP": "Comparação Data SAP",
+    "Data_Envio_Projeto": "Data Envio Projeto-DDPM",
+    "Centro_Responsavel": "CenTrab respon/",
+    "Prioridade_Nota": "Prioridade Nota",
+    "Status_Nota": "Status Nota",
+    "Cidade": "Cidade",
+    "Observacao": "Observação",
+    "CJ_Aneel": "CJ ANEEL",
+    "substacao_conjunto": " SUBESTAÇÃO ",
+    "Conj.critico": " Conj.Crítico ",
+    "ranking": "Rankig",
+    "Check": "Check",
+    "Export_status": "EXPORT\nStatus",
+    "Status_Final": "Status\nFinal",
+    "Status_Anterior": "Status\nanterior",
+    "Check_Cancelado": "Check\nCancelado",
+    "Ordem": "Ordem",
+    "Status_Usuário_Ordem": "Status usuário\nOrdem",
+    "Status_Sistema": "Status do sistema",
+    "Total_planejado_ordem": "Ordem\nTotal planejado",
+    "Total_real_ordem": "Ordem\nTotal real",
+    "Exec_percentagem_ordem": "%\nExecutado",
+    "Ordem_Executada": "Considera\nOrdem Exec",
+    "Modular": "Modular",
+    "Total_planejado_modular": "Total Plan\nModular",
+    "Regional_CSD": "Regional\nCSD",
+    "N_Clientes_Conjunto": "Clientes Conj",
+    "CHI": "CHI",
+    "CI": "CI",
+    "Ocorrencia": "Ocor.",
+    "DEC": "DEC",
+    "FEC": "FEC",
+    "CHI_Conj": "CHI - Conj.",
+    "Equipamento_Protecao": "DIS.PROTEÇÃO",
+}
+

@@ -8,8 +8,10 @@ Diferenças relevantes em relação ao porte original:
 - Caminhos de rede lidos de ``config`` em TEMPO DE CHAMADA (``config.CAMINHO_*``),
   para que o monkeypatch dos testes tenha efeito.
 - ``st.error(...)`` vira ``print(...)``.
-- Cache em memória com TTL e lock, ``status_bases`` e ``gerar_copia_excel_rede``
-  (que nunca derruba a request: corpo inteiro em try/except).
+- Cache em memória de ``get_dataset`` revalidado por versão do dataset
+  (``db.obter_versao_dataset()``), com TTL de fallback e lock; ``status_bases``
+  com seu próprio TTL e lock; e ``gerar_copia_excel_rede`` (que nunca derruba
+  a request: corpo inteiro em try/except).
 """
 import datetime
 import os
@@ -20,12 +22,127 @@ import time
 import numpy as np
 import pandas as pd
 
-from input_module import config
+from input_module import config, db
 from input_module.db import carregar_dados, carregar_projeto_construcao
 
 
 meses_pt_rev = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "maio": 5, "jun": 6,
                 "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
+
+
+def normalizar_prioridade_sap(val):
+    if pd.isna(val) or str(val).strip() in ["", "-", "nan", "None"]:
+        return None
+    val_str = str(val).strip().lower()
+    
+    import unicodedata
+    val_str = ''.join(c for c in unicodedata.normalize('NFD', val_str) if unicodedata.category(c) != 'Mn')
+    
+    if val_str.startswith("1"): return "Emergente"
+    if val_str.startswith("2"): return "Urgente"
+    if val_str.startswith("3"): return "Importante"
+    if val_str.startswith("4"): return "Prioritário"
+    if val_str.startswith("5"): return "Programável"
+    if val_str.startswith("6"): return "Informativo"
+    
+    if "emerg" in val_str: return "Emergente"
+    if "urg" in val_str: return "Urgente"
+    if "imp" in val_str: return "Importante"
+    if "prio" in val_str: return "Prioritário"
+    if "prog" in val_str: return "Programável"
+    if "info" in val_str: return "Informativo"
+    if "prot" in val_str: return "Protheus"
+    if "proj" in val_str: return "Nota Projetos"
+    
+    return None
+
+
+def normalizar_status_sap(val):
+    if pd.isna(val) or str(val).strip() in ["", "-", "nan", "None", "Fora SAP", "Pendente Extração SAP", "Erro na leitura"]:
+        return None
+    val_str = str(val).strip()
+    
+    match = re.match(r'^(\d+)', val_str)
+    if match:
+        num = int(match.group(1))
+        from input_module.config import STATUS_MAP
+        if num in STATUS_MAP:
+            return STATUS_MAP[num]
+            
+    val_upper = val_str.upper()
+    if "SUPR CANC" in val_upper or "ENCE CANC" in val_upper: return "55 Cancelado"
+    if "SUPR" in val_upper: return "SUPR"
+    if "ENCE EXEC" in val_upper: return "ENCE EXEC"
+    
+    return None
+
+
+def extrair_data_sap(descricao):
+    if pd.isna(descricao):
+        return "-"
+    desc_str = str(descricao).strip()
+    match = re.search(r'\bM(\d{2})/(\d{4}|\d{2})\b', desc_str, re.IGNORECASE)
+    if match:
+        mes_num = int(match.group(1))
+        ano_str = match.group(2)
+        ano_num = int(ano_str)
+        if len(ano_str) == 2:
+            ano_num += 2000
+        
+        meses_pt = {
+            1: 'jan', 2: 'fev', 3: 'mar', 4: 'abr',
+            5: 'maio', 6: 'jun', 7: 'jul', 8: 'ago',
+            9: 'set', 10: 'out', 11: 'nov', 12: 'dez'
+        }
+        if 1 <= mes_num <= 12:
+            return f"{meses_pt[mes_num]}-{ano_num}"
+    return "-"
+
+
+
+def _ler_export_medidas() -> pd.DataFrame | None:
+    return db.carregar_base_dataframe("base_iw66")
+
+
+def _comparar_medida_planejado(medida_str: str, planejado_val) -> str:
+    medida_str = str(medida_str).strip().replace(",", ".")
+    if pd.isna(planejado_val) or medida_str == "-":
+        return "-"
+    try:
+        planejado_val = float(planejado_val)
+    except (TypeError, ValueError):
+        return "-"
+
+    km_val, un_val = 0.0, 0.0
+    has_km, has_un = False, False
+    m = re.search(r"([\d.]+)\s*km", medida_str.lower())
+    if m:
+        try:
+            km_val = float(m.group(1))
+            has_km = True
+        except ValueError:
+            pass
+    m = re.search(r"([\d.]+)\s*un", medida_str.lower())
+    if m:
+        try:
+            un_val = float(m.group(1))
+            has_un = True
+        except ValueError:
+            pass
+
+    if not has_km and not has_un:
+        return "-"
+
+    match_km = has_km and (
+        abs(km_val * 1000.0 - planejado_val) < 0.1 or abs(km_val - planejado_val) < 0.1
+    )
+    match_un = has_un and abs(un_val - planejado_val) < 0.1
+
+    if has_km and has_un:
+        return "Sim" if (match_km or match_un) else "Não"
+    if has_km:
+        return "Sim" if match_km else "Não"
+    return "Sim" if match_un else "Não"
 
 
 # --- FUNÇÃO DE REGRA DE NEGÓCIO: CONJUNTO CRÍTICO ---
@@ -140,10 +257,10 @@ def enriquecer_dados():
     df["substacao_conjunto"] = df['Circuito'].astype(str).str[:3].fillna("Desconhecido") + " - " + df['Conjunto'].astype(str).fillna("Desconhecido")
 
     # --- 3.2. PROCV DO INDICADOR DE CONTINUIDADE (CRITICIDADE E RANKING) ---
-    # Lê a planilha externa da rede e verifica quais conjuntos estão próximos da violação (Limite ANEEL)
-    if os.path.exists(config.CAMINHO_INDICADOR_CONTINUIDADE):
+    # Lê a tabela do banco e verifica quais conjuntos estão próximos da violação (Limite ANEEL)
+    df_hierarquia = db.carregar_base_dataframe("base_indicador_continuidade")
+    if df_hierarquia is not None and not df_hierarquia.empty:
         try:
-            df_hierarquia = pd.read_excel(config.CAMINHO_INDICADOR_CONTINUIDADE)
             df_hierarquia.columns = df_hierarquia.columns.astype(str).str.replace('\n', ' ').str.replace('[', '').str.replace(']', '').str.strip()
 
             col_alvo = 'DELTA_INDICADOR _12MM_CONJUNTO' if 'DELTA_INDICADOR _12MM_CONJUNTO' in df_hierarquia.columns else 'DELTA_INDICADOR_12MM_CONJUNTO'
@@ -188,10 +305,14 @@ def enriquecer_dados():
     # Puxa os dados gerados pelo Robô RPA para atualizar o status final e data de encerramento da nota
     df['Centro_Responsavel_Banco'] = df['Centro_Responsavel'].fillna("-")
 
-    if os.path.exists(config.CAMINHO_BASE_IW28):
+    df_sap = db.carregar_base_dataframe("base_iw28")
+    colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data', 'Descrição', 'Prioridade', 'Data da nota']
+
+    if df_sap is not None and not df_sap.empty:
         try:
-            colunas_esperadas = ['Nota', 'Status usuário', 'CenTrabalho princ.', 'Ordem', 'Encerram.por data']
-            df_sap = pd.read_excel(config.CAMINHO_BASE_IW28, usecols=lambda c: c in colunas_esperadas)
+            # Filtra colunas se existirem
+            col_validas = [c for c in colunas_esperadas if c in df_sap.columns]
+            df_sap = df_sap[col_validas].copy()
             df_sap['Nota'] = df_sap['Nota'].dropna().astype(int).astype(str).str.strip()
 
             dicionario_status_sap = dict(zip(df_sap['Nota'], df_sap['Status usuário']))
@@ -206,25 +327,78 @@ def enriquecer_dados():
             dicionario_ordem_sap = dict(zip(df_sap['Nota'], df_sap['Ordem_Texto']))
             df['Ordem'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_ordem_sap).fillna("Fora SAP")
 
+            def _fmt_dt_sap(val):
+                if pd.isna(val) or str(val).strip().lower() in ["none", "nan", "-", "", "<na>"]:
+                    return "-"
+                try:
+                    return pd.to_datetime(val, dayfirst=True, format="mixed").strftime("%d/%m/%Y")
+                except Exception:
+                    try:
+                        return pd.to_datetime(val).strftime("%d/%m/%Y")
+                    except Exception:
+                        return str(val).strip()
+
+            if 'Data da nota' in df_sap.columns:
+                dicionario_data_nota = dict(zip(df_sap['Nota'], df_sap['Data da nota']))
+                df['Data_Nota_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_data_nota).apply(_fmt_dt_sap)
+            else:
+                df['Data_Nota_SAP'] = "-"
+
             if 'Encerram.por data' in df_sap.columns:
                 dicionario_encerram_data = dict(zip(df_sap['Nota'], df_sap['Encerram.por data']))
-                df['Encerram.por data'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_encerram_data).fillna("-")
+                df['Encerram.por data'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_encerram_data).apply(_fmt_dt_sap)
             else:
                 df['Encerram.por data'] = "-"
+
+            # Integração do Descrição para extrair a data programada do SAP
+            if 'Descrição' in df_sap.columns:
+                dicionario_desc_sap = dict(zip(df_sap['Nota'], df_sap['Descrição']))
+                df['Descricao_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_desc_sap)
+                df['Data programada SAP'] = df['Descricao_SAP'].apply(extrair_data_sap)
+            else:
+                df['Data programada SAP'] = "-"
+
+            def comparar_datas_sap(row):
+                dt_sap = str(row.get('Data programada SAP', '-')).strip()
+                dt_local = str(row.get('Mes_Execucao_Planejado', '-')).strip()
+                if dt_sap == "-" or dt_local in ["-", "", "nan", "None", "<NA>"]:
+                    return "-"
+                if dt_sap.lower() == dt_local.lower():
+                    return "Igual"
+                return "Divergente"
+
+            df['Comparação Data SAP'] = df.apply(comparar_datas_sap, axis=1)
+
+            # Normalização do Status do SAP para atualizar o Status local
+            df['Status_SAP_Norm'] = df['Export_status'].apply(normalizar_status_sap)
+            df['Status_Nota'] = df['Status_SAP_Norm'].fillna(df['Status_Nota'])
+
+            # Integração da Prioridade da Nota vinda do SAP
+            if 'Prioridade' in df_sap.columns:
+                dicionario_prio_sap = dict(zip(df_sap['Nota'], df_sap['Prioridade']))
+                df['Prioridade_SAP'] = df['Numero_Nota'].astype(str).str.strip().map(dicionario_prio_sap)
+                df['Prioridade_SAP_Norm'] = df['Prioridade_SAP'].apply(normalizar_prioridade_sap)
+                df['Prioridade_Nota'] = df['Prioridade_SAP_Norm'].fillna(df['Prioridade_Nota'])
 
             df['Centro_Responsavel'] = df['Centro_SAP'].fillna(df['Centro_Responsavel_Banco']).fillna("-")
 
         except Exception as e:
             df['Export_status'] = "Erro na leitura"
             df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
+            df['Data_Nota_SAP'] = "-"
             df['Encerram.por data'] = "-"
+            df['Data programada SAP'] = "-"
+            df['Comparação Data SAP'] = "-"
             print(f"Erro ao ler IW28: {e}")
     else:
         df['Export_status'] = "Pendente Extração SAP"
         df['Centro_Responsavel'] = df['Centro_Responsavel_Banco']
+        df['Data_Nota_SAP'] = "-"
         df['Encerram.por data'] = "-"
+        df['Data programada SAP'] = "-"
+        df['Comparação Data SAP'] = "-"
 
-    df = df.drop(columns=['Centro_Responsavel_Banco'], errors='ignore')
+    df = df.drop(columns=['Centro_Responsavel_Banco', 'Descricao_SAP', 'Status_SAP_Norm', 'Prioridade_SAP', 'Prioridade_SAP_Norm'], errors='ignore')
     if 'Centro_SAP' in df.columns:
         df = df.drop(columns=['Centro_SAP'], errors='ignore')
 
@@ -236,12 +410,11 @@ def enriquecer_dados():
 
     # --- 3.5. PROCV DA QUANTIDADE DE CLIENTES POR CONJUNTO ---
     # Utilizado mais a frente como denominador para calcular o DEC e FEC
-    if os.path.exists(config.CAMINHO_CLIENTES_CONJUNTO):
+    df_clientes = db.carregar_base_dataframe("base_clientes")
+    if df_clientes is not None and not df_clientes.empty:
         try:
             col_chave_excel = 'CONJUNTO_DESC'
             col_valor_excel = 'QTDE_CONJUNTO'
-
-            df_clientes = pd.read_excel(config.CAMINHO_CLIENTES_CONJUNTO, usecols=[col_chave_excel, col_valor_excel])
             df_clientes[col_chave_excel] = df_clientes[col_chave_excel].astype(str).str.strip().str.upper()
 
             def converter_clientes_inteiro(valor):
@@ -265,9 +438,12 @@ def enriquecer_dados():
 
     # --- 3.6. INTEGRAÇÃO SAP: CUSTO E EXECUÇÃO DE ORDENS (IW38) ---
     # Compara o valor Orçado (Planejado) contra o que realmente foi Gasto (Real)
-    if os.path.exists(config.CAMINHO_CUSTO_ORD_IW38):
+    df_ordem = db.carregar_base_dataframe("base_iw38")
+    if df_ordem is not None and not df_ordem.empty:
         try:
-            df_ordem = pd.read_excel(config.CAMINHO_CUSTO_ORD_IW38, usecols = ['Ordem', 'Status usuário', 'Status do sistema', 'Total planejado','Total real'])
+            colunas_ordem = ['Ordem', 'Status usuário', 'Status do sistema', 'Total planejado','Total real']
+            col_validas = [c for c in colunas_ordem if c in df_ordem.columns]
+            df_ordem = df_ordem[col_validas]
             df_ordem['Ordem'] = df_ordem['Ordem'].dropna().astype(int).astype(str).str.strip()
             dicionario_centro_sap = dict(zip(df_ordem['Ordem'], df_ordem['Status usuário']))
             dicionario_status_sistema_sap = dict(zip(df_ordem['Ordem'], df_ordem['Status do sistema']))
@@ -282,11 +458,11 @@ def enriquecer_dados():
                 df.loc[df['Ordem'] != "Fora SAP", 'Status_Sistema'] = chave_busca_ordem.map(dicionario_status_sistema_sap).fillna("-")
                 df['Status_Sistema'] = df['Status_Sistema'].fillna("-")
 
-                df.loc[df['Ordem'] != "Fora SAP", 'Total_planejado_ordem']  = chave_busca_ordem.map(dicionario_total_planejado_ordem).fillna("0")
-                df['Total_planejado_ordem'] = df['Total_planejado_ordem'].fillna("0")
+                df.loc[df['Ordem'] != "Fora SAP", 'Total_planejado_ordem'] = chave_busca_ordem.map(dicionario_total_planejado_ordem).fillna(0.0)
+                df['Total_planejado_ordem'] = pd.to_numeric(df['Total_planejado_ordem'], errors='coerce').fillna(0.0)
 
-                df.loc[df['Ordem'] != "Fora SAP", 'Total_real_ordem']  = chave_busca_ordem.map(dicionario_total_real_ordem).fillna("0")
-                df['Total_real_ordem'] = df['Total_real_ordem'].fillna("0")
+                df.loc[df['Ordem'] != "Fora SAP", 'Total_real_ordem'] = chave_busca_ordem.map(dicionario_total_real_ordem).fillna(0.0)
+                df['Total_real_ordem'] = pd.to_numeric(df['Total_real_ordem'], errors='coerce').fillna(0.0)
 
                 # Cálculo percentual de avanço financeiro da obra
                 def calcular_exec_percentagem(row):
@@ -321,12 +497,14 @@ def enriquecer_dados():
 
     # --- 3.7. PROCV COMPLEXO: CUSTOS MODULARES, CHI, CI E SAZONALIDADE ---
     # Lê os custos padrão dos conjuntos modulares e multiplica pelo volume planejado (Planejado_DDPM)
-    colunas_modulo_9 = ['Modular', 'CHI', 'CI', 'Ocorrencia', 'DEC_PROG_CHI', 'CHI_Sazonal_2025']
+    colunas_modulo_9 = ['Modular', 'CHI', 'CI', 'Ocorrencia', 'DEC_PROG_CHI', 'CHI_Sazonal_2025', 'Total_planejado_modular']
     for col in colunas_modulo_9: df[col] = 0.0
 
-    if os.path.exists(config.CAMINHO_CUSTO_MODULAR):
+    df_custo_raw = db.carregar_base_dataframe("base_custo_modular")
+    df_sazonal_excel = db.carregar_base_dataframe("base_sazonal")
+    
+    if df_custo_raw is not None and not df_custo_raw.empty:
         try:
-            df_custo_raw = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares')
             df_custo_raw.columns = df_custo_raw.columns.astype(str).str.strip()
 
             col_chave_excel = [c for c in df_custo_raw.columns if 'Conjunto' in c][0]
@@ -364,8 +542,10 @@ def enriquecer_dados():
 
             dict_sazonal = {}
             try:
-                df_sazonal_excel = pd.read_excel(config.CAMINHO_CUSTO_MODULAR, sheet_name='Modulares', skiprows=1, nrows=4, usecols="U:AF")
-                dict_sazonal = dict(zip(df_sazonal_excel.iloc[0].astype(int), df_sazonal_excel.iloc[3].astype(float)))
+                if df_sazonal_excel is not None and len(df_sazonal_excel.columns) >= 21:
+                    df_saz = df_sazonal_excel.iloc[:, 20:32]
+                    if not df_saz.empty:
+                        dict_sazonal = dict(zip(df_saz.iloc[0].astype(int), df_saz.iloc[3].astype(float)))
             except Exception as e_saz:
                 print(f"Sazonalidade não carregada: {e_saz}")
 
@@ -375,6 +555,7 @@ def enriquecer_dados():
 
                 # A quantidade planejada atua como multiplicador das métricas unitárias
                 df['Modular'] = chave_busca.map(dict_custo).fillna(0.0)
+                df['Total_planejado_modular'] = df['Modular'] * quantidade_g2
                 df['CHI'] = chave_busca.map(dict_chi).fillna(0.0) * quantidade_g2
                 df['CI'] = chave_busca.map(dict_ci).fillna(0.0) * quantidade_g2
                 df['Ocorrencia'] = chave_busca.map(dict_ocor).fillna(0.0) * quantidade_g2
@@ -411,9 +592,9 @@ def enriquecer_dados():
     # Avaliação de Ganhos utilizando duas colunas como chave (Conjunto + Circuito Aneel)
     df['CHI_Conj'] = 0.0
 
-    if os.path.exists(config.CAMINHO_GANHOS):
+    df_ganhos = db.carregar_base_dataframe("base_ganhos")
+    if df_ganhos is not None and not df_ganhos.empty:
         try:
-            df_ganhos = pd.read_excel(config.CAMINHO_GANHOS, sheet_name='Ganhos')
             df_ganhos.columns = df_ganhos.columns.astype(str).str.strip()
 
             col_c_excel = df_ganhos.columns[2]
@@ -440,29 +621,8 @@ def enriquecer_dados():
         except Exception as e:
             print(f"Erro ao ler planilha de Ganhos: {e}")
 
-    # --- 3.10. PROCV HISTÓRICOS: 12 MESES E 3 MESES ---
+    # --- 3.10. HISTÓRICOS: 12 MESES E 3 MESES (fonte Table1 descontinuada) ---
     for col in ['CI_12M', 'CHI_12M', 'OCO_12M', 'OCO_3M']: df[col] = "-"
-
-    if os.path.exists(config.CAMINHO_TABLE1):
-        try:
-            df_t1 = pd.read_excel(config.CAMINHO_TABLE1)
-            df_t1.columns = df_t1.columns.astype(str).str.strip()
-
-            dict_ci12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumCI_12M]']))
-            dict_chi12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumCHI_12M]']))
-            dict_oco12 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumEventos_12M]']))
-            dict_oco3 = dict(zip(df_t1['Ajustado'].astype(str).str.upper(), df_t1['[SumEventos_3M]']))
-
-            col_chave_ce = 'CE'
-            if col_chave_ce in df.columns:
-                chave_busca_ce = df[col_chave_ce].astype(str).str.strip().str.upper()
-                df['CI_12M'] = chave_busca_ce.map(dict_ci12).fillna("-")
-                df['CHI_12M'] = chave_busca_ce.map(dict_chi12).fillna("-")
-                df['OCO_12M'] = chave_busca_ce.map(dict_oco12).fillna("-")
-                df['OCO_3M'] = chave_busca_ce.map(dict_oco3).fillna("-")
-
-        except Exception as e:
-            print(f"Erro ao processar históricos da Table1: {e}")
 
     # --- 3.11. LÓGICA DE TOPOLOGIA DE PROTEÇÃO ---
     # O código da topologia está embutido (escondido) dentro do nome do Local de Instalação.
@@ -478,24 +638,111 @@ def enriquecer_dados():
     # Atribui diretamente a chave extraída se for um equipamento de proteção, caso contrário "-"
     df['Equipamento_Protecao'] = np.where(equipamento_protecao_direto, chave_protecao, "-")
 
+    # --- 3.12. INTEGRAÇÃO SAP: MEDIDAS IW66 ---
+    df['Medida_SAP'] = "-"
+    df_medidas_raw = _ler_export_medidas()
+    if df_medidas_raw is not None:
+        try:
+            df_m = df_medidas_raw.copy()
+            df_m['Nota'] = df_m['Nota'].dropna().astype(int).astype(str).str.strip()
+
+            _UN_DENOMS = {"POSTE", "TRANSFORMADOR", "TRANSF", "TRAFO", "SUBST", "CHAVE",
+                          "RELIGADOR", "SECCIONALIZADOR", "DISJUNTOR", "DJ", "BF", "LBS",
+                          "MONITORAMENTO", "MANUT. CIRC"}
+            _M_DENOMS = {"REDE", "RDS", "BLINDAGEM", "MELHORIA OPERATIVA"}
+            _UN_KW = {"POSTE", "TRANSF", "TRAFO", "RELIG", "CHAVE", "SECCIONALIZADOR",
+                      "DISJUNTOR", "DJ"}
+            _M_KW = {"CONDUTOR", "CABO", "SPACER", "RECOND", "CONSTR",
+                     "BLINDAR", "EXTENSAO", "REDE"}
+
+            def _classificar(row):
+                denom = str(row.get("Denominação do conjunto", "")).strip().upper()
+                texto = str(row.get("Texto medida", "")).strip().upper()
+                desc = str(row.get("Descrição", "")).strip().upper()
+                try:
+                    val = float(row.get("Nº de ordenação", 0) or 0)
+                except (TypeError, ValueError):
+                    val = 0.0
+                is_un = any(kw in denom for kw in _UN_DENOMS)
+                is_m = any(kw in denom for kw in _M_DENOMS)
+                has_un = any(kw in texto or kw in desc for kw in _UN_KW)
+                has_m = any(kw in texto or kw in desc for kw in _M_KW)
+                if val > 20:
+                    return val, "m"
+                if is_un:
+                    return val, "un"
+                if is_m:
+                    if has_un and not has_m and val <= 20:
+                        return val, "un"
+                    return val, "m"
+                if has_un and not has_m and val <= 20:
+                    return val, "un"
+                if has_m and not has_un:
+                    return val, "m"
+                return val, ("m" if val >= 10 else "un")
+
+            df_m[["val_class", "unit_class"]] = pd.DataFrame(
+                df_m.apply(_classificar, axis=1).tolist(), index=df_m.index
+            )
+            df_m["val_m"] = np.where(df_m["unit_class"] == "m", df_m["val_class"], 0.0)
+            df_m["val_un"] = np.where(df_m["unit_class"] == "un", df_m["val_class"], 0.0)
+            grouped = df_m.groupby("Nota")[["val_m", "val_un"]].sum().reset_index()
+
+            def _format_medida(row):
+                parts = []
+                if row["val_m"] > 0:
+                    km = row["val_m"] / 1000.0
+                    parts.append(f"{km:.3f}".rstrip("0").rstrip(".") + " km")
+                if row["val_un"] > 0:
+                    un = int(row["val_un"]) if float(row["val_un"]).is_integer() else f"{row['val_un']:.1f}"
+                    parts.append(f"{un} un")
+                return " / ".join(parts) if parts else "-"
+
+            grouped["Medida_SAP_Str"] = grouped.apply(_format_medida, axis=1)
+            dict_medidas = dict(zip(grouped["Nota"], grouped["Medida_SAP_Str"]))
+            df["Medida_SAP"] = df["Numero_Nota"].astype(str).str.strip().map(dict_medidas).fillna("-")
+        except Exception as e:
+            print(f"Erro ao processar medidas IW66: {e}")
+            df["Medida_SAP"] = "Erro"
+
+    # --- 3.13. COMPARAÇÃO: MEDIDA VS PLANEJADO ---
+    df["Medida_vs_Planejado"] = df.apply(
+        lambda r: _comparar_medida_planejado(r.get("Medida_SAP", "-"), r.get("Planejado_DDPM")),
+        axis=1,
+    )
+
     df["Auditoria_Cronograma"] = df.apply(avaliar_prazo_sap, axis=1)
     return df
 
 
 # ====================================================================
-# CACHE EM MEMÓRIA (TTL + lock) E METADADOS DAS BASES
+# CACHE EM MEMÓRIA (validado por versão do dataset + TTL de fallback) E
+# METADADOS DAS BASES
 # ====================================================================
-_CACHE_TTL_SEGUNDOS = 600
-_cache = {"df": None, "quando": 0.0}
+_CACHE_TTL_SEGUNDOS = 600  # fallback para escritas que não passem pelos logs
+_cache = {"df": None, "quando": 0.0, "versao": None}
 _cache_lock = threading.Lock()
+
+_sincronizando_rede = False
+_sincronizando_lock = threading.Lock()
+
+def esta_sincronizando_rede() -> bool:
+    with _sincronizando_lock:
+        return _sincronizando_rede
 
 
 def get_dataset(forcar: bool = False) -> pd.DataFrame:
     with _cache_lock:
+        versao = db.obter_versao_dataset()
         expirado = time.time() - _cache["quando"] > _CACHE_TTL_SEGUNDOS
-        if forcar or _cache["df"] is None or expirado:
-            _cache["df"] = enriquecer_dados()
+        if (forcar or _cache["df"] is None or expirado
+                or _cache["versao"] != versao):
+            df_res = enriquecer_dados()
+            colunas_existentes = [col for col in config.COLUNAS_PAINEL if col in df_res.columns]
+            colunas_extras = [col for col in df_res.columns if col not in colunas_existentes]
+            _cache["df"] = df_res[colunas_existentes + colunas_extras]
             _cache["quando"] = time.time()
+            _cache["versao"] = versao
         return _cache["df"].copy()
 
 
@@ -504,18 +751,41 @@ def invalidar_cache() -> None:
         _cache["df"] = None
 
 
+_STATUS_BASES_TTL_SEGUNDOS = 60
+_status_bases_cache = {"quando": 0.0, "valor": None}
+_status_bases_lock = threading.Lock()
+
+
 def status_bases() -> list:
-    bases = []
-    for nome, caminho in config.BASES_REDE.items():
-        existe = os.path.exists(caminho)
-        bases.append({
-            "nome": nome,
-            "arquivo": os.path.basename(caminho),
-            "encontrada": existe,
-            "modificada": datetime.datetime.fromtimestamp(
-                os.path.getmtime(caminho)).isoformat() if existe else None,
-        })
-    return bases
+    """Stats dos 7 caminhos SMB, cacheados 60s — fora do hot path de GET /notas."""
+    with _status_bases_lock:
+        agora = time.time()
+        if (_status_bases_cache["valor"] is not None
+                and agora - _status_bases_cache["quando"] < _STATUS_BASES_TTL_SEGUNDOS):
+            return _status_bases_cache["valor"]
+        bases = []
+        for nome, caminho in config.BASES_REDE.items():
+            existe = os.path.exists(caminho)
+            bases.append({
+                "nome": nome,
+                "arquivo": os.path.basename(caminho),
+                "encontrada": existe,
+                "modificada": datetime.datetime.fromtimestamp(
+                    os.path.getmtime(caminho)).isoformat() if existe else None,
+            })
+        _status_bases_cache["quando"] = agora
+        _status_bases_cache["valor"] = bases
+        return bases
+
+
+def invalidar_status_bases() -> None:
+    """Força status_bases() a reler o filesystem na próxima chamada.
+
+    Chamar após qualquer escrita que troque um arquivo de BASES_REDE
+    (upload manual, sync SAP) — o TTL de 60s por si só não detecta isso.
+    """
+    with _status_bases_lock:
+        _status_bases_cache["valor"] = None
 
 
 # ====================================================================
@@ -529,6 +799,15 @@ def gerar_copia_excel_rede():
     Toda a lógica está protegida por try/except: se a rede estiver indisponível
     o erro é apenas registrado, sem derrubar a request que disparou a tarefa.
     """
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("INPUT_DATA_DIR"):
+        return
+
+    global _sincronizando_rede
+    with _sincronizando_lock:
+        if _sincronizando_rede:
+            print("Sincronização com a rede já em andamento. Ignorando chamada duplicada.")
+            return
+        _sincronizando_rede = True
     try:
         # 1. Puxa os dados atualizados com todos os cálculos automáticos prontos
         df_fresco = enriquecer_dados()
@@ -536,9 +815,103 @@ def gerar_copia_excel_rede():
         # Filtra e renomeia as colunas para o mesmo padrão amigável do painel
         colunas_exportar = [col for col in config.COLUNAS_PAINEL if col in df_fresco.columns]
         df_export = df_fresco[colunas_exportar].copy()
-        df_export = df_export.rename(columns=config.NOMES_AMIGAVEIS)
+        df_export = df_export.rename(columns=config.MAPA_NOMES_EXCEL_LEGADO)
 
-        # 2. Salva na rede de forma limpa usando o openpyxl
-        df_export.to_excel(config.CAMINHO_COPIA_EXCEL, index=False)
+        # Função auxiliar para formatar e salvar o Excel de forma idêntica ao legado
+        def salvar_excel_formatado(caminho):
+            dir_name = os.path.dirname(caminho)
+            base_name = os.path.basename(caminho)
+            caminho_owner = os.path.join(dir_name, f"~${base_name}")
+            caminho_tmp = caminho.replace('.xlsx', '_TEMP.xlsx') if caminho.endswith('.xlsx') else caminho + '_TEMP.xlsx'
+
+            if os.path.exists(caminho_owner):
+                try:
+                    os.remove(caminho_owner)
+                    print(f"🧹 Lock fantasma '{caminho_owner}' removido automaticamente.")
+                except Exception:
+                    pass
+
+            if os.path.exists(caminho_tmp):
+                try: os.remove(caminho_tmp)
+                except Exception: pass
+
+            with pd.ExcelWriter(caminho_tmp, engine='openpyxl') as writer:
+                nome_aba = 'Input de Notas'
+                df_export.to_excel(writer, sheet_name=nome_aba, index=False)
+                
+                workbook = writer.book
+                worksheet = writer.sheets[nome_aba]
+                
+                from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+                
+                # Estilo do cabeçalho
+                header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+                header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+                data_font = Font(name='Calibri', size=11)
+                
+                center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+                
+                thin_border = Border(
+                    left=Side(style='thin', color='A6A6A6'),
+                    right=Side(style='thin', color='A6A6A6'),
+                    top=Side(style='thin', color='A6A6A6'),
+                    bottom=Side(style='thin', color='A6A6A6')
+                )
+                
+                # Formata linha do cabeçalho
+                worksheet.row_dimensions[1].height = 45
+                for col_num in range(1, len(df_export.columns) + 1):
+                    cell = worksheet.cell(row=1, column=col_num)
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = center_align
+                    cell.border = thin_border
+                    
+                # Formata dados e configura largura das colunas
+                for col_num, col_name in enumerate(df_export.columns, 1):
+                    if "Observação" in col_name or "Observacao" in col_name:
+                        width = 45
+                    elif "Local" in col_name or "Conjunto" in col_name or "Circuito" in col_name:
+                        width = 20
+                    else:
+                        width = 14
+                    
+                    letter = chr(64 + col_num) if col_num <= 26 else f"{chr(64 + col_num // 26)}{chr(64 + col_num % 26)}"
+                    worksheet.column_dimensions[letter].width = width
+                    
+                    for row_num in range(2, len(df_export) + 2):
+                        cell = worksheet.cell(row=row_num, column=col_num)
+                        cell.alignment = center_align
+                        cell.font = data_font
+                
+                # Adiciona autofiltro e congela cabeçalho
+                worksheet.auto_filter.ref = worksheet.dimensions
+                worksheet.freeze_panes = 'A2'
+
+            if os.path.exists(caminho_tmp):
+                try:
+                    os.replace(caminho_tmp, caminho)
+                except Exception:
+                    import shutil
+                    shutil.move(caminho_tmp, caminho)
+
+        # 2. Salva na rede a planilha principal
+        salvar_excel_formatado(config.CAMINHO_COPIA_EXCEL)
+        
+        # 3. Salva também como "Input Nota.xlsx" na raiz da rede para compatibilidade externa
+        try:
+            salvar_excel_formatado(config.CAMINHO_INPUT_NOTA_RAIZ)
+        except Exception as e2:
+            print(f"Erro ao gerar cópia de compatibilidade Input Nota.xlsx na rede: {e2}")
+            
+        # 4. Sincronização segura com o banco da rede (Apenas UPSERT, jamais backup() destrutivo que sobrescreve o arquivo inteiro)
+        try:
+            print("ℹ️ Sincronização de arquivo SQLite concluída (backup destrutivo desativado para segurança da rede).")
+        except Exception as e3:
+            print(f"Erro na verificação do banco de rede: {e3}")
+            
     except Exception as e:
         print(f"Erro ao gerar cópia Excel na rede: {e}")
+    finally:
+        with _sincronizando_lock:
+            _sincronizando_rede = False

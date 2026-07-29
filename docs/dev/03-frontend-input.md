@@ -1,0 +1,270 @@
+# Módulo Input
+
+## O que faz
+
+Input é a visão consolidada e editável das notas de manutenção
+importadas do SAP (IW28/IW38/IW66): mostra todos os registros num
+grid tipo planilha, permite edição rápida ou em lote, filtros
+avançados, exportação para Excel, relatórios de auditoria de prazo
+(DDPM vs SAP) e histórico de alterações. Também dispara e acompanha a
+sincronização com o SAP e alerta quando outra sessão altera a base
+enquanto o usuário está com a tela aberta.
+
+## Arquivos principais
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `frontend/src/features/input/input-section.tsx` | Casca da feature: cabeçalho, `SegTabs` das sub-abas (`INPUT_SUBS`), banners de aviso (dados desatualizados, importação inicial pendente, bases ausentes), roteamento condicional para o componente de cada sub-aba e renderização do bloco unificado de filtros avançados no topo para as sub-abas de Visão Geral e Gerenciar. |
+| `frontend/src/features/input/overview.tsx` | Sub-aba "Visão Geral": DataGrid somente-leitura, botões "Sincronizar SAP" e "Exportar Excel", status de vínculos automáticos (`useAutoVinculos`) e o `HierarquiaCard`. |
+| `frontend/src/features/input/manage.tsx` | Sub-aba "Gerenciar": cinco modos (Edição Rápida, Edição em Lote, Exclusão, Cadastrar Nota, Colar Planilha) sobre a base principal, cada um operando via `NotesTable`. |
+| `frontend/src/features/input/ramal.tsx` | Equivalente a `manage.tsx` para a base "Ramal" (dataset separado, `useRamalData`), com um modo "Visão Geral" a mais (via `DataGrid`). |
+| `frontend/src/features/input/filters.tsx` | Componente `Filters`: busca global por número de nota, switch rápido para o ano de 2026 e filtros avançados por campo (texto, faixa numérica, multi-seleção), unificado no nível de `input-section.tsx` e compartilhado entre as abas. |
+| `frontend/src/features/input/reports.tsx` | Sub-aba "Relatórios" (Painel Executivo): Permite navegar entre três relatórios interativos: "Auditoria de Prazos" (KPIs, cronograma, gráfico de rosca SVG), "Visão Financeira (Custos)" (totais, regional e status em barras de progresso) e "Em Planejamento (Status 10)" (backlog de planejamento, priorização e distribuição regional). Todos usam filtros avançados via `MultiSelect` e exportação customizada para Excel. |
+| `frontend/src/features/input/logs.tsx` | Sub-aba "Logs": três sub-abas (Alterações nas Notas, Bases de Apoio, Linha do Tempo), cada uma consumindo um endpoint próprio via `useQuery`. |
+| `frontend/src/features/input/settings.tsx` | Sub-aba "Configurações": nome do usuário (log de auditoria), responsáveis por conjunto, status/substituição das bases de apoio, lista de backups locais para download. |
+| `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. |
+| `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
+| `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção. |
+| `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
+| `frontend/src/features/input/cache.ts` | Snapshots do dataset em IndexedDB via Dexie (tabela `snapshots`, uma linha por dataset: `input-dados`, `ramal-dados`). Best-effort: falha de IndexedDB equivale a cache vazio. |
+| `frontend/src/features/input/ui.ts` | Constantes de estilo compartilhadas: `CLASSE_SELECT_MONO` para `SelectContent` mono-styling, usada por `filters.tsx`, `manage.tsx` e `ramal.tsx`. Nota: `MesExecucaoPicker` (agora em `components/branded/`) declara sua própria instância internamente. |
+| `frontend/src/components/branded/mes-execucao-picker.tsx` | `MesExecucaoPicker`: dropdown do campo "Mês de Execução Planejado", movido para `components/branded/` para reutilização entre features (Input e futura integração COFFEE). |
+| `frontend/src/features/input/colagem-planilha.tsx` | `ColagemPlanilha`: bloco presentacional do modo "Colar Planilha" (cabeçalho de colunas + textarea + preview), reaproveitado por `manage.tsx` e `ramal.tsx`. |
+
+## Fluxo: Overview e sub-navegação
+
+As seis sub-abas do módulo vivem em `INPUT_SUBS`
+(`features/input/subs.ts`, módulo leve que o `app-sidebar.tsx` importa
+sem puxar a feature pro bundle inicial): Visão Geral, Gerenciar, Ramal,
+Relatórios, Logs e Configurações, renderizadas pelo `SegTabs`
+(`input-section.tsx:51`). O estado da aba ativa (`sub`/`setSub`) chega
+via props — quem decide e persiste a aba ativa é o componente pai, o
+mesmo padrão do hub COFFEE documentado em `02-frontend-coffee.md`.
+`InputSection` em si só busca os dados (`useInputData`,
+`input-section.tsx:30`) e faz um `switch` condicional
+(`input-section.tsx:85-90`) que renderiza um dos seis componentes de
+sub-aba, todos recebendo o mesmo `dados: InputDataset` já carregado
+(exceto `Logs`, que não depende dele).
+
+Acima do conteúdo da sub-aba, `input-section.tsx` mostra até dois
+banners independentes: aviso de importação inicial pendente por rede
+indisponível (com botão "Tentar importar de novo" que chama
+`InputApi.migrar()`), e contagem de bases da rede EDP indisponíveis
+(`basesAusentes`, `input-section.tsx:65-69`). Não há mais um banner de
+"dados desatualizados por outra sessão" — ver "Sincronização SAP"
+abaixo, que agora revalida em background sem intervenção do usuário.
+
+Os hooks `useInputData`/`useRamalData` hidratam o React Query com o
+snapshot do IndexedDB no mount (`use-input-data.ts:22-32`,
+`use-ramal-data.ts:19-29`): `lerSnapshot` (`cache.ts:27-38`) busca a
+linha salva e, se a query ainda não tiver dado, um `setQueryData` com
+`updatedAt` do snapshot marca o dado como stale — o próprio React
+Query dispara a revalidação em background, sem estado manual. Cada
+resposta boa da rede regrava o snapshot dentro do `queryFn`
+(`gravarSnapshot`, `cache.ts:40-48`, chamado em `use-input-data.ts:12`
+e `use-ramal-data.ts:12`). O banner "Backend indisponível — mostrando
+dados salvos de {data}" usa `dataUpdatedAt` do próprio `useQuery` — não
+um state paralelo — porque esse campo já reflete tanto o `updatedAt`
+do seed quanto o de cada fetch bem-sucedido; `input-section.tsx:120-124`
+mostra esse banner para a base principal, e `ramal.tsx:201-205` replica
+o mesmo padrão na aba Ramal (erro bloqueante só quando
+`error != null && !dadosRamal`, `ramal.tsx:196-200`), que antes não
+tinha essa paridade. O cache não participa de escrita de notas (edições
+continuam exigindo backend); o poll de `/sync` segue sendo o
+invalidador entre sessões.
+
+## Fluxo: Edição em lote (manage.tsx)
+
+`manage.tsx` organiza cinco modos via `SegTabs` (`MODOS`,
+`manage.tsx:22-28`); trocar de modo (`trocarModo`, `manage.tsx:161-163`)
+limpa a mensagem de status e a seleção atual. Os modos "Edição em
+Lote" e "Exclusão" compartilham a flag `comSelecao`
+(`manage.tsx:159`), que ativa as props de seleção (`selecionados`,
+`onToggleSelecionado`, `onToggleTodos`) na `NotesTable` renderizada
+mais abaixo (`manage.tsx:251-262`) — a mesma tabela também atende o
+modo "Edição Rápida" trocando essas props pelas de edição inline
+(`edicoes`/`onEditar`), nunca as duas ao mesmo tempo.
+
+No modo "Edição em Lote" (`manage.tsx:186-221`), dois `Select`
+(status e prioridade) e um `MesExecucaoPicker` (mês de execução)
+definem os novos valores; como o primitivo `Select` do shadcn/Radix
+não aceita `value=""`, "manter valor atual" é representado por um
+valor sentinela `"__manter"` que é convertido de volta para string
+vazia em `onValueChange` (`manage.tsx:191-210`). `aplicarLote`
+(`manage.tsx:104-120`) monta uma linha por nota selecionada só com os
+campos preenchidos e recusa a operação (mensagem de erro) se nenhuma
+nota estiver selecionada ou nenhum campo tiver sido escolhido. O
+`Select` customizado em si (`@/components/ui/select`) não tem doc
+próprio ainda — não está documentado em `04-frontend-shared.md`.
+
+### Registro de notas — `MesExecucaoPicker` e `ColagemPlanilha`
+
+`MesExecucaoPicker` (`mes-execucao-picker.tsx`) resolve o campo "Mês
+de Execução Planejado" como dropdown em vez de texto livre, gravando
+sempre `MMM-YYYY` minúsculo. `construirOpcoesMes(anoAtual)`
+(`mes-execucao-picker.tsx`) gera os 12 meses do ano corrente (ano via
+`new Date().getFullYear()`, nunca hardcoded) mais dois futuros fixos —
+`jan-<anoAtual+1>` e `jan-2050` — sempre em janeiro. O componente
+recebe `valorNeutro`/`rotuloNeutro` porque o significado de "nenhum
+mês" muda por modo: no Cadastrar Nota é `'-'` (o default de
+`NOTA_VAZIA`/`NOTA_RAMAL_VAZIA`); na Edição em Lote é `''` ("manter
+atual", mesma convenção do sentinela `"__manter"` dos `Select` de
+status/prioridade). Usado em `manage.tsx:213,289` e
+`ramal.tsx:255,322`.
+
+`ColagemPlanilha` (`colagem-planilha.tsx`) substitui o antigo bloco
+"Colar Planilha" (`Card` + `Textarea` cru) por um container com uma
+linha de cabeçalho fixa mostrando os rótulos das colunas esperadas
+(mesmo estilo mono/uppercase do header da `NotesTable`) *antes* de
+colar qualquer coisa — o formato esperado fica visível de antemão. É
+puramente presentacional: recebe texto/preview/callbacks do pai
+(`manage.tsx:308`, `ramal.tsx:342`) e não guarda estado próprio nem
+chama a API diretamente.
+
+## Handoff de filtros {#handoff-de-filtros}
+
+`InputSection` recebe `filtrosHandoff?: { estado: FiltersState; id: number } | null`
+do `App.tsx` (ver [04-frontend-shared.md](./04-frontend-shared.md)) e
+repassa ao `Overview` como `key={filtrosHandoff?.id ?? 0}` +
+`filtrosIniciais={filtrosHandoff?.estado}`. `Overview` inicializa seu
+estado com `React.useState<FiltersState>(filtrosIniciais ?? FILTROS_INICIAIS)`
+— a `key` força a remontagem do componente a cada novo handoff (mesmo
+que o usuário navegue duas vezes para o mesmo mês/plano), o que reseta
+o `useState` para os novos `filtrosIniciais`. Depois de montado, os
+filtros voltam a ser edição livre do usuário — o handoff só define o
+estado inicial.
+
+## Fluxo: Filtros (filters.tsx)
+
+O `Select` "+ Adicionar campo de filtro…" (`filters.tsx`) não recebe `value` — ele é não controlado do ponto de vista do React. O efeito de "voltar para vazio depois de cada escolha" não vem de um reset explícito: `camposDisponiveis` filtra do `SelectContent` qualquer campo que já esteja em `estado.filtros`, e `onValueChange` adiciona o campo escolhido a `estado.filtros` imediatamente. Como o campo recém-escolhido some da lista de `SelectItem` no próximo render, o `SelectValue` interno do Radix não encontra mais um item correspondente ao valor selecionado e volta a exibir o `placeholder`.
+
+Cada filtro adicionado renderiza um controle conforme o tipo (`tipoDoCampo`):
+* Campo de texto livre (`"texto"`): Permite busca parcial ou busca negativa (se digitado entre asteriscos, ex: `*termo*`, o motor de filtragem em `lib.ts` reverte a lógica para ocultar os registros que contêm o termo).
+* Faixa numérica mín/máx (`"faixa"`).
+* Dropdown múltiplo customizado (`"multi"`): Implementado como um combobox (`MultiSelect`) premium que oferece:
+  * Caixa de pesquisa com suporte a negação via asteriscos (`*termo*`).
+  * Opções de **"Selecionar tudo"** (aplica-se aos itens visíveis de acordo com a pesquisa atual) e **"Limpar filtro"**.
+  * Checkboxes e contador dinâmico de itens ativos.
+
+O botão de limpar filtros zera a busca global, o seletor "Planejado 2026" e os filtros avançados ativos de uma só vez.
+
+## Card de status das metas (settings.tsx)
+
+`Settings` mostra o card "Metas do Plano de Recomposição" acima dos
+demais (`settings.tsx`). O estado exibido (`atualizadas_em`, `erro`)
+vem de `useDashboardRelatorios(null)` (`features/relatorios/use-dashboard.ts`,
+query já cacheada com `staleTime` de 60s) — **nunca** do
+`POST /metas/sincronizar`, porque esse endpoint tem efeito colateral
+(força reimportação do Excel). O botão "Sincronizar agora" chama
+`InputApi.sincronizarMetas()` dentro de um `toast.promise` e, no
+sucesso, invalida `['relatorios-dashboard']` via `useQueryClient` —
+o dashboard de Relatórios (se montado) refaz o fetch automaticamente.
+
+## Sincronização SAP
+
+O botão "Sincronizar SAP" em `overview.tsx:58-66` chama
+`InputApi.syncSap()` (`POST /bases/sync-sap`, `api.ts:63`) dentro de um
+`toast.promise`, disparando a extração no backend em background (ver
+`06-backend-input-module.md` para o que o backend faz com esse
+endpoint). O botão não guarda estado de "rodando" — não fica desabilitado
+enquanto a sincronização está em andamento (ver "Pontos de atenção").
+
+Como a sincronização roda em background e pode ser disparada por
+qualquer sessão, `use-input-data.ts:25-43` mantém um polling próprio
+para detectar quando os dados mudaram em outro lugar: a cada `60_000ms`
+(`window.setInterval(..., 60_000)`), `useSincronizacaoAutomatica` chama
+`InputApi.sync()` e compara `s.versao` (`db.obter_versao_dataset()`,
+Tarefa 13) com o valor conhecido (`dados?.meta.versao`, passado por
+`input-section.tsx`); se mudou, dispara um `toast.info` avisando o
+usuário e invalida `INPUT_DADOS_KEY` (`qc.invalidateQueries`) — a
+tabela é revalidada em segundo plano automaticamente, sem exigir
+clique. A Tarefa 15 trocou a comparação de `ultima_alteracao` para
+`versao`: como `service.criar_notas` não passa por `log_alteracoes`
+(ver `06-backend-input-module.md`), criações de nota não mudavam
+`ultima_alteracao` e não eram detectadas pelo polling; `versao` cobre
+também o `COUNT(*)` de notas, então criações agora disparam o aviso.
+Isso substituiu o antigo `useAvisoSincronizacao`, que só marcava um
+flag `desatualizado` e dependia de um banner com botão "Recarregar
+dados" (`useRecarregarInput`) para o usuário buscar os dados novos
+manualmente.
+
+`GET /notas` (`InputApi.dados`) também usa essa versão como `ETag`
+HTTP (`W/"<versao>"`, `Cache-Control: no-cache`) — o navegador cuida
+sozinho da revalidação condicional (`If-None-Match`) a cada `fetch`,
+sem nenhum código extra no cliente: se a versão não mudou, o backend
+responde `304` e o corpo vem do cache HTTP local em vez de trafegar o
+dataset inteiro de novo.
+
+`INPUT_DADOS_KEY` (`use-input-data.ts:6`) é a `queryKey` de
+`useInputData`, exportada para que qualquer código fora do hook — o
+próprio polling, `use-auto-vinculos.ts` e a integração COFFEE
+(`mover-plano-modal.tsx`, ver `02-frontend-coffee.md`, fluxo "Revisar
+Nota e Mover para o Plano") — invalide o mesmo cache sem duplicar o
+array literal `['input-dados']`.
+
+### Notas vindas do COFFEE
+
+Quando uma nota é movida do COFFEE para o plano
+(`POST /api/integracao/mover-para-plano`, documentado em
+`08-integracao-coffee-input.md`), o registro criado é uma linha comum
+da base principal do Input — não existe nenhum campo, flag ou coluna
+que marque a origem "veio do COFFEE". Na `overview.tsx`/`manage.tsx`,
+uma nota assim é visualmente indistinguível de uma cadastrada
+manualmente pelo modo "Cadastrar Nota"; a única forma de rastrear a
+origem é do lado do COFFEE (o `revisao.ja_no_plano`/`revisao.plano` do
+`GET /api/integracao/nota/{pk}/revisao`, ou o histórico de logs do
+COFFEE). Vale ter isso em mente ao investigar divergências no plano —
+o Input em si não guarda essa informação.
+
+## Timings (tabela consolidada desta feature)
+
+| Valor | Onde | O que faz |
+|---|---|---|
+| `60_000ms` | `use-input-data.ts:29` | Polling de `InputApi.sync()` (`useSincronizacaoAutomatica`); compara `versao` com o valor conhecido e, se mudou, avisa via `toast.info` e invalida `INPUT_DADOS_KEY` em background. |
+| `300_000ms` | `use-input-data.ts:12` | `staleTime` da query `useInputData` (React Query): por 5 minutos os dados carregados são considerados "frescos" e não disparam refetch automático em background (o default global de 60s do `QueryClient`, ver `04-frontend-shared.md`, não se aplica aqui). |
+| `300_000ms` | `use-ramal-data.ts:8` | `staleTime` da query `useRamalData`, mesmo racional do `useInputData` acima — dataset separado (base "Ramal"), mesma cadência de frescor. |
+
+## Pontos de atenção
+
+- `filters.tsx:84-105` — o `Select` de "Adicionar campo de filtro" é
+  não controlado; o "reset" visual depende de `camposDisponiveis`
+  (`filters.tsx:48-52`) sempre excluir o campo recém-escolhido do
+  `SelectContent`. Se essa lista algum dia parar de excluir campos já
+  ativos (ex.: permitir múltiplos filtros no mesmo campo), o `Select`
+  passa a reter a última seleção visualmente, quebrando o padrão atual
+  sem nenhum aviso em tempo de compilação.
+- `manage.tsx:191-210` (e o mesmo padrão em `ramal.tsx:233-252`) — o
+  valor sentinela `"__manter"` para "manter valor atual" nos `Select`
+  de edição em lote é uma convenção implícita: qualquer novo `Select`
+  de edição em lote precisa lembrar de repetir esse mapeamento
+  manualmente, não há um wrapper compartilhado que resolva isso uma
+  vez.
+- `manage.tsx:124,132` — a exclusão em lote e o "desfazer" usam
+  `window.confirm` nativo, diferente do `ConfirmModal` (`AlertDialog`)
+  usado no módulo COFFEE pela Operação e por Concluídas (documentado em
+  `02-frontend-coffee.md`) para o mesmo tipo de ação destrutiva —
+  inconsistência de padrão de UI entre módulos, sem campo de
+  justificativa nem estilo consistente com o resto do app.
+- `overview.tsx:58-66` — o botão "Sincronizar SAP" não guarda estado de
+  "em andamento": nada impede múltiplos cliques disparando várias
+  sincronizações em paralelo no backend, diferente do botão "Exportar
+  Excel" logo ao lado, que usa `exportando` para se desabilitar
+  (`overview.tsx:25,67-70`).
+- `use-input-data.ts:39` — falhas do polling de sincronização são
+  silenciadas (`.catch(() => {})`) com o comentário "o erro aparece no
+  fluxo principal"; mas se apenas o polling falhar (ex.: `/sync`
+  intermitente) enquanto o carregamento principal continua ok, o
+  usuário não tem nenhuma indicação de que a checagem de sincronização
+  parou de funcionar (não há mais banner ligado a esse estado — a
+  falha simplesmente não gera o `toast.info` de aviso).
+- `app.css` (bloco `.input-scope`) — os cards do módulo Input usam a
+  borda `--line` (hairline discreto) em vez de `--line-2` (usada em
+  todo o resto do app), e os `Select` internos renderizam em
+  `var(--font-mono)`. Escopado via classe `input-scope` na raiz de
+  `input-section.tsx` para não vazar para Coffee/Verificar. O mono nos
+  `Select` é um desvio deliberado do `DESIGN.md` (que reserva mono
+  para código) — decisão explícita para casar com a estética "grade de
+  dados" do Input. `MesExecucaoPicker` (agora em `components/branded/`)
+  já declara `CLASSE_SELECT_MONO` internamente; qualquer outro novo
+  `SelectContent` do módulo precisa lembrar de aplicá-la manualmente,
+  pois o conteúdo é portalado para fora de `.input-scope`.

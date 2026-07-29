@@ -2,12 +2,18 @@ import io
 import json
 import pathlib
 import re
+import uuid
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+
+load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
+
+from coffee_module import db as _coffee_db
 
 app = FastAPI(title="De olho no Problema")
 
@@ -18,6 +24,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def _trace_middleware(request, call_next):
+    _coffee_db.definir_trace(uuid.uuid4().hex[:12])
+    return await call_next(request)
+
+
+# ── Scheduler (Extração Noturna do SAP) ──────────────────────────────────────
+import asyncio
+import datetime
+from input_module.routes import _rotina_sap_background
+
+async def _agendador_sap_noturno():
+    """Roda infinitamente verificando se é a hora da madrugada (ex: 03:00) para acionar o SAP."""
+    while True:
+        agora = datetime.datetime.now()
+        # Se for 3 da manhã e estivermos no minuto 0 (com margem de erro do sleep)
+        if agora.hour == 3 and agora.minute == 0:
+            print("🕒 [Scheduler] Iniciando extração noturna do SAP...")
+            # Roda em thread para não bloquear o event loop do FastAPI
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, _rotina_sap_background)
+            print("✅ [Scheduler] Extração noturna finalizada!")
+            
+            # Dorme por 61 minutos para garantir que não vai rodar de novo hoje às 3h
+            await asyncio.sleep(61 * 60)
+        else:
+            # Verifica a cada 30 segundos
+            await asyncio.sleep(30)
+
+@app.on_event("startup")
+async def start_scheduler():
+    asyncio.create_task(_agendador_sap_noturno())
+
+
 
 RECORDS = []
 COMPLETED = set()
@@ -286,6 +328,16 @@ app.include_router(input_router)
 from coffee_module.routes import router as coffee_router
 
 app.include_router(coffee_router)
+
+from integracao_module.routes import router as integracao_router
+
+app.include_router(integracao_router)
+
+from carteira_module.routes import router as carteira_router
+from carteira_module import db as _carteira_db
+
+_carteira_db.inicializar_banco()
+app.include_router(carteira_router)
 
 
 DIST = pathlib.Path(__file__).parent.parent / "frontend" / "dist"

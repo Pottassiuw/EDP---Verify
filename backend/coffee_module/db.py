@@ -1,4 +1,5 @@
 """Persistência local do módulo COFFEE (SQLite) com snapshot de id_sap."""
+import contextvars
 import datetime
 import getpass
 import json
@@ -9,8 +10,19 @@ from coffee_module import config
 from coffee_module.classify import classificar
 
 
+_usuario_req: contextvars.ContextVar = contextvars.ContextVar("coffee_usuario", default=None)
+
+
+def definir_usuario(usuario: str | None) -> None:
+    """Define o usuário da operação atual (por requisição / por thread de job)."""
+    _usuario_req.set(usuario)
+
+
 def _usuario_atual() -> str:
-    """Usuário da máquina (best-effort, nunca levanta)."""
+    """Usuário identificado (contextvar via X-User) ou fallback da máquina (best-effort)."""
+    usuario_req = _usuario_req.get()
+    if usuario_req:
+        return usuario_req
     try:
         nome = getpass.getuser()
         if nome:
@@ -19,8 +31,30 @@ def _usuario_atual() -> str:
         pass
     return os.environ.get("USERNAME") or os.environ.get("USER") or "desconhecido"
 
+_trace_atual: contextvars.ContextVar = contextvars.ContextVar("coffee_trace", default=None)
+_ETAPAS_OPERACAO = {"fila", "pronta", "processando", "aguardando_sap"}
+
+
+def definir_trace(trace_id) -> None:
+    """Define o trace_id da operação atual (por requisição / por thread de job)."""
+    _trace_atual.set(trace_id)
+
+
+def trace_atual():
+    return _trace_atual.get()
+
+
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
-            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem"]
+            "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem",
+            "classificacao_em", "usuario"]
+
+
+def _linha_para_dict(row: tuple) -> dict:
+    d = dict(zip(_COLUNAS, row))
+    d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
+    d["a_gerar"] = bool(d["a_gerar"])
+    d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
+    return d
 
 
 def obter_caminho_banco() -> str:
@@ -56,6 +90,10 @@ def inicializar_banco() -> None:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN a_gerar INTEGER NOT NULL DEFAULT 0")
     if "origem" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN origem TEXT")
+    if "classificacao_em" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN classificacao_em TEXT")
+    if "usuario" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN usuario TEXT")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS coffee_logs (
@@ -66,54 +104,322 @@ def inicializar_banco() -> None:
             nota_pk     INTEGER,
             detalhes    TEXT,
             sucesso     INTEGER NOT NULL,
-            usuario     TEXT
+            usuario     TEXT,
+            trace_id    TEXT
         )
         """
     )
     cols_logs = [r[1] for r in conn.execute("PRAGMA table_info(coffee_logs)").fetchall()]
     if "usuario" not in cols_logs:
         conn.execute("ALTER TABLE coffee_logs ADD COLUMN usuario TEXT")
+    if "trace_id" not in cols_logs:
+        conn.execute("ALTER TABLE coffee_logs ADD COLUMN trace_id TEXT")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_nota_pk ON coffee_logs(nota_pk)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_tipo ON coffee_logs(tipo)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON coffee_logs(timestamp)")
-    conn.commit()
-    conn.close()
-
-
-def upsert_nota(pk: int, id_sap: int, arquivado: bool, dados_json: dict) -> str:
-    conn = get_db_connection()
-    row = conn.execute(
-        "SELECT id_sap, classificacao, arquivado, origem FROM notas_coffee WHERE pk = ?", (pk,)
-    ).fetchone()
-    id_sap_anterior = row[0] if row is not None else None
-    classe_anterior = row[1] if row is not None else None
-    arquivado_anterior = bool(row[2]) if row is not None and row[2] is not None else None
-    origem = row[3] if row is not None else None
-    classe = classificar(id_sap, id_sap_anterior, origem)
     conn.execute(
         """
-        INSERT INTO notas_coffee
-            (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json, buscado_em, erro)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
-        ON CONFLICT(pk) DO UPDATE SET
-            id_sap=excluded.id_sap, id_sap_anterior=excluded.id_sap_anterior,
-            arquivado=excluded.arquivado, classificacao=excluded.classificacao,
-            dados_json=excluded.dados_json, buscado_em=excluded.buscado_em, erro=NULL
-        """,
-        (pk, id_sap, id_sap_anterior, 1 if arquivado else 0, classe,
-         json.dumps(dados_json, ensure_ascii=False),
-         datetime.datetime.now().isoformat()),
+        CREATE TABLE IF NOT EXISTS coffee_operacoes (
+            id              TEXT PRIMARY KEY,
+            tipo            TEXT NOT NULL,
+            estado          TEXT NOT NULL,
+            total           INTEGER NOT NULL,
+            feitas          INTEGER NOT NULL DEFAULT 0,
+            resultado_json  TEXT NOT NULL DEFAULT '{"erros":[]}',
+            iniciado_em     TEXT NOT NULL,
+            atualizado_em   TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS coffee_fila_operacao (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            entrada_id     INTEGER NOT NULL UNIQUE,
+            nota_pk        INTEGER UNIQUE,
+            etapa          TEXT NOT NULL,
+            origem         TEXT,
+            operacao_id    TEXT,
+            erro           TEXT,
+            criado_em      TEXT NOT NULL,
+            atualizado_em  TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_fila_etapa "
+        "ON coffee_fila_operacao(etapa)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_fila_operacao "
+        "ON coffee_fila_operacao(operacao_id)"
     )
     conn.commit()
     conn.close()
-    # Transition logs — best-effort, after commit so primary upsert is never affected
+    interromper_operacoes_em_andamento()
+
+
+def criar_operacao(operacao_id: str, tipo: str, total: int) -> dict:
+    agora = datetime.datetime.now().isoformat()
+    snapshot = {
+        "id": operacao_id,
+        "tipo": tipo,
+        "estado": "rodando",
+        "total": total,
+        "feitas": 0,
+        "erros": [],
+        "iniciado_em": agora,
+        "atualizado_em": agora,
+    }
+    conn = get_db_connection()
+    conn.execute(
+        """
+        INSERT INTO coffee_operacoes
+            (id, tipo, estado, total, feitas, resultado_json,
+             iniciado_em, atualizado_em)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            operacao_id, tipo, "rodando", total, 0,
+            json.dumps({"erros": []}, ensure_ascii=False),
+            agora, agora,
+        ),
+    )
+    conn.commit()
+    conn.close()
+    return snapshot
+
+
+def salvar_operacao(operacao_id: str, snapshot: dict) -> None:
+    agora = datetime.datetime.now().isoformat()
+    extras = {
+        chave: valor
+        for chave, valor in snapshot.items()
+        if chave not in {
+            "id", "tipo", "estado", "total", "feitas",
+            "iniciado_em", "atualizado_em",
+        }
+    }
+    conn = get_db_connection()
+    conn.execute(
+        """
+        UPDATE coffee_operacoes
+        SET estado = ?, feitas = ?, resultado_json = ?, atualizado_em = ?
+        WHERE id = ?
+        """,
+        (
+            snapshot["estado"],
+            snapshot["feitas"],
+            json.dumps(extras, ensure_ascii=False, default=str),
+            agora,
+            operacao_id,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def obter_operacao(operacao_id: str) -> dict | None:
+    conn = get_db_connection()
+    row = conn.execute(
+        """
+        SELECT id, tipo, estado, total, feitas, resultado_json,
+               iniciado_em, atualizado_em
+        FROM coffee_operacoes WHERE id = ?
+        """,
+        (operacao_id,),
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    extras = json.loads(row[5]) if row[5] else {}
+    return {
+        "id": row[0],
+        "tipo": row[1],
+        "estado": row[2],
+        "total": row[3],
+        "feitas": row[4],
+        **extras,
+        "iniciado_em": row[6],
+        "atualizado_em": row[7],
+    }
+
+
+def listar_operacoes_ativas() -> list[dict]:
+    conn = get_db_connection()
+    ids = conn.execute(
+        "SELECT id FROM coffee_operacoes WHERE estado = 'rodando' "
+        "ORDER BY iniciado_em"
+    ).fetchall()
+    conn.close()
+    return [
+        operacao
+        for (operacao_id,) in ids
+        if (operacao := obter_operacao(operacao_id)) is not None
+    ]
+
+
+def upsert_item_operacao(
+    entrada_id: int,
+    etapa: str,
+    origem: str | None,
+    nota_pk: int | None = None,
+    operacao_id: str | None = None,
+    erro: str | None = None,
+) -> dict:
+    if etapa not in _ETAPAS_OPERACAO:
+        raise ValueError(f"Etapa inválida: {etapa}")
+    agora = datetime.datetime.now().isoformat()
+    conn = get_db_connection()
+    existentes = conn.execute(
+        """
+        SELECT id, entrada_id, nota_pk, origem, criado_em
+        FROM coffee_fila_operacao
+        WHERE entrada_id = ?
+           OR (? IS NOT NULL AND entrada_id = ?)
+           OR (? IS NOT NULL AND nota_pk = ?)
+        ORDER BY CASE WHEN nota_pk IS NOT NULL THEN 0 ELSE 1 END, id
+        """,
+        (entrada_id, nota_pk, nota_pk, nota_pk, nota_pk),
+    ).fetchall()
+    if existentes:
+        alvo = existentes[0]
+        ids_duplicados = [row[0] for row in existentes[1:]]
+        if ids_duplicados:
+            marcadores = ",".join("?" for _ in ids_duplicados)
+            conn.execute(
+                f"DELETE FROM coffee_fila_operacao WHERE id IN ({marcadores})",
+                tuple(ids_duplicados),
+            )
+        entrada_final = alvo[1]
+        origem_final = alvo[3] or origem
+        conn.execute(
+            """
+            UPDATE coffee_fila_operacao
+            SET entrada_id = ?, nota_pk = COALESCE(?, nota_pk),
+                etapa = ?, origem = ?, operacao_id = ?,
+                erro = ?, atualizado_em = ?
+            WHERE id = ?
+            """,
+            (
+                entrada_final, nota_pk, etapa, origem_final, operacao_id,
+                erro, agora, alvo[0],
+            ),
+        )
+    else:
+        conn.execute(
+            """
+            INSERT INTO coffee_fila_operacao
+                (entrada_id, nota_pk, etapa, origem, operacao_id, erro,
+                 criado_em, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                entrada_id, nota_pk, etapa, origem, operacao_id, erro,
+                agora, agora,
+            ),
+        )
+    conn.commit()
+    conn.close()
+    return next(
+        item for item in listar_itens_operacao()
+        if item["entrada_id"] == entrada_id or item["nota_pk"] == nota_pk
+    )
+
+
+def listar_itens_operacao() -> list[dict]:
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT entrada_id, nota_pk, etapa, origem, operacao_id, erro,
+               criado_em, atualizado_em
+        FROM coffee_fila_operacao
+        ORDER BY atualizado_em DESC
+        """
+    ).fetchall()
+    conn.close()
+    chaves = [
+        "entrada_id", "nota_pk", "etapa", "origem",
+        "operacao_id", "erro", "criado_em", "atualizado_em",
+    ]
+    return [dict(zip(chaves, row)) for row in rows]
+
+
+def remover_item_operacao(nota_pk: int) -> None:
+    conn = get_db_connection()
+    conn.execute(
+        "DELETE FROM coffee_fila_operacao "
+        "WHERE nota_pk = ? OR entrada_id = ?",
+        (nota_pk, nota_pk),
+    )
+    conn.commit()
+    conn.close()
+
+
+def interromper_operacoes_em_andamento() -> None:
+    agora = datetime.datetime.now().isoformat()
+    mensagem = (
+        "Operação interrompida; reconsulte antes de tentar novamente."
+    )
+    conn = get_db_connection()
+    conn.execute(
+        """
+        UPDATE coffee_operacoes
+        SET estado = 'interrompida', atualizado_em = ?
+        WHERE estado = 'rodando'
+        """,
+        (agora,),
+    )
+    conn.execute(
+        """
+        UPDATE coffee_fila_operacao
+        SET etapa = 'pronta', erro = ?, operacao_id = NULL,
+            atualizado_em = ?
+        WHERE etapa = 'processando'
+        """,
+        (mensagem, agora),
+    )
+    conn.commit()
+    conn.close()
+
+
+def upsert_nota(pk: int, id_sap: int, dados_json: dict) -> str:
+    # ponytail: arquivado intencionalmente excluído — representa ação do usuário no nosso
+    # app (via arquivar_nota), não o estado do COFFEE (que arquiva como workflow normal).
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT id_sap, classificacao, origem FROM notas_coffee WHERE pk = ?", (pk,)
+    ).fetchone()
+    id_sap_anterior = row[0] if row is not None else None
+    classe_anterior = row[1] if row is not None else None
+    origem = row[2] if row is not None else None
+    classe = classificar(id_sap, id_sap_anterior, origem)
+    agora = datetime.datetime.now().isoformat()
+    conn.execute(
+        """
+        INSERT INTO notas_coffee
+            (pk, id_sap, id_sap_anterior, arquivado, classificacao, dados_json,
+             buscado_em, erro, classificacao_em, usuario)
+        VALUES (?, ?, ?, 0, ?, ?, ?, NULL, ?, ?)
+        ON CONFLICT(pk) DO UPDATE SET
+            id_sap=excluded.id_sap, id_sap_anterior=excluded.id_sap_anterior,
+            classificacao=excluded.classificacao,
+            dados_json=excluded.dados_json, buscado_em=excluded.buscado_em, erro=NULL,
+            classificacao_em=CASE
+                WHEN notas_coffee.classificacao IS excluded.classificacao
+                THEN notas_coffee.classificacao_em
+                ELSE excluded.classificacao_em END,
+            usuario=COALESCE(notas_coffee.usuario, excluded.usuario)
+        """,
+        (pk, id_sap, id_sap_anterior, classe,
+         json.dumps(dados_json, ensure_ascii=False), agora, agora, _usuario_atual()),
+    )
+    conn.commit()
+    conn.close()
     if row is not None and classe_anterior is not None and classe != classe_anterior:
         registrar_log("transicao", "classificar", pk,
                       {"anterior": classe_anterior, "novo": classe,
                        "id_sap_anterior": id_sap_anterior, "id_sap_atual": id_sap}, True)
-    if arquivado_anterior is not None and arquivado_anterior != arquivado:
-        registrar_log("transicao", "arquivar_estado", pk,
-                      {"anterior": arquivado_anterior, "novo": arquivado}, True)
     return classe
 
 
@@ -121,10 +427,12 @@ def registrar_erro(pk: int, mensagem: str) -> None:
     conn = get_db_connection()
     conn.execute(
         """
-        INSERT INTO notas_coffee (pk, erro, buscado_em) VALUES (?, ?, ?)
-        ON CONFLICT(pk) DO UPDATE SET erro=excluded.erro, buscado_em=excluded.buscado_em
+        INSERT INTO notas_coffee (pk, erro, buscado_em, usuario) VALUES (?, ?, ?, ?)
+        ON CONFLICT(pk) DO UPDATE SET
+            erro=excluded.erro, buscado_em=excluded.buscado_em,
+            usuario=COALESCE(notas_coffee.usuario, excluded.usuario)
         """,
-        (pk, mensagem, datetime.datetime.now().isoformat()),
+        (pk, mensagem, datetime.datetime.now().isoformat(), _usuario_atual()),
     )
     conn.commit()
     conn.close()
@@ -137,30 +445,44 @@ def arquivar_nota(pk: int) -> None:
     conn.close()
 
 
-def listar_notas(status: str | None = None) -> list:
+def listar_notas(status: str | None = None, usuario: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee"
     clausulas: list[str] = []
     params: list = []
     if status == "a_gerar":
         clausulas.append("a_gerar = 1")
-    elif status == "gerada":
+    elif status == "concluida":
         clausulas.append("classificacao IN ('gerada', 'corrigida')")
-    elif status:
+    elif status in {"gerada", "corrigida", "pendente", "nao_gerada"}:
         clausulas.append("classificacao = ?")
         params.append(status)
+    elif status:
+        clausulas.append("1 = 0")
     clausulas.append("(arquivado IS NULL OR arquivado = 0)")
+    if usuario:
+        clausulas.append("(usuario = ? OR usuario IS NULL)")
+        params.append(usuario)
     sql += " WHERE " + " AND ".join(clausulas)
     rows = conn.execute(sql, tuple(params)).fetchall()
     conn.close()
-    saida = []
-    for r in rows:
-        d = dict(zip(_COLUNAS, r))
-        d["arquivado"] = bool(d["arquivado"]) if d["arquivado"] is not None else None
-        d["a_gerar"] = bool(d["a_gerar"])
-        d["dados_json"] = json.loads(d["dados_json"]) if d["dados_json"] else None
-        saida.append(d)
-    return saida
+    return [_linha_para_dict(r) for r in rows]
+
+
+def obter_nota(pk: int) -> dict | None:
+    """Linha única de notas_coffee com dados_json parseado (mesma forma de listar_notas).
+
+    Respeita o mesmo filtro de arquivamento local que listar_notas — uma nota
+    arquivada pelo usuário (arquivar_nota) não deve ficar acessível para
+    revisão/movimentação por outros módulos.
+    """
+    conn = get_db_connection()
+    row = conn.execute(
+        f"SELECT {', '.join(_COLUNAS)} FROM notas_coffee "
+        "WHERE pk = ? AND (arquivado IS NULL OR arquivado = 0)", (pk,)
+    ).fetchone()
+    conn.close()
+    return _linha_para_dict(row) if row is not None else None
 
 
 def marcar_gerar(pk: int, a_gerar: bool) -> None:
@@ -180,6 +502,14 @@ def definir_origem(pk: int, origem: str) -> None:
     conn.close()
 
 
+def origem_atual(pk: int) -> str | None:
+    """Retorna a origem registrada da nota, ou None."""
+    conn = get_db_connection()
+    row = conn.execute("SELECT origem FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
+    conn.close()
+    return row[0] if row is not None else None
+
+
 def nota_existe(pk: int) -> bool:
     conn = get_db_connection()
     row = conn.execute("SELECT 1 FROM notas_coffee WHERE pk = ?", (pk,)).fetchone()
@@ -191,7 +521,7 @@ def nota_existe(pk: int) -> bool:
 # Sistema de logs (coffee_logs)
 # ---------------------------------------------------------------------------
 
-_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso", "usuario"]
+_COLUNAS_LOG = ["id", "timestamp", "tipo", "acao", "nota_pk", "detalhes", "sucesso", "usuario", "trace_id"]
 
 
 def registrar_log(tipo: str, acao: str, nota_pk: int | None,
@@ -205,15 +535,15 @@ def registrar_log(tipo: str, acao: str, nota_pk: int | None,
             CREATE TABLE IF NOT EXISTS coffee_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
                 tipo TEXT NOT NULL, acao TEXT NOT NULL, nota_pk INTEGER,
-                detalhes TEXT, sucesso INTEGER NOT NULL, usuario TEXT
+                detalhes TEXT, sucesso INTEGER NOT NULL, usuario TEXT, trace_id TEXT
             )
             """
         )
         conn.execute(
-            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso, usuario) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO coffee_logs (timestamp, tipo, acao, nota_pk, detalhes, sucesso, usuario, trace_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (datetime.datetime.now().isoformat(), tipo, acao, nota_pk, det,
-             1 if sucesso else 0, _usuario_atual()),
+             1 if sucesso else 0, _usuario_atual(), _trace_atual.get()),
         )
         conn.commit()
         conn.close()
@@ -249,13 +579,18 @@ def diagnosticar_nota(pk: int) -> dict | None:
 
 
 def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
-                limit: int = 100, usuario: str | None = None) -> list:
+                limit: int = 100, usuario: str | None = None,
+                since: str | None = None) -> list:
     conn = get_db_connection()
     sql = f"SELECT {', '.join(_COLUNAS_LOG)} FROM coffee_logs"
     clausulas: list = []
     params: list = []
     if nota_pk is not None:
-        clausulas.append("nota_pk = ?")
+        clausulas.append(
+            "(nota_pk = ? OR (tipo = 'acao_usuario' AND nota_pk IS NULL AND trace_id IN "
+            "(SELECT trace_id FROM coffee_logs WHERE nota_pk = ? AND trace_id IS NOT NULL)))"
+        )
+        params.append(nota_pk)
         params.append(nota_pk)
     if tipo:
         clausulas.append("tipo = ?")
@@ -263,6 +598,9 @@ def listar_logs(nota_pk: int | None = None, tipo: str | None = None,
     if usuario:
         clausulas.append("usuario = ?")
         params.append(usuario)
+    if since:
+        clausulas.append("timestamp >= ?")
+        params.append(since)
     if clausulas:
         sql += " WHERE " + " AND ".join(clausulas)
     sql += " ORDER BY timestamp DESC, id DESC LIMIT ?"

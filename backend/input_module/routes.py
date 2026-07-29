@@ -1,43 +1,47 @@
 """Rotas /api/input/* — módulo de Gestão de Notas (Input)."""
+from fastapi import Body
 import datetime
 import io
 import json
 import os
 import re as _re
-import threading
 from typing import Optional
+from input_module.status10_service import obter_resumo_status10, gerar_email_outlook_status10
 
 import pandas as pd
 from fastapi import (APIRouter, BackgroundTasks, Depends, File, Header,
-                     HTTPException, Response, UploadFile)
+                     HTTPException, Request, Response, UploadFile)
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from input_module import config, db, engine
+from input_module import config, db, engine, metas, relatorios
+from input_module.service import (NotasDuplicadasErro, NovaNota, criar_notas,
+                                  garantir_banco, pos_escrita, resetar_migracao,
+                                  executar_correcao_medidas)
 
 router = APIRouter(prefix="/api/input")
-
-# Estado da migração inicial (resolvido no primeiro acesso)
-_migracao = {"resultado": None}
-_banco_lock = threading.Lock()
-
-
-def _garantir_banco() -> str:
-    with _banco_lock:
-        if _migracao["resultado"] is None:
-            _migracao["resultado"] = db.migrar_da_rede_se_preciso()
-            db.inicializar_banco()
-    return _migracao["resultado"]
 
 
 def _df_para_registros(df: pd.DataFrame) -> list:
     return json.loads(df.to_json(orient="records", force_ascii=False))
 
 
+@router.get("/me")
+def quem_sou_eu():
+    usuario = os.environ.get("USERNAME") or os.environ.get("USER") or "sistema"
+    return {"usuario": usuario}
+
+
 @router.get("/notas")
-def listar_notas():
-    migracao = _garantir_banco()
+def listar_notas(request: Request, response: Response):
+    migracao = garantir_banco()
+    versao = db.obter_versao_dataset()
+    etag = f'W/"{versao}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
     df = engine.get_dataset()
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache"
     return {
         "registros": _df_para_registros(df),
         "meta": {
@@ -47,31 +51,73 @@ def listar_notas():
             "ultima_alteracao": db.obter_data_ultima_alteracao(),
             "migracao": migracao,
             "colunas": config.COLUNAS_PAINEL,
+            "versao": versao,
+            "sincronizando": engine.esta_sincronizando_rede(),
         },
     }
 
 
 @router.get("/sync")
 def sync():
-    _garantir_banco()
-    return {"ultima_alteracao": db.obter_data_ultima_alteracao()}
+    garantir_banco()
+    return {
+        "ultima_alteracao": db.obter_data_ultima_alteracao(),
+        "versao": db.obter_versao_dataset(),
+        "sincronizando": engine.esta_sincronizando_rede(),
+    }
+
+
+@router.get("/relatorios/dashboard")
+def relatorios_dashboard(request: Request, response: Response,
+                         regional: Optional[str] = None,
+                         mes: Optional[int] = None):
+    if mes is not None and not (1 <= mes <= 12):
+        raise HTTPException(status_code=422, detail="mes deve estar entre 1 e 12")
+    garantir_banco()
+    estado_metas = metas.sincronizar_se_preciso()
+    versao = db.obter_versao_dataset()
+    agora = datetime.datetime.now()
+    mes_referencia = mes or agora.month
+    etag = f'W/"{versao}-{mes_referencia}-{regional}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    corpo = relatorios.montar_dashboard(
+        engine.get_dataset(), db.carregar_dados_ramal(),
+        db.carregar_metas(agora.year), db.carregar_planos_depara(),
+        db.carregar_postergacoes(agora.year),
+        ano=agora.year, mes_referencia=mes_referencia, regional=regional)
+    corpo["regionais_disponiveis"] = relatorios.REGIONAIS_CSD
+    corpo["metas_info"] = {
+        "atualizadas_em": estado_metas.get("atualizadas_em"),
+        "arquivo_mtime": estado_metas.get("arquivo_mtime"),
+        "erro": estado_metas.get("erro"),
+    }
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache"
+    return corpo
+
+
+@router.post("/metas/sincronizar")
+def metas_sincronizar():
+    garantir_banco()
+    return metas.sincronizar_se_preciso(forcar=True)
 
 
 @router.get("/logs")
 def listar_logs():
-    _garantir_banco()
+    garantir_banco()
     return {"registros": _df_para_registros(db.carregar_logs())}
 
 
 @router.get("/logs/arquivos")
 def listar_logs_arquivos():
-    _garantir_banco()
+    garantir_banco()
     return {"registros": _df_para_registros(db.carregar_log_arquivos())}
 
 
 @router.get("/logs/nota/{numero}")
 def timeline_nota(numero: int):
-    _garantir_banco()
+    garantir_banco()
     df = db.carregar_logs()
     if not df.empty:
         df = df[df["Numero_Nota"] == numero]
@@ -85,28 +131,8 @@ def usuario_atual(x_user: Optional[str] = Header(default=None, alias="X-User")) 
     return x_user.strip()
 
 
-def _pos_escrita(tasks: BackgroundTasks) -> None:
-    engine.invalidar_cache()
-    tasks.add_task(engine.gerar_copia_excel_rede)
-
-
 class EdicaoPedido(BaseModel):
     linhas: list[dict]
-
-
-class NovaNota(BaseModel):
-    Numero_Nota: int
-    Status_Nota: str
-    Prioridade_Nota: str
-    Planejado_DDPM: float = 0.0
-    Status_Obra: str = "-"
-    Conjunto: str = "-"
-    Circuito: str = "-"
-    Local_Instalacao: str = "-"
-    Mes_Execucao_Planejado: str = "-"
-    Data_Envio_Projeto: str = "-"
-    Observacao: str = ""
-    Check: str = "-"
 
 
 class LotePedido(BaseModel):
@@ -122,85 +148,67 @@ class ExportPedido(BaseModel):
     colunas: list[str]
 
 
-def _preparar_novas(notas: list, df_banco: pd.DataFrame) -> pd.DataFrame:
-    """Valida duplicatas e completa Regional/ID_Cronologia (Input/app.py:640-728)."""
-    numeros = [n.Numero_Nota for n in notas]
-    repetidas_lote = {str(n) for n in numeros if numeros.count(n) > 1}
-    if repetidas_lote:
-        raise HTTPException(409, "Notas duplicadas no próprio lote: " + ", ".join(sorted(repetidas_lote)))
-    existentes = set(df_banco["Numero_Nota"].tolist()) if not df_banco.empty else set()
-    repetidas_banco = sorted(str(n) for n in numeros if n in existentes)
-    if repetidas_banco:
-        raise HTTPException(409, "Notas já existentes no banco: " + ", ".join(repetidas_banco))
-    base_id = db.proximo_id_cronologia(df_banco)
-    linhas = []
-    for i, nota in enumerate(notas):
-        registro = nota.model_dump()
-        registro["ID_Cronologia"] = base_id + i
-        registro["Regional"] = config.DE_PARA_REGIONAL.get(str(nota.Local_Instalacao)[:3], "-")
-        registro["Centro_Responsavel"] = "-"
-        registro["Status_Anterior"] = "-"
-        linhas.append(registro)
-    return pd.DataFrame(linhas)
-
-
 @router.patch("/notas")
 def editar_notas(pedido: EdicaoPedido, tasks: BackgroundTasks,
                  usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     try:
         resultado = db.aplicar_edicoes(pedido.linhas, usuario=usuario)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     if resultado["alteradas"]:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {**resultado, "ultima_alteracao": db.obter_data_ultima_alteracao()}
 
 
 @router.post("/notas")
 def criar_nota(nota: NovaNota, tasks: BackgroundTasks,
                usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
-    df_novas = _preparar_novas([nota], db.carregar_dados())
-    db.salvar_em_massa(df_novas)
-    _pos_escrita(tasks)
-    return {"inseridas": 1}
+    garantir_banco()
+    try:
+        inseridas = criar_notas([nota], usuario=usuario)
+    except NotasDuplicadasErro as e:
+        raise HTTPException(409, str(e))
+    pos_escrita(tasks)
+    return {"inseridas": inseridas}
 
 
 @router.post("/notas/bulk")
 def criar_lote(pedido: LotePedido, tasks: BackgroundTasks,
                usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     if not pedido.notas:
         raise HTTPException(400, "Lote vazio.")
-    df_novas = _preparar_novas(pedido.notas, db.carregar_dados())
-    db.salvar_em_massa(df_novas)
-    _pos_escrita(tasks)
-    return {"inseridas": len(df_novas)}
+    try:
+        inseridas = criar_notas(pedido.notas, usuario=usuario)
+    except NotasDuplicadasErro as e:
+        raise HTTPException(409, str(e))
+    pos_escrita(tasks)
+    return {"inseridas": inseridas}
 
 
 @router.delete("/notas")
 def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
                   usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
-    excluidas = db.deletar_notas(pedido.numeros)
+    garantir_banco()
+    excluidas = db.deletar_notas(pedido.numeros, usuario=usuario)
     if excluidas:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {"excluidas": excluidas}
 
 
 @router.post("/desfazer")
 def desfazer(tasks: BackgroundTasks, usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     ok, mensagem = db.reverter_ultima_alteracao()
     if ok:
-        _pos_escrita(tasks)
+        pos_escrita(tasks)
     return {"ok": ok, "mensagem": mensagem}
 
 
 @router.post("/export")
 def exportar(pedido: ExportPedido):
-    _garantir_banco()
+    garantir_banco()
     df = engine.get_dataset()
     df = df[df["Numero_Nota"].isin(pedido.numeros)]
     colunas = [c for c in pedido.colunas if c in df.columns]
@@ -225,13 +233,13 @@ def _achar_base(nome_arquivo: str) -> str:
 
 @router.get("/responsaveis")
 def obter_responsaveis():
-    _garantir_banco()
+    garantir_banco()
     return db.carregar_responsaveis()
 
 
 @router.put("/responsaveis")
 def gravar_responsaveis(novo: dict[str, str], usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     db.salvar_responsaveis(novo)
     return {"ok": True}
 
@@ -258,18 +266,95 @@ def baixar_base(nome_arquivo: str):
     return FileResponse(caminho, filename=nome_arquivo)
 
 
+def _processar_upload_base(nome_arquivo: str, caminho: str) -> bool:
+    """Importa o arquivo para o SQLite nativo. Retorna se a importação teve sucesso —
+    o chamador usa isso para decidir se registra o import em log_arquivos."""
+    map_simples = {
+        "Indicador base conjunto - Limite Aneel.xlsx": "base_indicador_continuidade",
+        "Gerada_base_IW28.XLSX": "base_iw28",
+        "Gerada_custo_ord_IW38.XLSX": "base_iw38",
+        "Gerada_medidas_IW66.XLSX": "base_iw66",
+        "Clientes_Conjunto.xlsx": "base_clientes",
+    }
+    try:
+        if nome_arquivo in map_simples:
+            df = pd.read_excel(caminho)
+            db.salvar_base_dataframe(map_simples[nome_arquivo], df)
+        elif nome_arquivo == "Ganhos.xlsx":
+            df = pd.read_excel(caminho, sheet_name='Ganhos')
+            db.salvar_base_dataframe("base_ganhos", df)
+        elif nome_arquivo == "Custo_Modular.xlsx":
+            df_mod = pd.read_excel(caminho, sheet_name='Modulares')
+            db.salvar_base_dataframe("base_custo_modular", df_mod)
+            df_saz = pd.read_excel(caminho, sheet_name='Modulares', skiprows=1, nrows=4)
+            db.salvar_base_dataframe("base_sazonal", df_saz)
+        else:
+            return False
+        return True
+    except Exception as e:
+        print(f"Aviso: Não foi possível importar {nome_arquivo} para o SQLite nativo: {e}")
+        return False
+
+
+def _rotina_sap_background():
+    import subprocess
+    import os
+    import sys
+    try:
+        # Chama o robô SAP forçando UTF-8 para evitar crash com emojis no print.
+        # Usa o mesmo Python do venv do backend (com pywin32/pyperclip
+        # instalados via requirements-sap-robot.txt) — "python" do PATH do
+        # sistema pode não ter essas libs.
+        script_path = str(config.caminho_sap_robot())
+        python_exe = sys.executable
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["INPUT_DB_PATH"] = db.obter_caminho_banco()
+        subprocess.run([python_exe, script_path], check=True, env=env)
+
+        # Assim que termina, atualiza o SQLite com os arquivos gerados; só
+        # registra em log_arquivos (e portanto bumpa a versão do dataset) os
+        # arquivos que realmente foram importados com sucesso.
+        arquivos = {
+            "Gerada_base_IW28.XLSX": config.CAMINHO_BASE_IW28,
+            "Gerada_custo_ord_IW38.XLSX": config.CAMINHO_CUSTO_ORD_IW38,
+            "Gerada_medidas_IW66.XLSX": config.CAMINHO_BASE_IW66,
+        }
+        agora = datetime.datetime.now()
+        for nome, caminho in arquivos.items():
+            if _processar_upload_base(nome, caminho):
+                db.salvar_log_arquivo(nome, "robo-sap", agora, "Sync SAP")
+
+        engine.invalidar_cache()
+        engine.invalidar_status_bases()
+    except Exception as e:
+        print(f"Erro na execução em background do SAP: {e}")
+
+
+
+@router.post("/bases/sync-sap")
+def sync_sap(tasks: BackgroundTasks, x_user: Optional[str] = Header(default="Sistema", alias="X-User"), payload: dict = Body(None)):
+    """Inicia a extração SAP em background."""
+    garantir_banco()
+    tasks.add_task(_rotina_sap_background)
+    return {"mensagem": "Sincronização SAP iniciada em background."}
+
+
 @router.post("/bases/{nome_arquivo}")
 def substituir_base(nome_arquivo: str, arquivo: UploadFile = File(...),
                     usuario: str = Depends(usuario_atual)):
-    _garantir_banco()
+    garantir_banco()
     caminho = _achar_base(nome_arquivo)
     try:
         with open(caminho, "wb") as f:
             f.write(arquivo.file.read())
     except OSError as e:
         raise HTTPException(502, f"Erro ao gravar na rede: {e}")
-    db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
+
+    if _processar_upload_base(nome_arquivo, caminho):
+        db.salvar_log_arquivo(nome_arquivo, usuario, datetime.datetime.now(), "Substituição")
     engine.invalidar_cache()
+    engine.invalidar_status_bases()
     return {"ok": True}
 
 
@@ -298,9 +383,151 @@ def baixar_backup(nome: str):
     return FileResponse(str(caminho), filename=nome)
 
 
+# ── Fase 4: Ramal + Hierarquia ────────────────────────────────────────────────
+class RamalNota(BaseModel):
+    Numero_Nota: int
+    Status_Obra: str = "-"
+    Conjunto: str = "-"
+    Circuito: str = "-"
+    Local_Instalacao: str = "-"
+    Planejado_DDPM: float = 0.0
+    Mes_Execucao_Planejado: str = "-"
+    CenTrab_Respon: str = "-"
+    Prioridade_Nota: str = "-"
+    Observacao: str = ""
+    Extracao_Antiga: str = "-"
+    Status_Nota: str = "-"
+    Status_Anterior: str = "-"
+    Check_Btzero: str = "-"
+    Plano: str = "-"
+
+
+class RamalLotePedido(BaseModel):
+    notas: list[RamalNota]
+
+
+class ExclusaoRamalPedido(BaseModel):
+    numeros: list[int]
+
+
+class HierarquiaPedido(BaseModel):
+    dados: dict[str, list[int]]
+
+
+@router.get("/ramal")
+def listar_ramal():
+    garantir_banco()
+    return {"registros": _df_para_registros(db.carregar_dados_ramal())}
+
+
+@router.post("/ramal/bulk")
+def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
+                   usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    if not pedido.notas:
+        raise HTTPException(400, "Lote vazio.")
+    import pandas as pd
+    df = pd.DataFrame([n.model_dump() for n in pedido.notas])
+    df["ID_Cronologia"] = list(range(1, len(df) + 1))
+    db.salvar_ramal_em_massa(df)
+    pos_escrita(tasks)
+    return {"inseridas": len(df)}
+
+
+@router.delete("/ramal")
+def excluir_ramal(pedido: ExclusaoRamalPedido, tasks: BackgroundTasks,
+                  usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    excluidas = db.deletar_notas_ramal(pedido.numeros, usuario=usuario)
+    if excluidas:
+        pos_escrita(tasks)
+    return {"excluidas": excluidas}
+
+
+@router.post("/hierarquia")
+def vincular_hierarquia(pedido: HierarquiaPedido, tasks: BackgroundTasks,
+                        usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    atualizadas = db.vincular_nota_mae_lote(
+        {k: v for k, v in pedido.dados.items()}, usuario=usuario
+    )
+    if atualizadas:
+        engine.invalidar_cache()
+    return {"atualizadas": atualizadas}
+
+
+@router.get("/hierarquia/{numero_nota}")
+def obter_hierarquia(numero_nota: int):
+    garantir_banco()
+    df = db.carregar_dados()
+    if df.empty or numero_nota not in df["Numero_Nota"].values:
+        raise HTTPException(404, f"Nota {numero_nota} não encontrada.")
+    nota_row = df[df["Numero_Nota"] == numero_nota].iloc[0]
+    nota_mae = str(nota_row.get("Nota_Mae", "-"))
+    filhas_df = df[df["Nota_Mae"].astype(str) == str(numero_nota)]
+    return {
+        "nota_mae": nota_mae,
+        "filhas": _df_para_registros(filhas_df[["Numero_Nota", "Status_Nota", "Conjunto"]]),
+    }
+
+
 @router.post("/migrar")
 def migrar_novamente(usuario: str = Depends(usuario_atual)):
-    _migracao["resultado"] = None
-    resultado = _garantir_banco()
+    resetar_migracao()
+    resultado = garantir_banco()
     engine.invalidar_cache()
     return {"resultado": resultado}
+
+
+class CorrecaoItem(BaseModel):
+    nota: int
+    quantidade: float
+    unidade: str
+
+
+class RateioExecutarPedido(BaseModel):
+    correcoes: list[CorrecaoItem]
+    login_sap: Optional[str] = None
+    senha_sap: Optional[str] = None
+    modo_teste: bool = True
+
+
+@router.post("/rateio/executar")
+def rateio_executar(
+    pedido: RateioExecutarPedido,
+    tasks: BackgroundTasks,
+    usuario: str = Depends(usuario_atual)
+):
+    garantir_banco()
+    if not pedido.correcoes:
+        raise HTTPException(400, "Lista de correções vazia.")
+    try:
+        lista_dicts = [item.model_dump() for item in pedido.correcoes]
+        relatorio = executar_correcao_medidas(
+            correcoes=lista_dicts,
+            login_sap=pedido.login_sap,
+            senha_sap=pedido.senha_sap,
+            modo_teste=pedido.modo_teste,
+            usuario=usuario
+        )
+        if not pedido.modo_teste:
+            pos_escrita(tasks)
+        return {"relatorio": relatorio}
+    except Exception as e:
+        raise HTTPException(500, f"Erro ao executar robô SAP: {e}")
+
+
+# ── Status 10 Relatório e E-mail ──────────────────────────────────────────────
+@router.get("/status10/resumo")
+def status10_resumo():
+    garantir_banco()
+    return obter_resumo_status10()
+
+
+@router.post("/status10/enviar-email")
+def status10_enviar_email(usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    resultado = gerar_email_outlook_status10(usuario=usuario)
+    if not resultado["ok"]:
+        raise HTTPException(400, detail=resultado["mensagem"])
+    return resultado

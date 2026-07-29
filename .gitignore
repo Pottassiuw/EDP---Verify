@@ -1,6 +1,14 @@
 # Dependências
 node_modules/
 .venv/
+backend/venv/
+
+# Credenciais do robô SAP (nunca versionar login/senha reais)
+backend/credenciais.json
+
+# Variáveis de ambiente / segredos (Databricks token, etc.)
+backend/.env
+.env
 
 # Python
 __pycache__/
@@ -17,3 +25,6 @@ backend/data/
 
 # Sessões de brainstorm (visual companion)
 .superpowers/
+
+# Worktrees isolados (subagent-driven-development)
+.worktrees/
