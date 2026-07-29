@@ -19,7 +19,7 @@ export type CoffeeSubPage =
   | "logs";
 export type CoffeeConclusaoFiltro = "todas" | "gerada" | "corrigida";
 export type RelatoriosSubPage = "mes" | "planos" | "mensalizacao";
-export type CarteiraSubPage = "explorador" | "sincronizacao" | "divergencias";
+export type CarteiraSubPage = "dashboard" | "explorador" | "sincronizacao" | "divergencias";
 
 export function normalizeCoffeeSubPage(value: string): CoffeeSubPage {
   if (value === "geradas" || value === "pendentes") return "operacao";

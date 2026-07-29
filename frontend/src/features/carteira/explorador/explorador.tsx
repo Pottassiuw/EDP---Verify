@@ -13,8 +13,9 @@ import { MoverModal } from '../mover/mover-modal';
 
 const SIZE = 50;
 
-export function Explorador({ handoff }: {
+export function Explorador({ handoff, drill }: {
   handoff?: { situacao: string; id: number } | null;
+  drill?: { filtro: Partial<FiltrosCarteira>; id: number } | null;
 } = {}): React.JSX.Element {
   const [filtros, setFiltros] = usePersistedState<FiltrosCarteira>('edp_carteira_filtros', {});
   const [page, setPage] = React.useState(1);
@@ -33,6 +34,13 @@ export function Explorador({ handoff }: {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handoff?.id]);
+
+  React.useEffect(() => {
+    if (!drill) return;
+    setFiltros((f) => ({ ...f, ...drill.filtro }));
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drill?.id]);
 
   const { data, isLoading, error } = useCarteiraNotas({
     ...filtros, page, size: SIZE, ordenar_por: 'id_onr', ordem: 'asc',
