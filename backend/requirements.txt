@@ -6,3 +6,4 @@ python-multipart==0.0.29
 python-dotenv==1.2.2
 httpx==0.28.1
 pywin32>=306
+pyperclip>=1.8.2

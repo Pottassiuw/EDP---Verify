@@ -6,6 +6,7 @@ import time as _time
 # Blindagem global: impede que a execução de testes afete o banco de dados real
 _tmp_test_dir = tempfile.mkdtemp(prefix="edp_coffee_test_")
 os.environ.setdefault("COFFEE_DATA_DIR", _tmp_test_dir)
+os.environ.setdefault("INPUT_DATA_DIR", _tmp_test_dir)
 
 import pytest
 

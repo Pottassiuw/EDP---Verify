@@ -1,8 +1,33 @@
+import os
+import sys
 import sqlite3
+
+# --- BLINDAGEM DE SEGURANÇA ---
+# Exige autorização explícita via variável de ambiente para impedir apagar banco acidentalmente
+if os.environ.get("ALLOW_SEED") != "1" and os.environ.get("FORCE_SEED") != "1":
+    print("[BLOQUEADO] OPERACAO CANCELADA POR SEGURANCA:")
+    print("   O script seed_db.py apaga e reinicia tabelas com dados de teste.")
+    print("   Para autorizar a execucao, defina a variavel de ambiente ALLOW_SEED=1 (ou FORCE_SEED=1).")
+    sys.exit(1)
 
 db_path = 'backend/data/notas_departamento.db'
 
 # Connect to database
+if os.path.exists(db_path):
+    conn_check = sqlite3.connect(db_path)
+    cur_check = conn_check.cursor()
+    try:
+        cur_check.execute("SELECT count(*) FROM notas")
+        count = cur_check.fetchone()[0]
+        if count > 100 and os.environ.get("FORCE_SEED") != "1":
+            print(f"❌ CANCELADO POR SEGURANÇA: O banco {db_path} contém {count} notas reais.")
+            print("Para sobrescrever com dados de teste, defina a variável de ambiente FORCE_SEED=1.")
+            sys.exit(1)
+    except Exception:
+        pass
+    finally:
+        conn_check.close()
+
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
