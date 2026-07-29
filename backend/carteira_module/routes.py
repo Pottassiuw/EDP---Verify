@@ -49,10 +49,10 @@ def resumo():
 def dashboard(request: Request, response: Response,
               ano: int | None = None, mes: int | None = None,
               regional: str | None = None):
-    corpo = service.dashboard(ano, mes, regional)
-    etag = f'W/"{corpo["versao"]}"'
+    etag = f'W/"{service.versao_dashboard()}"'
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})
+    corpo = service.dashboard(ano, mes, regional)
     response.headers["ETag"] = etag
     response.headers["Cache-Control"] = "no-cache"
     return corpo

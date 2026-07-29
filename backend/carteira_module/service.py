@@ -45,6 +45,16 @@ def disparar_sincronizacao() -> dict:
     return sync.sincronizar()
 
 
+def versao_dashboard() -> str:
+    """Versao composta (input+carteira) para o ETag do dashboard — barata,
+    permite responder 304 antes de montar o corpo pesado (padrao da rota de
+    Relatorios do Input). Sincroniza metas (idempotente por mtime) para que a
+    versao reflita um eventual reimport, casando com o corpo."""
+    from input_module import metas
+    metas.sincronizar_se_preciso()
+    return f"{input_db.obter_versao_dataset()}-{db.obter_versao()}"
+
+
 def dashboard(ano: int | None, mes: int | None, regional: str | None) -> dict:
     """Dashboard: reusa a agregacao dos Relatorios (meta/planejado/executado)
     e adiciona a camada 'base disponivel' (fora do plano) da carteira."""

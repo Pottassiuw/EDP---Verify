@@ -77,14 +77,10 @@ export const InputApi = {
 
   migrar: () => req<{ resultado: string }>('/migrar', escrita('POST')),
 
-  dashboardRelatorios: ({ regional, mes }: { regional?: string; mes?: number } = {}) => {
-    const params = new URLSearchParams();
-    if (regional) params.set('regional', regional);
-    if (mes) params.set('mes', String(mes));
-    const query = params.toString();
-    return req<import('../relatorios/types').DashboardRelatorios>(
-      `/relatorios/dashboard${query ? `?${query}` : ''}`);
-  },
+  // Fase 4a: o dashboard de Relatórios passou a derivar de CarteiraApi.dashboard
+  // (superset). O endpoint /api/input/relatorios/dashboard segue vivo no backend
+  // como compat, mas não é mais consumido pelo front — por isso o client foi
+  // removido (CLAUDE.md: sem dead code).
   sincronizarMetas: () =>
     req<import('../relatorios/types').MetasInfo & { sincronizou: boolean }>(
       '/metas/sincronizar', escrita('POST')),
