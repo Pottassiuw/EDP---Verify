@@ -209,8 +209,13 @@ def test_deletar_notas_gera_log(banco_temporario):
 def test_backup_rotativo(banco_temporario):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(5000)]))
-    db.realizar_backup(limite=20, intervalo_horas=0)
     pasta = config_backups_dir()
+    for f in pasta.glob("notas_departamento_*.db"):
+        try:
+            os.remove(f)
+        except Exception:
+            pass
+    db.realizar_backup(limite=20, intervalo_horas=0)
     arquivos = list(pasta.glob("notas_departamento_*.db"))
     assert len(arquivos) == 1
     db.realizar_backup(limite=20, intervalo_horas=2)
