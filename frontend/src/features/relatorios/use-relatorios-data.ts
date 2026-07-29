@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQueries } from '@tanstack/react-query';
 
-import { InputApi } from '../input/api';
+import { CarteiraApi } from '../carteira/api';
 
 import { criarPlanosRelatorio, type PlanoRelatorio } from './relatorios-data';
 import type { DashboardRelatorios } from './types';
@@ -44,7 +44,7 @@ export function useRelatoriosData(
   const consultasRegionais = useQueries({
     queries: nomesParaConsultar.map((regional) => ({
       queryKey: ['relatorios-dashboard', regional],
-      queryFn: () => InputApi.dashboardRelatorios({ regional }),
+      queryFn: () => CarteiraApi.dashboard({ regional }),
       enabled: Boolean(principal.data),
       staleTime: 60_000,
     })),

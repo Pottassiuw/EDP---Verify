@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 
 import { farol, FAROL_COR, fmtQtd, fmtPct } from '../../relatorios/fmt';
-import type { LinhaPlano, LinhaRegional } from '../types';
+import type { LinhaAnual, RegionalResumo } from '../../relatorios/types';
 
 function corCobertura(pct: number | null): string | undefined {
   const f = farol(pct);
@@ -13,7 +13,7 @@ function corCobertura(pct: number | null): string | undefined {
 }
 
 export function DistribuicaoPlano({ linhas, onDrill }: {
-  linhas: LinhaPlano[];
+  linhas: LinhaAnual[];
   onDrill: (plano: string) => void;
 }): React.JSX.Element {
   return (
@@ -30,11 +30,11 @@ export function DistribuicaoPlano({ linhas, onDrill }: {
                       onClick={() => onDrill(l.plano)}>
               <TableCell>{l.nome_curto ?? l.plano}</TableCell>
               <TableCell className="num-cell">{fmtQtd(l.meta)}</TableCell>
-              <TableCell className="num-cell">{fmtQtd(l.planejado)}</TableCell>
-              <TableCell className="num-cell">{fmtQtd(l.base_disponivel)}</TableCell>
-              <TableCell className="num-cell">{fmtQtd(l.gap)}</TableCell>
-              <TableCell className="num-cell" style={{ color: corCobertura(l.cobertura_pct) }}>
-                {l.cobertura_pct === null ? '—' : fmtPct(l.cobertura_pct)}
+              <TableCell className="num-cell">{fmtQtd(l.carteira)}</TableCell>
+              <TableCell className="num-cell">{fmtQtd(l.base_disponivel ?? 0)}</TableCell>
+              <TableCell className="num-cell">{fmtQtd(l.meta - l.carteira)}</TableCell>
+              <TableCell className="num-cell" style={{ color: corCobertura(l.cobertura_pct ?? null) }}>
+                {l.cobertura_pct == null ? '—' : fmtPct(l.cobertura_pct)}
               </TableCell>
             </TableRow>
           ))}
@@ -45,7 +45,7 @@ export function DistribuicaoPlano({ linhas, onDrill }: {
 }
 
 export function DistribuicaoRegional({ linhas, onDrill }: {
-  linhas: LinhaRegional[];
+  linhas: RegionalResumo[];
   onDrill: (regional: string) => void;
 }): React.JSX.Element {
   return (
@@ -62,10 +62,10 @@ export function DistribuicaoRegional({ linhas, onDrill }: {
                       onClick={() => onDrill(l.regional)}>
               <TableCell>{l.regional}</TableCell>
               <TableCell className="num-cell">{fmtQtd(l.meta)}</TableCell>
-              <TableCell className="num-cell">{fmtQtd(l.planejado)}</TableCell>
-              <TableCell className="num-cell">{fmtQtd(l.base_disponivel)}</TableCell>
-              <TableCell className="num-cell" style={{ color: corCobertura(l.cobertura_pct) }}>
-                {l.cobertura_pct === null ? '—' : fmtPct(l.cobertura_pct)}
+              <TableCell className="num-cell">{fmtQtd(l.carteira)}</TableCell>
+              <TableCell className="num-cell">{fmtQtd(l.base_disponivel ?? 0)}</TableCell>
+              <TableCell className="num-cell" style={{ color: corCobertura(l.cobertura_pct ?? null) }}>
+                {l.cobertura_pct == null ? '—' : fmtPct(l.cobertura_pct)}
               </TableCell>
             </TableRow>
           ))}

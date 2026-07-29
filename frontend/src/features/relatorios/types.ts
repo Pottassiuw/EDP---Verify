@@ -20,6 +20,11 @@ export interface LinhaAnual {
   pct_disp: number | null;
   gap_rs: number;
   postergado: number;
+  // Camada base disponível (fonte carteira, Fase 4a). Opcionais: ausentes se
+  // a carteira não estiver sincronizada; presentes via /api/carteira/dashboard.
+  base_disponivel?: number;
+  cobertura_pct?: number | null;
+  suficiente?: boolean;
 }
 
 export interface MesMensalizacao {
@@ -35,6 +40,16 @@ export interface RegionalResumo {
   carteira: number;
   saldo: number;
   pct_disp: number | null;
+  // Camada base disponível (fonte carteira, Fase 4a) — opcionais.
+  base_disponivel?: number;
+  cobertura_pct?: number | null;
+}
+
+export interface LinhaBaseSemMeta {
+  plano: string;
+  nome_curto: string | null;
+  area: string | null;
+  base_disponivel: number;
 }
 
 export interface MetasInfo {
@@ -54,4 +69,8 @@ export interface DashboardRelatorios {
   regionais: RegionalResumo[];
   financeiro_ano: { meta_rs: number; carteira_rs: number; gap_rs: number };
   metas_info: MetasInfo;
+  // Extras do superset da carteira (Fase 4a) — Relatórios ignora, mas o
+  // contrato reflete a resposta de /api/carteira/dashboard.
+  base_por_plano_sem_meta?: LinhaBaseSemMeta[];
+  versao?: string;
 }
