@@ -98,7 +98,7 @@ function AppContent(): React.JSX.Element {
     React.useState<{ filtro: CoffeeConclusaoFiltro; id: number } | null>(null);
   const [inputSub, setInputSub] = usePersistedState<AbaInput>("edp_input_sub", "visao");
   const [relatoriosSub, setRelatoriosSub] = usePersistedState<RelatoriosSubPage>("edp_relatorios_sub", "mes");
-  const [carteiraSub, setCarteiraSub] = usePersistedState<CarteiraSubPage>("edp_carteira_sub", "explorador");
+  const [carteiraSub, setCarteiraSub] = usePersistedState<CarteiraSubPage>("edp_carteira_sub", "dashboard");
   const [filtrosHandoff, setFiltrosHandoff] =
     React.useState<{ estado: FiltersState; id: number } | null>(null);
   const [carteiraHandoff, setCarteiraHandoff] =

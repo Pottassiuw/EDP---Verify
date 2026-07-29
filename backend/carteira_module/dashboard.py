@@ -25,11 +25,17 @@ def montar(dash: dict, base_bruta: list[dict], unidade_por_plano: dict,
         chave = (regional, plano)
         base_por_reg_plano[chave] = base_por_reg_plano.get(chave, 0.0) + ddpm
 
-    planos_com_meta = {l["plano"] for l in dash.get("visao_anual", [])}
+    # "Com meta" = conjuntos com meta > 0 (alvos reais). Conjuntos com meta 0
+    # — OPEX (poda/manut) ou planos sem meta no ano — vão só para a camada
+    # base_sem_meta; misturá-los inflaria a cobertura (base OPEX é enorme).
+    planos_com_meta = {l["plano"] for l in dash.get("visao_anual", [])
+                       if float(l["meta"]) > 0}
 
     por_plano = []
     for l in dash.get("visao_anual", []):
         meta, planejado = float(l["meta"]), float(l["carteira"])
+        if meta <= 0:
+            continue
         base = base_por_plano.get(l["plano"], 0.0)
         gap = meta - planejado
         por_plano.append({
@@ -52,8 +58,10 @@ def montar(dash: dict, base_bruta: list[dict], unidade_por_plano: dict,
     por_regional = []
     for r in dash.get("regionais", []):
         meta, planejado = float(r["meta"]), float(r["carteira"])
-        base = sum(v for (reg, _pl), v in base_por_reg_plano.items()
-                   if reg == r["regional"])
+        # só a base de conjuntos com meta entra na cobertura da regional
+        # (senão a base OPEX domina e a % perde o sentido).
+        base = sum(v for (reg, pl), v in base_por_reg_plano.items()
+                   if reg == r["regional"] and pl in planos_com_meta)
         por_regional.append({
             "regional": r["regional"], "meta": meta, "planejado": planejado,
             "base_disponivel": base, "gap": meta - planejado,

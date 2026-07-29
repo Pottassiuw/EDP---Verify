@@ -1,9 +1,34 @@
 # Frontend — features/carteira
 
-Seção da Carteira de Notas: explora a projeção local (Databricks →
-`carteira_module`), move notas para o plano e mostra divergências e o
-estado da sincronização. Três abas: **Explorador**, **Divergências** e
-**Sincronização**.
+Seção da Carteira de Notas: dashboard executivo, exploração da projeção
+local (Databricks → `carteira_module`), movimentação para o plano,
+divergências e estado da sincronização. Quatro abas: **Dashboard**
+(landing), **Explorador**, **Divergências** e **Sincronização**.
+
+## Dashboard (Fase 3b)
+
+Aba landing (`dashboard/`), consome `GET /api/carteira/dashboard`.
+
+- **KPIs** (`kpis-dashboard.tsx`): Meta, Planejado, Base disponível, Gap,
+  Cobertura (farol reusando `features/relatorios/fmt`). Somam sobre os
+  planos **com meta** (o backend já separa OPEX/sem-meta).
+- **Heatmap por regional** (`heatmap.tsx`): grade de cards, % cobertura da
+  regional colorida por farol; clique dá drill-down. (MVP: cobertura por
+  regional, não a matriz regional×plano completa.)
+- **Evolução** (`evolucao.tsx`): `ComposedChart` (Recharts via `ui/chart`) —
+  barras meta/planejado/executado por mês + linha de executado acumulado.
+- **Distribuição** (`distribuicao.tsx`): tabelas por plano e por regional
+  (meta/planejado/base/gap/cobertura com farol), clicáveis para drill-down.
+- **Drill-down interno**: clicar plano/regional troca para a aba Explorador
+  com o filtro aplicado — coordenado por `carteira-section.tsx` (estado
+  `drill`), sem tocar `App.tsx`. O landing default (`edp_carteira_sub`) é
+  `dashboard` (App.tsx).
+
+Dois ajustes de backend surgiram na validação visual real: (1) o dashboard
+só compara meta×base para conjuntos com **meta>0** (senão a base OPEX enorme
+— PODA 500k — inflava a cobertura para milhares de %); (2) o filtro
+`conjunto` do Explorador passou a casar o código **OU** a `descricao_conjunto`
+(o drill do dashboard passa a descrição = `Plano`, não o código).
 
 ## Movimentação (Fase 2b)
 

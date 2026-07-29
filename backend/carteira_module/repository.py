@@ -142,11 +142,15 @@ def _where_base(filtros: dict) -> tuple[str, list]:
     clausulas, params = [], []
     if not filtros.get("incluir_ausentes"):
         clausulas.append("n.ausente_na_origem_em IS NULL")
-    for coluna, chave in (("regional", "regional"), ("conjunto", "conjunto"),
-                          ("status_sap", "status_sap")):
+    for coluna, chave in (("regional", "regional"), ("status_sap", "status_sap")):
         if filtros.get(chave):
             clausulas.append(f"n.{coluna} = ?")
             params.append(filtros[chave])
+    # 'conjunto' casa o código OU a descrição — o drill do dashboard passa a
+    # descrição (descricao_conjunto == Plano), o filtro manual pode passar o código.
+    if filtros.get("conjunto"):
+        clausulas.append("(n.conjunto = ? OR n.descricao_conjunto = ?)")
+        params += [filtros["conjunto"], filtros["conjunto"]]
     if filtros.get("sap_real") in (0, 1):
         clausulas.append("n.sap_real = ?")
         params.append(filtros["sap_real"])
