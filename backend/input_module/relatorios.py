@@ -1,14 +1,13 @@
 """Agregação do dashboard do Plano de Recomposição (funções puras).
 
-Regras (spec 2026-07-17-relatorios-home-design.md):
-- Carteira: soma de Planejado_DDPM por Plano (== Conjunto da nota) no ano,
-  mês de Mes_Execucao_Planejado; notas_ramal inteira soma no plano RAMAL.
-- Executado: Status_Nota começando com "99" OU Export_status == "ENCE EXEC",
-  no mês de "Encerram.por data".
-- Eixo regional: Regional_CSD (fallback Regional quando "-"); ramal deriva
-  do prefixo do Local_Instalacao com override Poá/Suzano/Itaquá/Ferraz.
-- Conjunto sem de-para cai no balde visível "Outros".
+Regras:
+- Executado: código exato 99 em Status_Final; Status_Nota é fallback quando
+  Status_Final está ausente; Export_status == "ENCE EXEC" é preservado.
+- Com data SAP válida, execução usa o mês real. Sem data, usa o mês planejado
+  e incrementa avisos.executadas_sem_data.
 """
+import re
+
 import pandas as pd
 
 from input_module import config
@@ -49,9 +48,28 @@ def _regional_csd_ramal(local) -> str:
     return config.DE_PARA_REGIONAL.get(prefixo, "-")
 
 
+def _status_99(valor) -> bool:
+    if pd.isna(valor):
+        return False
+    texto = str(valor).strip()
+    return re.fullmatch(r"99(?:\.0+)?(?:\s+.*)?", texto) is not None
+
+
+def _valor_preenchido(valor) -> bool:
+    if pd.isna(valor):
+        return False
+    return str(valor).strip().lower() not in ("", "-", "nan", "none")
+
+
 def _executada(row) -> bool:
-    status = str(row.get("Status_Nota") or "")
-    return status.startswith("99") or str(row.get("Export_status") or "") == "ENCE EXEC"
+    status_final = row.get("Status_Final")
+    status_99 = (
+        _status_99(status_final)
+        if _valor_preenchido(status_final)
+        else _status_99(row.get("Status_Nota"))
+    )
+    status_textual = str(row.get("Export_status") or "").strip().upper()
+    return status_99 or status_textual == "ENCE EXEC"
 
 
 def _linhas_fato(df_notas: pd.DataFrame, df_ramal: pd.DataFrame, ano: int) -> pd.DataFrame:
@@ -62,15 +80,21 @@ def _linhas_fato(df_notas: pd.DataFrame, df_ramal: pd.DataFrame, ano: int) -> pd
         if ano_exec != ano or mes is None:
             continue
         enc = pd.to_datetime(row.get("Encerram.por data"), errors="coerce")
+        executada = _executada(row)
         exec_mes = None
-        if _executada(row) and pd.notna(enc) and enc.year == ano:
+        executada_sem_data = False
+        if executada and pd.notna(enc) and enc.year == ano:
             exec_mes = int(enc.month)
+        elif executada and pd.isna(enc):
+            exec_mes = mes
+            executada_sem_data = True
         fatos.append({
             "plano": str(row.get("Conjunto") or "-").strip(),
             "regional": _regional_csd_nota(row),
             "mes": mes,
             "qtd": float(row.get("Planejado_DDPM") or 0),
             "exec_mes": exec_mes,
+            "executada_sem_data": executada_sem_data,
         })
     for _, row in df_ramal.iterrows():
         mes, ano_exec = _mes_de_execucao(row.get("Mes_Execucao_Planejado"))
@@ -84,9 +108,13 @@ def _linhas_fato(df_notas: pd.DataFrame, df_ramal: pd.DataFrame, ano: int) -> pd
             "qtd": float(row.get("Planejado_DDPM") or 0),
             # ramal não tem Encerram.por data: executado cai no mês planejado
             "exec_mes": mes if executada else None,
+            "executada_sem_data": executada,
         })
     if not fatos:
-        return pd.DataFrame(columns=["plano", "regional", "mes", "qtd", "exec_mes"])
+        return pd.DataFrame(columns=[
+            "plano", "regional", "mes", "qtd", "exec_mes",
+            "executada_sem_data",
+        ])
     return pd.DataFrame(fatos)
 
 
@@ -113,6 +141,11 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
         return float(m["qtd"].sum())
 
     fato_f = fato if regional is None else fato[fato["regional"] == regional]
+    avisos = {
+        "executadas_sem_data": (
+            int(fato_f["executada_sem_data"].sum()) if not fato_f.empty else 0
+        ),
+    }
     metas_f = metas if regional is None else metas[metas["Regional"] == regional]
     post_f = (df_postergacoes if regional is None
               else df_postergacoes[df_postergacoes["Regional"] == regional])
@@ -198,4 +231,4 @@ def montar_dashboard(df_notas: pd.DataFrame, df_ramal: pd.DataFrame,
 
     return {"ano": ano, "mes_referencia": mes_referencia, "regional": regional,
             "hero": hero, "visao_anual": linhas, "mensalizacao": mensalizacao,
-            "regionais": regionais, "financeiro_ano": fin}
+            "regionais": regionais, "financeiro_ano": fin, "avisos": avisos}

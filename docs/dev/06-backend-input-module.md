@@ -267,6 +267,14 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 | `POST /hierarquia`, `GET /hierarquia/{numero_nota}` | Vínculo nota-mãe/nota-filha (`Nota_Mae`). |
 | `POST /migrar` | Força nova tentativa de migração do banco a partir da rede. |
 
+### Regra de executado em Relatórios
+
+Executado reconhece o código exato 99 em `Status_Final`; `Status_Nota` só é
+fallback quando o consolidado está ausente, e `ENCE EXEC` continua válido.
+Sem `Encerram.por data`, a execução usa `Mes_Execucao_Planejado` e o payload
+incrementa `avisos.executadas_sem_data`, contado por nota no ano e no filtro
+regional ativo.
+
 Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:83`), que
 invalida o cache do engine e agenda `engine.gerar_copia_excel_rede()`
 em background para manter o Excel espelhado na rede atualizado.

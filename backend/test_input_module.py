@@ -1038,6 +1038,136 @@ def test_metas_sincronizar_sem_aba_postergadas_preserva(banco_temporario, monkey
     assert len(db.carregar_metas(2026)) == 3          # metas também intactas
 
 
+@pytest.mark.parametrize("valor", [99, 99.0, "99", "99.0", "99 Encerrado"])
+def test_relatorios_reconhece_codigo_99_exato(valor):
+    from input_module import relatorios
+
+    assert relatorios._status_99(valor) is True
+
+
+@pytest.mark.parametrize("valor", [None, "-", 9, 98, 999, "999", "99A"])
+def test_relatorios_nao_confunde_outros_status_com_99(valor):
+    from input_module import relatorios
+
+    assert relatorios._status_99(valor) is False
+
+
+def test_relatorios_status_final_preenchido_prevalece_sobre_status_nota():
+    from input_module import relatorios
+
+    row = pd.Series({
+        "Status_Final": "10 Em planejamento",
+        "Status_Nota": "99 Encerrado",
+        "Export_status": "-",
+    })
+
+    assert relatorios._executada(row) is False
+
+
+def test_relatorios_preserva_fallbacks_existentes():
+    from input_module import relatorios
+
+    status_local = pd.Series({
+        "Status_Final": "-",
+        "Status_Nota": "99 Encerrado",
+        "Export_status": "-",
+    })
+    status_textual_sap = pd.Series({
+        "Status_Final": "ENCE EXEC",
+        "Status_Nota": "10 Em planejamento",
+        "Export_status": "ENCE EXEC",
+    })
+
+    assert relatorios._executada(status_local) is True
+    assert relatorios._executada(status_textual_sap) is True
+
+
+def _dashboard_nota_status_final(
+    status_final,
+    encerramento,
+    regional="Guarulhos",
+):
+    from input_module import relatorios
+
+    df_notas = pd.DataFrame([{
+        "Numero_Nota": 9001,
+        "Conjunto": "POSTES - CAPEX",
+        "Planejado_DDPM": 2.0,
+        "Mes_Execucao_Planejado": "jul-2026",
+        "Regional": regional,
+        "Regional_CSD": regional,
+        "Status_Final": status_final,
+        "Status_Nota": "10 Em planejamento",
+        "Export_status": "-",
+        "Encerram.por data": encerramento,
+    }])
+    _, df_ramal, df_metas, df_depara, df_postergacoes = _fx_relatorios()
+
+    return relatorios.montar_dashboard(
+        df_notas,
+        df_ramal.iloc[0:0],
+        df_metas,
+        df_depara,
+        df_postergacoes.iloc[0:0],
+        ano=2026,
+        mes_referencia=7,
+        regional=None,
+    )
+
+
+def test_dashboard_status_final_99_usa_mes_real():
+    dashboard = _dashboard_nota_status_final(99, "2026-08-03")
+
+    julho = dashboard["mensalizacao"][6]
+    agosto = dashboard["mensalizacao"][7]
+    assert julho["executado"] == 0.0
+    assert agosto["executado"] == 2.0
+    assert dashboard["avisos"]["executadas_sem_data"] == 0
+
+
+def test_dashboard_status_final_99_sem_data_usa_mes_planejado_e_avisa():
+    dashboard = _dashboard_nota_status_final("99 Encerrado", None)
+
+    julho = dashboard["mensalizacao"][6]
+    assert julho["executado"] == 2.0
+    assert dashboard["avisos"]["executadas_sem_data"] == 1
+
+
+def test_dashboard_aviso_sem_data_respeita_filtro_regional():
+    dashboard = _dashboard_nota_status_final(
+        "99 Encerrado",
+        None,
+        regional="Mogi das Cruzes",
+    )
+    from input_module import relatorios
+    _, df_ramal, df_metas, df_depara, df_postergacoes = _fx_relatorios()
+    nota_sem_data = pd.DataFrame([{
+        "Numero_Nota": 9002,
+        "Conjunto": "POSTES - CAPEX",
+        "Planejado_DDPM": 1.0,
+        "Mes_Execucao_Planejado": "jul-2026",
+        "Regional": "Mogi das Cruzes",
+        "Regional_CSD": "Mogi das Cruzes",
+        "Status_Final": "99",
+        "Status_Nota": "10 Em planejamento",
+        "Export_status": "-",
+        "Encerram.por data": None,
+    }])
+    filtrado = relatorios.montar_dashboard(
+        nota_sem_data,
+        df_ramal.iloc[0:0],
+        df_metas,
+        df_depara,
+        df_postergacoes.iloc[0:0],
+        ano=2026,
+        mes_referencia=7,
+        regional="Guarulhos",
+    )
+
+    assert dashboard["avisos"]["executadas_sem_data"] == 1
+    assert filtrado["avisos"]["executadas_sem_data"] == 0
+
+
 def _fx_relatorios():
     """Fixtures mínimas para o dashboard: 2 notas + 1 ramal + metas/depara."""
     df_notas = pd.DataFrame([
