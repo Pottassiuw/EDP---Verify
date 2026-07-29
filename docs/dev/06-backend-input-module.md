@@ -11,6 +11,13 @@ local; as bases de cruzamento também foram migradas para SQLite (ver
 "Cache SQLite" abaixo). O resultado consolidado é exposto ao frontend
 via `/api/input/*`.
 
+## Origem das extrações SAP
+
+IW28, IW38 e IW66 são lidas e gravadas sob a raiz única
+`\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM\INPUT SQL\Arquivos_SAP`.
+`config.REDE_ARQUIVOS_SAP` é a fonte dos três caminhos; não monte caminhos
+SAP diretamente a partir de `REDE_INPUT_SQL`.
+
 ## Arquivos principais
 
 | Arquivo | Responsabilidade |

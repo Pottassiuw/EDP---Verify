@@ -27,6 +27,17 @@ def test_config_dicionarios_completos():
     assert "Numero_Nota" in config.COLUNAS_PAINEL
 
 
+def test_extracoes_sap_compartilham_raiz_arquivos_sap():
+    arquivos = {
+        config.CAMINHO_BASE_IW28: "Gerada_base_IW28.XLSX",
+        config.CAMINHO_CUSTO_ORD_IW38: "Gerada_custo_ord_IW38.XLSX",
+        config.CAMINHO_BASE_IW66: "Gerada_medidas_IW66.XLSX",
+    }
+
+    for caminho, arquivo in arquivos.items():
+        assert caminho == config.REDE_ARQUIVOS_SAP + f"\\{arquivo}"
+
+
 def test_data_dir_respeita_env(monkeypatch, tmp_path):
     monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
     assert config.data_dir() == tmp_path
