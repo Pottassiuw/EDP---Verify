@@ -1,7 +1,7 @@
 import { getUsuario } from '../input/api';
 import type {
-  DashboardCarteira, Divergencia, EstadoSync, ExecucaoSync, FiltrosCarteira, MoverPedido,
-  MoverResultado, Movimentacao, NotaCarteira, PaginaNotas, PreviewItem,
+  CarteiraEnriquecimento, DashboardCarteira, Divergencia, EstadoSync, ExecucaoSync,
+  FiltrosCarteira, MoverPedido, MoverResultado, Movimentacao, NotaCarteira, PaginaNotas, PreviewItem,
   ResumoCarteira,
 } from './types';
 
@@ -38,6 +38,8 @@ function querystring(params: ParamsNotas): string {
 export const CarteiraApi = {
   notas: (params: ParamsNotas) => req<PaginaNotas>(`/notas?${querystring(params)}`),
   detalhe: (idOnr: number) => req<NotaCarteira>(`/notas/${idOnr}`),
+  enriquecimento: (numeroSap: number) =>
+    req<CarteiraEnriquecimento>(`/notas/por-sap/${numeroSap}`),
   resumo: () => req<ResumoCarteira>('/resumo'),
   sincronizacao: () => req<EstadoSync>('/sincronizacao'),
   sincronizar: () => req<ExecucaoSync>('/sincronizar', { method: 'POST' }),

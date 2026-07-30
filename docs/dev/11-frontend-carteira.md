@@ -75,6 +75,7 @@ frontend/src/features/carteira/
   situacao.ts                mapa SituacaoCarteira -> {rotulo, variant}
   subs.ts                    abas (import-light, não puxa a seção)
   use-carteira-notas.ts      página paginada (keepPreviousData)
+  use-carteira-enriquecimento.ts consulta SAP por número, sem estado local
   use-carteira-resumo.ts     KPIs (seeded via Dexie)
   use-carteira-sync.ts       estado + mutação de sincronização
   carteira-section.tsx       shell: PageHeader + SegTabs
@@ -96,6 +97,13 @@ flicker na paginação). `useCarteiraResumo` usa o hook compartilhado
 `useSeededQuery` (`frontend/src/hooks/use-seeded-query.ts`) — extraído
 por Rule of Three a partir do padrão seed→revalidate já usado em
 `useInputData`/`useRamalData`.
+
+`useCarteiraEnriquecimento(numeroSap, enabled)` busca
+`GET /api/carteira/notas/por-sap/{numeroSap}` somente quando recebe um inteiro
+seguro positivo e está habilitado. A query usa a chave
+`['carteira', 'enriquecimento', numeroSap]`, mantém o resultado fresco por cinco
+minutos e tenta novamente uma vez. O contrato discriminado preserva os estados
+do backend e seus campos anuláveis; o hook não persiste dados nem renderiza UI.
 
 ## Direção visual — Supabaze (DESIGN.md)
 

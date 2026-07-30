@@ -26,6 +26,32 @@ export interface NotaCarteira {
   ausente_na_origem_em: string | null;
 }
 
+export type EstadoCarteiraEnriquecimento =
+  | 'encontrada'
+  | 'ausente_na_origem'
+  | 'sem_correspondencia'
+  | 'base_nao_sincronizada';
+
+export interface DadosCarteiraEnriquecimento {
+  descricao_conjunto: string | null;
+  conjunto: string | null;
+  sintoma: string | null;
+  componente_novo: string | null;
+  kit: string | null;
+  n_trafo: string | null;
+  dispositivo_protecao: string | null;
+  status_sap: string | null;
+  prioridade_sap: number | null;
+}
+
+export interface CarteiraEnriquecimento {
+  numero_sap: number;
+  estado: EstadoCarteiraEnriquecimento;
+  dados: DadosCarteiraEnriquecimento | null;
+  ausente_na_origem_em: string | null;
+  versao: string;
+}
+
 export interface PaginaNotas {
   registros: NotaCarteira[];
   total: number;
