@@ -28,7 +28,7 @@ renderiza uma de cinco seções por `SegTabs`:
 | `operacao/use-coffee-operacao.ts` | Query do quadro e mutations de consultar, gerar, atualizar SAP e remover. |
 | `operacao/components/operacao-composer.tsx` | Entrada de IDs; informa válidos, repetidos e inválidos antes da consulta. |
 | `operacao/components/operacao-kanban.tsx` | Quatro colunas responsivas, sem drag and drop: Fila, Prontas, Processando e Aguardando SAP. |
-| `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, atividade, edição de local e ações contextuais. |
+| `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, card read-only da Carteira, atividade, edição de local e ações contextuais. |
 | `concluidas/coffee-concluidas.tsx` | Histórico, filtros, arquivamento de geradas e movimento de corrigidas para o Plano. |
 | `concluidas/components/concluidas-list.tsx` | Lista responsiva de concluídas e seleção restrita às corrigidas. |
 | `coffee-abrir.tsx` | Lista local de IDs e abertura escalonada no COFFEE. |
@@ -86,7 +86,8 @@ enquanto o inspector está aberto e reutiliza a chave
 `['carteira', 'enriquecimento', id_sap]` por cinco minutos. Quando a Carteira
 ainda não foi sincronizada, o callback sobe por `CoffeeOperacao` ou
 `CoffeeConcluidas`, passa pelo `CoffeeHub` e abre a aba Sincronização via
-`App.tsx`.
+`App.tsx`. O card não interfere na edição de local, atividade nem nas ações
+contextuais do inspector.
 
 `useCoffeePortalTheme` propaga tema resolvido, densidade e accent para o
 `Sheet`, `Dialog`, `AlertDialog` e `Select` portalizados. Assim, os modos

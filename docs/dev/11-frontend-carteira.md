@@ -75,8 +75,8 @@ frontend/src/features/carteira/
   situacao.ts                mapa SituacaoCarteira -> {rotulo, variant}
   subs.ts                    abas (import-light, não puxa a seção)
   use-carteira-notas.ts      página paginada (keepPreviousData)
-  use-carteira-enriquecimento.ts consulta SAP por número, sem estado local
-  carteira-enriquecimento-card.tsx card de detalhe e estados da consulta SAP
+  use-carteira-enriquecimento.ts consulta SAP por número, sob demanda, sem estado local
+  carteira-enriquecimento-card.tsx card read-only compartilhado pelos inspectors de Input e COFFEE
   use-carteira-resumo.ts     KPIs (seeded via Dexie)
   use-carteira-sync.ts       estado + mutação de sincronização
   carteira-section.tsx       shell: PageHeader + SegTabs
@@ -100,27 +100,28 @@ por Rule of Three a partir do padrão seed→revalidate já usado em
 `useInputData`/`useRamalData`.
 
 `useCarteiraEnriquecimento(numeroSap, enabled)` busca
-`GET /api/carteira/notas/por-sap/{numeroSap}` somente quando recebe um inteiro
-seguro positivo e está habilitado. A query usa a chave
-`['carteira', 'enriquecimento', numeroSap]`, mantém o resultado fresco por cinco
-minutos e tenta novamente uma vez. O contrato discriminado preserva os estados
-do backend e seus campos anuláveis; o hook não persiste dados nem renderiza UI.
+`GET /api/carteira/notas/por-sap/{numeroSap}` somente quando o inspector
+consumidor está aberto e recebe um inteiro seguro positivo. A query usa a chave
+`['carteira', 'enriquecimento', numeroSap]`, com `staleTime=300_000` e
+`retry=1`. O contrato discriminado preserva os estados do backend e seus campos
+anuláveis; o hook não persiste dados nem renderiza UI.
 
 ## Card de enriquecimento SAP
 
 `CarteiraEnriquecimentoCard` é o wrapper do React Query e delega a renderização
-para `CarteiraEnriquecimentoContent`, componente puro usado nos testes SSR. O
-card preserva a hierarquia da base: `descricao_conjunto` é a rubrica, `conjunto`
-é o contexto e o `dl` responsivo mostra os sete campos restantes, totalizando
-os nove campos do contrato. Valores `null` ou vazios aparecem como travessão;
-o card não mostra PII.
+para `CarteiraEnriquecimentoContent`, componente puro usado nos testes SSR. É a
+apresentação read-only compartilhada pelos inspectors de Input e COFFEE. O card
+preserva a hierarquia da base: `descricao_conjunto` é a rubrica, `conjunto` é o
+contexto e o `dl` responsivo mostra os outros sete campos, totalizando os nove
+campos do contrato. Valores `null` ou vazios aparecem como travessão; nenhuma
+PII entra no tipo ou na UI.
 
 Os estados são intencionalmente distintos: carregamento é local ao card;
-falha de consulta (ou resposta incompatível) mostra alerta com retry;
+erro real de consulta (ou resposta incompatível) mostra alerta com retry;
 `sem_correspondencia` é uma ausência neutra sem retry; e
 `base_nao_sincronizada` explica a pré-condição e oferece a ação de navegação.
-Em `ausente_na_origem`, os dados preservados continuam visíveis junto do aviso
-com a data de tombstone.
+Em `ausente_na_origem` (tombstone), os dados preservados continuam visíveis
+junto do aviso e da data. Nenhum outro estado oferece retry.
 
 ## Direção visual — Supabaze (DESIGN.md)
 

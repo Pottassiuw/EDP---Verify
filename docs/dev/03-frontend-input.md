@@ -15,7 +15,7 @@ enquanto o usuário está com a tela aberta.
 | Arquivo | Responsabilidade |
 |---|---|
 | `frontend/src/features/input/input-section.tsx` | Casca da feature: cabeçalho, `SegTabs` das sub-abas (`INPUT_SUBS`), banners de aviso (dados desatualizados, importação inicial pendente, bases ausentes), roteamento condicional para o componente de cada sub-aba e renderização do bloco unificado de filtros avançados no topo para as sub-abas de Visão Geral e Gerenciar. |
-| `frontend/src/features/input/overview.tsx` | Sub-aba "Visão Geral": DataGrid somente-leitura, inspector de nota, botões "Sincronizar SAP" e "Exportar Excel", status de vínculos automáticos (`useAutoVinculos`) e o `HierarquiaCard`. |
+| `frontend/src/features/input/overview.tsx` | Sub-aba "Visão Geral": mantém a DataGrid somente-leitura e abre `InputNotaInspector` por ação acessível; também reúne os botões "Sincronizar SAP" e "Exportar Excel", o status de vínculos automáticos (`useAutoVinculos`) e o `HierarquiaCard`. |
 | `frontend/src/features/input/manage.tsx` | Sub-aba "Gerenciar": cinco modos (Edição Rápida, Edição em Lote, Exclusão, Cadastrar Nota, Colar Planilha) sobre a base principal, cada um operando via `NotesTable`. |
 | `frontend/src/features/input/ramal.tsx` | Equivalente a `manage.tsx` para a base "Ramal" (dataset separado, `useRamalData`), com um modo "Visão Geral" a mais (via `DataGrid`). |
 | `frontend/src/features/input/filters.tsx` | Componente `Filters`: busca global por número de nota, switch rápido para o ano de 2026 e filtros avançados por campo (texto, faixa numérica, multi-seleção), unificado no nível de `input-section.tsx` e compartilhado entre as abas. |
@@ -24,8 +24,8 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/settings.tsx` | Sub-aba "Configurações": nome do usuário (log de auditoria), responsáveis por conjunto, status/substituição das bases de apoio, lista de backups locais para download. |
 | `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. |
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
-| `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção e coluna de detalhes opcional fixa à direita. |
-| `frontend/src/features/input/input-nota-inspector.tsx` | `InputNotaInspector`: `Sheet` read-only aberto pela ação fixa da grade; mostra o resumo dos campos existentes da nota e reutiliza `CarteiraEnriquecimentoCard` para dados COFFEE. |
+| `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção e a ação de detalhes fixa criada por `stickyRightColumn`, fora de `COLUNAS` e da exportação. |
+| `frontend/src/features/input/input-nota-inspector.tsx` | `InputNotaInspector`: `Sheet` read-only aberto pela ação fixa da grade; mostra primeiro dez campos presentes em `NotaInput` e depois reutiliza `CarteiraEnriquecimentoCard` por `Numero_Nota`, sem persistir ou criar colunas enriquecidas no Input. |
 | `frontend/src/features/input/use-input-data.ts` | Hooks de dados da base principal: `useInputData` (React Query, exporta a chave `INPUT_DADOS_KEY` para outros hooks/features invalidarem o mesmo cache), `useRecarregarInput` (invalidação) e `useSincronizacaoAutomatica` (polling que detecta alteração feita em outra sessão e revalida em background). |
 | `frontend/src/features/input/cache.ts` | Snapshots do dataset em IndexedDB via Dexie (tabela `snapshots`, uma linha por dataset: `input-dados`, `ramal-dados`). Best-effort: falha de IndexedDB equivale a cache vazio. |
 | `frontend/src/features/input/ui.ts` | Constantes de estilo compartilhadas: `CLASSE_SELECT_MONO` para `SelectContent` mono-styling, usada por `filters.tsx`, `manage.tsx` e `ramal.tsx`. Nota: `MesExecucaoPicker` (agora em `components/branded/`) declara sua própria instância internamente. |
@@ -61,7 +61,8 @@ Na Visão Geral, cada linha tem a ação semântica "Abrir detalhes da nota
 {número}" em uma coluna utilitária de 44px fixa à direita. Ela é criada
 separadamente por `stickyRightColumn` em `data-grid.tsx`; não entra em
 `COLUNAS` nem em `cols`, para que os índices usados por `calcularSelecao`
-e a soma/média/contagem continuem representando apenas colunas de dados.
+e a soma/média/contagem continuem representando apenas colunas de dados. Por
+ficar fora dessa coleção, a ação também não aparece na exportação.
 O alvo clicável ocupa 44×44px, interrompe a seleção somente no próprio
 botão e segue acessível por teclado. Como a DSG registra a seleção em
 `mousedown` no documento, o botão interrompe `pointerdown` e `mousedown`;
@@ -77,9 +78,9 @@ abertura duplicada quando o botão está dentro da grade.
 
 `overview.tsx` mantém somente a nota aberta como estado (`notaDetalhe`) e
 monta `DataGrid` e `InputNotaInspector` como irmãos. O Sheet exibe os
-campos já disponíveis no dataset do Input — mesmo que `NotaInput` aceite
-colunas dinâmicas — e delega a consulta do enriquecimento ao
-`CarteiraEnriquecimentoCard` compartilhado. Quando a Carteira ainda não
+dez campos já disponíveis no dataset do Input e depois delega a consulta por
+`Numero_Nota` ao `CarteiraEnriquecimentoCard` compartilhado. Nenhum campo
+enriquecido vira coluna ou é persistido no Input. Quando a Carteira ainda não
 está sincronizada, a ação chega por props até `App.tsx`, que seleciona a
 sub-aba `sincronizacao` e navega para `carteira`; não há Context ou evento
 global para esse handoff.
