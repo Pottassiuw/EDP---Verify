@@ -141,6 +141,11 @@ function AppContent(): React.JSX.Element {
     setSection(s);
   }
 
+  function irParaSincronizacaoCarteira(): void {
+    setCarteiraSub("sincronizacao");
+    changeSection("carteira");
+  }
+
   const { data: apiData } = useTriageData();
 
   React.useEffect(() => {
@@ -274,7 +279,12 @@ function AppContent(): React.JSX.Element {
                 }}
               />
             ) : section === "input" ? (
-              <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
+              <InputSection
+                sub={inputSub}
+                setSub={setInputSub}
+                filtrosHandoff={filtrosHandoff}
+                onIrParaSincronizacao={irParaSincronizacaoCarteira}
+              />
             ) : section === "carteira" ? (
               <CarteiraSection sub={carteiraSub} setSub={setCarteiraSub} />
             ) : section === "configuracoes" ? <ConfiguracoesPage /> :

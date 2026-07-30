@@ -8,6 +8,7 @@ import { COLUNAS } from './columns';
 import { type FiltersState } from './filters';
 import { DataGrid } from './data-grid';
 import { HierarquiaCard } from './hierarquia-card';
+import { InputNotaInspector } from './input-nota-inspector';
 import { useRecarregarInput } from './use-input-data';
 import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
@@ -28,10 +29,16 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
 interface OverviewProps {
   dados: InputDataset;
   estado: FiltersState;
+  onIrParaSincronizacao: () => void;
 }
 
-export function Overview({ dados, estado }: OverviewProps): React.JSX.Element {
+export function Overview({
+  dados,
+  estado,
+  onIrParaSincronizacao,
+}: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
+  const [notaDetalhe, setNotaDetalhe] = React.useState<NotaInput | null>(null);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
   const filtrados = React.useMemo(
@@ -119,8 +126,17 @@ export function Overview({ dados, estado }: OverviewProps): React.JSX.Element {
       </div>
 
       <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
-        <DataGrid registros={filtrados} colunas={COLUNAS} />
+        <DataGrid
+          registros={filtrados}
+          colunas={COLUNAS}
+          onOpenDetails={setNotaDetalhe}
+        />
       </div>
+      <InputNotaInspector
+        nota={notaDetalhe}
+        onClose={() => setNotaDetalhe(null)}
+        onIrParaSincronizacao={onIrParaSincronizacao}
+      />
 
       <div className="flex items-center justify-between text-xs text-text-mute font-mono px-3 py-2 bg-surface-2/50 rounded-md border border-line">
         <div className="flex items-center gap-2">
