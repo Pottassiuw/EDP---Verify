@@ -322,6 +322,89 @@ def test_service_pagina_e_resumo(carteira_tmp, monkeypatch, tmp_path):
     assert service.detalhe(9999) is None
 
 
+def test_enriquecimento_por_sap_base_nao_sincronizada(carteira_tmp):
+    from carteira_module import service
+
+    resultado = service.enriquecimento_por_sap(700500)
+
+    assert resultado == {
+        "numero_sap": 700500,
+        "estado": "base_nao_sincronizada",
+        "dados": None,
+        "ausente_na_origem_em": None,
+        "versao": "0",
+    }
+
+
+def test_enriquecimento_por_sap_sem_correspondencia(carteira_tmp):
+    from carteira_module import service, sync
+
+    sync.sincronizar(
+        ler_origem=lambda: [_origem_exemplo(id_onr=1, id_sap="700500")],
+        ler_marker=lambda: "M1",
+        agora="2026-07-29T08:00:00",
+    )
+
+    resultado = service.enriquecimento_por_sap(999999)
+
+    assert resultado["estado"] == "sem_correspondencia"
+    assert resultado["dados"] is None
+    assert resultado["ausente_na_origem_em"] is None
+    assert resultado["versao"] != "0"
+
+
+def test_enriquecimento_por_sap_encontrada_e_tombstone(carteira_tmp):
+    from carteira_module import service, sync
+
+    sync.sincronizar(
+        ler_origem=lambda: [_origem_exemplo(
+            id_onr=1,
+            id_sap="700500",
+            conjunto="POSTE",
+            **{"descrição_conjunto": "POSTES - CAPEX"},
+        )],
+        ler_marker=lambda: "M1",
+        agora="2026-07-29T08:00:00",
+    )
+
+    encontrada = service.enriquecimento_por_sap(700500)
+    assert encontrada["estado"] == "encontrada"
+    assert encontrada["ausente_na_origem_em"] is None
+    assert encontrada["dados"] == {
+        "descricao_conjunto": "POSTES - CAPEX",
+        "conjunto": "POSTE",
+        "sintoma": "queda",
+        "componente_novo": "N",
+        "kit": None,
+        "n_trafo": None,
+        "dispositivo_protecao": None,
+        "status_sap": "Pendente",
+        "prioridade_sap": 3,
+    }
+    assert set(encontrada["dados"]) == {
+        "descricao_conjunto",
+        "conjunto",
+        "sintoma",
+        "componente_novo",
+        "kit",
+        "n_trafo",
+        "dispositivo_protecao",
+        "status_sap",
+        "prioridade_sap",
+    }
+
+    sync.sincronizar(
+        ler_origem=lambda: [],
+        ler_marker=lambda: "M2",
+        agora="2026-07-29T09:00:00",
+    )
+    tombstone = service.enriquecimento_por_sap(700500)
+
+    assert tombstone["estado"] == "ausente_na_origem"
+    assert tombstone["dados"] == encontrada["dados"]
+    assert tombstone["ausente_na_origem_em"] == "2026-07-29T09:00:00"
+
+
 def test_rotas_notas_e_sincronizar(carteira_tmp, monkeypatch, tmp_path):
     monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
     from fastapi import FastAPI

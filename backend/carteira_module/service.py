@@ -76,6 +76,54 @@ def detalhe(id_onr: int) -> dict | None:
         conn.close()
 
 
+_CAMPOS_ENRIQUECIMENTO = (
+    "descricao_conjunto",
+    "conjunto",
+    "sintoma",
+    "componente_novo",
+    "kit",
+    "n_trafo",
+    "dispositivo_protecao",
+    "status_sap",
+    "prioridade_sap",
+)
+
+
+def enriquecimento_por_sap(numero: int) -> dict:
+    versao = db.obter_versao()
+    resposta = {
+        "numero_sap": numero,
+        "estado": "base_nao_sincronizada",
+        "dados": None,
+        "ausente_na_origem_em": None,
+        "versao": versao,
+    }
+    if versao == "0":
+        return resposta
+
+    conn = db.conectar()
+    try:
+        nota = repository.obter_por_id_sap(conn, numero)
+    finally:
+        conn.close()
+
+    if nota is None:
+        resposta["estado"] = "sem_correspondencia"
+        return resposta
+
+    resposta["estado"] = (
+        "ausente_na_origem"
+        if nota["ausente_na_origem_em"] is not None
+        else "encontrada"
+    )
+    resposta["dados"] = {
+        campo: nota.get(campo)
+        for campo in _CAMPOS_ENRIQUECIMENTO
+    }
+    resposta["ausente_na_origem_em"] = nota["ausente_na_origem_em"]
+    return resposta
+
+
 def resumo() -> dict:
     conn = db.conectar()
     try:

@@ -48,6 +48,17 @@ deterministicamente o registro por `sincronizado_em DESC, id_onr ASC`. Retorna
 o identificador interno e os campos de enriquecimento permitidos, além dos
 marcadores de sincronização/tombstone; não consulta `notas_sp` nem expõe PII.
 
+`service.enriquecimento_por_sap(numero)` estabelece o contrato interno de
+enriquecimento: retorna `numero_sap`, `estado`, `dados`,
+`ausente_na_origem_em` e `versao`. Os estados são `base_nao_sincronizada`
+(versão `"0"`), `sem_correspondencia`, `encontrada` e `ausente_na_origem`.
+`dados` é `None` nos dois primeiros; nos demais contém exclusivamente
+`descricao_conjunto`, `conjunto`, `sintoma`, `componente_novo`, `kit`,
+`n_trafo`, `dispositivo_protecao`, `status_sap` e `prioridade_sap`. Campos
+textuais vazios permanecem `None`, conforme a normalização da Carteira; o
+tombstone preserva o último conjunto de dados e informa quando saiu da origem.
+Falhas SQLite não são convertidas no service.
+
 ## Movimentação (Fase 2)
 
 `movimentacao.py` move notas da carteira para o plano do Input, espelhando o
