@@ -405,6 +405,62 @@ def test_enriquecimento_por_sap_encontrada_e_tombstone(carteira_tmp):
     assert tombstone["ausente_na_origem_em"] == "2026-07-29T09:00:00"
 
 
+def test_rota_enriquecimento_por_sap_e_etag(carteira_tmp):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from carteira_module import routes, sync
+
+    sync.sincronizar(
+        ler_origem=lambda: [_origem_exemplo(
+            id_onr=1,
+            id_sap="700500",
+            conjunto="POSTE",
+            **{"descrição_conjunto": "POSTES - CAPEX"},
+        )],
+        ler_marker=lambda: "M1",
+        agora="2026-07-29T08:00:00",
+    )
+    app = FastAPI()
+    app.include_router(routes.router)
+    cliente = TestClient(app)
+
+    primeira = cliente.get("/api/carteira/notas/por-sap/700500")
+
+    assert primeira.status_code == 200
+    assert primeira.json()["estado"] == "encontrada"
+    assert primeira.json()["numero_sap"] == 700500
+    assert primeira.headers["cache-control"] == "no-cache"
+    etag = primeira.headers["etag"]
+    assert etag.startswith('W/"')
+
+    segunda = cliente.get(
+        "/api/carteira/notas/por-sap/700500",
+        headers={"If-None-Match": etag},
+    )
+
+    assert segunda.status_code == 304
+    assert segunda.headers["etag"] == etag
+    assert segunda.headers["cache-control"] == "no-cache"
+
+
+def test_rota_enriquecimento_propaga_erro_real(carteira_tmp, monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from carteira_module import routes, service
+
+    def falhar(_numero: int) -> dict:
+        raise RuntimeError("carteira.db indisponivel")
+
+    monkeypatch.setattr(service, "enriquecimento_por_sap", falhar)
+    app = FastAPI()
+    app.include_router(routes.router)
+    cliente = TestClient(app, raise_server_exceptions=False)
+
+    resposta = cliente.get("/api/carteira/notas/por-sap/700500")
+
+    assert resposta.status_code == 500
+
+
 def test_rotas_notas_e_sincronizar(carteira_tmp, monkeypatch, tmp_path):
     monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path / "input"))
     from fastapi import FastAPI

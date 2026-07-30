@@ -59,6 +59,12 @@ textuais vazios permanecem `None`, conforme a normalização da Carteira; o
 tombstone preserva o último conjunto de dados e informa quando saiu da origem.
 Falhas SQLite não são convertidas no service.
 
+`GET /api/carteira/notas/por-sap/{numero}` expõe esse contrato sem acrescentar
+campos. A rota estática é declarada antes de `GET /notas/{id_onr}`. Ela envia
+`ETag: W/"{versao}"` e `Cache-Control: no-cache`; com `If-None-Match` exatamente
+igual ao ETag retorna `304` com os mesmos headers. Ausência continua sendo um
+corpo `200` do service; falhas reais continuam a ser respostas `500` do FastAPI.
+
 ## Movimentação (Fase 2)
 
 `movimentacao.py` move notas da carteira para o plano do Input, espelhando o
@@ -123,7 +129,8 @@ O split `meta>0` é idêntico à Fase 3 (zero-regressão dos números).
 
 ## APIs
 
-`GET /notas` (filtros+paginação), `GET /notas/{id_onr}`, `GET /resumo`,
+`GET /notas` (filtros+paginação), `GET /notas/por-sap/{numero}` (enriquecimento
+com ETag/304), `GET /notas/{id_onr}`, `GET /resumo`,
 `GET /dashboard` (Fase 3), `GET /sincronizacao`, `POST /sincronizar`.
 Movimentação (Fase 2): `POST /mover/preview` (não escreve),
 `POST /mover-para-plano` (X-User obrigatório; 422 bloqueada, 409 duplicata;
