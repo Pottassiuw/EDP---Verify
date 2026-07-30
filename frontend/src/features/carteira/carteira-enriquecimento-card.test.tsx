@@ -65,6 +65,16 @@ describe('CarteiraEnriquecimentoContent', () => {
     expect(html).toContain('POSTES - CAPEX');
   });
 
+  it('exibe travessão quando a data de tombstone é vazia', () => {
+    const html = render({
+      ...encontrada,
+      estado: 'ausente_na_origem',
+      ausente_na_origem_em: '',
+    });
+
+    expect(html).toContain('Ausente na origem desde —.');
+  });
+
   it('diferencia ausência e base nunca sincronizada', () => {
     const semCorrespondencia = render({
       ...encontrada,

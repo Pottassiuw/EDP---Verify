@@ -35,7 +35,7 @@ function exibir(valor: string | number | null): string {
 }
 
 function formatarData(valor: string | null): string {
-  if (valor === null) return '—';
+  if (valor === null || valor === '') return '—';
 
   const data = new Date(valor);
   return Number.isNaN(data.getTime())
