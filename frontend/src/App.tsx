@@ -110,7 +110,7 @@ function AppContent(): React.JSX.Element {
 
   function irParaInputFiltrado(filtros: Filtro[]): void {
     setFiltrosHandoff((prev) => ({
-      estado: { busca: "", filtros, somente2026: true },
+      estado: { busca: "", filtros, somente2026: true, somenteNotasMaes: false },
       id: (prev?.id ?? 0) + 1,
     }));
     setInputSub("visao");

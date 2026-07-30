@@ -5,7 +5,7 @@ import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
-  SidebarTrigger,
+  SidebarTrigger, useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -58,6 +58,8 @@ interface AppSidebarProps {
   setCarteiraSub: (s: CarteiraSubPage) => void;
 }
 
+const AUTO_CLOSE_DELAY_MS = 25000;
+
 export function AppSidebar({
   section,
   setSection,
@@ -70,6 +72,40 @@ export function AppSidebar({
   carteiraSub,
   setCarteiraSub,
 }: AppSidebarProps): React.JSX.Element {
+  const { open, setOpen, openMobile, setOpenMobile, isMobile } = useSidebar();
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetAutoCloseTimer = React.useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const isOpen = isMobile ? openMobile : open;
+    if (isOpen) {
+      timerRef.current = setTimeout(() => {
+        if (isMobile) {
+          setOpenMobile(false);
+        } else {
+          setOpen(false);
+        }
+      }, AUTO_CLOSE_DELAY_MS);
+    }
+  }, [open, openMobile, isMobile, setOpen, setOpenMobile]);
+
+  React.useEffect(() => {
+    resetAutoCloseTimer();
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [resetAutoCloseTimer]);
+
+  const handleActivity = React.useCallback(() => {
+    resetAutoCloseTimer();
+  }, [resetAutoCloseTimer]);
+
   function selectRelatoriosPage(page: RelatoriosPage): void {
     setRelatoriosPage(page);
     setSection("relatorios");
@@ -89,7 +125,12 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      onMouseEnter={handleActivity}
+      onMouseMove={handleActivity}
+      onClick={handleActivity}
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
