@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#161e2b; }
+  * { box-sizing: border-box; }
+  a { color:#00a859; text-decoration:none; }
+  a:hover { color:#1dbd6e; text-decoration:underline; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.22); border-radius:8px; border:2px solid transparent; background-clip:padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.36); background-clip:padding-box; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  [data-row]:focus-visible { outline:2px solid #00a859; outline-offset:-2px; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline:2px solid #00a859; outline-offset:-1px; }
+</style>
+</helmet>
+<div style="width:1440px; min-height:900px; display:flex; background:#161e2b; color:#eef2f8; font-family:Inter,system-ui,sans-serif; font-size:13px; line-height:1.45;">
+
+  <nav style="width:256px; flex:0 0 256px; background:#212c3e; display:flex; flex-direction:column; gap:2px; padding:10px 8px;">
+    <div style="display:flex; align-items:center; gap:8px; padding:5px 6px 12px 6px;">
+      <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true" style="flex-shrink:0;">
+        <circle cx="50" cy="50" r="30" fill="none" stroke="#6b5ce6" stroke-width="9"></circle>
+        <circle cx="50" cy="50" r="18" fill="none" stroke="#1f9fd6" stroke-width="9"></circle>
+        <circle cx="50" cy="50" r="7" fill="none" stroke="#00a859" stroke-width="9"></circle>
+      </svg>
+      <span style="font-size:14px; font-weight:600;">EDP Verify</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500; padding:6px 8px;">Plataforma</div>
+    <div style="display:flex; align-items:center; gap:9px; padding:8px; border-radius:6px; background:#283449; color:#eef2f8; font-size:13px; font-weight:500;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 20h18M7 20v-7M12 20V6M17 20v-11"></path></svg>
+      <span>Relatórios</span>
+      <span style="margin-left:auto; font-size:10px; color:#61708c;">▾</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1px; padding-left:22px; margin:2px 0 4px 14px; border-left:1px solid rgba(255,255,255,0.07);">
+      <sc-for list="{{ navSubs }}" as="p" hint-placeholder-count="6">
+        <div onClick="{{ p.pick }}" tabindex="0" onKeyDown="{{ p.key }}" data-row="1" style="padding:5px 8px; border-radius:6px; font-size:12.5px; cursor:pointer; color:{{ p.fg }}; background:{{ p.bg }};" style-hover="background:rgba(255,255,255,0.05);">{{ p.label }}</div>
+      </sc-for>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; padding:8px; border-radius:6px; color:#9aa9c2; font-size:13px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h12v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z"></path><path d="M17 10h2.4a2.5 2.5 0 0 1 0 5H17"></path><path d="M8 3c-.5 1 .5 1.6 0 2.6M12 3c-.5 1 .5 1.6 0 2.6"></path></svg>
+      <span>COFFEE</span><span style="margin-left:auto; font-size:10px; color:#61708c;">▸</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; padding:8px; border-radius:6px; color:#9aa9c2; font-size:13px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>
+      <span>Input</span><span style="margin-left:auto; font-size:10px; color:#61708c;">▸</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; padding:8px; border-radius:6px; color:#9aa9c2; font-size:13px; opacity:0.4;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      <span>De olho no BI</span><span style="margin-left:auto; font-size:9px;">soon</span>
+    </div>
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+      <div style="height:1px; background:rgba(255,255,255,0.07);"></div>
+      <div style="display:flex; align-items:center; gap:9px; padding:8px; border-radius:6px; color:#9aa9c2; font-size:13px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg>
+        <span>Configurações</span>
+      </div>
+    </div>
+  </nav>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:16px; padding:20px; overflow:hidden;">
+
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">Relatórios</span>
+        <h2 style="margin:0; font-size:21px; font-weight:600; line-height:1.15; letter-spacing:-0.03em;">{{ tituloPagina }}</h2>
+        <p style="margin:0; font-size:13px; color:#9aa9c2;">{{ subtituloPagina }}</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#61708c;">Dados atualizados em 26/07/2026 06:40</span>
+        <button onClick="{{ toggleNotes }}" style="background:transparent; border:1px solid rgba(255,255,255,0.12); color:#9aa9c2; padding:6px 10px; border-radius:6px; font-family:inherit; font-size:11.5px; cursor:pointer;">Anotações</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:0; border-bottom:1px solid rgba(255,255,255,0.12);">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+        <div onClick="{{ t.pick }}" tabindex="0" onKeyDown="{{ t.key }}" data-row="1" style="padding:8px 2px; margin-right:16px; font-size:13px; cursor:pointer; color:{{ t.fg }}; border-bottom:2px solid {{ t.bd }};">{{ t.label }}</div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">Filtros</span>
+      <select value="{{ mes }}" onChange="{{ onMes }}" style="height:34px; padding:0 11px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:#1b2433; color:#eef2f8; font-family:'IBM Plex Mono',monospace; font-size:13px;">
+        <option>Maio de 2026</option><option>Junho de 2026</option><option>Julho de 2026</option><option>Agosto de 2026</option>
+      </select>
+      <select value="{{ regional }}" onChange="{{ onRegional }}" style="height:34px; min-width:200px; padding:0 11px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:#1b2433; color:#eef2f8; font-family:'IBM Plex Mono',monospace; font-size:13px;">
+        <sc-for list="{{ regionalOptions }}" as="r" hint-placeholder-count="7"><option>{{ r }}</option></sc-for>
+      </select>
+      <input value="{{ busca }}" onChange="{{ onBusca }}" placeholder="Buscar dispositivo / plano…" style="height:34px; width:240px; padding:0 11px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:#1b2433; color:#eef2f8; font-family:inherit; font-size:13px;">
+      <span style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:500; padding:3px 9px; border-radius:999px; background:{{ escopoBg }}; color:{{ escopoCor }}; border:1px solid {{ escopoBorda }};">{{ escopoLabel }}</span>
+      <sc-if value="{{ temFiltro }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ limpar }}" style="background:transparent; border:none; color:#9aa9c2; font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline;">limpar filtros</button>
+      </sc-if>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Estado</span>
+        <select value="{{ cenario }}" onChange="{{ onCenario }}" style="height:34px; padding:0 11px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:#1b2433; color:#9aa9c2; font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+          <option value="base">1 · Déficit com cobertura parcial</option>
+          <option value="positivo">2 · Tudo dentro ou acima da meta</option>
+          <option value="semdados">3 · Sem dados de cobertura</option>
+        </select>
+      </div>
+    </div>
+
+    <sc-if value="{{ notes }}" hint-placeholder-val="{{ true }}">
+      
+    </sc-if>
+
+    <div style="flex:1; min-height:0; overflow:auto; padding-right:2px; display:flex; flex-direction:column; gap:16px;">
+
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+          <section style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">Estamos cobertos para a meta deste período?</span>
+              <sc-if value="{{ notes }}" hint-placeholder-val="{{ true }}"><span title="Risco primeiro, análise depois" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#fff; background:#00a859; border-radius:4px; padding:1px 6px;">N2</span></sc-if>
+            </div>
+            <div style="display:flex; gap:12px;">
+
+              <div style="flex:1; min-width:0; background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; padding:18px 20px; box-shadow:0 1px 2px rgba(0,0,0,0.30);">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">Carteira vs. meta</span>
+                <div style="display:flex; align-items:baseline; gap:8px; margin-top:9px;">
+                  <span style="font-size:34px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ pctCor }};">{{ pctTxt }}</span>
+                  <span style="font-size:13px; color:#9aa9c2;">de disponibilidade</span>
+                </div>
+                <p style="margin:6px 0 0 0; font-size:13px; color:#9aa9c2;">Carteira cobre <b style="color:#eef2f8; font-weight:500;">{{ pctTxt }}</b> da meta — <span style="font-family:'IBM Plex Mono',monospace;">{{ carteiraTxt }}</span> de <span style="font-family:'IBM Plex Mono',monospace;">{{ metaTxt }}</span> und.</p>
+                <div style="margin-top:14px; position:relative; height:16px;">
+                  <div style="position:absolute; left:0; right:0; top:5px; height:6px; background:#283449; border-radius:999px;"></div>
+                  <div style="position:absolute; left:0; top:4px; height:8px; width:{{ barPct }}; background:{{ pctCor }}; border-radius:999px;"></div>
+                  <div style="position:absolute; top:0; bottom:0; right:0; width:2px; background:#eef2f8;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:5px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#61708c;">
+                  <span>0</span><span>meta {{ metaTxt }}</span>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                  <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Executado</span>
+                    <span style="font-size:22px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ execTxt }}</span>
+                  </div>
+                  <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Postergadas</span>
+                    <span style="font-size:22px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:#f0a93b;">{{ postTxt }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="flex:1; min-width:0; background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; padding:18px 20px; box-shadow:0 1px 2px rgba(0,0,0,0.30);">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">{{ saldoTitulo }}</span>
+                <div style="display:flex; align-items:baseline; gap:8px; margin-top:9px;">
+                  <span style="font-size:34px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ saldoCor }};">{{ saldoTxt }}</span>
+                  <span style="font-size:13px; color:#9aa9c2;">und.</span>
+                </div>
+                <p style="margin:6px 0 0 0; font-size:13px; color:#9aa9c2;">{{ saldoFrase }}</p>
+                <p style="margin:3px 0 0 0; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#61708c;">{{ saldoSub }}</p>
+                <div style="margin-top:14px; padding:12px 14px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Gap financeiro estimado</span>
+                  <div style="font-size:22px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ saldoCor }}; margin-top:5px;">{{ gapTxt }}</div>
+                  <div style="font-size:11px; color:#61708c; margin-top:3px;">saldo × valor modular do dispositivo</div>
+                </div>
+                <sc-if value="{{ temDeficit }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top:14px; font-size:12px; color:#9aa9c2;">Concentração do déficit</div>
+                  <div style="display:flex; flex-direction:column; gap:6px; margin-top:7px;">
+                    <sc-for list="{{ deficitPorGrupo }}" as="g" hint-placeholder-count="3">
+                      <div style="display:flex; align-items:center; gap:9px;">
+                        <span style="width:78px; font-size:12px; color:#9aa9c2;">{{ g.nome }}</span>
+                        <div style="flex:1; height:6px; background:#283449; border-radius:999px; overflow:hidden;"><div style="height:100%; width:{{ g.w }}; background:#f0555c;"></div></div>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#9aa9c2; width:58px; text-align:right;">{{ g.txt }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="flex:1; min-width:0; background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; padding:18px 20px; box-shadow:0 1px 2px rgba(0,0,0,0.30);">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c; font-weight:500;">Cobertura possível do déficit</span>
+                  <span title="Nenhuma alocação é automática: a cobertura é uma recomendação a revisar." style="width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,0.12); color:#61708c; font-size:9px; display:inline-flex; align-items:center; justify-content:center; cursor:help;">?</span>
+                </div>
+                <sc-if value="{{ semDados }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px; padding:16px; border-radius:6px; background:rgba(240,169,59,0.13); border-left:3px solid #f0a93b;">
+                    <div style="font-size:13px; color:#eef2f8; font-weight:500;">Dados insuficientes para confirmar cobertura</div>
+                    <p style="margin:5px 0 0 0; font-size:12.5px; color:#9aa9c2; text-wrap:pretty;">A integração com o COFFEE não retornou notas para {{ mesLabel }}. Sem SAP real não há cobertura confirmada — trate os {{ deficitAbsTxt }} und. como descobertos.</p>
+                    <button style="margin-top:12px; background:#00a859; color:#fff; border:none; font-family:inherit; font-size:12.5px; font-weight:500; padding:7px 13px; border-radius:6px; cursor:pointer;">Sincronizar COFFEE</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ temCobertura }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex; align-items:baseline; gap:8px; margin-top:9px;">
+                    <span style="font-size:34px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:#1f9fd6;">{{ prontasTxt }}</span>
+                    <span style="font-size:13px; color:#9aa9c2;">und. supríveis por notas já disponíveis</span>
+                  </div>
+                  <div style="display:flex; height:8px; border-radius:999px; overflow:hidden; margin-top:16px; background:#283449;">
+                    <div title="COFFEE com SAP real, pronta para mover" style="width:{{ wProntas }}; background:#1f9fd6;"></div>
+                    <div title="Criada, aguardando SAP ou validação" style="width:{{ wPend }}; background:#f0a93b;"></div>
+                    <div title="Ainda será necessário criar/buscar notas" style="width:{{ wSem }}; background:#f0555c;"></div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="width:8px; height:8px; border-radius:2px; background:#1f9fd6;"></span><span style="font-size:12.5px; color:#9aa9c2; flex:1;">Potencial · COFFEE com SAP</span><span style="font-family:'IBM Plex Mono',monospace; font-size:13px;">{{ prontasTxt }} und.</span></div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="width:8px; height:8px; border-radius:2px; background:#f0a93b;"></span><span style="font-size:12.5px; color:#9aa9c2; flex:1;">Pendente de SAP/validação</span><span style="font-family:'IBM Plex Mono',monospace; font-size:13px;">{{ pendTxt }} und.</span></div>
+                    <div style="display:flex; align-items:center; gap:8px;"><span style="width:8px; height:8px; border-radius:2px; background:#f0555c;"></span><span style="font-size:12.5px; color:#9aa9c2; flex:1;">Sem cobertura identificada</span><span style="font-family:'IBM Plex Mono',monospace; font-size:13px;">{{ semCobTxt }} und.</span></div>
+                  </div>
+                  <p style="margin:14px 0 0 0; font-size:11.5px; color:#61708c; text-wrap:pretty;">Pendentes não entram no total confirmado. Nada é movido automaticamente.</p>
+                </sc-if>
+                <sc-if value="{{ semDeficit }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px; padding:16px; border-radius:6px; background:rgba(0,168,89,0.12); border-left:3px solid #00a859;">
+                    <div style="font-size:13px; color:#eef2f8; font-weight:500;">✓ Nenhum dispositivo abaixo da meta</div>
+                    <p style="margin:5px 0 0 0; font-size:12.5px; color:#9aa9c2; text-wrap:pretty;">Os {{ nRows }} planos do escopo estão em 100% ou acima. Sem déficit a cobrir — acompanhe as postergadas para não comprometer o próximo mês.</p>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12); flex-wrap:wrap;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Ações críticas</h3>
+              <span style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:500; padding:3px 9px 3px 7px; border-radius:999px; background:rgba(240,85,92,0.12); color:#f0555c; border:1px solid rgba(240,85,92,0.22);">{{ nCriticos }}</span>
+              <span style="font-size:12px; color:#61708c;">impacto R$ ↓ · %Disp ↑ · déficit ↓</span>
+              <sc-if value="{{ notes }}" hint-placeholder-val="{{ true }}"><span title="Ordem de criticidade" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#fff; background:#00a859; border-radius:4px; padding:1px 6px;">N3</span></sc-if>
+            </div>
+            <sc-if value="{{ semDeficit }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:48px 20px; text-align:center;">
+                <div style="font-size:14px; color:#eef2f8; font-weight:500;">Sem itens abaixo da meta</div>
+                <div style="font-size:12.5px; color:#61708c; margin-top:5px;">Nenhuma ação crítica para {{ mesLabel }} em {{ escopoLabel }}.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ temCriticos }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid; grid-template-columns:1.9fr 1fr 62px 76px 66px 74px 92px 1.3fr 120px; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <span>Plano / dispositivo</span><span>Regional</span><span style="text-align:right;">Meta</span><span style="text-align:right;">Carteira</span><span style="text-align:right;">Déficit</span><span style="text-align:right;">%Disp</span><span style="text-align:right;">R$ gap</span><span style="padding-left:14px;">Cobertura</span><span style="text-align:right;">Ação</span>
+              </div>
+              <sc-for list="{{ criticos }}" as="r" hint-placeholder-count="6">
+                <div data-row="1" tabindex="0" onClick="{{ r.open }}" onKeyDown="{{ r.key }}" style="display:grid; grid-template-columns:1.9fr 1fr 62px 76px 66px 74px 92px 1.3fr 120px; align-items:center; padding:11px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ r.rowBg }}; box-shadow:inset 2px 0 0 {{ r.cor }};" style-hover="background:#283449;">
+                  <div style="min-width:0; padding-right:10px;">
+                    <div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.nome }}</div>
+                    <div style="font-size:11px; color:#61708c;">{{ r.grupo }} · {{ r.unidade }}</div>
+                  </div>
+                  <span style="font-size:12.5px; color:#9aa9c2;">{{ r.regional }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:right; color:#9aa9c2;">{{ r.metaTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:right;">{{ r.carteiraTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:right; color:{{ r.cor }};">{{ r.saldoTxt }}</span>
+                  <div style="text-align:right; padding-left:10px;">
+                    <span style="display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:{{ r.tint }}; color:{{ r.cor }};">{{ r.pctTxt }}</span>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:right; padding-left:10px;">{{ r.gapTxt }}</span>
+                  <div style="padding-left:14px; display:flex; align-items:center; gap:6px; min-width:0;">
+                    <span style="font-size:10px; color:{{ r.statusCor }};">{{ r.statusIcone }}</span>
+                    <span style="font-size:12px; color:{{ r.statusCor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.statusLabel }}</span>
+                  </div>
+                  <span style="text-align:right; font-size:12px; color:#9aa9c2;">{{ r.acao }} →</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:16px;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Saldo por regional</h3>
+              <span style="font-size:12px; color:#61708c;">clique para filtrar · detalhe completo na aba Carteira por regional</span>
+              <sc-if value="{{ notes }}" hint-placeholder-val="{{ true }}"><span title="Drill-down: regional → filtro global" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#fff; background:#00a859; border-radius:4px; padding:1px 6px;">N4</span></sc-if>
+            </div>
+            <div style="display:grid; grid-template-columns:150px 1fr 70px 66px; gap:0 12px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; padding:10px 0 8px 0; margin-top:8px; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <span>Regional</span><span>Meta vs. carteira</span><span style="text-align:right;">Saldo</span><span style="text-align:right;">%Disp</span>
+            </div>
+            <sc-for list="{{ regionais }}" as="g" hint-placeholder-count="6">
+              <div onClick="{{ g.pick }}" tabindex="0" onKeyDown="{{ g.key }}" data-row="1" style="display:grid; grid-template-columns:150px 1fr 70px 66px; gap:0 12px; align-items:center; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ g.bg }};" style-hover="background:#283449;">
+                <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:{{ g.cor }};"></span>
+                  <span style="font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ g.nome }}</span>
+                </div>
+                <div style="position:relative; height:16px;">
+                  <div style="position:absolute; left:0; top:5px; height:6px; width:{{ g.metaW }}; background:#283449; border:1px solid rgba(255,255,255,0.07); border-radius:2px;"></div>
+                  <div style="position:absolute; left:0; top:4px; height:8px; width:{{ g.cartW }}; background:{{ g.cor }}; border-radius:2px;"></div>
+                  <div style="position:absolute; top:1px; bottom:1px; left:{{ g.metaW }}; width:2px; background:#eef2f8;"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ g.saldoCor }};">{{ g.saldoTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:500; text-align:right; color:{{ g.cor }};">{{ g.pctTxt }}</span>
+              </div>
+            </sc-for>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12); flex-wrap:wrap;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Detalhamento da carteira por dispositivo</h3>
+              <span style="font-size:12px; color:#61708c;">{{ nRows }} planos · agrupado por área</span>
+              <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">Ordenar</span>
+                <select value="{{ sort }}" onChange="{{ onSort }}" style="height:30px; padding:0 9px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:#1b2433; color:#eef2f8; font-family:'IBM Plex Mono',monospace; font-size:12px;">
+                  <option value="crit">Criticidade</option><option value="saldo">Saldo</option><option value="pct">%Disp</option><option value="gap">R$ gap</option><option value="nome">Nome</option>
+                </select>
+                <button onClick="{{ toggleCols }}" style="height:30px; background:#1b2433; border:1px solid rgba(255,255,255,0.12); color:#9aa9c2; font-family:inherit; font-size:12px; padding:0 10px; border-radius:6px; cursor:pointer;">{{ colsLabel }}</button>
+              </div>
+            </div>
+            <div style="max-height:520px; overflow:auto;">
+              <div style="position:sticky; top:0; z-index:2; display:grid; grid-template-columns:{{ detCols }}; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <span>Plano</span><span title="Unidade de medida" style="cursor:help;">U.M</span><span style="text-align:right;">Meta</span><span style="text-align:right;">Carteira</span><span style="text-align:right;">Saldo</span><span title="Disponibilidade = carteira ÷ meta" style="text-align:right; cursor:help;">%Disp</span><span style="padding-left:14px;">Meta vs. carteira</span><span>Cobertura</span>
+                <sc-if value="{{ showSec }}" hint-placeholder-val="{{ true }}"><span style="text-align:right;">Postergado</span><span style="text-align:right;">R$ gap</span></sc-if>
+              </div>
+              <sc-for list="{{ grupos }}" as="gr" hint-placeholder-count="3">
+                <div>
+                  <div onClick="{{ gr.toggle }}" tabindex="0" onKeyDown="{{ gr.key }}" data-row="1" style="display:flex; align-items:center; gap:9px; padding:9px 16px; background:#1b2433; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer;" style-hover="background:#283449;">
+                    <span style="font-size:9px; color:#61708c; width:9px;">{{ gr.chevron }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:#9aa9c2;">{{ gr.nome }}</span>
+                    <span style="font-size:11.5px; color:#61708c;">{{ gr.qtd }} planos</span>
+                    <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#61708c;">meta {{ gr.metaTxt }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#9aa9c2; width:110px; text-align:right;">carteira {{ gr.cartTxt }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:{{ gr.cor }}; width:56px; text-align:right;">{{ gr.pctTxt }}</span>
+                  </div>
+                  <sc-if value="{{ gr.aberto }}" hint-placeholder-val="{{ true }}">
+                    <sc-for list="{{ gr.rows }}" as="r" hint-placeholder-count="4">
+                      <div data-row="1" tabindex="0" onClick="{{ r.open }}" onKeyDown="{{ r.key }}" style="display:grid; grid-template-columns:{{ detCols }}; align-items:center; padding:9px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ r.rowBg }};" style-hover="background:#283449;">
+                        <span title="{{ r.nome }}" style="font-size:12.5px; padding-right:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.nome }}</span>
+                        <span style="font-size:11.5px; color:#61708c;">{{ r.unidade }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ r.metaTxt }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ r.carteiraTxt }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ r.saldoCor }};">{{ r.saldoSigTxt }}</span>
+                        <div style="text-align:right;">
+                          <span style="display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:{{ r.tint }}; color:{{ r.cor }};">{{ r.pctTxt }}</span>
+                        </div>
+                        <div style="padding:0 14px; position:relative; height:12px;">
+                          <div style="position:absolute; left:14px; right:14px; top:5px; height:4px; background:#283449; border-radius:2px;"></div>
+                          <div style="position:absolute; left:14px; top:4px; height:6px; width:{{ r.barW }}; background:{{ r.cor }}; border-radius:2px;"></div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                          <span style="font-size:10px; color:{{ r.statusCor }};">{{ r.statusIcone }}</span>
+                          <span style="font-size:12px; color:{{ r.statusCor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.statusLabel }}</span>
+                        </div>
+                        <sc-if value="{{ showSec }}" hint-placeholder-val="{{ true }}">
+                          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; color:#61708c;">{{ r.postTxt }}</span>
+                          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; color:#61708c;">{{ r.gapTxt }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ vazio }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:44px 20px; text-align:center;">
+                <div style="font-size:13px; color:#eef2f8;">Nenhum plano corresponde aos filtros</div>
+                <div style="font-size:12px; color:#61708c; margin-top:4px;">Ajuste a busca ou volte para SP (todas).</div>
+              </div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{ notes }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+              
+              
+              
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isRegional }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; gap:12px;">
+            <sc-for list="{{ regKpis }}" as="k" hint-placeholder-count="4">
+              <div style="flex:1; display:flex; flex-direction:column; gap:7px; padding:14px 16px; background:#212c3e; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">{{ k.label }}</span>
+                <span style="font-size:26px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ k.cor }};">{{ k.valor }}</span>
+                <span style="font-size:11.5px; color:#61708c;">{{ k.nota }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Ranking de regionais</h3>
+              <span style="font-size:12px; color:#61708c;">críticas no topo · clique aplica o filtro global</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1.1fr 1.6fr 80px 90px 80px 76px 96px 96px; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <span>Regional</span><span>Meta vs. carteira</span><span style="text-align:right;">Meta</span><span style="text-align:right;">Carteira</span><span style="text-align:right;">Saldo</span><span style="text-align:right;">%Disp</span><span style="text-align:right;">R$ gap</span><span style="text-align:right;">Postergado</span>
+            </div>
+            <sc-for list="{{ regionaisFull }}" as="g" hint-placeholder-count="6">
+              <div onClick="{{ g.pick }}" tabindex="0" onKeyDown="{{ g.key }}" data-row="1" style="display:grid; grid-template-columns:1.1fr 1.6fr 80px 90px 80px 76px 96px 96px; align-items:center; padding:11px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ g.bg }}; box-shadow:inset 2px 0 0 {{ g.cor }};" style-hover="background:#283449;">
+                <div style="min-width:0; padding-right:10px;">
+                  <div style="font-size:13px;">{{ g.nome }}</div>
+                  <div style="font-size:11px; color:#61708c;">{{ g.qtdTxt }} planos · {{ g.criticosTxt }} abaixo da meta</div>
+                </div>
+                <div style="position:relative; height:18px; padding-right:16px;">
+                  <div style="position:absolute; left:0; top:6px; height:6px; width:{{ g.metaW }}; background:#283449; border:1px solid rgba(255,255,255,0.07); border-radius:2px;"></div>
+                  <div style="position:absolute; left:0; top:5px; height:8px; width:{{ g.cartW }}; background:{{ g.cor }}; border-radius:2px;"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:{{ g.metaW }}; width:2px; background:#eef2f8;"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ g.metaTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ g.cartTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ g.saldoCor }};">{{ g.saldoTxt }}</span>
+                <div style="text-align:right;">
+                  <span style="display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:{{ g.tint }}; color:{{ g.cor }};">{{ g.pctTxt }}</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ g.gapTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#61708c;">{{ g.postTxt }}</span>
+              </div>
+            </sc-for>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Matriz regional × área</h3>
+              <span style="font-size:12px; color:#61708c;">%Disp por área dentro de cada regional — identifica onde o déficit se concentra</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1.2fr repeat(3, 1fr) 1fr; gap:0 12px; margin-top:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.12); font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">
+              <span>Regional</span><span style="text-align:center;">Construção</span><span style="text-align:center;">CSD</span><span style="text-align:center;">Outros</span><span style="text-align:right;">Total</span>
+            </div>
+            <sc-for list="{{ matriz }}" as="m" hint-placeholder-count="6">
+              <div style="display:grid; grid-template-columns:1.2fr repeat(3, 1fr) 1fr; gap:0 12px; align-items:center; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <span style="font-size:12.5px;">{{ m.nome }}</span>
+                <sc-for list="{{ m.celulas }}" as="c" hint-placeholder-count="3">
+                  <div style="text-align:center;">
+                    <span title="{{ c.tip }}" style="display:inline-block; min-width:56px; padding:3px 8px; border-radius:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; background:{{ c.bg }}; color:{{ c.cor }};">{{ c.txt }}</span>
+                  </div>
+                </sc-for>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:500; text-align:right; color:{{ m.totalCor }};">{{ m.totalTxt }}</span>
+              </div>
+            </sc-for>
+            <p style="margin:10px 0 0 0; font-size:11.5px; color:#61708c;">“—” indica que a regional não tem meta para a área no período. Passe o mouse para ver meta e carteira.</p>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMensal }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <sc-if value="{{ temAlertaMes }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:6px; background:rgba(240,169,59,0.13); border-left:3px solid #f0a93b;">
+              <span style="font-size:12.5px; color:#eef2f8; font-weight:500;">Meses com carteira abaixo da meta:</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#f0a93b;">{{ alertaMeses }}</span>
+              <span style="font-size:12.5px; color:#9aa9c2;">— antecipe a recomposição antes do fechamento.</span>
+            </div>
+          </sc-if>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:18px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Meta · carteira · executado</h3>
+              <span style="font-size:12px; color:#61708c;">12 meses · {{ escopoLabel }} · {{ mesLabel }} destacado</span>
+              <div style="margin-left:auto; display:flex; gap:14px; font-size:11px; color:#61708c;">
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:#283449; border:1px solid rgba(255,255,255,0.07);"></span>Meta</span>
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:#1dbd6e;"></span>Carteira</span>
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:#00a859;"></span>Executado</span>
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:#f0a93b;"></span>Postergadas altas</span>
+              </div>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:10px; height:230px; margin-top:20px;">
+              <sc-for list="{{ meses }}" as="m" hint-placeholder-count="12">
+                <div onClick="{{ m.pick }}" tabindex="0" onKeyDown="{{ m.key }}" data-row="1" style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; cursor:pointer; border-radius:6px; background:{{ m.bg }}; padding:6px 3px 0 3px;" style-hover="background:#283449;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:{{ m.labelCor }};">{{ m.cartTxt }}</span>
+                  <div style="width:100%; display:flex; align-items:flex-end; justify-content:center; gap:4px; height:{{ m.wrapH }};">
+                    <div title="Meta" style="width:40%; height:{{ m.metaH }}; background:#283449; border:1px solid rgba(255,255,255,0.07); border-radius:2px;"></div>
+                    <div title="Carteira" style="position:relative; width:40%; height:{{ m.cartH }}; background:{{ m.cor }}; border-radius:2px; display:flex; flex-direction:column; justify-content:flex-end;">
+                      <div title="Executado" style="width:100%; height:{{ m.execH }}; background:#00a859; border-radius:2px;"></div>
+                      <sc-if value="{{ m.temPost }}" hint-placeholder-val="{{ true }}">
+                        <div title="Postergadas acima da média" style="position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:7px; height:7px; border-radius:50%; background:#f0a93b;"></div>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:{{ m.labelCor }};">{{ m.nome }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Mensalização detalhada</h3>
+              <span style="font-size:12px; color:#61708c;">clique no mês para trocar a referência de todo o relatório</span>
+            </div>
+            <div style="display:grid; grid-template-columns:90px 1fr 90px 90px 90px 100px 84px 1.1fr; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <span>Mês</span><span>Carteira vs. meta</span><span style="text-align:right;">Meta</span><span style="text-align:right;">Carteira</span><span style="text-align:right;">Executado</span><span style="text-align:right;">Postergadas</span><span style="text-align:right;">%Disp</span><span>Situação</span>
+            </div>
+            <sc-for list="{{ mesesTabela }}" as="m" hint-placeholder-count="12">
+              <div onClick="{{ m.pick }}" tabindex="0" onKeyDown="{{ m.key }}" data-row="1" style="display:grid; grid-template-columns:90px 1fr 90px 90px 90px 100px 84px 1.1fr; align-items:center; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ m.rowBg }};" style-hover="background:#283449;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:{{ m.nomeCor }};">{{ m.nomeLongo }}</span>
+                <div style="position:relative; height:14px; padding-right:16px;">
+                  <div style="position:absolute; left:0; right:16px; top:5px; height:4px; background:#283449; border-radius:2px;"></div>
+                  <div style="position:absolute; left:0; top:4px; height:6px; width:{{ m.barW }}; background:{{ m.cor }}; border-radius:2px;"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ m.metaTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ m.cartTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ m.execTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ m.postCor }};">{{ m.postTxt }}</span>
+                <div style="text-align:right;">
+                  <span style="display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:{{ m.tint }}; color:{{ m.cor }};">{{ m.pctTxt }}</span>
+                </div>
+                <span style="font-size:12px; color:#9aa9c2; padding-left:14px;">{{ m.situacao }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFinanceiro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; gap:12px;">
+            <sc-for list="{{ finKpis }}" as="k" hint-placeholder-count="4">
+              <div style="flex:1; display:flex; flex-direction:column; gap:7px; padding:14px 16px; background:#212c3e; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">{{ k.label }}</span>
+                <span style="font-size:26px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ k.cor }};">{{ k.valor }}</span>
+                <span style="font-size:11.5px; color:#61708c;">{{ k.nota }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+            <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:16px;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Carteira R$ vs. meta R$ por área</h3>
+              <div style="display:flex; flex-direction:column; gap:14px; margin-top:14px;">
+                <sc-for list="{{ finAreas }}" as="a" hint-placeholder-count="3">
+                  <div>
+                    <div style="display:flex; align-items:baseline; gap:8px;">
+                      <span style="font-size:12.5px;">{{ a.nome }}</span>
+                      <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12.5px;">{{ a.cartTxt }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#61708c;">/ {{ a.metaTxt }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:{{ a.cor }}; width:52px; text-align:right;">{{ a.pctTxt }}</span>
+                    </div>
+                    <div style="position:relative; height:14px; margin-top:6px;">
+                      <div style="position:absolute; left:0; right:0; top:4px; height:6px; background:#283449; border-radius:999px;"></div>
+                      <div style="position:absolute; left:0; top:3px; height:8px; width:{{ a.barW }}; background:{{ a.cor }}; border-radius:999px;"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:11px; color:#61708c;">
+                      <span>gap {{ a.gapTxt }}</span><span>valor modular médio {{ a.modTxt }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+
+            <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:16px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Onde o gap custa mais</h3>
+                <span style="font-size:12px; color:#61708c;">top planos por R$</span>
+              </div>
+              <sc-if value="{{ semDeficit }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px; padding:16px; border-radius:6px; background:rgba(0,168,89,0.12); border-left:3px solid #00a859; font-size:12.5px; color:#9aa9c2;">Sem gap financeiro no escopo — carteira igual ou acima da meta em todos os planos.</div>
+              </sc-if>
+              <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+                <sc-for list="{{ finTop }}" as="t" hint-placeholder-count="5">
+                  <div onClick="{{ t.open }}" tabindex="0" onKeyDown="{{ t.key }}" data-row="1" style="cursor:pointer; padding:8px 10px; border-radius:6px;" style-hover="background:#283449;">
+                    <div style="display:flex; align-items:baseline; gap:8px;">
+                      <span style="font-size:12.5px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.nome }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#f0555c;">{{ t.gapTxt }}</span>
+                    </div>
+                    <div style="height:6px; background:#283449; border-radius:999px; margin-top:6px; overflow:hidden;"><div style="height:100%; width:{{ t.w }}; background:#f0555c;"></div></div>
+                    <div style="display:flex; gap:10px; margin-top:5px; font-size:11px; color:#61708c;">
+                      <span>{{ t.regional }}</span><span>déficit {{ t.defTxt }} {{ t.unidade }}</span><span>modular {{ t.modTxt }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Financeiro por regional</h3>
+              <span style="font-size:12px; color:#61708c;">valores estimados pelo valor modular vigente</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1.2fr 120px 120px 120px 1fr 80px; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <span>Regional</span><span style="text-align:right;">Meta R$</span><span style="text-align:right;">Carteira R$</span><span style="text-align:right;">Gap R$</span><span>Participação no gap</span><span style="text-align:right;">%Disp</span>
+            </div>
+            <sc-for list="{{ finRegionais }}" as="g" hint-placeholder-count="6">
+              <div onClick="{{ g.pick }}" tabindex="0" onKeyDown="{{ g.key }}" data-row="1" style="display:grid; grid-template-columns:1.2fr 120px 120px 120px 1fr 80px; align-items:center; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ g.bg }};" style-hover="background:#283449;">
+                <span style="font-size:12.5px;">{{ g.nome }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ g.metaRs }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ g.cartRs }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ g.gapCor }};">{{ g.gapRs }}</span>
+                <div style="padding-right:16px;"><div style="height:6px; background:#283449; border-radius:999px; overflow:hidden;"><div style="height:100%; width:{{ g.gapW }}; background:{{ g.gapCor }};"></div></div></div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:500; text-align:right; color:{{ g.cor }};">{{ g.pctTxt }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPosterg }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; gap:12px;">
+            <sc-for list="{{ postKpis }}" as="k" hint-placeholder-count="4">
+              <div style="flex:1; display:flex; flex-direction:column; gap:7px; padding:14px 16px; background:#212c3e; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">{{ k.label }}</span>
+                <span style="font-size:26px; font-weight:600; line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ k.cor }};">{{ k.valor }}</span>
+                <span style="font-size:11.5px; color:#61708c;">{{ k.nota }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:6px; background:#283449; border-left:3px solid #f0a93b;">
+            <span style="font-size:12.5px; color:#9aa9c2; text-wrap:pretty;">Postergadas saem do mês de referência mas continuam na carteira do ano. O impacto aparece no mês de destino — confira a aba Mensalização antes de repostergar.</span>
+          </div>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.12);">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Planos com itens postergados</h3>
+              <span style="font-size:12px; color:#61708c;">{{ mesLabel }} · clique abre o detalhe do plano</span>
+            </div>
+            <sc-if value="{{ semPostergadas }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:44px 20px; text-align:center;">
+                <div style="font-size:14px; color:#eef2f8; font-weight:500;">Nenhuma postergação no período</div>
+                <div style="font-size:12.5px; color:#61708c; margin-top:5px;">Todos os itens do escopo permanecem no mês de referência.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ temPostergadas }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid; grid-template-columns:1.7fr 1fr 90px 100px 110px 96px 110px 1fr; padding:9px 16px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:#61708c; background:#161e2b; border-bottom:1px solid rgba(255,255,255,0.12);">
+                <span>Plano</span><span>Regional</span><span style="text-align:right;">Postergado</span><span style="text-align:right;">% carteira</span><span style="text-align:right;">R$ deslocado</span><span style="text-align:right;">Destino</span><span style="text-align:right;">Reincidência</span><span>Efeito na meta</span>
+              </div>
+              <sc-for list="{{ postRows }}" as="r" hint-placeholder-count="8">
+                <div onClick="{{ r.open }}" tabindex="0" onKeyDown="{{ r.key }}" data-row="1" style="display:grid; grid-template-columns:1.7fr 1fr 90px 100px 110px 96px 110px 1fr; align-items:center; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; background:{{ r.rowBg }};" style-hover="background:#283449;">
+                  <div style="min-width:0; padding-right:10px;">
+                    <div style="font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.nome }}</div>
+                    <div style="font-size:11px; color:#61708c;">{{ r.grupo }}</div>
+                  </div>
+                  <span style="font-size:12px; color:#9aa9c2;">{{ r.regional }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#f0a93b;">{{ r.postTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ r.pctCartTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right;">{{ r.rsTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:#9aa9c2;">{{ r.destino }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; text-align:right; color:{{ r.reincCor }};">{{ r.reincTxt }}</span>
+                  <span style="font-size:12px; padding-left:14px; color:{{ r.efeitoCor }};">{{ r.efeito }}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Postergadas por mês</h3>
+              <span style="font-size:12px; color:#61708c;">volume deslocado ao longo do ano · a média é a linha de referência</span>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:8px; height:120px; margin-top:16px;">
+              <sc-for list="{{ postMeses }}" as="m" hint-placeholder-count="12">
+                <div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ m.labelCor }};">{{ m.postTxt }}</span>
+                  <div style="width:56%; height:{{ m.h }}; background:{{ m.cor }}; border-radius:2px;"></div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ m.labelCor }};">{{ m.nome }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isExportar }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid; grid-template-columns:1.35fr 1fr; gap:16px; align-items:start;">
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:18px 20px;">
+            <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Exportar relatório</h3>
+            <p style="margin:5px 0 0 0; font-size:12.5px; color:#9aa9c2;">A exportação usa exatamente os filtros ativos no topo — o arquivo carrega o escopo no nome.</p>
+
+            <div style="margin-top:16px; padding:12px 14px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Escopo do arquivo</span>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; padding:3px 9px; border-radius:999px; background:#283449; border:1px solid rgba(255,255,255,0.12);">{{ mesLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; padding:3px 9px; border-radius:999px; background:{{ escopoBg }}; color:{{ escopoCor }}; border:1px solid {{ escopoBorda }};">{{ escopoLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; padding:3px 9px; border-radius:999px; background:#283449; border:1px solid rgba(255,255,255,0.12);">{{ nRows }} planos</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; padding:3px 9px; border-radius:999px; background:#283449; border:1px solid rgba(255,255,255,0.12);">{{ nCriticos }} abaixo da meta</span>
+              </div>
+              <div style="margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#9aa9c2;">{{ nomeArquivo }}</div>
+            </div>
+
+            <div style="margin-top:18px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Blocos incluídos</span>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:9px;">
+                <sc-for list="{{ blocos }}" as="b" hint-placeholder-count="6">
+                  <div onClick="{{ b.toggle }}" tabindex="0" onKeyDown="{{ b.key }}" data-row="1" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px; cursor:pointer; background:{{ b.bg }}; border:1px solid {{ b.borda }};">
+                    <span style="width:16px; height:16px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; color:#fff; background:{{ b.boxBg }}; border:1px solid {{ b.boxBorda }};">{{ b.check }}</span>
+                    <span style="font-size:12.5px; flex:1;">{{ b.label }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#61708c;">{{ b.linhas }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="margin-top:18px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">Formato</span>
+              <div style="display:flex; gap:8px; margin-top:9px;">
+                <sc-for list="{{ formatos }}" as="f" hint-placeholder-count="3">
+                  <div onClick="{{ f.pick }}" tabindex="0" onKeyDown="{{ f.key }}" data-row="1" style="flex:1; padding:12px 14px; border-radius:11px; cursor:pointer; background:{{ f.bg }}; border:1px solid {{ f.borda }};">
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:{{ f.fg }};">{{ f.ext }}</div>
+                    <div style="font-size:11.5px; color:#61708c; margin-top:3px;">{{ f.nota }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; margin-top:20px;">
+              <button style="background:#00a859; color:#fff; border:none; padding:10px 16px; border-radius:6px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer;">Gerar arquivo</button>
+              <button style="background:#283449; color:#eef2f8; border:1px solid rgba(255,255,255,0.12); padding:10px 14px; border-radius:6px; font-family:inherit; font-size:13px; cursor:pointer;">Agendar envio mensal</button>
+              <span style="font-size:11.5px; color:#61708c;">A geração roda no servidor e avisa por toast ao concluir.</span>
+            </div>
+          </section>
+
+          <section style="background:#212c3e; border:1px solid rgba(255,255,255,0.12); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,0.30); padding:18px 20px;">
+            <h3 style="margin:0; font-size:15px; font-weight:600; letter-spacing:-0.015em;">Exportações recentes</h3>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+              <sc-for list="{{ historico }}" as="h" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:6px;">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ h.arquivo }}</div>
+                    <div style="font-size:11px; color:#61708c;">{{ h.quando }} · {{ h.autor }}</div>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#61708c;">{{ h.tamanho }}</span>
+                  <span style="font-size:12px; color:#00a859;">baixar</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:18px; padding:12px 14px; border-radius:6px; background:#283449; border-left:3px solid #1f9fd6;">
+              <div style="font-size:12.5px; font-weight:500;">Envio mensal ativo</div>
+              <p style="margin:5px 0 0 0; font-size:12px; color:#9aa9c2; text-wrap:pretty;">Todo dia 1º às 07:00, XLSX do escopo SP (todas) para engenharia-recomposicao@edp.com.br.</p>
+            </div>
+          </section>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ sel }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div onClick="{{ close }}" style="position:fixed; inset:0; background:rgba(10,14,22,0.6); z-index:40;"></div>
+      <aside style="position:fixed; top:0; right:0; bottom:0; width:470px; z-index:41; background:#212c3e; border-left:1px solid rgba(255,255,255,0.12); box-shadow:0 24px 60px rgba(0,0,0,0.45); display:flex; flex-direction:column;">
+        <div style="padding:18px 20px; border-bottom:1px solid rgba(255,255,255,0.12);">
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <div style="flex:1; min-width:0;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#61708c;">{{ sel.grupo }} · {{ sel.regional }}</span>
+              <h3 style="margin:4px 0 0 0; font-size:18px; font-weight:600; letter-spacing:-0.03em;">{{ sel.nome }}</h3>
+            </div>
+            <button onClick="{{ close }}" style="background:transparent; border:1px solid rgba(255,255,255,0.12); color:#9aa9c2; width:28px; height:28px; border-radius:6px; cursor:pointer; font-family:inherit;">✕</button>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">Meta</span><span style="font-size:17px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ sel.metaTxt }}</span></div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">Carteira</span><span style="font-size:17px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ sel.carteiraTxt }}</span></div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">Saldo</span><span style="font-size:17px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ sel.saldoCor }};">{{ sel.saldoSigTxt }}</span></div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px; padding:10px 12px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:11px;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#61708c;">R$ gap</span><span style="font-size:17px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ sel.saldoCor }};">{{ sel.gapTxt }}</span></div>
+          </div>
+        </div>
+        <div style="flex:1; overflow:auto; padding:16px 20px;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="font-size:11px; color:{{ sel.statusCor }};">{{ sel.statusIcone }}</span>
+            <span style="font-size:13px; font-weight:600; color:{{ sel.statusCor }};">{{ sel.statusLabel }}</span>
+          </div>
+          <p style="margin:7px 0 0 0; font-size:12.5px; color:#9aa9c2; text-wrap:pretty;">{{ sel.resumo }}</p>
+
+          <div style="margin-top:16px; display:flex; height:8px; border-radius:999px; overflow:hidden; background:#283449;">
+            <div style="width:{{ sel.wConf }}; background:#00a859;"></div>
+            <div style="width:{{ sel.wPot }}; background:#1f9fd6;"></div>
+            <div style="width:{{ sel.wPend }}; background:#f0a93b;"></div>
+            <div style="width:{{ sel.wSem }}; background:#f0555c;"></div>
+          </div>
+
+          <div style="margin-top:18px;">
+            <div style="display:flex; align-items:center; gap:7px;"><span style="width:8px; height:8px; border-radius:2px; background:#00a859;"></span><span style="font-size:12.5px; font-weight:600;">Notas já na carteira / plano</span><span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#61708c;">{{ sel.confTxt }} {{ sel.unidade }}</span></div>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <sc-for list="{{ sel.notasCarteira }}" as="n" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:10px; padding:9px 11px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); border-radius:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px;">{{ n.id }}</span>
+                  <span style="font-size:11.5px; color:#61708c; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n.origem }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#9aa9c2;">{{ n.qtd }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;">
+            <div style="display:flex; align-items:center; gap:7px;"><span style="width:8px; height:8px; border-radius:2px; background:#1f9fd6;"></span><span style="font-size:12.5px; font-weight:600;">COFFEE · prontas para mover ao plano</span><span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#61708c;">{{ sel.potTxt }} {{ sel.unidade }}</span></div>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <sc-for list="{{ sel.notasCoffee }}" as="n" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:10px; padding:9px 11px; background:rgba(31,159,214,0.13); border:1px solid rgba(31,159,214,0.28); border-radius:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#1f9fd6;">{{ n.id }}</span>
+                  <span style="font-size:11.5px; color:#9aa9c2; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n.origem }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px;">{{ n.qtd }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ sel.semCoffee }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:11px; border-radius:6px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); font-size:11.5px; color:#61708c;">Nenhuma nota do COFFEE com SAP real para este plano.</div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;">
+            <div style="display:flex; align-items:center; gap:7px;"><span style="width:8px; height:8px; border-radius:2px; background:#f0a93b;"></span><span style="font-size:12.5px; font-weight:600;">Pendentes de SAP / validação</span><span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#61708c;">{{ sel.pendTxt }} {{ sel.unidade }}</span></div>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <sc-for list="{{ sel.notasPend }}" as="n" hint-placeholder-count="1">
+                <div style="display:flex; align-items:center; gap:10px; padding:9px 11px; background:rgba(240,169,59,0.13); border:1px solid rgba(240,169,59,0.28); border-radius:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#f0a93b;">{{ n.id }}</span>
+                  <span style="font-size:11.5px; color:#9aa9c2; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n.origem }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px;">{{ n.qtd }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ sel.semPend }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:11px; border-radius:6px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); font-size:11.5px; color:#61708c;">Nada aguardando validação.</div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="margin-top:18px; padding:12px 14px; border-radius:6px; background:{{ sel.faltaBg }}; border-left:3px solid {{ sel.faltaCor }};">
+            <div style="font-size:12.5px; color:#9aa9c2;">Ainda falta cobrir</div>
+            <div style="font-size:22px; font-weight:600; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:{{ sel.faltaCor }};">{{ sel.faltaTxt }} {{ sel.unidade }}</div>
+            <p style="margin:4px 0 0 0; font-size:11.5px; color:#9aa9c2; text-wrap:pretty;">{{ sel.faltaFrase }}</p>
+          </div>
+
+          <p style="margin:14px 0 0 0; padding:11px 13px; border-radius:6px; background:#1b2433; border:1px solid rgba(255,255,255,0.07); font-size:11.5px; color:#61708c; text-wrap:pretty;">A cobertura acima é uma <b style="color:#9aa9c2; font-weight:500;">recomendação</b>. Nenhuma nota é movida automaticamente para o plano — revise origem, quantidade e data antes de confirmar.</p>
+        </div>
+        <div style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.12); display:flex; gap:8px;">
+          <button style="flex:1; background:#00a859; color:#fff; border:none; padding:9px 12px; border-radius:6px; font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer;">Revisar cobertura</button>
+          <button style="background:#283449; color:#eef2f8; border:1px solid rgba(255,255,255,0.12); padding:9px 12px; border-radius:6px; font-family:inherit; font-size:12.5px; cursor:pointer;">Ver notas</button>
+          <button style="background:#283449; color:#eef2f8; border:1px solid rgba(255,255,255,0.12); padding:9px 12px; border-radius:6px; font-family:inherit; font-size:12.5px; cursor:pointer;">Abrir no plano</button>
+        </div>
+      </aside>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:980},&quot;paginaInicial&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;regional&quot;,&quot;mensalizacao&quot;,&quot;financeiro&quot;,&quot;postergacoes&quot;,&quot;exportar&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Navegação&quot;},&quot;cenario&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;positivo&quot;,&quot;semdados&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Navegação&quot;},&quot;mostrarAnotacoes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Navegação&quot;}}">
+const BASE = [
+  {id:'d1', nome:'Poste concreto DT 11m', grupo:'Construção', regional:'Litoral', unidade:'und', meta:96, carteira:76, valor:4200, post:6, reinc:2, exec:61, coffee:14, pend:6,
+   nc:[{id:'NT-448120', origem:'Plano jul/26 · OS 22841', qtd:'42'},{id:'NT-448377', origem:'Plano jul/26 · OS 22903', qtd:'34'}],
+   ncf:[{id:'NT-451902', origem:'COFFEE · SAP 4500128841', qtd:'9'},{id:'NT-451930', origem:'COFFEE · SAP 4500128877', qtd:'5'}],
+   np:[{id:'NT-452011', origem:'COFFEE · aguardando SAP', qtd:'6'}]},
+  {id:'d2', nome:'Transformador 45 kVA', grupo:'CSD', regional:'Vale do Paraíba', unidade:'und', meta:48, carteira:39, valor:9800, post:3, reinc:1, exec:30, coffee:9, pend:0,
+   nc:[{id:'NT-447715', origem:'Plano jul/26 · OS 22610', qtd:'39'}],
+   ncf:[{id:'NT-452240', origem:'COFFEE · SAP 4500129014', qtd:'9'}], np:[]},
+  {id:'d3', nome:'Chave fusível 100 A', grupo:'CSD', regional:'Alto Tietê', unidade:'und', meta:60, carteira:54, valor:1450, post:2, reinc:0, exec:44, coffee:0, pend:5,
+   nc:[{id:'NT-446980', origem:'Plano jul/26 · OS 22488', qtd:'54'}], ncf:[],
+   np:[{id:'NT-452388', origem:'COFFEE · validação técnica', qtd:'5'}]},
+  {id:'d4', nome:'Cabo AL 1/0 protegido', grupo:'Construção', regional:'Mogi', unidade:'km', meta:40, carteira:33, valor:6100, post:1, reinc:0, exec:25, coffee:6, pend:0,
+   nc:[{id:'NT-448902', origem:'Plano jul/26 · OS 22755', qtd:'33'}],
+   ncf:[{id:'NT-452517', origem:'COFFEE · SAP 4500129210', qtd:'6'}], np:[]},
+  {id:'d5', nome:'Religador automático 630 A', grupo:'Outros', regional:'ES Norte', unidade:'und', meta:24, carteira:20, valor:21500, post:0, reinc:0, exec:14, coffee:0, pend:0,
+   nc:[{id:'NT-449330', origem:'Plano jul/26 · OS 22812', qtd:'20'}], ncf:[], np:[]},
+  {id:'d6', nome:'Estrutura N4 secundária', grupo:'Construção', regional:'Litoral', unidade:'und', meta:30, carteira:28, valor:2600, post:2, reinc:1, exec:21, coffee:2, pend:0,
+   nc:[{id:'NT-447401', origem:'Plano jul/26 · OS 22530', qtd:'28'}],
+   ncf:[{id:'NT-452640', origem:'COFFEE · SAP 4500129388', qtd:'2'}], np:[]},
+  {id:'d7', nome:'Poste concreto DT 9m', grupo:'Construção', regional:'Campinas', unidade:'und', meta:84, carteira:86, valor:3100, post:4, reinc:0, exec:63, coffee:0, pend:0,
+   nc:[{id:'NT-446210', origem:'Plano jul/26 · OS 22301', qtd:'86'}], ncf:[], np:[]},
+  {id:'d8', nome:'Medidor polifásico 4 fios', grupo:'CSD', regional:'Vale do Paraíba', unidade:'und', meta:72, carteira:72, valor:890, post:5, reinc:2, exec:54, coffee:0, pend:0,
+   nc:[{id:'NT-446644', origem:'Plano jul/26 · OS 22380', qtd:'72'}], ncf:[], np:[]},
+  {id:'d9', nome:'Cruzeta polimérica 2,4m', grupo:'Construção', regional:'Alto Tietê', unidade:'und', meta:66, carteira:68, valor:740, post:2, reinc:0, exec:52, coffee:0, pend:0,
+   nc:[{id:'NT-446852', origem:'Plano jul/26 · OS 22420', qtd:'68'}], ncf:[], np:[]},
+  {id:'d10', nome:'Para-raios 12 kV', grupo:'Outros', regional:'ES Sul', unidade:'und', meta:54, carteira:54, valor:1180, post:1, reinc:0, exec:40, coffee:0, pend:0,
+   nc:[{id:'NT-447110', origem:'Plano jul/26 · OS 22466', qtd:'54'}], ncf:[], np:[]},
+  {id:'d11', nome:'Chave faca 400 A', grupo:'CSD', regional:'Mogi', unidade:'und', meta:36, carteira:36, valor:2050, post:1, reinc:0, exec:27, coffee:0, pend:0,
+   nc:[{id:'NT-447288', origem:'Plano jul/26 · OS 22501', qtd:'36'}], ncf:[], np:[]}
+];
+const MESES = [
+  {nome:'Ago', longo:'Ago/25', meta:540, cart:552, exec:531, post:8},{nome:'Set', longo:'Set/25', meta:558, cart:566, exec:540, post:12},
+  {nome:'Out', longo:'Out/25', meta:572, cart:560, exec:534, post:19},{nome:'Nov', longo:'Nov/25', meta:590, cart:601, exec:572, post:9},
+  {nome:'Dez', longo:'Dez/25', meta:512, cart:498, exec:470, post:22},{nome:'Jan', longo:'Jan/26', meta:566, cart:574, exec:548, post:11},
+  {nome:'Fev', longo:'Fev/26', meta:544, cart:530, exec:502, post:18},{nome:'Mar', longo:'Mar/26', meta:598, cart:604, exec:571, post:10},
+  {nome:'Abr', longo:'Abr/26', meta:604, cart:588, exec:556, post:16},{nome:'Mai', longo:'Mai/26', meta:610, cart:592, exec:559, post:21},
+  {nome:'Jun', longo:'Jun/26', meta:606, cart:581, exec:544, post:24},{nome:'Jul', longo:'Jul/26', meta:610, cart:566, exec:402, post:27}
+];
+const PAGES = [
+  {id:'dashboard', label:'Dashboard Geral', titulo:'Plano de Recomposição', sub:'Centro de decisão operacional — risco, cobertura e ação para a referência ativa.'},
+  {id:'regional', label:'Carteira por regional', titulo:'Carteira por regional', sub:'Comparativo de meta × carteira entre regionais e áreas, com o gap financeiro de cada uma.'},
+  {id:'mensalizacao', label:'Mensalização', titulo:'Mensalização', sub:'Série de 12 meses: meta, carteira, executado e postergadas — antecipe meses sem carteira.'},
+  {id:'financeiro', label:'Financeiro', titulo:'Financeiro', sub:'Conversão da carteira em R$ pelo valor modular: onde o gap custa mais.'},
+  {id:'postergacoes', label:'Postergações', titulo:'Postergações', sub:'Itens deslocados para fora do mês de referência e o efeito deles no plano.'},
+  {id:'exportar', label:'Exportar', titulo:'Exportar', sub:'Gera o pacote do relatório com os filtros ativos.'}
+];
+const BLOCOS = [
+  {id:'resumo', label:'Resumo de decisão', linhas:'3 blocos'},
+  {id:'criticas', label:'Ações críticas', linhas:'linhas abaixo da meta'},
+  {id:'detalhe', label:'Detalhamento por dispositivo', linhas:'todos os planos'},
+  {id:'regional', label:'Carteira por regional', linhas:'regionais + matriz'},
+  {id:'mensal', label:'Mensalização', linhas:'12 meses'},
+  {id:'notas', label:'Notas de cobertura (COFFEE)', linhas:'carteira + potencial'}
+];
+const HISTORICO = [
+  {arquivo:'recomposicao_2026-06_SP-todas.xlsx', quando:'01/07/2026 07:00', autor:'envio automático', tamanho:'248 KB'},
+  {arquivo:'recomposicao_2026-06_Litoral.xlsx', quando:'28/06/2026 15:12', autor:'m.andrade', tamanho:'96 KB'},
+  {arquivo:'recomposicao_2026-05_SP-todas.pdf', quando:'02/06/2026 09:41', autor:'r.tavares', tamanho:'1,2 MB'},
+  {arquivo:'recomposicao_2026-05_SP-todas.xlsx', quando:'01/06/2026 07:00', autor:'envio automático', tamanho:'241 KB'}
+];
+const VERDE = '#00a859', VERDE2 = '#1dbd6e', AMBAR = '#f0a93b', VERM = '#f0555c', BLUE = '#1f9fd6', MUTE = '#61708c', DIM = '#9aa9c2';
+const TINT = { '#00a859':'rgba(0,168,89,0.12)', '#f0a93b':'rgba(240,169,59,0.13)', '#f0555c':'rgba(240,85,92,0.12)' };
+const RS = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', notation:'compact' });
+
+class Component extends DCLogic {
+  state = {
+    pagina: this.props.paginaInicial || 'dashboard',
+    cenario: this.props.cenario || 'base',
+    mes: 'Julho de 2026',
+    regional: 'SP (todas)',
+    busca: '',
+    sel: null,
+    sort: 'crit',
+    notes: this.props.mostrarAnotacoes !== false,
+    cols: true,
+    expanded: { 'Construção':true, 'CSD':true, 'Outros':true },
+    blocos: { resumo:true, criticas:true, detalhe:true, regional:true, mensal:false, notas:true },
+    formato: 'xlsx'
+  };
+  componentDidMount(){
+    this._esc = e => { if(e.key === 'Escape') this.setState({ sel:null }); };
+    window.addEventListener('keydown', this._esc);
+  }
+  componentWillUnmount(){ window.removeEventListener('keydown', this._esc); }
+
+  n(v){ return Number(v).toLocaleString('pt-BR', { maximumFractionDigits:2 }); }
+  brl(v){ return RS.format(Math.abs(v)); }
+  farol(p){ return p >= 1 ? VERDE : (p >= 0.85 ? AMBAR : VERM); }
+  enter(fn){ return e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } }; }
+
+  dados(){
+    const c = this.state.cenario;
+    return BASE.map(r => {
+      const o = Object.assign({}, r);
+      if(c === 'positivo'){ o.carteira = r.carteira < r.meta ? r.meta + (r.id === 'd1' ? 8 : (r.id === 'd5' ? 1 : 3)) : r.carteira; o.coffee = 0; o.pend = 0; o.ncf = []; o.np = []; }
+      if(c === 'semdados'){ o.coffee = 0; o.pend = 0; o.ncf = []; o.np = []; }
+      return o;
+    });
+  }
+
+  enrich(r){
+    const saldo = r.carteira - r.meta, pct = r.carteira / r.meta, def = saldo < 0 ? -saldo : 0;
+    const cor = this.farol(pct), sd = this.state.cenario === 'semdados';
+    const cob = Math.min(r.coffee || 0, def), pen = Math.min(r.pend || 0, def - cob), sem = def - cob - pen;
+    let st;
+    if(def === 0) st = { label:'Meta atendida', icone:'✓', cor:VERDE };
+    else if(sd) st = { label:'Dados insuficientes', icone:'?', cor:AMBAR };
+    else if(cob >= def) st = { label:'Cobertura integral identificada', icone:'●', cor:BLUE };
+    else if(cob > 0) st = { label:'Cobertura parcial', icone:'◐', cor:BLUE };
+    else if(pen > 0) st = { label:'Aguardando validação/SAP', icone:'◔', cor:AMBAR };
+    else st = { label:'Sem cobertura identificada', icone:'✕', cor:VERM };
+    return Object.assign({}, r, {
+      saldo, pct, def, cor, tint: TINT[cor], cob, pen, sem, gapv: def * r.valor, st,
+      metaTxt: this.n(r.meta), carteiraTxt: this.n(r.carteira),
+      saldoTxt: this.n(saldo), saldoSigTxt: (saldo > 0 ? '+' : '') + this.n(saldo),
+      saldoCor: saldo < 0 ? VERM : MUTE,
+      pctTxt: Math.round(pct * 100) + '%',
+      gapTxt: def ? this.brl(def * r.valor) : '—',
+      postTxt: r.post ? this.n(r.post) : '—',
+      barW: 'calc(' + Math.min(100, pct * 100) + '% - 28px)',
+      statusLabel: st.label, statusCor: st.cor, statusIcone: st.icone,
+      acao: def === 0 ? 'Ver plano' : (cob > 0 ? 'Revisar cobertura' : (pen > 0 ? 'Cobrar validação' : 'Criar notas'))
+    });
+  }
+
+  renderVals(){
+    const s = this.state, self = this;
+    const rowsAll = this.dados().map(r => this.enrich(r));
+    const rows = rowsAll.filter(r =>
+      (s.regional === 'SP (todas)' || r.regional === s.regional) &&
+      (!s.busca || (r.nome + ' ' + r.grupo).toLowerCase().includes(s.busca.toLowerCase())));
+    const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+    const meta = sum(rows, r => r.meta), cart = sum(rows, r => r.carteira);
+    const pct = meta ? cart / meta : 0, saldo = cart - meta;
+    const criticosRaw = rows.filter(r => r.def > 0).sort((a, b) => b.gapv - a.gapv || a.pct - b.pct || b.def - a.def);
+    const defTot = sum(criticosRaw, r => r.def), gapTot = sum(criticosRaw, r => r.gapv);
+    const prontas = sum(criticosRaw, r => r.cob), pendT = sum(criticosRaw, r => r.pen), semT = sum(criticosRaw, r => r.sem);
+    const sd = s.cenario === 'semdados';
+    const w = v => (defTot ? (v / defTot * 100) : 0) + '%';
+    const goto = id => () => self.setState({ pagina:id, sel:null });
+
+    const mkRow = r => Object.assign({}, r, {
+      rowBg: s.sel === r.id ? '#31405a' : 'transparent',
+      open: () => self.setState({ sel: r.id }),
+      key: this.enter(() => self.setState({ sel: r.id }))
+    });
+
+    const AREAS = ['Construção','CSD','Outros'];
+    const sorters = {
+      crit: (a, b) => a.pct - b.pct || b.gapv - a.gapv,
+      saldo: (a, b) => a.saldo - b.saldo,
+      pct: (a, b) => a.pct - b.pct,
+      gap: (a, b) => b.gapv - a.gapv,
+      nome: (a, b) => a.nome.localeCompare(b.nome)
+    };
+    const grupos = AREAS.map(g => {
+      const gr = rows.filter(r => r.grupo === g).sort(sorters[s.sort]);
+      const m = sum(gr, r => r.meta), c = sum(gr, r => r.carteira), p = m ? c / m : 0;
+      const flip = () => self.setState(st => ({ expanded: Object.assign({}, st.expanded, { [g]: !st.expanded[g] }) }));
+      return {
+        nome: g, qtd: gr.length, metaTxt: this.n(m), cartTxt: this.n(c),
+        pctTxt: m ? Math.round(p * 100) + '%' : '—', cor: this.farol(p),
+        aberto: !!s.expanded[g], chevron: s.expanded[g] ? '▾' : '▸',
+        rows: gr.map(mkRow), toggle: flip, key: this.enter(flip)
+      };
+    }).filter(g => g.qtd > 0);
+
+    const regMap = {};
+    rowsAll.forEach(r => {
+      const k = r.regional;
+      regMap[k] = regMap[k] || { nome:k, meta:0, cart:0, gap:0, post:0, metaRs:0, cartRs:0, qtd:0, criticos:0, areas:{} };
+      const R = regMap[k];
+      R.meta += r.meta; R.cart += r.carteira; R.gap += r.gapv; R.post += r.post; R.qtd += 1;
+      R.metaRs += r.meta * r.valor; R.cartRs += r.carteira * r.valor;
+      if(r.def > 0) R.criticos += 1;
+      R.areas[r.grupo] = R.areas[r.grupo] || { meta:0, cart:0 };
+      R.areas[r.grupo].meta += r.meta; R.areas[r.grupo].cart += r.carteira;
+    });
+    const regList = Object.values(regMap);
+    const maxMeta = Math.max.apply(null, regList.map(r => Math.max(r.meta, r.cart)));
+    const maxGap = Math.max.apply(null, regList.map(r => r.gap).concat([1]));
+    const pickReg = nome => () => self.setState({ regional: s.regional === nome ? 'SP (todas)' : nome });
+    const regBase = regList.map(r => {
+      const p = r.cart / r.meta, sal = r.cart - r.meta, cor = this.farol(p);
+      return {
+        nome: r.nome, cor, tint: TINT[cor], pctTxt: Math.round(p * 100) + '%',
+        metaTxt: this.n(r.meta), cartTxt: this.n(r.cart),
+        saldoTxt: (sal > 0 ? '+' : '') + this.n(sal), saldoCor: sal < 0 ? VERM : MUTE,
+        gapTxt: r.gap ? this.brl(r.gap) : '—', postTxt: r.post ? this.n(r.post) : '—',
+        qtdTxt: this.n(r.qtd), criticosTxt: this.n(r.criticos),
+        metaW: (r.meta / maxMeta * 100) + '%', cartW: (r.cart / maxMeta * 100) + '%',
+        metaRs: this.brl(r.metaRs), cartRs: this.brl(r.cartRs),
+        gapRs: r.gap ? this.brl(r.gap) : '—', gapCor: r.gap ? VERM : MUTE,
+        gapW: (r.gap / maxGap * 100) + '%',
+        bg: s.regional === r.nome ? '#283449' : 'transparent',
+        pick: pickReg(r.nome), key: this.enter(pickReg(r.nome)),
+        _pct: p, _gap: r.gap, _areas: r.areas
+      };
+    }).sort((a, b) => a._pct - b._pct);
+
+    const matriz = regBase.map(r => {
+      const cel = AREAS.map(a => {
+        const v = r._areas[a];
+        if(!v) return { txt:'—', cor:MUTE, bg:'transparent', tip: a + ' · sem meta' };
+        const p = v.cart / v.meta, cor = this.farol(p);
+        return { txt: Math.round(p * 100) + '%', cor, bg: TINT[cor], tip: a + ' · meta ' + this.n(v.meta) + ' / carteira ' + this.n(v.cart) };
+      });
+      return { nome: r.nome, celulas: cel, totalTxt: r.pctTxt, totalCor: r.cor };
+    });
+
+    const maxM = Math.max.apply(null, MESES.map(m => Math.max(m.meta, m.cart)));
+    const mesAtivo = m => (s.mes.startsWith('Julho') && m.nome === 'Jul') || (s.mes.startsWith('Junho') && m.nome === 'Jun') ||
+      (s.mes.startsWith('Maio') && m.nome === 'Mai') || (s.mes.startsWith('Agosto') && m.nome === 'Ago');
+    const setMes = m => {
+      const map = { Jul:'Julho de 2026', Jun:'Junho de 2026', Mai:'Maio de 2026', Ago:'Agosto de 2026' };
+      return () => { if(map[m.nome]) self.setState({ mes: map[m.nome] }); };
+    };
+    const meses = MESES.map(m => {
+      const ativo = mesAtivo(m), top = Math.max(m.meta, m.cart);
+      return {
+        nome: m.nome, cartTxt: this.n(m.cart),
+        wrapH: (top / maxM * 100) + '%',
+        metaH: (m.meta / top * 100) + '%', cartH: (m.cart / top * 100) + '%',
+        execH: (m.exec / m.cart * 100) + '%',
+        cor: ativo ? (m.cart >= m.meta ? VERDE2 : VERM) : (m.cart >= m.meta ? '#177f4d' : '#8d3b41'),
+        bg: ativo ? '#283449' : 'transparent',
+        labelCor: ativo ? '#eef2f8' : MUTE,
+        temPost: m.post > 15, pick: setMes(m), key: this.enter(setMes(m))
+      };
+    });
+    const mesesTabela = MESES.map(m => {
+      const p = m.cart / m.meta, cor = this.farol(p), ativo = mesAtivo(m);
+      return {
+        nomeLongo: m.longo, nomeCor: ativo ? '#eef2f8' : DIM,
+        rowBg: ativo ? '#283449' : 'transparent',
+        barW: 'calc(' + Math.min(100, p * 100) + '% - 16px)', cor, tint: TINT[cor],
+        metaTxt: this.n(m.meta), cartTxt: this.n(m.cart), execTxt: this.n(m.exec),
+        postTxt: this.n(m.post), postCor: m.post > 15 ? AMBAR : MUTE,
+        pctTxt: Math.round(p * 100) + '%',
+        situacao: p >= 1 ? 'Carteira cobre a meta' : (p >= 0.85 ? 'Recomposição parcial pendente' : 'Falta de carteira — agir'),
+        pick: setMes(m), key: this.enter(setMes(m))
+      };
+    });
+    const alerta = MESES.filter(m => m.cart < m.meta).map(m => m.longo);
+    const maxPost = Math.max.apply(null, MESES.map(m => m.post));
+    const postMeses = MESES.map(m => ({
+      nome: m.nome, postTxt: this.n(m.post), h: (m.post / maxPost * 100) + '%',
+      cor: m.post > 15 ? AMBAR : '#31405a',
+      labelCor: mesAtivo(m) ? '#eef2f8' : MUTE
+    }));
+
+    const metaRs = sum(rows, r => r.meta * r.valor), cartRs = sum(rows, r => r.carteira * r.valor);
+    const finAreas = AREAS.map(a => {
+      const gr = rows.filter(r => r.grupo === a);
+      const m = sum(gr, r => r.meta * r.valor), c = sum(gr, r => r.carteira * r.valor);
+      const g = sum(gr, r => r.gapv), p = m ? c / m : 0, cor = this.farol(p);
+      const und = sum(gr, r => r.meta);
+      return { nome:a, cartTxt:this.brl(c), metaTxt:this.brl(m), pctTxt: m ? Math.round(p * 100) + '%' : '—',
+        cor, barW: Math.min(100, p * 100) + '%', gapTxt: g ? this.brl(g) : 'R$ 0',
+        modTxt: und ? this.brl(m / und) : '—', qtd: gr.length };
+    }).filter(a => a.qtd > 0);
+    const maxTopGap = Math.max.apply(null, criticosRaw.map(r => r.gapv).concat([1]));
+    const finTop = criticosRaw.slice(0, 5).map(r => Object.assign({}, mkRow(r), {
+      w: (r.gapv / maxTopGap * 100) + '%', defTxt: this.n(r.def), modTxt: this.brl(r.valor)
+    }));
+
+    const postRowsRaw = rows.filter(r => r.post > 0).sort((a, b) => b.post * b.valor - a.post * a.valor);
+    const postTotal = sum(postRowsRaw, r => r.post), postRs = sum(postRowsRaw, r => r.post * r.valor);
+    const postRows = postRowsRaw.map(r => Object.assign({}, mkRow(r), {
+      postTxt: this.n(r.post),
+      pctCartTxt: Math.round(r.post / r.carteira * 100) + '%',
+      rsTxt: this.brl(r.post * r.valor),
+      destino: 'Ago/26',
+      reincTxt: r.reinc ? r.reinc + '× no ano' : '1ª vez',
+      reincCor: r.reinc >= 2 ? VERM : (r.reinc === 1 ? AMBAR : MUTE),
+      efeito: r.def > 0 ? 'Agrava déficit do mês' : 'Sem impacto no mês (meta atendida)',
+      efeitoCor: r.def > 0 ? VERM : DIM
+    }));
+
+    const sel = rows.find(r => r.id === s.sel);
+    let selVals = null;
+    if(sel){
+      selVals = Object.assign({}, sel, {
+        confTxt: this.n(sel.carteira), potTxt: this.n(sel.cob), pendTxt: this.n(sel.pen),
+        notasCarteira: sel.nc, notasCoffee: sel.ncf, notasPend: sel.np,
+        semCoffee: !sel.ncf.length, semPend: !sel.np.length,
+        wConf: (sel.carteira / sel.meta * 100) + '%', wPot: (sel.cob / sel.meta * 100) + '%',
+        wPend: (sel.pen / sel.meta * 100) + '%', wSem: (sel.sem / sel.meta * 100) + '%',
+        faltaTxt: this.n(sel.sem), faltaCor: sel.sem > 0 ? VERM : VERDE,
+        faltaBg: sel.sem > 0 ? 'rgba(240,85,92,0.12)' : 'rgba(0,168,89,0.12)',
+        faltaFrase: sel.sem > 0
+          ? 'Sem notas identificadas para este volume: criar notas no COFFEE ou renegociar a meta do período.'
+          : 'O déficit pode ser integralmente coberto pelas notas listadas acima, após revisão.',
+        resumo: sel.def === 0
+          ? 'Plano em ' + sel.pctTxt + ' de disponibilidade. Nenhuma recomposição necessária neste período.'
+          : (sd
+            ? 'Déficit de ' + this.n(sel.def) + ' ' + sel.unidade + ' (' + this.brl(sel.gapv) + ' de gap). Sem retorno do COFFEE não há cobertura confirmada — trate como descoberto até a sincronização.'
+            : 'Déficit de ' + this.n(sel.def) + ' ' + sel.unidade + ' (' + this.brl(sel.gapv) + ' de gap). ' + this.n(sel.cob) + ' podem ser supridas por notas prontas, ' + this.n(sel.pen) + ' aguardam SAP/validação e ' + this.n(sel.sem) + ' seguem sem cobertura.')
+      });
+    }
+
+    const pag = PAGES.find(p => p.id === s.pagina) || PAGES[0];
+    const slug = s.regional === 'SP (todas)' ? 'SP-todas' : s.regional.replace(/\s+/g, '-');
+    const nBlocos = Object.keys(s.blocos).filter(k => s.blocos[k]).length;
+
+    return {
+      navSubs: PAGES.map(p => ({
+        label: p.label, pick: goto(p.id), key: this.enter(goto(p.id)),
+        fg: s.pagina === p.id ? '#eef2f8' : MUTE,
+        bg: s.pagina === p.id ? 'rgba(255,255,255,0.05)' : 'transparent'
+      })),
+      tabs: PAGES.map(p => ({
+        label: p.label, pick: goto(p.id), key: this.enter(goto(p.id)),
+        fg: s.pagina === p.id ? '#eef2f8' : MUTE,
+        bd: s.pagina === p.id ? VERDE : 'transparent'
+      })),
+      tituloPagina: pag.titulo, subtituloPagina: pag.sub,
+      isDashboard: s.pagina === 'dashboard', isRegional: s.pagina === 'regional',
+      isMensal: s.pagina === 'mensalizacao', isFinanceiro: s.pagina === 'financeiro',
+      isPosterg: s.pagina === 'postergacoes', isExportar: s.pagina === 'exportar',
+
+      detCols: s.cols
+        ? '1.9fr 52px 66px 80px 70px 68px 130px 1.2fr 88px 84px'
+        : '1.9fr 52px 66px 80px 70px 68px 130px 1.2fr',
+      showSec: s.cols, colsLabel: s.cols ? 'Ocultar secundárias' : 'Mostrar secundárias',
+      toggleCols: () => this.setState(st => ({ cols: !st.cols })),
+
+      mes: s.mes, mesLabel: s.mes, busca: s.busca, regional: s.regional, cenario: s.cenario, sort: s.sort,
+      regionalOptions: ['SP (todas)'].concat(regList.map(r => r.nome)),
+      onMes: e => this.setState({ mes: e.target.value }),
+      onRegional: e => this.setState({ regional: e.target.value }),
+      onBusca: e => this.setState({ busca: e.target.value }),
+      onCenario: e => this.setState({ cenario: e.target.value, sel: null }),
+      onSort: e => this.setState({ sort: e.target.value }),
+      limpar: () => this.setState({ regional:'SP (todas)', busca:'' }),
+      temFiltro: s.regional !== 'SP (todas)' || !!s.busca,
+      escopoLabel: s.regional,
+      escopoCor: s.regional === 'SP (todas)' ? DIM : BLUE,
+      escopoBg: s.regional === 'SP (todas)' ? '#283449' : 'rgba(31,159,214,0.13)',
+      escopoBorda: s.regional === 'SP (todas)' ? 'rgba(255,255,255,0.12)' : 'rgba(31,159,214,0.28)',
+      notes: s.notes, toggleNotes: () => this.setState(st => ({ notes: !st.notes })),
+
+      pctTxt: Math.round(pct * 100) + '%', pctCor: this.farol(pct), barPct: Math.min(100, pct * 100) + '%',
+      metaTxt: this.n(meta), carteiraTxt: this.n(cart),
+      execTxt: this.n(sum(rows, r => r.exec)), postTxt: this.n(sum(rows, r => r.post)),
+      saldoTitulo: defTot > 0 ? 'Déficit do período' : 'Superávit do período',
+      saldoTxt: defTot > 0 ? '−' + this.n(defTot) : (saldo > 0 ? '+' : '') + this.n(saldo),
+      saldoCor: defTot > 0 ? this.farol(pct) : VERDE,
+      saldoFrase: defTot > 0
+        ? 'Faltam ' + this.n(defTot) + ' und. distribuídas em ' + criticosRaw.length + ' planos abaixo da meta.'
+        : 'Carteira igual ou acima da meta em todos os planos do escopo.',
+      saldoSub: defTot > 0
+        ? 'saldo líquido ' + (saldo > 0 ? '+' : '−') + this.n(Math.abs(saldo)) + ' und. · superávits não compensam déficit'
+        : 'saldo líquido ' + (saldo > 0 ? '+' : '') + this.n(saldo) + ' und.',
+      gapTxt: defTot > 0 ? this.brl(gapTot) : this.brl(0),
+      temDeficit: defTot > 0,
+      deficitPorGrupo: AREAS.map(g => ({ nome:g, d: sum(criticosRaw.filter(r => r.grupo === g), r => r.def) }))
+        .filter(g => g.d > 0)
+        .map((g, i, arr) => ({ nome:g.nome, w:(g.d / Math.max.apply(null, arr.map(x => x.d)) * 100) + '%', txt: this.n(g.d) + ' und.' })),
+
+      semDados: sd && defTot > 0,
+      temCobertura: !sd && defTot > 0,
+      semDeficit: defTot === 0,
+      temCriticos: criticosRaw.length > 0,
+      deficitAbsTxt: this.n(defTot),
+      prontasTxt: this.n(prontas), pendTxt: this.n(pendT), semCobTxt: this.n(semT),
+      wProntas: w(prontas), wPend: w(pendT), wSem: w(semT),
+
+      nCriticos: criticosRaw.length + ' planos',
+      nRows: rows.length,
+      criticos: criticosRaw.map(mkRow),
+      grupos, regionais: regBase.slice(0, 6), regionaisFull: regBase, matriz,
+      vazio: rows.length === 0,
+
+      regKpis: [
+        { label:'Regionais no escopo', valor: this.n(regBase.length), cor:'#eef2f8', nota: s.regional === 'SP (todas)' ? 'agregado SP (todas)' : 'filtro ativo em ' + s.regional },
+        { label:'Abaixo da meta', valor: this.n(regBase.filter(r => r._pct < 1).length), cor: regBase.filter(r => r._pct < 1).length ? VERM : VERDE, nota:'%Disp menor que 100%' },
+        { label:'Maior gap', valor: regBase.length ? regBase.slice().sort((a,b) => b._gap - a._gap)[0].nome : '—', cor:'#eef2f8', nota: regBase.length ? regBase.slice().sort((a,b) => b._gap - a._gap)[0].gapTxt + ' de impacto' : '' },
+        { label:'Melhor cobertura', valor: regBase.length ? regBase[regBase.length - 1].pctTxt : '—', cor:VERDE, nota: regBase.length ? regBase[regBase.length - 1].nome : '' }
+      ],
+
+      meses, mesesTabela, postMeses,
+      temAlertaMes: alerta.length > 0, alertaMeses: alerta.join(' · '),
+
+      finKpis: [
+        { label:'Carteira R$', valor: this.brl(cartRs), cor:'#eef2f8', nota:'valor modular × carteira' },
+        { label:'Meta R$', valor: this.brl(metaRs), cor:DIM, nota:'objetivo financeiro do período' },
+        { label:'Gap R$', valor: defTot ? this.brl(gapTot) : this.brl(0), cor: defTot ? VERM : VERDE, nota: defTot ? this.n(defTot) + ' und. sem carteira' : 'sem déficit no escopo' },
+        { label:'Cobertura R$', valor: Math.round(cartRs / metaRs * 100) + '%', cor: this.farol(cartRs / metaRs), nota:'carteira R$ ÷ meta R$' }
+      ],
+      finAreas, finTop, finRegionais: regBase,
+
+      postKpis: [
+        { label:'Postergadas no mês', valor: this.n(postTotal), cor: postTotal ? AMBAR : VERDE, nota: postTotal ? 'em ' + postRowsRaw.length + ' planos' : 'nenhum item deslocado' },
+        { label:'Volume deslocado R$', valor: this.brl(postRs), cor:'#eef2f8', nota:'valor modular × postergado' },
+        { label:'Reincidentes', valor: this.n(postRowsRaw.filter(r => r.reinc >= 1).length), cor: postRowsRaw.filter(r => r.reinc >= 2).length ? VERM : AMBAR, nota:'planos postergados mais de uma vez' },
+        { label:'Destino predominante', valor:'Ago/26', cor:'#eef2f8', nota:'mês que recebe a carga' }
+      ],
+      postRows, temPostergadas: postRows.length > 0, semPostergadas: postRows.length === 0,
+
+      blocos: BLOCOS.map(b => {
+        const on = !!s.blocos[b.id];
+        const flip = () => self.setState(st => ({ blocos: Object.assign({}, st.blocos, { [b.id]: !st.blocos[b.id] }) }));
+        return {
+          label: b.label, linhas: b.linhas, check: on ? '✓' : '',
+          bg: on ? 'rgba(0,168,89,0.12)' : '#1b2433',
+          borda: on ? 'rgba(0,168,89,0.28)' : 'rgba(255,255,255,0.07)',
+          boxBg: on ? VERDE : 'transparent',
+          boxBorda: on ? VERDE : 'rgba(255,255,255,0.22)',
+          toggle: flip, key: this.enter(flip)
+        };
+      }),
+      formatos: [
+        { id:'xlsx', ext:'XLSX', nota:'planilha com uma aba por bloco' },
+        { id:'csv', ext:'CSV', nota:'tabela única, pronta para BI' },
+        { id:'pdf', ext:'PDF', nota:'layout do relatório para envio' }
+      ].map(f => {
+        const on = s.formato === f.id;
+        const pick = () => self.setState({ formato: f.id });
+        return Object.assign({}, f, {
+          bg: on ? 'rgba(0,168,89,0.12)' : '#1b2433',
+          borda: on ? 'rgba(0,168,89,0.28)' : 'rgba(255,255,255,0.07)',
+          fg: on ? VERDE : '#eef2f8',
+          pick, key: this.enter(pick)
+        });
+      }),
+      nomeArquivo: 'recomposicao_2026-07_' + slug + '_' + nBlocos + 'blocos.' + s.formato,
+      historico: HISTORICO,
+
+      sel: selVals, close: () => this.setState({ sel:null })
+    };
+  }
+}
+</script>
+</body>
+</html>

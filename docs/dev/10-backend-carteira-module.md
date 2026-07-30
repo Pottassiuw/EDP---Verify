@@ -14,7 +14,8 @@ Reutiliza `databricks_module` para leitura; não fala com o Databricks fora do
   (`sap_real`, `quantidade_valida`), `hash_conteudo`, drop de PII.
 - `situacao.py` — função pura: `cancelada`/`executada`/`no_plano`/`fora_do_plano`.
 - `repository.py` — SQL: staging, reconciliação idempotente (insert/update/
-  tombstone), listagem (filtros+paginação+situação via TEMP TABLE), resumo.
+  tombstone), listagem (filtros+paginação+situação via TEMP TABLE), resumo e
+  lookup determinístico por número SAP.
 - `sync.py` — orquestração: skip-signal (`Atualizacao`), leitura injetável,
   reconcile transacional, single-flight, registro de execuções.
 - `service.py` — casos de uso; `routes.py` — endpoints finos `/api/carteira`.
@@ -38,6 +39,18 @@ Derivada em tempo de leitura cruzando `nota_carteira.id_sap` com o conjunto de
 `Numero_Nota` do plano (`input_module.db.listar_numeros_nota`). A mesma lógica
 existe em `situacao.py` (pura) e no `CASE` do `repository.py` (para filtrar/
 paginar em SQL).
+
+## Lookup SAP interno (Fase 4B)
+
+`repository.obter_por_id_sap(conn, numero)` lê somente `nota_carteira`, sem
+consultar `notas_sp`. O service materializa o contrato HTTP descrito em
+[`APIs`](#apis), preserva os marcadores de sincronização/tombstone e não
+converte falhas SQLite em estados neutros.
+
+O lookup usa `ix_nc_lookup_sap` (`id_sap`, `sap_real`, `sincronizado_em DESC`,
+`id_onr ASC`), alinhado ao filtro e ao desempate determinístico. Para cada
+requisição, o service abre uma única conexão e uma transação de leitura
+explícita: a versão e a nota são lidas da mesma snapshot antes do fechamento.
 
 ## Movimentação (Fase 2)
 
@@ -89,8 +102,10 @@ Relatórios (convergência é Fase 4).
 **fundir a camada base** (`base_disponivel`/`cobertura_pct`/`suficiente`)
 **dentro** de cada `visao_anual[]` e `regionais[]` do `montar_dashboard`,
 preservando todo o contrato de Relatórios (`ano`, `mes_referencia`,
-`regional`, `hero`, `mensalizacao`, `financeiro_ano`, `regionais_disponiveis`)
-+ `base_por_plano_sem_meta`. `service.dashboard` acrescenta `metas_info`
+`regional`, `hero`, `mensalizacao`, `financeiro_ano`, `avisos`,
+`regionais_disponiveis`) + `base_por_plano_sem_meta`. O campo
+`avisos.executadas_sem_data` é repassado sem alteração. `service.dashboard`
+acrescenta `metas_info`
 (via `metas.sincronizar_se_preciso`, idempotente por mtime) e a rota
 `GET /dashboard` responde ETag/304 por `versao` composto.
 
@@ -106,6 +121,26 @@ O split `meta>0` é idêntico à Fase 3 (zero-regressão dos números).
 Movimentação (Fase 2): `POST /mover/preview` (não escreve),
 `POST /mover-para-plano` (X-User obrigatório; 422 bloqueada, 409 duplicata;
 `pos_escrita`), `GET /movimentacoes`, `GET /divergencias`.
+
+### Enriquecimento por número SAP
+
+`GET /api/carteira/notas/por-sap/{numero}` consulta somente
+`nota_carteira.sap_real=1` e desempata duplicatas por
+`sincronizado_em DESC, id_onr ASC`. O payload contém `numero_sap`, `estado`,
+`dados`, `ausente_na_origem_em` e `versao`.
+
+`estado` pode ser `encontrada`, `ausente_na_origem`,
+`sem_correspondencia` ou `base_nao_sincronizada`. Tombstones preservam os
+últimos dados e a data de ausência; os dois estados sem dados retornam
+`dados=null`. Ausência é resposta HTTP 200. Erro real de leitura permanece
+erro HTTP.
+
+`dados` expõe exclusivamente `descricao_conjunto`, `conjunto`, `sintoma`,
+`componente_novo`, `kit`, `n_trafo`, `dispositivo_protecao`, `status_sap`
+e `prioridade_sap`; nenhuma PII atravessa o endpoint. Campos textuais vazios
+seguem a normalização existente e permanecem `null` no contrato. A rota suporta
+ETag/304 pela versão da projeção e é somente leitura; ela declara o caminho
+estático antes de `GET /notas/{id_onr}` e responde `Cache-Control: no-cache`.
 
 ## Testes
 

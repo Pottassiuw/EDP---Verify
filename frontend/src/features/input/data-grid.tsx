@@ -1,7 +1,15 @@
 import React from "react";
-import { DataSheetGrid, keyColumn, type Column } from "react-datasheet-grid";
+import { PanelRightOpen } from "lucide-react";
+import {
+  DataSheetGrid,
+  keyColumn,
+  type CellProps,
+  type Column,
+  type SimpleColumn,
+} from "react-datasheet-grid";
 import "react-datasheet-grid/dist/style.css";
 import "./data-grid.css";
+import { Button } from "@/components/ui/button";
 import type { Celula, NotaInput } from "./types";
 import type { ColunaDef } from "./columns";
 import { calcularSelecao, compararDatas, formatarNumero, type ResumoSelecao, type SelecaoRetangulo } from "./lib";
@@ -12,6 +20,42 @@ const LARGURA_MIN = 60;
 const LARGURA_MAX = 600;
 
 type Ordem = { campo: string; asc: boolean };
+
+interface DetalhesColumnData {
+  onOpenDetails: (nota: NotaInput, trigger: HTMLButtonElement) => void;
+}
+
+function CelulaDetalhes({
+  rowData,
+  columnData,
+}: CellProps<NotaInput, DetalhesColumnData>): React.JSX.Element {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        className="size-11"
+        aria-label={`Abrir detalhes da nota ${rowData.Numero_Nota}`}
+        title="Abrir detalhes"
+        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          columnData.onOpenDetails(rowData, event.currentTarget);
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          columnData.onOpenDetails(rowData, event.currentTarget);
+        }}
+      >
+        <PanelRightOpen />
+      </Button>
+    </div>
+  );
+}
 
 function textoCelula(v: Celula | undefined, c: ColunaDef): string {
   if (!c.numeric) return String(v ?? "");
@@ -127,9 +171,15 @@ export interface DataGridProps {
   registros: NotaInput[];
   colunas: ColunaDef[];
   altura?: number;
+  onOpenDetails?: (nota: NotaInput, trigger: HTMLButtonElement) => void;
 }
 
-export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): React.JSX.Element {
+export function DataGrid({
+  registros,
+  colunas,
+  altura = 520,
+  onOpenDetails,
+}: DataGridProps): React.JSX.Element {
   const [ordem, setOrdem] = React.useState<Ordem | null>(null);
   const [larguras, setLarguras] = React.useState<Record<string, number>>({});
   const [guia, setGuia] = React.useState<number | null>(null);
@@ -228,6 +278,23 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
     [colunas, larguras, ordem, alternar, onResizeDrag, aplicarLargura, onResizeCancel, onAutofit],
   );
 
+  const detailsColumn = React.useMemo<
+    SimpleColumn<NotaInput, DetalhesColumnData> | undefined
+  >(() => (
+    onOpenDetails
+      ? {
+          title: <span className="sr-only">Detalhes</span>,
+          component: CelulaDetalhes,
+          columnData: { onOpenDetails },
+          basis: 44,
+          minWidth: 44,
+          maxWidth: 44,
+          grow: 0,
+          shrink: 0,
+        }
+      : undefined
+  ), [onOpenDetails]);
+
   return (
     <div ref={wrapRef} className="dsg-wrap">
       <DataSheetGrid<NotaInput>
@@ -241,6 +308,7 @@ export function DataGrid({ registros, colunas, altura = 520 }: DataGridProps): R
         disableContextMenu
         onSelectionChange={aoSelecionar}
         gutterColumn={{ basis: 70, grow: 0 }}
+        stickyRightColumn={detailsColumn}
       />
       {guia !== null && <div className="dsg-resize-guide" style={{ left: guia }} />}
       <div className="dsg-statusbar">

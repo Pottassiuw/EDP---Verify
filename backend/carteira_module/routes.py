@@ -32,6 +32,21 @@ def listar_notas(
     return service.pagina_notas(filtros, page, size, ordenar_por, ordem)
 
 
+@router.get("/notas/por-sap/{numero}")
+def obter_enriquecimento_por_sap(
+    numero: int,
+    request: Request,
+    response: Response,
+):
+    corpo = service.enriquecimento_por_sap(numero)
+    etag = f'W/"{corpo["versao"]}"'
+    headers = {"ETag": etag, "Cache-Control": "no-cache"}
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    response.headers.update(headers)
+    return corpo
+
+
 @router.get("/notas/{id_onr}")
 def obter_nota(id_onr: int):
     nota = service.detalhe(id_onr)

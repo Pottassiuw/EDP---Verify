@@ -19,12 +19,12 @@ export function Postergacoes({
   mesSelecionado: number;
   onSelecionarPlano: (plano: PlanoRelatorio) => void;
 }): React.JSX.Element {
-  const dadosDoMesDisponiveis = mesSelecionado === dashboard.mes_corrente;
+  const dadosDoMesDisponiveis = mesSelecionado === dashboard.mes_referencia;
   const planosDoMes = dadosDoMesDisponiveis ? planos : [];
 
   return (
     <div className="flex flex-col gap-4">
-      {mesSelecionado !== dashboard.mes_corrente && (
+      {mesSelecionado !== dashboard.mes_referencia && (
         <Banner tipo="err">
           O contrato atual só informa postergações para o mês corrente; o mês selecionado permanece sem total de postergações.
         </Banner>

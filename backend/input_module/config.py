@@ -47,11 +47,10 @@ REDE_ARQUIVOS_SAP = REDE_INPUT_SQL + r"\Arquivos_SAP"
 REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
 
 REDE_DB_ORIGEM = REDE_INPUT_SQL + r"\notas_departamento.db"
-REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
 
-CAMINHO_BASE_IW28 = REDE_INPUT_SQL + r"\Gerada_base_IW28.XLSX"
-CAMINHO_CUSTO_ORD_IW38 = REDE_INPUT_SQL + r"\Arquivos_SAP\Gerada_custo_ord_IW38.XLSX"
-CAMINHO_BASE_IW66 = REDE_INPUT_SQL + r"\Gerada_medidas_IW66.XLSX"
+CAMINHO_BASE_IW28 = REDE_ARQUIVOS_SAP + r"\Gerada_base_IW28.XLSX"
+CAMINHO_CUSTO_ORD_IW38 = REDE_ARQUIVOS_SAP + r"\Gerada_custo_ord_IW38.XLSX"
+CAMINHO_BASE_IW66 = REDE_ARQUIVOS_SAP + r"\Gerada_medidas_IW66.XLSX"
 CAMINHO_INDICADOR_CONTINUIDADE = REDE_BASES_APOIO + r"\Indicador base conjunto - Limite Aneel.xlsx"
 CAMINHO_CLIENTES_CONJUNTO = REDE_BASES_APOIO + r"\Clientes_Conjunto.xlsx"
 CAMINHO_CUSTO_MODULAR = REDE_BASES_APOIO + r"\Custo_Modular.xlsx"
@@ -513,7 +512,6 @@ COLUNAS_PAINEL = [
     "Regional",
     "Numero_Nota",
     "Nota_Mae",
-    "Status_Obra",
     "Conjunto",
     "Circuito",
     "Local_Instalacao",

@@ -37,7 +37,7 @@ export function useRelatoriosData(
 ): DadosRelatorios {
   const principal = useDashboardRelatorios(regionalSelecionada);
   const foraDoPlano = useForaDoPlano();
-  const mesReferencia = mesSelecionado ?? principal.data?.mes_corrente ?? new Date().getMonth() + 1;
+  const mesReferencia = mesSelecionado ?? principal.data?.mes_referencia ?? new Date().getMonth() + 1;
   const nomesRegionais = principal.data?.regionais_disponiveis ?? [];
   const regionaisDoEscopo = regionalSelecionada ? [regionalSelecionada] : nomesRegionais;
   const nomesParaConsultar = regionalSelecionada ? [] : nomesRegionais;
@@ -98,7 +98,7 @@ export function useRelatoriosData(
         return [resumoDoDashboard(regional, detalhe, mesReferencia)];
       }
 
-      if (mesReferencia !== principal.data.mes_corrente) {
+      if (mesReferencia !== principal.data.mes_referencia) {
         return [];
       }
 
@@ -145,7 +145,7 @@ function resumoDoDashboard(
     saldo: mes.carteira - mes.meta,
     pctDisp: mes.meta > 0 ? mes.carteira / mes.meta : null,
     executado: mes.executado,
-    postergadas: mesReferencia === dashboard.mes_corrente ? dashboard.hero.postergadas : 0,
+    postergadas: mesReferencia === dashboard.mes_referencia ? dashboard.hero.postergadas : 0,
     metaRs: financeiro.meta_rs,
     carteiraRs: financeiro.carteira_rs,
     gapRs: financeiro.gap_rs,

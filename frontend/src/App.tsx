@@ -110,7 +110,7 @@ function AppContent(): React.JSX.Element {
 
   function irParaInputFiltrado(filtros: Filtro[]): void {
     setFiltrosHandoff((prev) => ({
-      estado: { busca: "", filtros, somente2026: true },
+      estado: { busca: "", filtros, somente2026: true, somenteNotasMaes: false },
       id: (prev?.id ?? 0) + 1,
     }));
     setInputSub("visao");
@@ -139,6 +139,11 @@ function AppContent(): React.JSX.Element {
   function changeSection(s: AppSection): void {
     if (s !== "coffee") setCoffeeReturn(null);
     setSection(s);
+  }
+
+  function irParaSincronizacaoCarteira(): void {
+    setCarteiraSub("sincronizacao");
+    changeSection("carteira");
   }
 
   const { data: apiData } = useTriageData();
@@ -274,7 +279,12 @@ function AppContent(): React.JSX.Element {
                 }}
               />
             ) : section === "input" ? (
-              <InputSection sub={inputSub} setSub={setInputSub} filtrosHandoff={filtrosHandoff} />
+              <InputSection
+                sub={inputSub}
+                setSub={setInputSub}
+                filtrosHandoff={filtrosHandoff}
+                onIrParaSincronizacao={irParaSincronizacaoCarteira}
+              />
             ) : section === "carteira" ? (
               <CarteiraSection sub={carteiraSub} setSub={setCarteiraSub} />
             ) : section === "configuracoes" ? <ConfiguracoesPage /> :
@@ -287,6 +297,7 @@ function AppContent(): React.JSX.Element {
                           setInputSub("visao");
                           changeSection("input");
                         }}
+                        onIrParaSincronizacao={irParaSincronizacaoCarteira}
                         onClearReturn={() => setCoffeeReturn(null)}
                         onBackToTriagem={() => { setCoffeeSub("verificar"); }} />}
           </React.Suspense>

@@ -11,13 +11,21 @@ def caminho_banco() -> str:
 
 def conectar() -> sqlite3.Connection:
     conn = sqlite3.connect(caminho_banco(), timeout=30, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode = WAL;")
+    # journal_mode=WAL é PERSISTENTE (header do db) — setado 1× em
+    # inicializar_banco, não aqui: reexecutá-lo com outra conexão aberta
+    # tentaria um checkpoint exclusivo e esperaria busy_timeout inteiro.
+    # synchronous=NORMAL (par recomendado do WAL: fsync só no checkpoint,
+    # seguro contra crash, escrita mais rápida) e busy_timeout são
+    # per-conexão e baratos.
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def inicializar_banco() -> None:
     conn = conectar()
+    conn.execute("PRAGMA journal_mode = WAL;")  # persistente; setado 1× aqui
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS nota_carteira (
@@ -55,6 +63,8 @@ def inicializar_banco() -> None:
         CREATE INDEX IF NOT EXISTS ix_nc_conjunto ON nota_carteira(conjunto);
         CREATE INDEX IF NOT EXISTS ix_nc_status ON nota_carteira(status_sap);
         CREATE INDEX IF NOT EXISTS ix_nc_sapreal ON nota_carteira(sap_real);
+        CREATE INDEX IF NOT EXISTS ix_nc_lookup_sap
+            ON nota_carteira(id_sap, sap_real, sincronizado_em DESC, id_onr ASC);
         CREATE INDEX IF NOT EXISTS ix_nc_ausente ON nota_carteira(ausente_na_origem_em);
         CREATE INDEX IF NOT EXISTS ix_nc_enc ON nota_carteira(data_encerramento_exec);
 
@@ -110,10 +120,16 @@ def inicializar_banco() -> None:
 
 def obter_meta(chave: str) -> str | None:
     conn = conectar()
+    try:
+        return obter_meta_na_conexao(conn, chave)
+    finally:
+        conn.close()
+
+
+def obter_meta_na_conexao(conn: sqlite3.Connection, chave: str) -> str | None:
     row = conn.execute(
         "SELECT valor FROM carteira_meta WHERE chave = ?", (chave,)
     ).fetchone()
-    conn.close()
     return row["valor"] if row else None
 
 

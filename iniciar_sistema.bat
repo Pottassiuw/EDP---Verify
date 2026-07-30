@@ -20,6 +20,8 @@ if exist "%USERPROFILE%\Node\fnm.exe" (
 :: Identifica o executavel do Python pelo caminho absoluto
 if exist "%PROJECT_ROOT%backend\.venv\Scripts\python.exe" (
     set "PYTHON_EXE=%PROJECT_ROOT%backend\.venv\Scripts\python.exe"
+) else if exist "%PROJECT_ROOT%.venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%PROJECT_ROOT%.venv\Scripts\python.exe"
 ) else (
     set "PYTHON_EXE=python"
 )

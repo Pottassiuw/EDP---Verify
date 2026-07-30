@@ -46,14 +46,14 @@ export function Mensalizacao({
       <MensalizacaoChart
         meses={dashboard.mensalizacao}
         mesSelecionado={mesSelecionado}
-        mesCorrente={dashboard.mes_corrente}
+        mesCorrente={dashboard.mes_referencia}
         postergadasMesCorrente={dashboard.hero.postergadas}
         onSelecionarMes={onSelecionarMes}
       />
       <MensalizacaoTabela
         meses={dashboard.mensalizacao}
         mesSelecionado={mesSelecionado}
-        mesCorrente={dashboard.mes_corrente}
+        mesCorrente={dashboard.mes_referencia}
         postergadasMesCorrente={dashboard.hero.postergadas}
         onSelecionarMes={onSelecionarMes}
       />

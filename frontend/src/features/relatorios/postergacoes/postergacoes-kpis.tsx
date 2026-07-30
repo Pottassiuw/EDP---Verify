@@ -26,7 +26,7 @@ export function PostergacoesKpis({
   const portalTheme = useRelatoriosPortalTheme();
   const planosPostergados = planos.filter((plano) => plano.postergado > 0);
   const totalPostergado = planosPostergados.reduce((total, plano) => total + plano.postergado, 0);
-  const postergadasNoMes = mesSelecionado === dashboard.mes_corrente
+  const postergadasNoMes = mesSelecionado === dashboard.mes_referencia
     ? dashboard.hero.postergadas
     : null;
 

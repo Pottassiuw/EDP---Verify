@@ -4,7 +4,7 @@ export interface ColunaDef {
   numeric?: boolean;
   largura?: number;
   editavel?: boolean;
-  opcoes?: 'status' | 'prioridade';
+  opcoes?: 'status' | 'prioridade' | 'mes';
 }
 
 /** Colunas do painel na ordem original (Input/app.py:172-179) com os rótulos
@@ -13,19 +13,18 @@ export const COLUNAS: ColunaDef[] = [
   { key: 'Regional', label: 'Regional' },
   { key: 'Numero_Nota', label: 'Nº Nota (ID)', numeric: true, largura: 110 },
   { key: 'Ordem', label: 'Ordem SAP', largura: 120 },
-  { key: 'Status_Obra', label: 'Status Obra', editavel: true },
   { key: 'Conjunto', label: 'Conjunto', editavel: true },
   { key: 'Circuito', label: 'Circuito', editavel: true },
   { key: 'Local_Instalacao', label: 'Local Instalação', editavel: true, largura: 170 },
   { key: 'Planejado_DDPM', label: 'Planejado', numeric: true, editavel: true },
-  { key: 'Mes_Execucao_Planejado', label: 'Mês Execução Planejado', editavel: true },
+  { key: 'Mes_Execucao_Planejado', label: 'Mês Execução Planejado', editavel: true, opcoes: 'mes', largura: 170 },
   { key: 'Data_Nota_SAP', label: 'Data Nota SAP', largura: 120 },
   { key: 'Data_Envio_Projeto', label: 'Data Envio Projeto', editavel: true },
   { key: 'Centro_Responsavel', label: 'Centro Responsável' },
   { key: 'Prioridade_Nota', label: 'Prioridade Nota', editavel: true, opcoes: 'prioridade' },
   { key: 'Status_Nota', label: 'Status Nota', editavel: true, opcoes: 'status', largura: 180 },
   { key: 'Cidade', label: 'Cidade' },
-  { key: 'Observacao', label: 'Observação', editavel: true, largura: 220 },
+  { key: 'Observacao', label: 'Observação', editavel: true, largura: 260 },
   { key: 'CJ_Aneel', label: 'Cj. Aneel' },
   { key: 'substacao_conjunto', label: 'Subestação Conj' },
   { key: 'Conj.critico', label: 'Conj. Crítico' },
@@ -77,10 +76,10 @@ export const FILTROS_MULTI = [
   'Status_Nota', 'Regional', 'Mes_Execucao_Planejado', 'Prioridade_Nota',
   'Conjunto', 'Cidade', 'CJ_Aneel', 'Conj.critico', 'Export_status',
   'Status_Final', 'Ordem_Executada', 'Regional_CSD', 'Nota_Mae',
-  'Status_Obra', 'Circuito', 'Medida_SAP', 'Medida_vs_Planejado'
+  'Circuito', 'Medida_SAP', 'Medida_vs_Planejado'
 ];
 
 /** Colunas da colagem em massa, na ordem (Input/app.py:674-679). */
 export const COLUNAS_COLAGEM = ['Numero_Nota', 'Status_Nota', 'Prioridade_Nota',
-  'Planejado_DDPM', 'Status_Obra', 'Conjunto', 'Circuito', 'Local_Instalacao',
+  'Planejado_DDPM', 'Conjunto', 'Circuito', 'Local_Instalacao',
   'Mes_Execucao_Planejado', 'Data_Envio_Projeto', 'Observacao', 'Check'];

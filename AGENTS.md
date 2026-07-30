@@ -98,11 +98,16 @@ Global folders should contain only reusable code.
 Good:
 
 features/
-    coffee/
-        api/
-        hooks/
-        components/
-        types/
+    coffee/       (components, hooks, types — flat today; split into
+                   sub-folders if a single feature grows large enough
+                   to need it)
+    input/
+    verificar/
+    configuracoes/
+components/
+    ui/           (shadcn, vendored — editable, see the shadcn/ui
+                   section below)
+    branded/      (compositions built on top of ui/)
 
 Bad:
 
@@ -340,23 +345,24 @@ Use design tokens only.
 
 # shadcn/ui
 
-Never edit:
+src/components/ui/ is vendored, but it is project code — edit it
+directly to theme, resize, or adjust a primitive's default behavior.
 
-src/components/ui/
-
-These files are vendored.
-
-Customization belongs in:
-
-src/components/branded/
-
-Add components using:
+Add new components using:
 
 npx shadcn@latest add
 
-Never copy documentation code manually.
+Re-running `add` on a component you've customized overwrites your
+edits. Check `git diff` after re-adding and reapply anything lost.
 
-Preserve Radix structure.
+Bigger compositions (multiple primitives wired together, feature-
+specific behavior) still belong in:
+
+src/components/branded/
+
+Never copy documentation code manually — always use the CLI.
+
+Preserve Radix structure and accessibility behavior when editing.
 
 ---
 
@@ -429,6 +435,11 @@ Whenever architecture changes:
 Update relevant documentation.
 
 Do not let docs drift from implementation.
+
+Every code change must also update the developer manual (`docs/dev/`).
+
+If a change touches a feature or module covered there, update the
+corresponding doc in the same commit/PR — not as a follow-up.
 
 ---
 

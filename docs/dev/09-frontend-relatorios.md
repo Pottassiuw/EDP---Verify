@@ -28,8 +28,8 @@ sob a chave `edp_relatorios_page`, e `app-sidebar.tsx` usa
   da carteira — o endpoint é superset do contrato de Relatórios, com a camada
   base disponível/cobertura fundida em `visao_anual`/`regionais`).
 - **Mês** seleciona o recorte da série mensal devolvida pelo endpoint. O
-  contrato atual não aceita mês como parâmetro; por isso, as tabelas de
-  planos continuam explicitamente anuais.
+  payload usa `mes_referencia`; o frontend não usa mais o nome legado
+  `mes_corrente`.
 - **Busca** é um filtro de cliente sobre código do plano, nome, área,
   regional e unidade.
 
@@ -54,6 +54,14 @@ centrais são:
   desc.
 
 Essas regras são protegidas em `relatorios-data.test.ts`.
+
+## Executado e aviso de data SAP
+
+O dashboard recebe `avisos.executadas_sem_data`, contador anual por nota e
+por filtro regional. Valor maior que zero mostra banner âmbar no topo:
+notas com código 99 foram contabilizadas no mês planejado porque
+`Encerram.por data` estava ausente. O banner usa `role="status"` herdado de
+`Banner`.
 
 ## Cobertura (Fase 4a — deriva da carteira)
 

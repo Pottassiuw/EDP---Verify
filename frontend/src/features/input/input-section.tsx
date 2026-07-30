@@ -19,9 +19,15 @@ interface InputSectionProps {
   sub: AbaInput;
   setSub: (s: AbaInput) => void;
   filtrosHandoff?: { estado: FiltersState; id: number } | null;
+  onIrParaSincronizacao: () => void;
 }
 
-export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps): React.JSX.Element {
+export function InputSection({
+  sub,
+  setSub,
+  filtrosHandoff,
+  onIrParaSincronizacao,
+}: InputSectionProps): React.JSX.Element {
   const { data: dados, isLoading, error, dataUpdatedAt } = useInputData();
   const recarregar = useRecarregarInput();
   const [estadoFiltros, setEstadoFiltros] = React.useState<FiltersState>(() => {
@@ -30,7 +36,11 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
       if (salvas) {
         const parsed = JSON.parse(salvas);
         if (typeof parsed.busca === 'string' && typeof parsed.somente2026 === 'boolean' && Array.isArray(parsed.filtros)) {
-          return parsed;
+          return {
+            ...FILTROS_INICIAIS,
+            ...parsed,
+            somenteNotasMaes: false,
+          };
         }
       }
     } catch (e) {
@@ -150,7 +160,13 @@ export function InputSection({ sub, setSub, filtrosHandoff }: InputSectionProps)
       )}
 
       <div className="flex-1 min-h-0 overflow-auto">
-        {dados && sub === 'visao' && <Overview dados={dados} estado={estadoFiltros} />}
+        {dados && sub === 'visao' && (
+          <Overview
+            dados={dados}
+            estado={estadoFiltros}
+            onIrParaSincronizacao={onIrParaSincronizacao}
+          />
+        )}
         {dados && sub === 'gerenciar' && <Manage dados={dados} estadoFiltros={estadoFiltros} />}
         {dados && sub === 'ramal' && <Ramal dadosPrincipais={dados} estadoFiltros={estadoFiltros} />}
         {dados && sub === 'relatorios' && <Reports dados={dados} estadoFiltros={estadoFiltros} />}

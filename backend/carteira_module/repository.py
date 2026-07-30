@@ -163,7 +163,8 @@ def _where_base(filtros: dict) -> tuple[str, list]:
     return where, params
 
 
-def listar(conn, *, numeros_no_plano, filtros, page, size, ordenar_por, ordem):
+def listar(conn, *, numeros_no_plano, filtros, page, size, ordenar_por, ordem,
+           total_cache=None):
     _preparar_plano(conn, numeros_no_plano)
     where, params = _where_base(filtros)
     coluna_ordem = ordenar_por if ordenar_por in _ORDENAVEIS else "id_onr"
@@ -177,9 +178,14 @@ def listar(conn, *, numeros_no_plano, filtros, page, size, ordenar_por, ordem):
         filtro_sit = " WHERE situacao = ?"
         sit_params = [filtros["situacao"]]
 
-    total = conn.execute(
-        f"SELECT COUNT(*) FROM ({base}){filtro_sit}", params + sit_params
-    ).fetchone()[0]
+    # O COUNT (com situação derivada) é o custo dominante do request (~166 ms
+    # em 98k). O service cacheia por versão composta e o repassa aqui — só
+    # recomputa em cache miss (Fase 4d).
+    total = total_cache
+    if total is None:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM ({base}){filtro_sit}", params + sit_params
+        ).fetchone()[0]
     offset = max(0, (page - 1) * size)
     linhas = conn.execute(
         f"SELECT * FROM ({base}){filtro_sit} "
@@ -196,6 +202,19 @@ def obter(conn, id_onr: int, numeros_no_plano: set[int]) -> dict | None:
         f"LEFT JOIN plano_atual p ON p.numero = CAST(n.id_sap AS INTEGER) "
         f"AND n.sap_real = 1 WHERE n.id_onr = ?",
         (id_onr,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def obter_por_id_sap(conn: sqlite3.Connection, numero: int) -> dict | None:
+    row = conn.execute(
+        "SELECT id_onr, descricao_conjunto, conjunto, sintoma, "
+        "componente_novo, kit, n_trafo, dispositivo_protecao, "
+        "status_sap, prioridade_sap, sincronizado_em, ausente_na_origem_em "
+        "FROM nota_carteira "
+        "WHERE id_sap = ? AND sap_real = 1 "
+        "ORDER BY sincronizado_em DESC, id_onr ASC LIMIT 1",
+        (str(numero),),
     ).fetchone()
     return dict(row) if row else None
 

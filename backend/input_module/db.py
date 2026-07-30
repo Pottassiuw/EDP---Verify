@@ -170,7 +170,7 @@ def inicializar_banco() -> None:
         )
     ''')
 
-    # --- VERIFICAÇÃO E ATUALIZAÇÃO DO ESQUEMA (ALTER TABLE) ---
+    # --- VERIFICAÇÃO E ATUALIZAÇÃO DO ESQUEMA (ALTER TABLE & MIGRAÇÃO) ---
     # Pega a lista de colunas que realmente existem hoje no banco
     cursor.execute("PRAGMA table_info(notas)")
     colunas_existentes = [coluna[1] for coluna in cursor.fetchall()]
@@ -184,6 +184,37 @@ def inicializar_banco() -> None:
         cursor.execute("ALTER TABLE notas ADD COLUMN Nota_Mae TEXT DEFAULT '-'")
     if "origem" not in colunas_existentes:
         cursor.execute("ALTER TABLE notas ADD COLUMN origem TEXT")
+
+    # Migração: concatena Status_Obra em Observacao (mantendo apenas Observacao e Check)
+    try:
+        if "Status_Obra" in colunas_existentes:
+            cursor.execute("""
+                UPDATE notas
+                SET Observacao = CASE
+                    WHEN (Observacao IS NULL OR TRIM(Observacao) IN ('', '-')) THEN Status_Obra
+                    ELSE 'Status Obra: ' || TRIM(Status_Obra) || ' | ' || TRIM(Observacao)
+                END
+                WHERE Status_Obra IS NOT NULL AND TRIM(Status_Obra) NOT IN ('', '-');
+            """)
+            cursor.execute("UPDATE notas SET Status_Obra = '-' WHERE Status_Obra IS NOT NULL;")
+    except Exception as e:
+        print(f"Aviso migração Status_Obra (notas): {e}")
+
+    try:
+        cursor.execute("PRAGMA table_info(notas_ramal)")
+        cols_ramal = [coluna[1] for coluna in cursor.fetchall()]
+        if "Status_Obra" in cols_ramal:
+            cursor.execute("""
+                UPDATE notas_ramal
+                SET Observacao = CASE
+                    WHEN (Observacao IS NULL OR TRIM(Observacao) IN ('', '-')) THEN Status_Obra
+                    ELSE 'Status Obra: ' || TRIM(Status_Obra) || ' | ' || TRIM(Observacao)
+                END
+                WHERE Status_Obra IS NOT NULL AND TRIM(Status_Obra) NOT IN ('', '-');
+            """)
+            cursor.execute("UPDATE notas_ramal SET Status_Obra = '-' WHERE Status_Obra IS NOT NULL;")
+    except Exception as e:
+        print(f"Aviso migração Status_Obra (notas_ramal): {e}")
 
     # Índices para acelerar auditoria e logs
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_log_alteracoes_nota ON log_alteracoes(Numero_Nota)')
@@ -856,7 +887,7 @@ def carregar_base_dataframe(nome_tabela: str) -> pd.DataFrame | None:
 # Campos que o usuário pode editar pela UI (Input/app.py:540)
 CAMPOS_EDITAVEIS = [
     "Status_Nota", "Prioridade_Nota", "Planejado_DDPM", "Observacao",
-    "Status_Obra", "Conjunto", "Circuito", "Local_Instalacao",
+    "Conjunto", "Circuito", "Local_Instalacao",
     "Mes_Execucao_Planejado", "Data_Envio_Projeto", "Check",
 ]
 

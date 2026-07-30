@@ -28,7 +28,7 @@ renderiza uma de cinco seções por `SegTabs`:
 | `operacao/use-coffee-operacao.ts` | Query do quadro e mutations de consultar, gerar, atualizar SAP e remover. |
 | `operacao/components/operacao-composer.tsx` | Entrada de IDs; informa válidos, repetidos e inválidos antes da consulta. |
 | `operacao/components/operacao-kanban.tsx` | Quatro colunas responsivas, sem drag and drop: Fila, Prontas, Processando e Aguardando SAP. |
-| `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, atividade, edição de local e ações contextuais. |
+| `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, card read-only da Carteira, atividade, edição de local e ações contextuais. |
 | `concluidas/coffee-concluidas.tsx` | Histórico, filtros, arquivamento de geradas e movimento de corrigidas para o Plano. |
 | `concluidas/components/concluidas-list.tsx` | Lista responsiva de concluídas e seleção restrita às corrigidas. |
 | `coffee-abrir.tsx` | Lista local de IDs e abertura escalonada no COFFEE. |
@@ -78,6 +78,17 @@ Prontas; o valor digitado permanece no campo se a mutation falhar. Conforme a
 origem da ficha, os botões oferecem gerar, atualizar SAP, remover, arquivar ou
 mover para o Plano. Arquivar só aparece para uma nota gerada em Concluídas.
 
+Nos fluxos **Operação** e **Concluídas**, a ficha também mostra o
+`CarteiraEnriquecimentoCard` read-only logo após o resumo. A consulta usa
+exclusivamente `revisao.data.coffee.id_sap`; `pk` continua sendo apenas a
+chave interna do COFFEE. A query de enriquecimento permanece habilitada somente
+enquanto o inspector está aberto e reutiliza a chave
+`['carteira', 'enriquecimento', id_sap]` por cinco minutos. Quando a Carteira
+ainda não foi sincronizada, o callback sobe por `CoffeeOperacao` ou
+`CoffeeConcluidas`, passa pelo `CoffeeHub` e abre a aba Sincronização via
+`App.tsx`. O card não interfere na edição de local, atividade nem nas ações
+contextuais do inspector.
+
 `useCoffeePortalTheme` propaga tema resolvido, densidade e accent para o
 `Sheet`, `Dialog`, `AlertDialog` e `Select` portalizados. Assim, os modos
 Sistema, Claro e Escuro e as preferências de densidade/acento também se aplicam
@@ -105,8 +116,9 @@ oferece a navegação para a Visão Geral do Input.
 
 ## Pontos de atenção
 
-- Não há suite de testes frontend configurada; build e verificação manual do
-  preview são a cobertura atual da interface.
+- `npm test` cobre contratos SSR de componentes e `npm run build` verifica a
+  integração tipada. Fluxos visuais e de interação do `Sheet` continuam sendo
+  verificação manual quando esse ambiente estiver disponível.
 - `CoffeeLogs` ainda usa um hook baseado em `fetch` e estado local para a
   listagem geral. Já o inspector usa React Query para os logs de uma nota.
 - A conexão com COFFEE/SAP é externa. Falhas de mutation são exibidas com uma

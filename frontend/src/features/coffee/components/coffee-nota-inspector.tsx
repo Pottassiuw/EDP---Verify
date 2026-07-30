@@ -18,6 +18,7 @@ import type { NotaRevisao, OperacaoEtapa } from '../types';
 import { REVISAO_KEY, useNotaRevisao } from '../use-nota-revisao';
 import { useCoffeeNotaLogs } from '../use-coffee-logs';
 import { useCoffeePortalTheme } from '../use-coffee-portal-theme';
+import { CarteiraEnriquecimentoCard } from '../../carteira/carteira-enriquecimento-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,6 +45,7 @@ interface CoffeeNotaInspectorProps {
   open: boolean;
   onClose: () => void;
   onAction: (action: InspectorAction, revisao: NotaRevisao) => void;
+  onIrParaSincronizacao: () => void;
 }
 
 function maskLocal(value: string): string {
@@ -76,6 +78,7 @@ export function CoffeeNotaInspector({
   open,
   onClose,
   onAction,
+  onIrParaSincronizacao,
 }: CoffeeNotaInspectorProps): React.JSX.Element {
   const portalTheme = useCoffeePortalTheme();
   const queryClient = useQueryClient();
@@ -197,6 +200,11 @@ export function CoffeeNotaInspector({
                 )}
               </section>
               <NotaSummary revisao={revisao.data} />
+              <CarteiraEnriquecimentoCard
+                numeroSap={revisao.data.coffee.id_sap}
+                enabled={open}
+                onIrParaSincronizacao={onIrParaSincronizacao}
+              />
               <section className="rounded-[11px] border border-line bg-surface-2 p-3">
                 <h2 className="edp-eyebrow">Próximo passo</h2>
                 <p className="mt-1 text-sm text-text-dim">
