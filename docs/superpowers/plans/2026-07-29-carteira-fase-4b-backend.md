@@ -227,9 +227,9 @@ def test_enriquecimento_por_sap_encontrada_e_tombstone(carteira_tmp):
         "conjunto": "POSTE",
         "sintoma": "queda",
         "componente_novo": "N",
-        "kit": "",
-        "n_trafo": "",
-        "dispositivo_protecao": "",
+        "kit": None,
+        "n_trafo": None,
+        "dispositivo_protecao": None,
         "status_sap": "Pendente",
         "prioridade_sap": 3,
     }
@@ -256,6 +256,8 @@ def test_enriquecimento_por_sap_encontrada_e_tombstone(carteira_tmp):
     assert tombstone["dados"] == encontrada["dados"]
     assert tombstone["ausente_na_origem_em"] == "2026-07-29T09:00:00"
 ```
+
+Campos vazios seguem a normalização existente e permanecem `null` no contrato.
 
 - [ ] **Step 2: Rodar os testes para confirmar a falha**
 

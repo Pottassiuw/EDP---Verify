@@ -40,30 +40,12 @@ Derivada em tempo de leitura cruzando `nota_carteira.id_sap` com o conjunto de
 existe em `situacao.py` (pura) e no `CASE` do `repository.py` (para filtrar/
 paginar em SQL).
 
-## Lookup SAP para enriquecimento (Fase 4B)
+## Lookup SAP interno (Fase 4B)
 
-`repository.obter_por_id_sap(conn, numero)` lê somente `nota_carteira`. Aceita
-apenas `sap_real=1` e, se houver duplicidade de `id_sap`, escolhe
-deterministicamente o registro por `sincronizado_em DESC, id_onr ASC`. Retorna
-o identificador interno e os campos de enriquecimento permitidos, além dos
-marcadores de sincronização/tombstone; não consulta `notas_sp` nem expõe PII.
-
-`service.enriquecimento_por_sap(numero)` estabelece o contrato interno de
-enriquecimento: retorna `numero_sap`, `estado`, `dados`,
-`ausente_na_origem_em` e `versao`. Os estados são `base_nao_sincronizada`
-(versão `"0"`), `sem_correspondencia`, `encontrada` e `ausente_na_origem`.
-`dados` é `None` nos dois primeiros; nos demais contém exclusivamente
-`descricao_conjunto`, `conjunto`, `sintoma`, `componente_novo`, `kit`,
-`n_trafo`, `dispositivo_protecao`, `status_sap` e `prioridade_sap`. Campos
-textuais vazios permanecem `None`, conforme a normalização da Carteira; o
-tombstone preserva o último conjunto de dados e informa quando saiu da origem.
-Falhas SQLite não são convertidas no service.
-
-`GET /api/carteira/notas/por-sap/{numero}` expõe esse contrato sem acrescentar
-campos. A rota estática é declarada antes de `GET /notas/{id_onr}`. Ela envia
-`ETag: W/"{versao}"` e `Cache-Control: no-cache`; com `If-None-Match` exatamente
-igual ao ETag retorna `304` com os mesmos headers. Ausência continua sendo um
-corpo `200` do service; falhas reais continuam a ser respostas `500` do FastAPI.
+`repository.obter_por_id_sap(conn, numero)` lê somente `nota_carteira`, sem
+consultar `notas_sp`. O service materializa o contrato HTTP descrito em
+[`APIs`](#apis), preserva os marcadores de sincronização/tombstone e não
+converte falhas SQLite em estados neutros.
 
 ## Movimentação (Fase 2)
 
@@ -129,12 +111,31 @@ O split `meta>0` é idêntico à Fase 3 (zero-regressão dos números).
 
 ## APIs
 
-`GET /notas` (filtros+paginação), `GET /notas/por-sap/{numero}` (enriquecimento
-com ETag/304), `GET /notas/{id_onr}`, `GET /resumo`,
+`GET /notas` (filtros+paginação), `GET /notas/{id_onr}`, `GET /resumo`,
 `GET /dashboard` (Fase 3), `GET /sincronizacao`, `POST /sincronizar`.
 Movimentação (Fase 2): `POST /mover/preview` (não escreve),
 `POST /mover-para-plano` (X-User obrigatório; 422 bloqueada, 409 duplicata;
 `pos_escrita`), `GET /movimentacoes`, `GET /divergencias`.
+
+### Enriquecimento por número SAP
+
+`GET /api/carteira/notas/por-sap/{numero}` consulta somente
+`nota_carteira.sap_real=1` e desempata duplicatas por
+`sincronizado_em DESC, id_onr ASC`. O payload contém `numero_sap`, `estado`,
+`dados`, `ausente_na_origem_em` e `versao`.
+
+`estado` pode ser `encontrada`, `ausente_na_origem`,
+`sem_correspondencia` ou `base_nao_sincronizada`. Tombstones preservam os
+últimos dados e a data de ausência; os dois estados sem dados retornam
+`dados=null`. Ausência é resposta HTTP 200. Erro real de leitura permanece
+erro HTTP.
+
+`dados` expõe exclusivamente `descricao_conjunto`, `conjunto`, `sintoma`,
+`componente_novo`, `kit`, `n_trafo`, `dispositivo_protecao`, `status_sap`
+e `prioridade_sap`; nenhuma PII atravessa o endpoint. Campos textuais vazios
+seguem a normalização existente e permanecem `null` no contrato. A rota suporta
+ETag/304 pela versão da projeção e é somente leitura; ela declara o caminho
+estático antes de `GET /notas/{id_onr}` e responde `Cache-Control: no-cache`.
 
 ## Testes
 
