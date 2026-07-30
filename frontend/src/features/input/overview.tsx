@@ -7,7 +7,6 @@ import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { type FiltersState } from './filters';
 import { NotesTable } from './notes-table';
-import { InputNotaInspector } from './input-nota-inspector';
 import { useRecarregarInput } from './use-input-data';
 import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
@@ -59,17 +58,14 @@ export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): 
 interface OverviewProps {
   dados: InputDataset;
   estado: FiltersState;
-  onIrParaSincronizacao: () => void;
+  onIrParaSincronizacao?: () => void;
 }
 
 export function Overview({
   dados,
   estado,
-  onIrParaSincronizacao,
 }: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
-  const [notaDetalhe, setNotaDetalhe] = React.useState<NotaInput | null>(null);
-  const botaoDetalheRef = React.useRef<HTMLButtonElement | null>(null);
   const [agruparGavetinhas, setAgruparGavetinhas] = React.useState(true);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
@@ -92,14 +88,6 @@ export function Overview({
   }
 
   const filtrado = filtrados.length !== dados.registros.length;
-
-  const abrirDetalhes = React.useCallback(
-    (nota: NotaInput, trigger: HTMLButtonElement): void => {
-      botaoDetalheRef.current = trigger;
-      setNotaDetalhe(nota);
-    },
-    [],
-  );
 
   return (
     <div className="p-6 flex flex-col gap-6 max-w-full">
@@ -182,12 +170,6 @@ export function Overview({
           agruparGavetinhas={agruparGavetinhas}
         />
       </div>
-      <InputNotaInspector
-        nota={notaDetalhe}
-        onClose={() => setNotaDetalhe(null)}
-        returnFocusRef={botaoDetalheRef}
-        onIrParaSincronizacao={onIrParaSincronizacao}
-      />
 
       <div className="flex items-center justify-between text-xs text-text-mute font-mono px-3 py-2 bg-surface-2/50 rounded-md border border-line">
         <div className="flex items-center gap-2">
