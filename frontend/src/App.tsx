@@ -297,6 +297,7 @@ function AppContent(): React.JSX.Element {
                           setInputSub("visao");
                           changeSection("input");
                         }}
+                        onIrParaSincronizacao={irParaSincronizacaoCarteira}
                         onClearReturn={() => setCoffeeReturn(null)}
                         onBackToTriagem={() => { setCoffeeSub("verificar"); }} />}
           </React.Suspense>

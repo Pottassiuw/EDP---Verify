@@ -17,7 +17,13 @@ import { useCoffeeOperacao } from './use-coffee-operacao';
 const LEGACY_ROWS_KEY = 'edp_coffee_gerar_rows';
 const LEGACY_MIGRATED_KEY = 'edp_coffee_gerar_rows_migrated';
 
-export function CoffeeOperacao(): React.JSX.Element {
+interface CoffeeOperacaoProps {
+  onIrParaSincronizacao: () => void;
+}
+
+export function CoffeeOperacao({
+  onIrParaSincronizacao,
+}: CoffeeOperacaoProps): React.JSX.Element {
   const {
     quadro,
     consultar,
@@ -242,6 +248,7 @@ export function CoffeeOperacao(): React.JSX.Element {
         open={selectedPk !== null}
         onClose={closeInspector}
         onAction={handleInspectorAction}
+        onIrParaSincronizacao={onIrParaSincronizacao}
       />
     </div>
   );

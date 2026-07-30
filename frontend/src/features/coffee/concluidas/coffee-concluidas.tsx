@@ -23,6 +23,7 @@ import { ConcluidasList } from './components/concluidas-list';
 interface CoffeeConcluidasProps {
   concluidasHandoff: { filtro: CoffeeConclusaoFiltro; id: number } | null;
   onIrParaInput?: () => void;
+  onIrParaSincronizacao: () => void;
 }
 
 function inPeriod(date: string, periodo: ConcluidasPeriodo): boolean {
@@ -38,6 +39,7 @@ function inPeriod(date: string, periodo: ConcluidasPeriodo): boolean {
 export function CoffeeConcluidas({
   concluidasHandoff,
   onIrParaInput,
+  onIrParaSincronizacao,
 }: CoffeeConcluidasProps): React.JSX.Element {
   const queryClient = useQueryClient();
   const concluidas = useCoffeeConcluidas();
@@ -234,6 +236,7 @@ export function CoffeeConcluidas({
         showMove={notas.find((nota) => nota.pk === selectedPk)?.classificacao === 'corrigida'}
         onClose={closeInspector}
         onAction={handleInspectorAction}
+        onIrParaSincronizacao={onIrParaSincronizacao}
       />
       <ConfirmModal
         open={archivePk !== null}
