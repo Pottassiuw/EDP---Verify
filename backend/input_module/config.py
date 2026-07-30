@@ -513,7 +513,6 @@ COLUNAS_PAINEL = [
     "Regional",
     "Numero_Nota",
     "Nota_Mae",
-    "Status_Obra",
     "Conjunto",
     "Circuito",
     "Local_Instalacao",
