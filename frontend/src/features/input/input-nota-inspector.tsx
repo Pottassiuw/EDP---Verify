@@ -63,6 +63,7 @@ export function InputNotaInspector({
       <SheetContent
         side="right"
         className="edp flex w-full max-w-none flex-col gap-0 p-0 sm:max-w-[560px]"
+        onEscapeKeyDown={(event) => event.stopPropagation()}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           returnFocusRef.current?.focus();

@@ -66,7 +66,9 @@ O alvo clicável ocupa 44×44px, interrompe a seleção somente no próprio
 botão e segue acessível por teclado. Como a DSG registra a seleção em
 `mousedown` no documento, o botão interrompe `pointerdown` e `mousedown`;
 ao fechar o Sheet, `onCloseAutoFocus` devolve o foco à referência concreta
-do botão que o abriu.
+do botão que o abriu. O Sheet também interrompe a propagação de `Escape`:
+isso preserva a seleção porque o listener de teclado da DSG está no
+`document`, sem cancelar o fechamento padrão do Radix.
 
 `overview.tsx` mantém somente a nota aberta como estado (`notaDetalhe`) e
 monta `DataGrid` e `InputNotaInspector` como irmãos. O Sheet exibe os
