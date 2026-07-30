@@ -40,7 +40,12 @@ function CelulaDetalhes({
         title="Abrir detalhes"
         onPointerDown={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          columnData.onOpenDetails(rowData, event.currentTarget);
+        }}
         onClick={(event) => {
           event.stopPropagation();
           columnData.onOpenDetails(rowData, event.currentTarget);

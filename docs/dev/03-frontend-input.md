@@ -70,6 +70,11 @@ do botão que o abriu. O Sheet também interrompe a propagação de `Escape`:
 isso preserva a seleção porque o listener de teclado da DSG está no
 `document`, sem cancelar o fechamento padrão do Radix.
 
+Para Enter e Espaço, a célula chama explicitamente o callback de detalhes em
+`keydown`, depois de interromper a propagação e prevenir o clique nativo. O
+uso explícito evita tanto a interferência dos atalhos da DSG quanto uma
+abertura duplicada quando o botão está dentro da grade.
+
 `overview.tsx` mantém somente a nota aberta como estado (`notaDetalhe`) e
 monta `DataGrid` e `InputNotaInspector` como irmãos. O Sheet exibe os
 campos já disponíveis no dataset do Input — mesmo que `NotaInput` aceite
