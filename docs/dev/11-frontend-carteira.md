@@ -76,6 +76,7 @@ frontend/src/features/carteira/
   subs.ts                    abas (import-light, não puxa a seção)
   use-carteira-notas.ts      página paginada (keepPreviousData)
   use-carteira-enriquecimento.ts consulta SAP por número, sem estado local
+  carteira-enriquecimento-card.tsx card de detalhe e estados da consulta SAP
   use-carteira-resumo.ts     KPIs (seeded via Dexie)
   use-carteira-sync.ts       estado + mutação de sincronização
   carteira-section.tsx       shell: PageHeader + SegTabs
@@ -104,6 +105,22 @@ seguro positivo e está habilitado. A query usa a chave
 `['carteira', 'enriquecimento', numeroSap]`, mantém o resultado fresco por cinco
 minutos e tenta novamente uma vez. O contrato discriminado preserva os estados
 do backend e seus campos anuláveis; o hook não persiste dados nem renderiza UI.
+
+## Card de enriquecimento SAP
+
+`CarteiraEnriquecimentoCard` é o wrapper do React Query e delega a renderização
+para `CarteiraEnriquecimentoContent`, componente puro usado nos testes SSR. O
+card preserva a hierarquia da base: `descricao_conjunto` é a rubrica, `conjunto`
+é o contexto e o `dl` responsivo mostra os sete campos restantes, totalizando
+os nove campos do contrato. Valores `null` ou vazios aparecem como travessão;
+o card não mostra PII.
+
+Os estados são intencionalmente distintos: carregamento é local ao card;
+falha de consulta (ou resposta incompatível) mostra alerta com retry;
+`sem_correspondencia` é uma ausência neutra sem retry; e
+`base_nao_sincronizada` explica a pré-condição e oferece a ação de navegação.
+Em `ausente_na_origem`, os dados preservados continuam visíveis junto do aviso
+com a data de tombstone.
 
 ## Direção visual — Supabaze (DESIGN.md)
 
