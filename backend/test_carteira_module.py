@@ -1,4 +1,6 @@
 """Testes do modulo Carteira (backend). Origem Databricks sempre mockada."""
+import sqlite3
+
 import pytest
 
 
@@ -235,6 +237,35 @@ def test_obter_por_id_sap_filtra_sap_real_e_desempata(carteira_tmp):
     assert ausente is None
 
 
+def test_indice_lookup_sap_cobre_ordenacao_e_e_usado_no_plano(carteira_tmp):
+    from carteira_module import db, mapping
+
+    conn = db.conectar()
+    _inserir(conn, [
+        mapping.normalizar_linha(_origem_exemplo(id_onr=id_onr, id_sap="700500"))
+        for id_onr in range(1, 41)
+    ])
+    conn.commit()
+
+    colunas = conn.execute("PRAGMA index_xinfo(ix_nc_lookup_sap)").fetchall()
+    plano = conn.execute(
+        "EXPLAIN QUERY PLAN "
+        "SELECT id_onr FROM nota_carteira "
+        "WHERE id_sap = ? AND sap_real = 1 "
+        "ORDER BY sincronizado_em DESC, id_onr ASC LIMIT 1",
+        ("700500",),
+    ).fetchall()
+    conn.close()
+
+    assert [(linha[0], linha[2], linha[3]) for linha in colunas if linha[5]] == [
+        (0, "id_sap", 0),
+        (1, "sap_real", 0),
+        (2, "sincronizado_em", 1),
+        (3, "id_onr", 0),
+    ]
+    assert any("ix_nc_lookup_sap" in linha[3] for linha in plano)
+
+
 def test_listar_filtra_por_situacao_e_regional(carteira_tmp):
     from carteira_module import db, mapping, repository
     conn = db.conectar()
@@ -353,6 +384,54 @@ def test_enriquecimento_por_sap_sem_correspondencia(carteira_tmp):
     assert resultado["versao"] != "0"
 
 
+def test_enriquecimento_por_sap_le_versao_e_nota_na_mesma_transacao(
+        carteira_tmp, monkeypatch):
+    from carteira_module import db, service
+
+    class ConexaoObservada(sqlite3.Connection):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.begin_count = 0
+            self.transacao_na_versao = False
+            self.transacao_na_nota = False
+
+        def execute(self, sql, parameters=()):
+            consulta = " ".join(sql.upper().split())
+            resultado = super().execute(sql, parameters)
+            if consulta == "BEGIN":
+                self.begin_count += 1
+            elif consulta.startswith("SELECT VALOR FROM CARTEIRA_META"):
+                self.transacao_na_versao = self.in_transaction
+            elif consulta.startswith("SELECT ID_ONR, DESCRICAO_CONJUNTO"):
+                self.transacao_na_nota = self.in_transaction
+            return resultado
+
+    conn = sqlite3.connect(db.caminho_banco(), factory=ConexaoObservada)
+    conn.row_factory = sqlite3.Row
+    conn.execute("INSERT INTO carteira_meta(chave, valor) VALUES('versao', '7')")
+    conn.execute(
+        "INSERT INTO nota_carteira(id_onr, id_sap, sap_real, sincronizado_em) "
+        "VALUES(1, '700500', 1, '2026-07-29T08:00:00')"
+    )
+    conn.commit()
+    conexoes = []
+
+    def conectar_observada():
+        conexoes.append(conn)
+        return conn
+
+    monkeypatch.setattr(db, "conectar", conectar_observada)
+
+    resultado = service.enriquecimento_por_sap(700500)
+
+    assert resultado["versao"] == "7"
+    assert resultado["estado"] == "encontrada"
+    assert conexoes == [conn]
+    assert conn.begin_count == 1
+    assert conn.transacao_na_versao is True
+    assert conn.transacao_na_nota is True
+
+
 def test_enriquecimento_por_sap_encontrada_e_tombstone(carteira_tmp):
     from carteira_module import service, sync
 
@@ -441,6 +520,32 @@ def test_rota_enriquecimento_por_sap_e_etag(carteira_tmp):
     assert segunda.status_code == 304
     assert segunda.headers["etag"] == etag
     assert segunda.headers["cache-control"] == "no-cache"
+
+
+def test_rota_enriquecimento_sem_dados_retorna_200(carteira_tmp):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from carteira_module import routes, sync
+
+    app = FastAPI()
+    app.include_router(routes.router)
+    cliente = TestClient(app)
+
+    base_nao_sincronizada = cliente.get("/api/carteira/notas/por-sap/700500")
+
+    sync.sincronizar(
+        ler_origem=lambda: [_origem_exemplo(id_onr=1, id_sap="700500")],
+        ler_marker=lambda: "M1",
+        agora="2026-07-29T08:00:00",
+    )
+    sem_correspondencia = cliente.get("/api/carteira/notas/por-sap/999999")
+
+    assert base_nao_sincronizada.status_code == 200
+    assert base_nao_sincronizada.json()["estado"] == "base_nao_sincronizada"
+    assert base_nao_sincronizada.json()["dados"] is None
+    assert sem_correspondencia.status_code == 200
+    assert sem_correspondencia.json()["estado"] == "sem_correspondencia"
+    assert sem_correspondencia.json()["dados"] is None
 
 
 def test_rota_enriquecimento_propaga_erro_real(carteira_tmp, monkeypatch):

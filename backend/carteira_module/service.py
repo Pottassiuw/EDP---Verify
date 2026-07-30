@@ -90,19 +90,20 @@ _CAMPOS_ENRIQUECIMENTO = (
 
 
 def enriquecimento_por_sap(numero: int) -> dict:
-    versao = db.obter_versao()
-    resposta = {
-        "numero_sap": numero,
-        "estado": "base_nao_sincronizada",
-        "dados": None,
-        "ausente_na_origem_em": None,
-        "versao": versao,
-    }
-    if versao == "0":
-        return resposta
-
     conn = db.conectar()
     try:
+        conn.execute("BEGIN")
+        versao = db.obter_meta_na_conexao(conn, "versao") or "0"
+        resposta = {
+            "numero_sap": numero,
+            "estado": "base_nao_sincronizada",
+            "dados": None,
+            "ausente_na_origem_em": None,
+            "versao": versao,
+        }
+        if versao == "0":
+            return resposta
+
         nota = repository.obter_por_id_sap(conn, numero)
     finally:
         conn.close()

@@ -63,6 +63,8 @@ def inicializar_banco() -> None:
         CREATE INDEX IF NOT EXISTS ix_nc_conjunto ON nota_carteira(conjunto);
         CREATE INDEX IF NOT EXISTS ix_nc_status ON nota_carteira(status_sap);
         CREATE INDEX IF NOT EXISTS ix_nc_sapreal ON nota_carteira(sap_real);
+        CREATE INDEX IF NOT EXISTS ix_nc_lookup_sap
+            ON nota_carteira(id_sap, sap_real, sincronizado_em DESC, id_onr ASC);
         CREATE INDEX IF NOT EXISTS ix_nc_ausente ON nota_carteira(ausente_na_origem_em);
         CREATE INDEX IF NOT EXISTS ix_nc_enc ON nota_carteira(data_encerramento_exec);
 
@@ -118,10 +120,16 @@ def inicializar_banco() -> None:
 
 def obter_meta(chave: str) -> str | None:
     conn = conectar()
+    try:
+        return obter_meta_na_conexao(conn, chave)
+    finally:
+        conn.close()
+
+
+def obter_meta_na_conexao(conn: sqlite3.Connection, chave: str) -> str | None:
     row = conn.execute(
         "SELECT valor FROM carteira_meta WHERE chave = ?", (chave,)
     ).fetchone()
-    conn.close()
     return row["valor"] if row else None
 
 

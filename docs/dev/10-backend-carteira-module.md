@@ -47,6 +47,11 @@ consultar `notas_sp`. O service materializa o contrato HTTP descrito em
 [`APIs`](#apis), preserva os marcadores de sincronização/tombstone e não
 converte falhas SQLite em estados neutros.
 
+O lookup usa `ix_nc_lookup_sap` (`id_sap`, `sap_real`, `sincronizado_em DESC`,
+`id_onr ASC`), alinhado ao filtro e ao desempate determinístico. Para cada
+requisição, o service abre uma única conexão e uma transação de leitura
+explícita: a versão e a nota são lidas da mesma snapshot antes do fechamento.
+
 ## Movimentação (Fase 2)
 
 `movimentacao.py` move notas da carteira para o plano do Input, espelhando o
