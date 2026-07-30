@@ -48,12 +48,14 @@ export function InputNotaResumo({
 interface InputNotaInspectorProps {
   nota: NotaInput | null;
   onClose: () => void;
+  returnFocusRef: React.RefObject<HTMLButtonElement | null>;
   onIrParaSincronizacao: () => void;
 }
 
 export function InputNotaInspector({
   nota,
   onClose,
+  returnFocusRef,
   onIrParaSincronizacao,
 }: InputNotaInspectorProps): React.JSX.Element {
   return (
@@ -61,6 +63,10 @@ export function InputNotaInspector({
       <SheetContent
         side="right"
         className="edp flex w-full max-w-none flex-col gap-0 p-0 sm:max-w-[560px]"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          returnFocusRef.current?.focus();
+        }}
       >
         <SheetHeader className="border-b border-line p-4">
           <SheetTitle>

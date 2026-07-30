@@ -63,7 +63,10 @@ separadamente por `stickyRightColumn` em `data-grid.tsx`; não entra em
 `COLUNAS` nem em `cols`, para que os índices usados por `calcularSelecao`
 e a soma/média/contagem continuem representando apenas colunas de dados.
 O alvo clicável ocupa 44×44px, interrompe a seleção somente no próprio
-botão e segue acessível por teclado.
+botão e segue acessível por teclado. Como a DSG registra a seleção em
+`mousedown` no documento, o botão interrompe `pointerdown` e `mousedown`;
+ao fechar o Sheet, `onCloseAutoFocus` devolve o foco à referência concreta
+do botão que o abriu.
 
 `overview.tsx` mantém somente a nota aberta como estado (`notaDetalhe`) e
 monta `DataGrid` e `InputNotaInspector` como irmãos. O Sheet exibe os

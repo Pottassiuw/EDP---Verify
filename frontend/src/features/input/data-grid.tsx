@@ -22,7 +22,7 @@ const LARGURA_MAX = 600;
 type Ordem = { campo: string; asc: boolean };
 
 interface DetalhesColumnData {
-  onOpenDetails: (nota: NotaInput) => void;
+  onOpenDetails: (nota: NotaInput, trigger: HTMLButtonElement) => void;
 }
 
 function CelulaDetalhes({
@@ -39,10 +39,11 @@ function CelulaDetalhes({
         aria-label={`Abrir detalhes da nota ${rowData.Numero_Nota}`}
         title="Abrir detalhes"
         onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.stopPropagation();
-          columnData.onOpenDetails(rowData);
+          columnData.onOpenDetails(rowData, event.currentTarget);
         }}
       >
         <PanelRightOpen />
@@ -165,7 +166,7 @@ export interface DataGridProps {
   registros: NotaInput[];
   colunas: ColunaDef[];
   altura?: number;
-  onOpenDetails?: (nota: NotaInput) => void;
+  onOpenDetails?: (nota: NotaInput, trigger: HTMLButtonElement) => void;
 }
 
 export function DataGrid({

@@ -39,6 +39,7 @@ export function Overview({
 }: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
   const [notaDetalhe, setNotaDetalhe] = React.useState<NotaInput | null>(null);
+  const botaoDetalheRef = React.useRef<HTMLButtonElement | null>(null);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
   const filtrados = React.useMemo(
@@ -60,6 +61,14 @@ export function Overview({
   }
 
   const filtrado = filtrados.length !== dados.registros.length;
+
+  const abrirDetalhes = React.useCallback(
+    (nota: NotaInput, trigger: HTMLButtonElement): void => {
+      botaoDetalheRef.current = trigger;
+      setNotaDetalhe(nota);
+    },
+    [],
+  );
 
   return (
     <div className="p-6 flex flex-col gap-6 max-w-full">
@@ -129,12 +138,13 @@ export function Overview({
         <DataGrid
           registros={filtrados}
           colunas={COLUNAS}
-          onOpenDetails={setNotaDetalhe}
+          onOpenDetails={abrirDetalhes}
         />
       </div>
       <InputNotaInspector
         nota={notaDetalhe}
         onClose={() => setNotaDetalhe(null)}
+        returnFocusRef={botaoDetalheRef}
         onIrParaSincronizacao={onIrParaSincronizacao}
       />
 
