@@ -61,7 +61,7 @@ export interface EdicaoResultado {
 
 export interface NotaRamal {
   Numero_Nota: number;
-  Status_Obra: string;
+  Status_Obra?: string;
   Conjunto: string;
   Circuito: string;
   Local_Instalacao: string;

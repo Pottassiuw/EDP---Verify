@@ -35,7 +35,7 @@ const MODOS: { id: ModoRamal; rotulo: string }[] = [
 
 const NOTA_RAMAL_VAZIA: Record<string, string> = {
   Numero_Nota: '', Status_Nota: '-', Prioridade_Nota: '-',
-  Planejado_DDPM: '0', Status_Obra: '-', Conjunto: '-', Circuito: '-',
+  Planejado_DDPM: '0', Conjunto: '-', Circuito: '-',
   Local_Instalacao: '-', Mes_Execucao_Planejado: '-',
   CenTrab_Respon: '-', Observacao: '', Extracao_Antiga: '-',
   Status_Anterior: '-', Check_Btzero: '-', Plano: '-',

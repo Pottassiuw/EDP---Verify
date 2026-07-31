@@ -36,7 +36,11 @@ export function InputSection({
       if (salvas) {
         const parsed = JSON.parse(salvas);
         if (typeof parsed.busca === 'string' && typeof parsed.somente2026 === 'boolean' && Array.isArray(parsed.filtros)) {
-          return parsed;
+          return {
+            ...FILTROS_INICIAIS,
+            ...parsed,
+            somenteNotasMaes: false,
+          };
         }
       }
     } catch (e) {

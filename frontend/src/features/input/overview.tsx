@@ -6,9 +6,7 @@ import { toast } from 'sonner';
 import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { type FiltersState } from './filters';
-import { DataGrid } from './data-grid';
-import { HierarquiaCard } from './hierarquia-card';
-import { InputNotaInspector } from './input-nota-inspector';
+import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
 import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
@@ -16,31 +14,60 @@ import { Eyebrow, StatNumber } from '@/components/branded/section';
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
   let resultado = registros;
-  const numeros = parseBuscaGlobal(estado.busca);
-  if (estado.busca.trim() !== '') {
-    resultado = numeros.length ? resultado.filter((r) => numeros.includes(r.Numero_Nota)) : [];
+
+  const buscaStr = estado.busca.trim();
+  if (buscaStr !== '') {
+    const numeros = parseBuscaGlobal(buscaStr);
+    if (numeros.length > 0) {
+      const setNums = new Set(numeros);
+      const setNumsStr = new Set(numeros.map(String));
+      resultado = resultado.filter((r) => {
+        const idNota = r.Numero_Nota;
+        const maeStr = String(r.Nota_Mae ?? '').trim();
+        return setNums.has(idNota) || setNumsStr.has(maeStr);
+      });
+    } else {
+      const query = buscaStr.toLowerCase();
+      resultado = resultado.filter((r) =>
+        Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(query))
+      );
+    }
   }
+
   if (estado.somente2026) {
     const anoAtual = String(new Date().getFullYear());
     resultado = resultado.filter((r) => String(r.Mes_Execucao_Planejado ?? '').includes(anoAtual));
   }
+
+  if (estado.somenteNotasMaes) {
+    const setMaesComFilhas = new Set<number>();
+    for (const r of registros) {
+      const maeStr = String(r.Nota_Mae ?? '').trim();
+      if (maeStr && maeStr !== '-' && maeStr !== 'None' && maeStr !== 'null') {
+        const maeId = Number(maeStr);
+        if (Number.isFinite(maeId) && maeId !== r.Numero_Nota) {
+          setMaesComFilhas.add(maeId);
+        }
+      }
+    }
+    resultado = resultado.filter((r) => setMaesComFilhas.has(r.Numero_Nota));
+  }
+
   return aplicarFiltros(resultado, estado.filtros);
 }
 
 interface OverviewProps {
   dados: InputDataset;
   estado: FiltersState;
-  onIrParaSincronizacao: () => void;
+  onIrParaSincronizacao?: () => void;
 }
 
 export function Overview({
   dados,
   estado,
-  onIrParaSincronizacao,
 }: OverviewProps): React.JSX.Element {
   const [exportando, setExportando] = React.useState(false);
-  const [notaDetalhe, setNotaDetalhe] = React.useState<NotaInput | null>(null);
-  const botaoDetalheRef = React.useRef<HTMLButtonElement | null>(null);
+  const [agruparGavetinhas, setAgruparGavetinhas] = React.useState(true);
   const recarregar = useRecarregarInput();
   const { status: vinculoStatus } = useAutoVinculos(dados.registros);
   const filtrados = React.useMemo(
@@ -63,14 +90,6 @@ export function Overview({
 
   const filtrado = filtrados.length !== dados.registros.length;
 
-  const abrirDetalhes = React.useCallback(
-    (nota: NotaInput, trigger: HTMLButtonElement): void => {
-      botaoDetalheRef.current = trigger;
-      setNotaDetalhe(nota);
-    },
-    [],
-  );
-
   return (
     <div className="p-6 flex flex-col gap-6 max-w-full">
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
@@ -83,6 +102,15 @@ export function Overview({
           </Eyebrow>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={agruparGavetinhas ? "secondary" : "outline"}
+            size="sm"
+            className="h-9 px-3 text-xs"
+            onClick={() => setAgruparGavetinhas((prev) => !prev)}
+            title="Alternar visualização agrupada (gavetinhas) de notas mães e filhas"
+          >
+            {agruparGavetinhas ? "📁 Visão Hierárquica" : "📄 Visão Plana"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -136,18 +164,13 @@ export function Overview({
       </div>
 
       <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
-        <DataGrid
+        <NotesTable
           registros={filtrados}
+          todosOsRegistros={dados.registros}
           colunas={COLUNAS}
-          onOpenDetails={abrirDetalhes}
+          agruparGavetinhas={agruparGavetinhas}
         />
       </div>
-      <InputNotaInspector
-        nota={notaDetalhe}
-        onClose={() => setNotaDetalhe(null)}
-        returnFocusRef={botaoDetalheRef}
-        onIrParaSincronizacao={onIrParaSincronizacao}
-      />
 
       <div className="flex items-center justify-between text-xs text-text-mute font-mono px-3 py-2 bg-surface-2/50 rounded-md border border-line">
         <div className="flex items-center gap-2">
@@ -162,8 +185,6 @@ export function Overview({
         </div>
         <CheckCircle2 className="h-3.5 w-3.5 text-green shrink-0" />
       </div>
-
-      <HierarquiaCard registros={dados.registros} recarregar={recarregar} />
     </div>
   );
 }

@@ -26,12 +26,14 @@ export interface FiltersState {
   busca: string;
   filtros: Filtro[];
   somente2026: boolean;
+  somenteNotasMaes: boolean;
 }
 
 export const FILTROS_INICIAIS: FiltersState = {
   busca: "",
   filtros: [],
   somente2026: true,
+  somenteNotasMaes: false,
 };
 
 interface FiltersProps {
@@ -411,6 +413,19 @@ export function Filters({
           />
           <Label htmlFor="switch-2026" className="text-[12.5px] font-medium text-text-dim cursor-pointer">
             Planejado {new Date().getFullYear()}
+          </Label>
+        </div>
+
+        {/* Seletor On/Off para Apenas Notas Mães (Gavetinhas) */}
+        <div className="flex items-center gap-[8px] bg-bg-2 border border-line-2 px-[12px] h-[34px] rounded-sm select-none">
+          <Switch
+            id="switch-maes"
+            checked={estado.somenteNotasMaes}
+            onCheckedChange={(checked) => setEstado({ ...estado, somenteNotasMaes: checked })}
+            size="sm"
+          />
+          <Label htmlFor="switch-maes" className="text-[12.5px] font-medium text-text-dim cursor-pointer flex items-center gap-1.5">
+            <span>📁 Apenas Notas Mães</span>
           </Label>
         </div>
 
