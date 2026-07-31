@@ -614,7 +614,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                   <Card className="bg-surface-2 border-line shadow-xs">
                     <CardContent className="pt-[14px] pb-[14px]">
                       <div className="flex items-center justify-between border-b border-line pb-[8px] mb-[10px]">
-                        <h4 className="text-[13px] font-bold text-text flex items-center gap-[6px]">
+                        <h4 className="text-[13px] font-semibold text-text flex items-center gap-[6px]">
                           📌 Detalhes da Nota Mãe <span className="font-mono text-primary">{maeSelecionada}</span>
                         </h4>
                         <span className="text-[11.5px] px-[8px] py-[2px] rounded-full bg-primary/10 text-primary font-semibold">
@@ -642,7 +642,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                   <div className="flex items-center justify-between gap-[10px] flex-wrap bg-primary/5 border border-primary/20 p-[10px] rounded-[8px]">
                     <div className="flex items-center gap-[6px]">
                       <Sparkles size={15} className="text-primary" />
-                      <span className="text-[12px] font-bold text-text">Ações Rápidas de Rateio:</span>
+                      <span className="text-[12px] font-semibold text-text">Ações Rápidas de Rateio:</span>
                     </div>
                     <div className="flex items-center gap-[8px] flex-wrap">
                       <Button
@@ -705,7 +705,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                                 const v = parseFloat(e.target.value) || 0;
                                 setNovasMedidasHier((prev) => ({ ...prev, [maeRowDetails.Numero_Nota]: v }));
                               }}
-                              className="h-[28px] py-0 px-[6px] text-right text-[12.5px] border-line font-mono font-bold"
+                              className="h-[28px] py-0 px-[6px] text-right text-[12.5px] border-line font-mono font-semibold"
                             />
                           </td>
                           <td className="py-[6px] px-[12px] text-center">
@@ -713,7 +713,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                               <button
                                 type="button"
                                 onClick={() => fecharRestanteEm(maeRowDetails.Numero_Nota)}
-                                className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                                className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
                                 title="Jogar a diferença restante nesta nota"
                               >
                                 + Restante
@@ -747,7 +747,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                                 <button
                                   type="button"
                                   onClick={() => fecharRestanteEm(f.Numero_Nota)}
-                                  className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                                  className="text-[11px] font-medium text-primary hover:underline cursor-pointer"
                                   title="Jogar a diferença restante nesta nota"
                                 >
                                   + Restante
@@ -765,7 +765,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     <Card className="flex-1 min-w-[180px] border-line bg-surface">
                       <CardContent className="pt-[12px] pb-[12px]">
                         <span className="text-[11px] text-text-mute uppercase tracking-[.04em] font-sans">Total Alvo (DDPM)</span>
-                        <div className="text-[17px] font-bold mt-[2px] font-mono">
+                        <div className="text-[17px] font-semibold mt-[2px] font-mono">
                           {valMaeTarget.toFixed(3)} {undMae}
                         </div>
                       </CardContent>
@@ -773,7 +773,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     <Card className="flex-1 min-w-[180px] border-line bg-surface">
                       <CardContent className="pt-[12px] pb-[12px]">
                         <span className="text-[11px] text-text-mute uppercase tracking-[.04em] font-sans">Soma Distribuída</span>
-                        <div className="text-[17px] font-bold mt-[2px] font-mono">
+                        <div className="text-[17px] font-semibold mt-[2px] font-mono">
                           {somaFilhas.toFixed(3)} {undMae}
                         </div>
                       </CardContent>
@@ -783,7 +783,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     }`}>
                       <CardContent className="pt-[12px] pb-[12px]">
                         <span className="text-[11px] text-text-mute uppercase tracking-[.04em] font-sans">Diferença Restante</span>
-                        <div className={`text-[17px] font-bold mt-[2px] font-mono flex items-center gap-[6px] ${
+                        <div className={`text-[17px] font-semibold mt-[2px] font-mono flex items-center gap-[6px] ${
                           somaFechada ? 'text-green' : 'text-red'
                         }`}>
                           {somaFechada ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}

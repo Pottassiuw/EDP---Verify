@@ -246,7 +246,7 @@ export function MultiSelect({
                 return (
                   <div key={group.year} className="flex flex-col gap-[2px] border-b border-line-2/40 pb-[4px]">
                     {/* Cabeçalho do Ano */}
-                    <div className="flex items-center justify-between w-full px-[6px] py-[4px] rounded-[4px] bg-bg-2/80 hover:bg-surface-2 text-[11.5px] font-bold text-text-dim transition-colors group/year">
+                    <div className="flex items-center justify-between w-full px-[6px] py-[4px] rounded-[4px] bg-bg-2/80 hover:bg-surface-2 text-[11.5px] font-semibold text-text-dim transition-colors group/year">
                       <button
                         type="button"
                         onClick={() => toggleYear(group.items)}
@@ -497,7 +497,7 @@ export function Filters({
                   className="flex flex-col gap-[6px] p-[10px] bg-surface border border-line-2 rounded-[8px] w-full sm:w-[240px] shadow-sm relative group/card hover:border-line-2/80 transition-colors"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider font-sans">
+                    <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider font-sans">
                       {ROTULOS[f.campo] ?? f.campo}
                     </span>
                     <button

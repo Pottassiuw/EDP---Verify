@@ -1,5 +1,6 @@
 import React from 'react';
 import { ACCENT_PRESETS, useSettings } from '../../context/settings-context';
+import { PageHeader } from '@/components/branded/section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -19,10 +20,9 @@ export function ConfiguracoesPage(): React.JSX.Element {
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-2xl px-6 py-8 md:px-8">
-        <header className="mb-6">
-          <h1 className="text-xl font-bold text-foreground">Configurações</h1>
-          <p className="text-sm text-muted-foreground">Aparência e preferências do EDP Verify.</p>
-        </header>
+        <div className="mb-6">
+          <PageHeader title="Configurações" subtitle="Aparência e preferências do EDP Verify." />
+        </div>
 
         <div className="flex flex-col gap-4">
           <Card>

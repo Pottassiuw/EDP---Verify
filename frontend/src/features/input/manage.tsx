@@ -204,7 +204,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
       {/* Seletor da Base (Geral vs Ramal) */}
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-text-mute">Base de Dados:</span>
+          <span className="text-xs font-mono font-semibold uppercase tracking-wider text-text-mute">Base de Dados:</span>
           <SegTabs
             tabs={[
               { id: 'geral', rotulo: '📋 Geral' },

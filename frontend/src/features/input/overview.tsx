@@ -94,7 +94,7 @@ export function Overview({
     <div className="p-6 flex flex-col gap-6 max-w-full">
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <div className="flex items-baseline gap-3">
-          <StatNumber className="text-2xl font-bold tracking-tight text-foreground">
+          <StatNumber>
             {filtrados.length.toLocaleString('pt-BR')}
           </StatNumber>
           <Eyebrow className="text-xs tracking-wider">

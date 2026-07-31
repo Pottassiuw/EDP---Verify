@@ -210,7 +210,7 @@ export function Ramal({
       {modo === 'visao' && dadosRamal && (
         <React.Fragment>
           <div className="flex items-baseline gap-3 bg-surface p-4 rounded-lg border border-line shadow-sm">
-            <StatNumber className="text-2xl font-bold tracking-tight text-foreground">{registros.length.toLocaleString('pt-BR')}</StatNumber>
+            <StatNumber>{registros.length.toLocaleString('pt-BR')}</StatNumber>
             <Eyebrow className="text-xs tracking-wider">notas cadastradas no ramal</Eyebrow>
           </div>
           <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">

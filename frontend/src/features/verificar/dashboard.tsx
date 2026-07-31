@@ -365,7 +365,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
         <div>
           <div className="flex items-center gap-[10px]">
             {/* ponytail: sem `text-balance` — o `whitespace-nowrap` do call site já vencia a classe legada. */}
-            <h2 className="text-[21px] font-semibold leading-[1.15] tracking-display whitespace-nowrap m-0">Nota {sel.id}</h2>
+            <h2 className="text-lg font-semibold leading-[1.15] tracking-display whitespace-nowrap m-0">Nota {sel.id}</h2>
             <PriorityChip p={sel.prioridade} />
             <StatusTag status={sel.status} done={done} dup={dup} />
           </div>
