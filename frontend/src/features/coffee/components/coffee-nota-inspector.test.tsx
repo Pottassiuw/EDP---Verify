@@ -15,14 +15,6 @@ import { NOTA_LOGS_KEY } from '../use-coffee-logs';
 import { REVISAO_KEY } from '../use-nota-revisao';
 import { CoffeeNotaInspector } from './coffee-nota-inspector';
 
-vi.mock('../use-coffee-portal-theme', () => ({
-  useCoffeePortalTheme: () => ({
-    'data-theme': 'dark',
-    'data-density': 'cozy',
-    style: {},
-  }),
-}));
-
 vi.mock('@/components/ui/sheet', () => {
   const passthrough = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>

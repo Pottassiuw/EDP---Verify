@@ -71,27 +71,42 @@ STATE_FILE = pathlib.Path(__file__).parent / "app_state.json"
 
 
 def save_state():
+    # Escrita atômica: sem o temporário, uma falha no meio da gravação
+    # (acentos + codec locale do Windows) trunca o arquivo bom para 0 byte
+    # e a triagem carregada se perde no próximo start do backend.
+    tmp = STATE_FILE.with_name(STATE_FILE.name + ".tmp")
     try:
-        STATE_FILE.write_text(
+        tmp.write_text(
             json.dumps(
                 {"records": RECORDS, "completed": list(COMPLETED)},
                 ensure_ascii=False,
-            )
+            ),
+            encoding="utf-8",
         )
-    except Exception:
-        pass
+        tmp.replace(STATE_FILE)
+    except Exception as e:
+        tmp.unlink(missing_ok=True)
+        print(
+            f"Falha ao salvar {STATE_FILE.name}: {e}. "
+            "A triagem continua em memória, mas será perdida ao reiniciar "
+            "o backend — reimporte a planilha em COFFEE > Verificar."
+        )
 
 
 def load_state():
     global RECORDS, COMPLETED
-    if not STATE_FILE.exists():
+    if not STATE_FILE.exists() or STATE_FILE.stat().st_size == 0:
         return
     try:
-        state = json.loads(STATE_FILE.read_text())
+        state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
         RECORDS = state.get("records", [])
         COMPLETED = set(state.get("completed", []))
-    except Exception:
-        pass
+    except Exception as e:
+        print(
+            f"Falha ao ler {STATE_FILE.name}: {e}. "
+            "Iniciando com a triagem vazia — reimporte a planilha em "
+            "COFFEE > Verificar."
+        )
 
 
 load_state()

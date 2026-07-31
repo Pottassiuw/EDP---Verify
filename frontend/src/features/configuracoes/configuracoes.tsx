@@ -1,14 +1,8 @@
 import React from 'react';
-import { useSettings } from '../../context/settings-context';
+import { ACCENT_PRESETS, useSettings } from '../../context/settings-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
-const ACCENT_PRESETS: [string, string, string][] = [
-  ["#00a859", "#1dbd6e", "rgba(0,168,89,0.13)"],
-  ["#1f9fd6", "#46b6e3", "rgba(31,159,214,0.14)"],
-  ["#6b5ce6", "#8576ec", "rgba(107,92,230,0.15)"],
-];
 
 function Row({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (

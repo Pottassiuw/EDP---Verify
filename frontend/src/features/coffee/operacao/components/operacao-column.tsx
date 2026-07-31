@@ -28,7 +28,7 @@ export function OperacaoColumn(props: OperacaoColumnProps): React.JSX.Element {
           <h2 id={`coffee-column-${props.etapa}`} className="text-sm font-semibold">
             {props.titulo}
           </h2>
-          <span className="edp-mono rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-mute">
+          <span className="font-mono rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-mute">
             {props.itens.length}
           </span>
         </div>

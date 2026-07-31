@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CarteiraSubPage } from '../../types';
-import { PageHeader, SegTabs } from '@/components/branded/section';
+import { PageHeader, SectionPage, SegTabs } from '@/components/branded/section';
 import type { FiltrosCarteira } from './types';
 import { CARTEIRA_SUBS } from './subs';
 import { DashboardCarteiraView } from './dashboard/dashboard';
@@ -21,7 +21,7 @@ export function CarteiraSection({ sub, setSub, handoff }: {
   }
 
   return (
-    <div className="edp-page carteira-scope" style={{ height: '100%', overflow: 'auto' }}>
+    <SectionPage  style={{ height: '100%', overflow: 'auto' }}>
       <PageHeader
         eyebrow="Databricks · base COFFEE"
         title="Carteira de Notas"
@@ -32,6 +32,6 @@ export function CarteiraSection({ sub, setSub, handoff }: {
         : sub === 'explorador' ? <Explorador handoff={handoff} drill={drill} />
         : sub === 'divergencias' ? <Divergencias />
         : <Sincronizacao />}
-    </div>
+    </SectionPage>
   );
 }

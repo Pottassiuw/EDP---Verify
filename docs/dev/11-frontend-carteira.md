@@ -57,8 +57,8 @@ fonte, não de regra: números e visual idênticos à Fase 3b.
   único na base — 1.548 duplicatas no subset SP; dois `id_onr` virariam o
   mesmo `Numero_Nota`). O backend também recusa o lote (all-or-nothing);
   a guarda no cliente evita o clicar-e-tomar-409.
-- **`DialogContent`** portalizado recebe `className="edp carteira-scope"`
-  (canvas branco Supabaze), mesma ressalva de Sheet/Select da Fase 1b.
+- **`DialogContent`** portalizado não precisa de classe de escopo: desde a
+  Fase 4c os tokens vivem em `:root` e o portal os herde direto do `<html>`.
 - **Aba Divergências** (`divergencias/divergencias.tsx`): consome
   `GET /divergencias`; badge por tipo (`cancelada`/`ausente_na_origem`).
   Só alerta; nada é alterado automaticamente.
@@ -125,50 +125,57 @@ junto do aviso e da data. Nenhum outro estado oferece retry.
 
 ## Direção visual — Supabaze (DESIGN.md)
 
-Esta é a primeira feature construída na direção visual do DESIGN.md
-(decisão registrada no brainstorm da Carteira). O resto do app segue
-no tema EDP (`.edp`, dark-first) até a migração completa.
+A Carteira foi a primeira feature construída na direção visual do
+DESIGN.md. **Desde a fundação da Fase 4c-0 ela deixou de ser exceção:**
+os tokens Supabaze são o padrão global em `:root` e a Carteira virou o
+**ponto de não-regressão** da migração — se ela mudar de aparência,
+a fundação está errada.
 
-**Mecanismo de escopo:** classe `.carteira-scope` (definida em
-`app.css`) sobrescreve as mesmas CSS custom properties que `.edp`
-define — como todo componente (StatTile, Badge, Table, Sheet, Button)
-já consome essas variáveis via `var(--...)`, a reskin cascateia sem
-tocar em nenhum componente compartilhado.
+**`.carteira-scope` não existe mais.** A classe foi removida na 4c-fim: a
+Carteira herda a paleta de `:root` como qualquer outra seção e **acompanha o
+tema do app** — canvas branco no claro, `canvas-night` no escuro. O canvas
+branco continua sendo o compromisso autoritativo do DESIGN.md para o tema
+claro, mas deixou de ser imposto à força sobre um app escuro.
 
-**Duas armadilhas reais encontradas na implementação** (documentadas
-para quem for escopar a próxima seção):
+**Duas armadilhas reais encontradas na implementação** (continuam
+valendo para quem mexer em token):
 
-1. **Cascade layers.** `:root, .edp { --bg: ...; }` é CSS *sem layer*
+1. **Cascade layers.** Os blocos de token são CSS *sem layer*
    (unlayered). CSS sem layer sempre vence CSS dentro de `@layer`,
-   **independente de especificidade do seletor** — por isso
-   `.carteira-scope` precisa estar fora de `@layer components {}`
-   (mesmo padrão já usado por `[data-slot="sidebar-container"]` no
-   rodapé do arquivo). Colocar o override dentro do layer faz o
-   `.edp` ancestral vencer silenciosamente — sem erro, sem warning,
-   só o valor errado.
+   **independente de especificidade do seletor** — mesmo padrão usado
+   por `[data-slot="sidebar-container"]` no rodapé do arquivo. Um
+   override de token colocado dentro de `@layer components` perde
+   silenciosamente: sem erro, sem warning, só o valor errado.
 2. **Bridge parcial.** Uma custom property herdada (`--background:
-   var(--bg)` declarada em `.edp`) já resolveu seu valor *no
-   ancestral* — mudar `--bg` num descendente não a recalcula. É
-   preciso redeclarar toda a ponte consumida pelos componentes shadcn
-   (`--background`, `--foreground`, `--card`, `--popover`, `--primary`,
-   `--muted`, `--border`, etc.) dentro do próprio `.carteira-scope`,
-   não só os tokens "crus".
+   var(--bg)`) já resolveu seu valor *no ancestral* — mudar `--bg` num
+   descendente não a recalcula. Todo escopo que redefina token cru
+   precisa redeclarar a ponte shadcn inteira junto. É por isso que a
+   ponte mora no bloco do tema claro, e não no bloco do tema escuro — este
+   pinta o mesmo elemento que `:root` e por isso recalcula sozinho.
 
-**Conteúdo portalizado** (Sheet, Select) renderiza fora da árvore DOM
-da seção — a classe `.carteira-scope` precisa ser aplicada
-explicitamente em `SheetContent`/`SelectContent` também (mesma
-ressalva que já valia para `.edp` em conteúdo do Radix).
+**Conteúdo portalizado** (Sheet, Select) renderiza fora da árvore DOM da
+seção e resolve os tokens direto de `:root`. Não é preciso replicar escopo
+nenhum no call site — as classes que faziam isso à mão em `detalhe-sheet.tsx`,
+`explorador/filtros.tsx` e `mover/mover-modal.tsx` saíram na 4c-fim.
 
 **Correção de acessibilidade:** o padrão herdado do tema escuro
 (`bg-tint-green` + `text-green`) usa o verde-esmeralda como cor de
-*texto* — funciona no dark (alto contraste contra navy), mas falha
-AA (1.96:1) em canvas branco. O badge `situPlano` (situação
-"no_plano") foi corrigido para o padrão real do DESIGN.md
+*texto* — falha AA (1.96:1) em canvas branco. O badge `situPlano`
+(situação "no_plano") foi corrigido para o padrão real do DESIGN.md
 (`pill-tag-green`): preenchimento sólido + texto quase-preto. Os
 outros três tons de status (`indigo`/`amber`/`red`) foram escurecidos
 a partir dos valores literais do DESIGN.md para passar AA como texto
 pequeno sobre a própria tinta — os valores puros do doc (ex.:
 `accent-yellow #ffdb13`) são claros demais para isso.
+
+**Ainda em aberto:** a mesma convenção tint+texto-colorido vale para as
+outras 11 variantes de `ui/badge.tsx` (`tagOk`, `tagErr`, `tagDone`,
+`tagDup`, `prio*`, `situExec`, `situFora`, `situCancel`), que só o
+`situPlano` corrigiu. Com o canvas branco global desde a 4c-0, elas
+falhavam AA. Corrigido: as três variantes verdes passaram ao padrão
+`pill-tag-green` do DESIGN.md (verde sólido + tipo quase-preto) e `prioNone`
+trocou a tinta terciária pela secundária. No tema escuro os tons são
+clareados por `:root[data-theme="dark"]` e o problema não ocorria.
 
 ## Sync dot — a assinatura da tela
 

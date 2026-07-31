@@ -1,4 +1,5 @@
 import React from "react";
+import { Eyebrow } from "@/components/branded/section";
 import { Badge } from "@/components/ui/badge";
 import type { FieldProps, NoteStatus } from "../../types";
 
@@ -78,12 +79,9 @@ export const Field: React.FC<FieldProps> = ({
       minWidth: grow ? 150 : 0,
     }}
   >
-    <span
-      className="edp-eyebrow"
-      style={{ color: accent ? "var(--green)" : "var(--text-mute)" }}
-    >
+    <Eyebrow style={{ color: accent ? "var(--green)" : "var(--text-mute)" }}>
       {label}
-    </span>
+    </Eyebrow>
     {children}
   </label>
 );

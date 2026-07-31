@@ -3,6 +3,7 @@ import type { UploadScreenProps } from "../../types";
 import { EDPApi } from "../../api";
 const LOGO_EXCEL = "/assets/logo_excel.svg";
 import { LOGO_DARK, LOGO_LIGHT } from "./shared";
+import { Eyebrow } from "@/components/branded/section";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -77,9 +78,9 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           >
             To De Olho 👀
           </div>
-          <div className="edp-eyebrow mt-[4px]">
+          <Eyebrow asChild><div className="mt-[4px]">
             Verificação de notas SAP
-          </div>
+          </div></Eyebrow>
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         }}
         onDragLeave={() => setDrag(false)}
         onDrop={onDrop}
-        className="bg-surface rounded-edp-lg py-[44px] px-[40px] relative z-[1] w-full max-w-[480px] cursor-pointer text-center [transition:all_.16s_ease]"
+        className="bg-surface rounded-app-lg py-[44px] px-[40px] relative z-[1] w-full max-w-[480px] cursor-pointer text-center [transition:all_.16s_ease]"
         style={{
           border: "1px solid " + (drag ? "var(--accent)" : "var(--line-2)"),
           boxShadow: drag ? "0 0 0 4px var(--accent-tint)" : "var(--shadow)",
@@ -147,7 +148,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
           {[".xlsx", ".xls", ".csv"].map((f) => (
             <span
               key={f}
-              className="edp-mono text-[11px] text-text-mute py-[3px] px-[10px] border border-line-2 bg-bg-2 rounded-[5px]"
+              className="font-mono text-[11px] text-text-mute py-[3px] px-[10px] border border-line-2 bg-bg-2 rounded-[5px]"
             >
               {f}
             </span>
@@ -163,7 +164,7 @@ export const UploadScreen: React.FC<UploadScreenProps> = ({
         )}
         {err && (
           <div
-            className="py-[11px] px-[14px] rounded-edp-sm bg-tint-amber text-amber text-[12px] mt-[18px] text-left border leading-normal"
+            className="py-[11px] px-[14px] rounded-app-sm bg-tint-amber text-amber text-[12px] mt-[18px] text-left border leading-normal"
             style={{ borderColor: "rgba(240,169,59,0.35)" }}
           >
             {err}

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Eyebrow } from '@/components/branded/section';
 
 import { CarteiraEnriquecimentoCard } from '../carteira/carteira-enriquecimento-card';
 import { ROTULOS } from './columns';
@@ -26,16 +27,18 @@ export function InputNotaResumo({
 }): React.JSX.Element {
   return (
     <section aria-labelledby="input-nota-resumo">
-      <h2 id="input-nota-resumo" className="edp-eyebrow mb-3">
-        Resumo do Input
-      </h2>
+      <Eyebrow asChild className="mb-3">
+        <h2 id="input-nota-resumo">
+          Resumo do Input
+        </h2>
+      </Eyebrow>
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {CAMPOS_RESUMO.map((campo) => (
           <div key={campo} className="min-w-0">
             <dt className="text-xs text-text-mute">
               {ROTULOS[campo] ?? campo}
             </dt>
-            <dd className="edp-mono mt-1 break-words text-sm">
+            <dd className="font-mono mt-1 break-words text-sm">
               {String(nota[campo] ?? '—')}
             </dd>
           </div>
@@ -62,7 +65,7 @@ export function InputNotaInspector({
     <Sheet open={nota !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="right"
-        className="edp flex w-full max-w-none flex-col gap-0 p-0 sm:max-w-[560px]"
+        className="flex w-full max-w-none flex-col gap-0 p-0 sm:max-w-[560px]"
         onEscapeKeyDown={(event) => event.stopPropagation()}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
@@ -71,7 +74,7 @@ export function InputNotaInspector({
       >
         <SheetHeader className="border-b border-line p-4">
           <SheetTitle>
-            Nota SAP <span className="edp-mono">#{nota?.Numero_Nota ?? '—'}</span>
+            Nota SAP <span className="font-mono">#{nota?.Numero_Nota ?? '—'}</span>
           </SheetTitle>
         </SheetHeader>
         {nota !== null && (

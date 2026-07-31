@@ -6,7 +6,7 @@ import { valoresUnicos, formatarNumero } from './lib';
 import type { ColunaDef } from './columns';
 import { NotesTable } from './notes-table';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/branded/section';
+import { PageHeader, SectionPage } from '@/components/branded/section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiSelect } from './filters';
 import { Loader2, Mail } from 'lucide-react';
@@ -553,7 +553,7 @@ export function Reports({
   }
 
   return (
-    <div className="edp-page flex flex-col gap-[16px]">
+    <SectionPage className="flex flex-col gap-[16px]">
       <PageHeader
         eyebrow="Relatórios"
         title="Painel Executivo"
@@ -932,7 +932,7 @@ export function Reports({
               size="sm"
               disabled={enviandoEmailSt10 || registrosPlanejamento.length === 0}
               onClick={() => { void dispararEmailStatus10(); }}
-              className="bg-primary hover:bg-primary/90 text-white gap-[6px]"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-[6px]"
             >
               {enviandoEmailSt10 ? (
                 <>
@@ -1287,6 +1287,6 @@ export function Reports({
           </div>
         </>
       )}
-    </div>
+    </SectionPage>
   );
 }

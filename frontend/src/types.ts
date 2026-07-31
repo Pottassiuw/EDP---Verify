@@ -132,7 +132,10 @@ export interface RuleMeta {
 }
 
 // ── Estado de Tweaks ─────────────────────────────────────────────────────
-export type Accent = [string, string, string];
+/** [sólido, hover, tint, tipo-sobre-o-sólido].
+ *  O quarto valor existe porque o pareamento não é derivável: o esmeralda
+ *  pede tipo quase-preto e os acentos escuros pedem branco. */
+export type Accent = [string, string, string, string];
 
 // ── Camada de dados / API ────────────────────────────────────────────────
 export interface FetchResult {

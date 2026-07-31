@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DuplicateCompareProps, DuplicateField, ComparableFields } from '../../types';
 import { EDPApi } from '../../api';
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Coffee } from 'lucide-react';
 
@@ -75,9 +76,9 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
       <style>{DUPC_STYLE}</style>
       <div className="flex items-start justify-between gap-[14px] flex-wrap mb-[12px]">
         <div>
-          <div className="edp-eyebrow text-indigo">
+          <Eyebrow asChild className="text-indigo"><div>
             ⚠ Possível duplicata · {cands.length} {cands.length === 1 ? "candidata" : "candidatas"}
-          </div>
+          </div></Eyebrow>
           <div className="text-[12.5px] text-text-dim mt-[5px] max-w-[440px]">
             Compare cada candidata com a nota aberta e confirme direto no COFFEE antes de marcar.
           </div>
@@ -109,7 +110,7 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
           <div key={c.id} className="dupc-card">
             <div className="dupc-hd">
               <div className="flex items-center gap-[10px] min-w-0">
-                <span className="edp-mono text-[13px] font-semibold">{c.id}</span>
+                <span className="font-mono text-[13px] font-semibold">{c.id}</span>
                 {inSheet ? (
                   <span className="dupc-badge" style={{
                     color: strong ? "var(--green)" : "var(--amber)",

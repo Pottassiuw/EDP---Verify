@@ -147,10 +147,15 @@ function AppContent(): React.JSX.Element {
   }
 
   const { data: apiData } = useTriageData();
+  // A hidratação da triagem vale uma vez por sessão. Sem a trava, um refetch
+  // do React Query devolve as notas do backend e joga o usuário de volta ao
+  // dashboard logo depois de ele pedir "↑ Nova" para importar outra planilha.
+  const triagemHidratada = React.useRef(false);
 
   React.useEffect(() => {
-    if (_snap) return;
+    if (_snap || triagemHidratada.current) return;
     if (!apiData?.notes?.length || screen !== "upload") return;
+    triagemHidratada.current = true;
     setNotes(apiData.notes);
     setCompleted(apiData.completed);
     setSource("api");
@@ -159,6 +164,7 @@ function AppContent(): React.JSX.Element {
   }, [apiData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleUpload(f: File): Promise<void> {
+    triagemHidratada.current = true;
     limparFiltrosVerify();
     limparSnapshot();
     const p = (async () => { await EDPApi.upload(f); return EDPApi.fetchData(); })();
@@ -253,7 +259,7 @@ function AppContent(): React.JSX.Element {
   };
 
   return (
-    <div className="edp triage" data-theme={resolvedTheme} data-density={settings.density}
+    <div className="triage" data-theme={resolvedTheme} data-density={settings.density}
          style={{ height: "100vh", overflow: "hidden", background: "var(--bg)", ...accentStyle } as CssVars}>
       <SidebarProvider style={{ height: "100%", minHeight: 0 }}>
         <AppSidebar section={section} setSection={changeSection}

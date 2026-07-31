@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { SegTabs, Banner } from '@/components/branded/section';
+import { SegTabs, Banner, Eyebrow } from '@/components/branded/section';
 import { ConfirmModal } from '../coffee/confirm-modal';
 
 import { Rateio } from './rateio';
@@ -207,7 +207,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
           {modo === 'lote' && (
             <Card className="border border-line bg-surface shadow-sm">
               <CardHeader className="pb-3">
-                <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Ação em Lote</span>
+                <Eyebrow className="text-xs tracking-wider">Ação em Lote</Eyebrow>
                 <CardTitle className="text-base font-semibold text-foreground">Alterar Campos em Lote</CardTitle>
               </CardHeader>
               <CardContent>
@@ -296,7 +296,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
       {modo === 'cadastro' && (
         <Card className="border border-line bg-surface shadow-sm">
           <CardHeader className="pb-3">
-            <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Novo Registro</span>
+            <Eyebrow className="text-xs tracking-wider">Novo Registro</Eyebrow>
             <CardTitle className="text-base font-semibold text-foreground">Cadastrar Nota Individual</CardTitle>
           </CardHeader>
           <CardContent>

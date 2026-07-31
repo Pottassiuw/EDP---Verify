@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Eyebrow } from '@/components/branded/section';
 
 interface HierarquiaCardProps {
   registros: NotaInput[];
@@ -77,7 +78,7 @@ export function HierarquiaCard({ registros, recarregar }: HierarquiaCardProps): 
   return (
     <Card className="border border-line bg-surface shadow-sm">
       <CardHeader className="pb-3">
-        <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Hierarquia Manual</span>
+        <Eyebrow className="text-xs tracking-wider">Hierarquia Manual</Eyebrow>
         <CardTitle className="text-base font-semibold text-foreground">Vincular Nota-Mãe e Filhas</CardTitle>
       </CardHeader>
       <CardContent>

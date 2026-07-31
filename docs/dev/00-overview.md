@@ -130,20 +130,22 @@ cd frontend && npm run build                    # type-check (tsc) + build
 | Backend — integracao_module | `backend/integracao_module/` | Ponte COFFEE → Input: monta revisão de uma nota gerada e move (cria/atualiza) o registro correspondente no plano | [08-integracao-coffee-input.md](./08-integracao-coffee-input.md) |
 | Backend — databricks_module | `backend/databricks_module/` | Integração genérica e reutilizável com o Databricks SQL Warehouse (client, config, descoberta de schema); base da Carteira de Notas | [09-backend-databricks-module.md](./09-backend-databricks-module.md) |
 | Backend — carteira_module | `backend/carteira_module/` | Projeção local da base COFFEE (Databricks), sync idempotente, situação derivada e API do explorador da Carteira de Notas | [10-backend-carteira-module.md](./10-backend-carteira-module.md) |
-| Carteira | `frontend/src/features/carteira/` | Explorador da base COFFEE (Databricks): tabela paginada, filtros, situação, detalhe e sincronização — primeira feature na direção visual Supabaze (DESIGN.md) | [11-frontend-carteira.md](./11-frontend-carteira.md) |
+| Carteira | `frontend/src/features/carteira/` | Explorador da base COFFEE (Databricks): tabela paginada, filtros, situação, detalhe e sincronização — referência de não-regressão da direção visual Supabaze (DESIGN.md), hoje global | [11-frontend-carteira.md](./11-frontend-carteira.md) |
 | Backend — core (Verificar) | `backend/main.py` | Endpoints `/api/upload`, `/api/data`, `/api/complete`, `/api/duplicata`; monta os routers de `coffee_module`/`input_module` | (sem doc dedicado — coberto neste overview e em 07) |
 
 ## Pontos de atenção
 
-- `backend/main.py:78-79` e `backend/main.py:90-91` — `save_state()` e
-  `load_state()` engolem qualquer exceção com `except Exception: pass`,
-  sem log nem mensagem — contraria a regra de `CLAUDE.md` ("Never
-  silently ignore exceptions").
 - `backend/main.py:61-63` — `RECORDS`/`COMPLETED` são estado global
   em memória do processo Python (não por sessão/usuário), persistido em
   `backend/app_state.json` só nos pontos em que `save_state()` é chamado
   explicitamente; um restart sem esse arquivo perde o estado da última
   planilha carregada.
+  `save_state()` grava em `app_state.json.tmp` e só então faz `replace()`,
+  com `encoding="utf-8"` explícito nos dois sentidos. Sem isso, uma planilha
+  com acentos estourava `UnicodeEncodeError` no codec locale do Windows
+  depois de o arquivo já ter sido truncado, deixando `app_state.json` com
+  0 byte — a triagem carregada em COFFEE > Verificar sumia a cada restart do
+  backend. As duas funções agora logam a falha em vez de engoli-la.
 - `backend/main.py:17-22` — CORS liberado para `allow_origins=["*"]`,
   `allow_methods=["*"]`, `allow_headers=["*"]`.
 - `backend/main.py:37-53` — o agendador da extração noturna do SAP não usa

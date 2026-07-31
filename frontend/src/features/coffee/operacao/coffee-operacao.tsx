@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '../confirm-modal';
 import {
@@ -188,13 +189,13 @@ export function CoffeeOperacao({
     >
       <header className="flex flex-wrap items-center gap-3 border-b border-line px-[22px] py-4">
         <div className="min-w-0 flex-1">
-          <span className="edp-eyebrow">Fluxo ativo</span>
-          <h1 className="edp-title text-lg">Geração de notas</h1>
+          <Eyebrow>Fluxo ativo</Eyebrow>
+          <h1 className="text-lg font-semibold tracking-display text-balance">Geração de notas</h1>
         </div>
-        <span className="edp-mono text-xs text-text-mute">
+        <span className="font-mono text-xs text-text-mute">
           {itens.length} em andamento
         </span>
-        <span className="edp-mono text-xs text-text-mute">
+        <span className="font-mono text-xs text-text-mute">
           {latestUpdate
             ? `Atualizado ${formatRelativeTime(latestUpdate)}`
             : 'Sem atualizações'}

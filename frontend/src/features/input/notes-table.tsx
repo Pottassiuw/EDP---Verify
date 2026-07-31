@@ -6,6 +6,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const ALTURA_LINHA = 32;
 
@@ -155,7 +156,7 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               <SelectTrigger
                 autoFocus
                 aria-label={`Editar ${c.label}`}
-                className="edp-field w-full h-[28px] text-[12.5px]"
+                className="w-full h-[28px] text-[12.5px]"
                 onBlur={() => { if (!selectOpenedRef.current) setEditando(null); }}
               >
                 <SelectValue />
@@ -169,11 +170,11 @@ export function NotesTable(props: NotesTableProps): React.JSX.Element {
               </SelectContent>
             </Select>
           ) : (
-            <input
+            <Input
               autoFocus
               defaultValue={String(v ?? "")}
               aria-label={`Editar ${c.label}`}
-              className="edp-field w-[100%] h-[28px] text-[12.5px] box-border"
+              className="w-[100%] h-[28px] text-[12.5px] box-border"
               onBlur={(e) => confirmar(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter")

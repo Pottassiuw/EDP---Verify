@@ -7,7 +7,7 @@ import { CoffeeOperacao } from './operacao/coffee-operacao';
 import { CoffeeVerificar, type TriageHandoff } from './coffee-verificar';
 import { CoffeeLogs } from './coffee-logs';
 import { COFFEE_SUBS } from './subs';
-import { SegTabs } from '@/components/branded/section';
+import { Eyebrow, SegTabs } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 
 
@@ -42,12 +42,14 @@ export function CoffeeHub({
       <div className="shrink-0 bg-surface border-b border-b-line">
         <div className="pt-[13px] px-[22px] pb-[11px] flex items-center gap-[12px]">
           <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
-            <span className="edp-eyebrow">Módulo COFFEE</span>
-            <strong className="edp-title text-[16px]">Geração de notas</strong>
+            <Eyebrow>Módulo COFFEE</Eyebrow>
+            <strong className="text-[16px] font-semibold leading-[1.15] tracking-display text-balance">
+              Geração de notas
+            </strong>
           </div>
           {sub === "verificar" && triage.screen === "dashboard" && (
             <div className="flex items-center gap-[12px] shrink-0">
-              <span className="edp-mono text-[11px] text-text-mute bg-bg-2
+              <span className="font-mono text-[11px] text-text-mute bg-bg-2
                     py-[5px] px-[10px] rounded-[6px] border border-line">{triage.file}</span>
               <span title="Conectado ao backend"
                     className="inline-flex items-center gap-[6px] text-[10.5px]

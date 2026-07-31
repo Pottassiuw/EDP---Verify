@@ -70,7 +70,7 @@ export function Evolucao({ meses }: { meses: MesMensalizacao[] }): React.JSX.Ele
                       <span className="text-text-mute">
                         {CHART_CONFIG[name as keyof typeof CHART_CONFIG]?.label ?? String(name)}
                       </span>
-                      <span className="edp-mono font-medium">{fmtQtd(Number(value))}</span>
+                      <span className="font-mono font-medium">{fmtQtd(Number(value))}</span>
                     </div>
                   </div>
                 )}

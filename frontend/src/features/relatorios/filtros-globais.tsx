@@ -1,7 +1,9 @@
 import React from 'react';
 import { CalendarDays, Search, X } from 'lucide-react';
 
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -12,7 +14,6 @@ import {
 } from '@/components/ui/select';
 
 import { MESES_ABREV_PT } from './fmt';
-import { useRelatoriosPortalTheme } from './use-relatorios-portal-theme';
 
 const TODAS_AS_REGIONAIS = 'todas';
 
@@ -37,18 +38,17 @@ export function FiltrosGlobais({
   onRegionalChange,
   onBuscaChange,
 }: FiltrosGlobaisProps): React.JSX.Element {
-  const portalTheme = useRelatoriosPortalTheme();
 
   return (
-    <div className="edp-panel flex flex-wrap items-center gap-3 py-3">
-      <span className="edp-eyebrow shrink-0">Filtros globais</span>
+    <Card className="flex flex-wrap items-center gap-3 p-[var(--pad)] py-3">
+      <Eyebrow className="shrink-0">Filtros globais</Eyebrow>
 
       <Select value={String(mes)} onValueChange={(valor) => onMesChange(Number(valor))}>
         <SelectTrigger className="w-44" aria-label="Selecionar mês de referência">
           <CalendarDays />
           <SelectValue />
         </SelectTrigger>
-        <SelectContent {...portalTheme} className="edp">
+        <SelectContent >
           {MESES_ABREV_PT.map((nome, indice) => (
             <SelectItem key={nome} value={String(indice + 1)}>
               {nomeMes(nome)} de {ano}
@@ -57,7 +57,7 @@ export function FiltrosGlobais({
         </SelectContent>
       </Select>
 
-      <span className="edp-mono shrink-0 text-xs text-text-mute" aria-label={`Ano de referência: ${ano}`}>
+      <span className="shrink-0 font-mono text-xs text-text-mute" aria-label={`Ano de referência: ${ano}`}>
         Ano {ano}
       </span>
 
@@ -68,7 +68,7 @@ export function FiltrosGlobais({
         <SelectTrigger className="w-48" aria-label="Filtrar por regional">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent {...portalTheme} className="edp">
+        <SelectContent >
           <SelectItem value={TODAS_AS_REGIONAIS}>SP (todas)</SelectItem>
           {regionais.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
         </SelectContent>
@@ -96,7 +96,7 @@ export function FiltrosGlobais({
           </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Eyebrow } from '@/components/branded/section';
 import { formatRelativeTime } from '../format';
 import type { NotaRevisao } from '../types';
 
@@ -34,7 +35,7 @@ function SummarySection({
 }): React.JSX.Element {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="edp-eyebrow">{title}</h2>
+      <Eyebrow asChild><h2>{title}</h2></Eyebrow>
       <dl className="flex flex-col gap-2">{children}</dl>
     </section>
   );
@@ -50,7 +51,7 @@ function SummaryRow({
   return (
     <div className="grid grid-cols-[minmax(112px,0.42fr)_1fr] gap-3 text-sm">
       <dt className="text-text-mute">{label}</dt>
-      <dd className="edp-mono min-w-0 break-words">{display(value)}</dd>
+      <dd className="min-w-0 break-words font-mono">{display(value)}</dd>
     </div>
   );
 }
@@ -148,9 +149,11 @@ export function NotaSummary({ revisao }: NotaSummaryProps): React.JSX.Element {
         <>
           <Separator />
           <section aria-labelledby="coffee-inspector-warnings">
-            <h2 id="coffee-inspector-warnings" className="edp-eyebrow mb-2">
-              Avisos
-            </h2>
+            <Eyebrow asChild>
+              <h2 id="coffee-inspector-warnings" className="mb-2">
+                Avisos
+              </h2>
+            </Eyebrow>
             <ul className="flex flex-col gap-1 text-sm text-amber">
               {revisao.avisos.map((aviso) => <li key={aviso}>{aviso}</li>)}
             </ul>

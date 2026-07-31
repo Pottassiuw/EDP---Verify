@@ -115,8 +115,8 @@ export function ConcluidasList({
               className="grid grid-cols-[0.7fr_0.8fr_1.8fr_0.9fr_0.8fr_0.8fr] items-center gap-3 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Abrir detalhes da nota ${nota.pk}`}
             >
-              <span className="edp-mono">#{nota.pk}</span>
-              <span className="edp-mono">{nota.id_sap ?? '—'}</span>
+              <span className="font-mono">#{nota.pk}</span>
+              <span className="font-mono">{nota.id_sap ?? '—'}</span>
               <span className="truncate">{local(nota)}</span>
               <span><Resultado nota={nota} /></span>
               <span>{nota.origem ?? '—'}</span>
@@ -136,7 +136,7 @@ export function ConcluidasList({
               aria-label={`Abrir detalhes da nota ${nota.pk}`}
             >
               <div className="flex items-center gap-2">
-                <strong className="edp-mono">#{nota.pk}</strong>
+                <strong className="font-mono">#{nota.pk}</strong>
                 <Resultado nota={nota} />
               </div>
               <p className="mt-2 truncate text-sm">{local(nota)}</p>

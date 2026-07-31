@@ -89,10 +89,11 @@ ainda não foi sincronizada, o callback sobe por `CoffeeOperacao` ou
 `App.tsx`. O card não interfere na edição de local, atividade nem nas ações
 contextuais do inspector.
 
-`useCoffeePortalTheme` propaga tema resolvido, densidade e accent para o
-`Sheet`, `Dialog`, `AlertDialog` e `Select` portalizados. Assim, os modos
-Sistema, Claro e Escuro e as preferências de densidade/acento também se aplicam
-fora da raiz visual do app.
+`Sheet`, `Dialog`, `AlertDialog` e `Select` portalizam fora da raiz do app e
+mesmo assim seguem tema, densidade e accent: desde a Fase 4c esses tokens
+vivem em `:root`, escritos no `<html>` pelo `SettingsProvider`. O hook
+`useCoffeePortalTheme`, que propagava isso à mão em cada call site, foi
+removido.
 
 ## Concluídas e Plano
 

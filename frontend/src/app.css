@@ -7,7 +7,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Bridge: expõe as vars semânticas (definidas abaixo, dentro de .edp)
+/* Bridge: expõe os tokens semânticos declarados em :root abaixo
    como cores/raios/fontes utilitárias do Tailwind. */
 @theme inline {
   --color-background: var(--background);
@@ -60,15 +60,16 @@
   --color-red: var(--red);
   --color-accent-2: var(--accent-2);
   --color-accent-tint: var(--accent-tint);
+  --color-on-green: var(--on-green);
   --color-tint-green: var(--tint-green);
   --color-tint-blue: var(--tint-blue);
   --color-tint-indigo: var(--tint-indigo);
   --color-tint-amber: var(--tint-amber);
   --color-tint-red: var(--tint-red);
-  --radius-edp-sm: var(--r-sm);
-  --radius-edp: var(--r);
-  --radius-edp-md: var(--r-md);
-  --radius-edp-lg: var(--r-lg);
+  --radius-app-sm: var(--r-sm);
+  --radius-app: var(--r);
+  --radius-app-md: var(--r-md);
+  --radius-app-lg: var(--r-lg);
   --tracking-display: var(--tracking-display);
   --tracking-tight: var(--tracking-tight);
   --tracking-label: var(--tracking-label);
@@ -77,79 +78,41 @@
 
 
 /* ============================================================
-   EDP Verify — elevated token system
-   Brand spectrum pulled from the EDP spiral mark:
-   indigo/violet → blue/cyan → green, on a near-black navy.
-   Scoped to .edp so dark & light instances coexist on one canvas.
+   EDP Verify — sistema de tokens (direção Supabaze, DESIGN.md)
+
+   Fonte de verdade única. O tema é um ATRIBUTO do <html>, escrito
+   pelo SettingsProvider (context/settings-context.tsx) — e não uma
+   classe. Motivo: conteúdo portalizado pelo Radix (Select, Sheet,
+   Tooltip, Dialog, Sonner) renderiza no <body>, fora da árvore do
+   App; com o tema em :root ele resolve os mesmos tokens sem precisar
+   de classe replicada à mão em cada call site.
+
+   Ordem dos blocos abaixo é deliberada:
+     :root                      — base + TEMA CLARO + ponte shadcn
+     :root[data-theme="dark"]   — TEMA ESCURO (só token cru)
+     :root[data-density=…]      — densidade
    ============================================================ */
 
-/* :root recebe os mesmos tokens base (tema escuro) para que conteúdo
-   PORTALIZADO pelo Radix (tooltip, dropdown, sheet…) — que renderiza fora
-   do .edp, direto no <body> — também resolva as cores. Não altera as telas
-   dentro do .edp: lá os valores são os mesmos, e .edp[data-theme="light"]
-   continua sobrescrevendo para o tema claro. */
-:root,
-.edp {
-  /* Widgets nativos (select/option, checkbox, scrollbar, date picker)
-     seguem o tema — sem isso o popup do <select> sai branco/preto. */
-  color-scheme: dark;
+:root {
   accent-color: var(--accent);
-
-  /* — brand spectrum — */
-  --green:    #00a859;
-  --green-2:  #1dbd6e;
-  --accent:      #00a859;
-  --accent-2:    #1dbd6e;
-  --accent-tint: rgba(0,168,89,0.13);
-  --blue:     #1f9fd6;
-  --indigo:   #6b5ce6;
-  --amber:    #f0a93b;
-  --red:      #f0555c;
-
-  /* — DARK — */
-  --bg:        #161e2b;
-  --bg-2:      #1b2433;
-  --surface:   #212c3e;
-  --surface-2: #283449;
-  --surface-3: #31405a;
-  --line:      rgba(255,255,255,0.07);
-  --line-2:    rgba(255,255,255,0.12);
-
-  --scrollbar-thumb:       rgba(255,255,255,0.22);
-  --scrollbar-thumb-hover: rgba(255,255,255,0.36);
-
-  --text:      #eef2f8;
-  --text-dim:  #9aa9c2;
-  --text-mute: #61708c;
-
-  --tint-green:  rgba(0,168,89,0.12);
-  --tint-blue:   rgba(31,159,214,0.13);
-  --tint-indigo: rgba(107,92,230,0.14);
-  --tint-amber:  rgba(240,169,59,0.13);
-  --tint-red:    rgba(240,85,92,0.12);
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
-  --shadow:    0 6px 24px rgba(0,0,0,0.32);
-  --shadow-lg: 0 24px 60px rgba(0,0,0,0.45);
 
   /* — type — */
   --font-display: 'Inter', system-ui, -apple-system, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
-  /* — tracking (escala display "engineered", direção Supabase) — */
+  /* — tracking (escala display "engineered") — */
   --tracking-display: -0.03em;
   --tracking-tight:   -0.015em;
   --tracking-label:    0.14em;
 
-  /* faixa zebra sutil das tabelas (herda dark/light) */
-  --zebra: rgba(255,255,255,0.02);
-
-  /* — geometry — */
+  /* — geometry: escala Supabaze. --radius é independente de --r; 6px é o
+       raio-assinatura de botão do DESIGN.md ("square-ish, never pill"). — */
   --r-sm: 6px;
-  --r:    9px;
-  --r-md: 11px;
-  --r-lg: 14px;
+  --r:    8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --radius: 6px;
 
   /* — density (cozy default) — */
   --row-py: 13px;
@@ -157,243 +120,56 @@
   --gap: 16px;
   --tile-py: 18px;
 
-  /* — bridge shadcn (mapeado para os tokens EDP; herda dark/light) — */
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card: var(--surface);
-  --card-foreground: var(--text);
-  --popover: var(--surface-2);
-  --popover-foreground: var(--text);
-  --primary: var(--accent);            /* marca EDP */
-  --primary-foreground: #fff;
-  --secondary: var(--surface-2);
-  --secondary-foreground: var(--text-dim);
-  --muted: var(--surface-2);
-  --muted-foreground: var(--text-mute);
-  --sh-accent: var(--surface-2);       /* hover sutil do shadcn (NÃO é a marca EDP) */
-  --accent-foreground: var(--text);
-  --destructive: var(--red);
-  --destructive-foreground: #fff;
-  --border: var(--line-2);
-  --input: var(--line-2);
-  --ring: var(--accent);
-  --radius: var(--r);
-
-  /* — sidebar shadcn — */
-  --sidebar: var(--surface);
-  --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: #fff;
-  --sidebar-accent: var(--surface-2);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: var(--line);
-  --sidebar-ring: var(--accent);
-
-  color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
 
-.edp[data-density="compact"] {
-  --row-py: 8px;
-  --pad: 14px;
-  --gap: 11px;
-  --tile-py: 13px;
-}
-
-/* — LIGHT — */
-.edp[data-theme="light"] {
-  color-scheme: light;
-  --bg:        #eef1f6;
-  --bg-2:      #e6eaf2;
-  --surface:   #ffffff;
-  --surface-2: #f4f6fb;
-  --surface-3: #e8ecf4;
-  --line:      rgba(22,30,43,0.09);
-  --line-2:    rgba(22,30,43,0.16);
-
-  --scrollbar-thumb:       rgba(22,30,43,0.30);
-  --scrollbar-thumb-hover: rgba(22,30,43,0.46);
-
-  --text:      #15203a;
-  --text-dim:  #4f6079;
-  --text-mute: #8a99b3;
-
-  --tint-green:  rgba(0,168,89,0.10);
-  --tint-blue:   rgba(31,159,214,0.11);
-  --tint-indigo: rgba(107,92,230,0.11);
-  --tint-amber:  rgba(240,169,59,0.14);
-  --tint-red:    rgba(240,85,92,0.10);
-
-  --shadow-sm: 0 1px 2px rgba(22,30,43,0.07);
-  --shadow:    0 8px 24px rgba(22,30,43,0.09);
-  --shadow-lg: 0 24px 60px rgba(22,30,43,0.16);
-
-  --zebra: rgba(22,30,43,0.025);
-}
-
-/* ---- shared atoms ---- */
-.edp * { box-sizing: border-box; }
-.edp, .edp * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
-.edp ::-webkit-scrollbar { width: 10px; height: 10px; }
-.edp ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-.edp ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
-.edp ::-webkit-scrollbar-track { background: transparent; }
-
-@layer components {
-.edp-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-  font-weight: 500;
-}
-.edp-mono { font-family: var(--font-mono); }
-
-.edp-rule {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11.5px; font-weight: 500;
-  padding: 3px 9px 3px 7px; border-radius: 999px;
-  background: var(--tint-red); color: var(--red);
-  border: 1px solid rgba(240,85,92,0.22);
-  white-space: nowrap;
-}
-.edp-rule::before {
-  content: ""; width: 5px; height: 5px; border-radius: 50%;
-  background: currentColor; opacity: 0.9;
-}
-
-/* ============================================================
-   Primitivos "elevados" (direção Supabase) — mesma paleta EDP.
-   Escala de display com tracking negativo, headers mono uppercase,
-   accent verde reservado. Usados por input/ui.tsx e pelas telas
-   do módulo Input. Consumidos via className (não via preflight).
-   ============================================================ */
-
-/* página padrão de subseção (antes: div inline repetida 6×) */
-.edp-page {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column;
-  gap: var(--gap); padding: var(--pad); overflow: auto;
-}
-
-/* cabeçalho de seção: eyebrow + título + ação opcional à direita */
-.edp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.edp-head-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.edp-title { font-size: 21px; font-weight: 600; line-height: 1.15; letter-spacing: var(--tracking-display); text-wrap: balance; margin: 0; }
-.edp-sub { font-size: 13px; color: var(--text-dim); margin: 0; }
-
-/* número display (KPIs, contagens) */
-.edp-num { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: var(--tracking-display); font-variant-numeric: tabular-nums; color: var(--text); }
-
-/* tile de KPI */
-.edp-stat { display: flex; flex-direction: column; gap: 7px; padding: 14px 16px; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
-
-/* card elevado (superfície + hairline + sombra sutil) */
-.edp-panel { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md); padding: var(--pad); box-shadow: var(--shadow-sm); }
-
-/* banner de status ok/erro */
-.edp-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; border-left: 3px solid var(--text-mute); background: var(--surface-2); }
-.edp-banner.ok  { border-left-color: var(--green); background: var(--tint-green); }
-.edp-banner.err { border-left-color: var(--amber); background: var(--tint-amber); }
-
-/* campo de formulário nativo (input/select) — antes: estiloCampo repetido */
-.edp-field { height: 34px; padding: 0 11px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text); font: inherit; font-size: 13px; }
-.edp-field:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
-select.edp-field[multiple] { height: auto; padding: 6px 8px; }
-select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
-
-/* segmented tabs (sublinhado) sobre um ToggleGroup shadcn — mantém a
-   acessibilidade Radix (roving tabindex + setas), troca só a pele:
-   caixa → sublinhado. !important pra vencer as utilities do outline variant. */
-.edp-segtabs { gap: 2px !important; box-shadow: none !important; }
-.edp-segtabs [data-slot="toggle-group-item"] {
-  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-  background: transparent !important;
-  padding: 8px 2px !important; margin: 0 16px 0 0 !important;
-  font-size: 13px; color: var(--text-mute);
-  border-bottom: 2px solid transparent !important;
-}
-.edp-segtabs [data-slot="toggle-group-item"]:hover { color: var(--text-dim); }
-.edp-segtabs [data-slot="toggle-group-item"][data-state="on"] {
-  color: var(--text) !important; border-bottom-color: var(--accent) !important;
-}
-
-/* tabela leve (logs, previews): header mono uppercase + zebra sutil */
-.edp-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-.edp-table thead th {
-  text-align: left; padding: 9px 12px;
-  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
-  letter-spacing: var(--tracking-label); text-transform: uppercase;
-  color: var(--text-mute); background: var(--bg);
-  border-bottom: 1px solid var(--line-2); white-space: nowrap;
-}
-.edp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
-.edp-table tbody tr:last-child td { border-bottom: 0; }
-.edp-table tbody tr:nth-child(even) td { background: var(--zebra); }
-
-/* ============================================================
-   Escopo do módulo Input — hairline discreto nos cards e
-   fonte mono nos selects (casa com a grade de dados).
-   Só afeta telas dentro de .input-scope; Coffee/Verificar
-   permanecem inalterados.
-   ============================================================ */
-.input-scope [data-slot="card"] { border-color: var(--line); }
-.input-scope [data-slot="select-trigger"],
-.input-scope select.edp-field { font-family: var(--font-mono); }
-}
-
-
-
-/* ============================================================
-   Carteira de Notas — direção visual Supabaze (DESIGN.md).
-   Escopo isolado: só esta seção herda a paleta; o resto do app
-   segue no tema EDP (.edp) até a migração completa (decisão
-   registrada em docs/superpowers/specs/2026-07-22-carteira-de-
-   notas-design.md). Sempre clara — o compromisso de canvas
-   branco do DESIGN.md é não-negociável, independente do tema
-   dark/light escolhido pelo usuário no resto do app.
-   Aplicada via .carteira-scope no container raiz da seção, e
-   replicada em conteúdo portalizado (Sheet/Select) que renderiza
-   fora da árvore DOM da seção — mesma ressalva já válida pro .edp
-   em conteúdo do Radix.
-   UNLAYERED de propósito: `:root, .edp { --bg: ... }` (linha ~92)
-   também é unlayered; CSS sem layer sempre vence CSS com layer,
-   não importa a especificidade — dentro de @layer components
-   este override nunca teria efeito contra o `.edp` ancestral. */
-.carteira-scope {
+  /* ---- TEMA CLARO: o canvas branco autoritativo do DESIGN.md e o estado
+     base do app. Toda seção o herda, inclusive a Carteira — o escopo que a
+     mantinha clara à força saiu na 4c-fim.
+     A ponte shadcn (--background, --card, --primary, --sidebar-*) mora aqui.
+     Se um escopo local algum dia voltar a redefinir token cru, ele precisa
+     redeclarar a ponte inteira junto: custom property herdada já resolveu seu
+     valor no ancestral e não recalcula quando um DESCENDENTE troca o token.
+     O bloco escuro é imune porque pinta o MESMO elemento que :root. ---- */
+  /* Widgets nativos (popup do <select>, checkbox, scrollbar, date picker)
+     seguem o tema — sem isso o popup do <select> sai com o tema errado. */
   color-scheme: light;
 
   /* — canvas & superfícies — */
-  --bg: #ffffff;
-  --bg-2: #fafafa;
-  --surface: #ffffff;
+  --bg:        #ffffff;
+  --bg-2:      #fafafa;
+  --surface:   #ffffff;
   --surface-2: #fafafa;
   --surface-3: #ededed;
-  --line: #dfdfdf;
-  --line-2: #c7c7c7;
-  --zebra: rgba(23,23,23,0.025);
+  --line:      #dfdfdf;
+  --line-2:    #c7c7c7;
+  --zebra:     rgba(23,23,23,0.025);
 
-  /* — texto — */
-  --text: #171717;
-  --text-dim: #707070;
+  --scrollbar-thumb:       rgba(23,23,23,0.28);
+  --scrollbar-thumb-hover: rgba(23,23,23,0.44);
+
+  /* — tinta — */
+  --text:      #171717;
+  --text-dim:  #707070;
   --text-mute: #9a9a9a;
 
   /* — marca: verde-esmeralda, único evento cromático — */
-  --green: #3ecf8e;
+  --green:   #3ecf8e;
   --green-2: #24b47e;
   --green-3: #1f8c63; /* leitura como texto/número sobre branco — green/green-2 não passam AA como cor de texto */
-  --accent: #3ecf8e;
-  --accent-2: #24b47e;
+  --accent:      #3ecf8e;
+  --accent-2:    #24b47e;
   --accent-tint: rgba(62,207,142,0.12);
-  --tint-green: rgba(62,207,142,0.12);
+  --tint-green:  rgba(62,207,142,0.12);
+  /* Tipo sobre a marca. Não é derivável do tema: o esmeralda pede
+     quase-preto e os acentos escuros pedem branco, nos DOIS temas. O valor
+     real vem do preset escolhido (settings-context.tsx), escrito inline no
+     <html>; este é só o padrão. */
+  --accent-fg: #171717;
+  /* Par fixo do verde da marca (DESIGN.md `on-primary`). O verde não muda
+     com o tema, então o tipo sobre ele também não. */
+  --on-green: #171717;
 
   /* — status (uso restrito a badges/indicadores, nunca botões —
      DESIGN.md: "purples, yellows, pinks belong inside chart points
@@ -402,33 +178,23 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
      como texto pequeno sobre a própria tinta — os valores puros do
      spec (accent-yellow #ffdb13, accent-crimson #e2005a) são claros
      demais/limítrofes para isso. — */
-  --indigo: #644fc1;  /* accent-violet, literal — já passa AA (5.9:1) */
+  --indigo: #644fc1;  /* accent-violet, literal — já passa AA (6.1:1) */
   --tint-indigo: rgba(100,79,193,0.12);
-  --amber: #92400e;   /* derivado de accent-yellow, escurecido p/ AA (7:1) */
+  --amber:  #92400e;  /* derivado de accent-yellow, escurecido p/ AA (7.1:1) */
   --tint-amber: rgba(255,219,19,0.16);
-  --red: #c40050;     /* derivado de accent-crimson, escurecido p/ margem AA (6.1:1) */
+  --red:    #c40050;  /* derivado de accent-crimson, escurecido p/ AA (6.1:1) */
   --tint-red: rgba(196,0,80,0.10);
-  --blue: #054cff;    /* accent-indigo, literal — reservado p/ Fase 3 (charts) */
+  --blue:   #054cff;  /* accent-indigo, literal */
+  --tint-blue: rgba(5,76,255,0.10);
 
   /* — sombras: elevação Supabaze (níveis 1–3 do DESIGN.md) — */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow:    0 8px 24px rgba(0,0,0,0.08);
   --shadow-lg: 0 16px 48px rgba(0,0,0,0.12);
 
-  /* — geometria: 6px é o raio-assinatura de botão do DESIGN.md — */
-  --radius: 6px;
-  --r-sm: 6px;
-  --r:     8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-
-  /* — bridge shadcn: texto quase-preto sobre o verde, nunca branco
+  /* — ponte shadcn — texto quase-preto sobre o verde, nunca branco
      (idiossincrasia explícita do DESIGN.md: "the button reads as a
-     lit surface with dark type, not a colored chip").
-     Precisa redeclarar TODA a ponte aqui, não só os tokens crus: uma
-     custom property herdada (ex.: --background definida em .edp como
-     var(--bg)) já resolveu seu valor no ancestral e não recalcula ao
-     --bg mudar num descendente — só a redeclaração local recomputa. */
+     lit surface with dark type, not a colored chip"). — */
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -436,12 +202,12 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
   --popover: var(--surface-2);
   --popover-foreground: var(--text);
   --primary: var(--accent);
-  --primary-foreground: var(--text);
+  --primary-foreground: var(--accent-fg);
   --secondary: var(--surface-2);
   --secondary-foreground: var(--text-dim);
   --muted: var(--bg-2);
   --muted-foreground: var(--text-dim);
-  --sh-accent: var(--bg-2);
+  --sh-accent: var(--bg-2);            /* hover sutil do shadcn (NÃO é a marca) */
   --accent-foreground: var(--text);
   --destructive: var(--red);
   --destructive-foreground: #ffffff;
@@ -449,40 +215,107 @@ select.edp-field[multiple] option { padding: 2px 4px; border-radius: 3px; }
   --input: var(--line);
   --ring: var(--accent);
 
+  /* — sidebar shadcn — */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--accent-fg);
+  --sidebar-accent: var(--bg-2);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+
   background: var(--bg);
   color: var(--text);
 }
 
-/* badge "no_plano": pill-tag-green do DESIGN.md — preenchimento
-   sólido + texto quase-preto (não a convenção tint+texto-colorido
-   herdada do tema escuro, que falha AA em canvas branco). */
-.carteira-scope [data-variant="situPlano"] {
-  background: var(--green);
-  color: var(--text);
+/* TEMA ESCURO — a mesma linguagem neutra/verde traduzida para o
+   canvas-night do DESIGN.md (#1c1c1c / #202020). A paleta legada
+   navy/índigo/ciano morre aqui.
+   Só token cru: a ponte do bloco 3 recalcula sozinha neste elemento.
+   Os status são clareados porque os tons do tema claro (amber #92400e,
+   red #c40050, violet #644fc1) ficam ilegíveis sobre near-black. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:        #1c1c1c;
+  --bg-2:      #202020;
+  --surface:   #202020;
+  --surface-2: #262626;
+  --surface-3: #2e2e2e;
+  --line:      #2e2e2e;
+  --line-2:    #3d3d3d;
+  --zebra:     rgba(255,255,255,0.025);
+
+  --scrollbar-thumb:       rgba(255,255,255,0.22);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.36);
+
+  --text:      #ededed;
+  --text-dim:  #a0a0a0;
+  --text-mute: #8f8f8f;
+
+  --green-3: #4ade80; /* primary-soft: o tom AA-sobre-branco some no escuro */
+  --accent-tint: rgba(62,207,142,0.16);
+  --tint-green:  rgba(62,207,142,0.16);
+
+  --indigo: #9b8cf0;  /* accent-violet clareado p/ AA sobre canvas-night */
+  --tint-indigo: rgba(155,140,240,0.16);
+  --amber:  #ffdb13;  /* accent-yellow literal — 11.9:1 sobre near-black */
+  --tint-amber: rgba(255,219,19,0.15);
+  --red:    #ff6b8f;  /* accent-crimson clareado */
+  --tint-red: rgba(255,107,143,0.15);
+  --blue:   #6f9dff;  /* accent-indigo clareado */
+  --tint-blue: rgba(111,157,255,0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.40);
+  --shadow:    0 8px 24px rgba(0,0,0,0.45);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.55);
 }
 
-/* tabela do explorador/sincronização: header mono uppercase +
-   hairline + zebra sutil + hover — mesma linguagem do .edp-table,
-   tokens Supabaze. */
-.carteira-table thead th {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--text-mute);
-  border-bottom: 1px solid var(--line-2);
-  white-space: nowrap;
+/* Densidade — alternada em runtime pelo atributo, por isso estes quatro
+   tokens ficam fora do bridge `@theme inline`. */
+:root[data-density="compact"] {
+  --row-py: 8px;
+  --pad: 14px;
+  --gap: 11px;
+  --tile-py: 13px;
 }
-.carteira-table tbody tr { border-bottom: 1px solid var(--line); transition: background-color 120ms ease; }
-.carteira-table tbody tr:nth-child(even) { background: var(--zebra); }
-.carteira-table tbody tr:hover { background: var(--tint-green); }
-.carteira-table .num-cell { font-variant-numeric: tabular-nums; text-align: right; }
 
-/* primeiro KPI (total na carteira) ganha leve destaque — disciplina
-   Supabaze de "um evento verde por viewport": só o número principal
-   usa o tom de marca, os demais ficam monocromáticos. */
-.carteira-scope .edp-stat:first-child .edp-num { color: var(--green-3); }
+/* ---- scrollbar ----
+   Era escopada à classe raiz do App, o que deixava de fora todo conteúdo
+   portalizado pelo Radix. Global desde a 4c-fim, junto com a remoção dessa
+   classe.
+   O `box-sizing: border-box` que morava aqui saiu: o preflight do Tailwind
+   (`@import "tailwindcss/preflight.css"`, ligado no SP2a) já o aplica a
+   `*, ::before, ::after`. */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@layer components {
+/* Escopo do módulo Input — hairline discreto nos cards e fonte mono nos
+   selects (casa com a grade de dados). Único resíduo de escopo por classe
+   que sobreviveu à Fase 4c: não é paleta, é ajuste local de anatomia. */
+.input-scope [data-slot="card"] { border-color: var(--line); }
+.input-scope [data-slot="select-trigger"] { font-family: var(--font-mono); }
+}
+
+
+
+/* Indicador de frescor da sincronização — o "dot" é o evento cromático
+   repetido do DESIGN.md (wordmark, CTA); aqui carrega informação real:
+   verde = sincronizado, âmbar pulsante = em curso.
+   UNLAYERED de propósito: precisa vencer utilities do Tailwind, que estão
+   em @layer utilities — CSS sem layer sempre vence CSS com layer. */
+
+
 
 /* indicador de frescor da sincronização — o "dot" é o evento
    cromático repetido do DESIGN.md (wordmark, CTA); aqui carrega

@@ -89,16 +89,19 @@ UI, mas o nome do arquivo é apenas uma prévia até existir o endpoint próprio
 
 ## UI e acessibilidade
 
-As telas reutilizam `app.css` (`.edp-page`, `.edp-panel`, `.edp-stat`,
-`.edp-table` e tokens Tailwind), `components/branded/section.tsx` e
-primitivos de `components/ui/`. Não há cores estáticas ou estilos inline de
-layout; os poucos estilos inline são somente larguras/alturas calculadas dos
-gráficos de barras.
+As telas montam a UI a partir de `components/branded/section.tsx`
+(`SectionPage`, `PageHeader`, `StatTile`, `StatNumber`, `Eyebrow`, `Banner`,
+`SegTabs`) e dos primitivos de `components/ui/` (`Card` no lugar do antigo
+`.edp-panel`, `Table` já com a pele do projeto embutida). O lote 4c-2 eliminou
+as classes `.edp-*` desta feature — eram 84 ocorrências em 20 arquivos, a maior
+concentração do app. Não há cores estáticas ou estilos inline de layout; os
+poucos estilos inline são somente larguras/alturas calculadas dos gráficos de
+barras.
 
-`useRelatoriosPortalTheme` repassa tema, densidade e tokens de accent para
-`Select`, `Sheet` e `Tooltip` portalizados pelo Radix, incluindo a classe
-`.edp` no conteúdo do portal para que o tema claro não caia nos tokens escuros
-de `:root`.
+`Select`, `Sheet` e `Tooltip` portalizados pelo Radix herdam tema, densidade e
+accent direto de `:root`. O hook `useRelatoriosPortalTheme` e a classe de
+escopo replicada no conteúdo do portal foram removidos na Fase 4c — não há
+mais nada a repassar.
 
 As ações de plano e de mês são botões nativos, portanto permanecem acessíveis
 por teclado sem transformar linhas de tabela em controles. O Inspector usa

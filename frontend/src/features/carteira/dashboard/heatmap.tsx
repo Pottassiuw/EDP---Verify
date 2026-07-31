@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Eyebrow, StatNumber } from '@/components/branded/section';
+
 import { farol, FAROL_COR, fmtPct } from '../../relatorios/fmt';
 import type { RegionalResumo } from '../../relatorios/types';
 
@@ -21,11 +23,12 @@ export function HeatmapCobertura({ porRegional, onDrill }: {
         const cor = f === null ? 'var(--surface-2)' : FAROL_COR[f];
         return (
           <button key={r.regional} type="button" onClick={() => onDrill(r.regional)}
-                  className="edp-panel" style={{ borderLeft: `3px solid ${cor}`, cursor: 'pointer', textAlign: 'left' }}>
-            <span className="edp-eyebrow">{r.regional}</span>
-            <div className="edp-num" style={{ fontSize: 20, color: cor }}>
+                  className="rounded-lg border bg-card p-[var(--pad)] text-card-foreground shadow-sm"
+                  style={{ borderLeft: `3px solid ${cor}`, cursor: 'pointer', textAlign: 'left' }}>
+            <Eyebrow>{r.regional}</Eyebrow>
+            <StatNumber className="block" style={{ fontSize: 20, color: cor }}>
               {r.cobertura_pct == null ? '—' : fmtPct(r.cobertura_pct)}
-            </div>
+            </StatNumber>
           </button>
         );
       })}

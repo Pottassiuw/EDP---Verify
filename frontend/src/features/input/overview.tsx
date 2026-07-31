@@ -12,6 +12,7 @@ import { InputNotaInspector } from './input-nota-inspector';
 import { useRecarregarInput } from './use-input-data';
 import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
+import { Eyebrow, StatNumber } from '@/components/branded/section';
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
   let resultado = registros;
@@ -74,12 +75,12 @@ export function Overview({
     <div className="p-6 flex flex-col gap-6 max-w-full">
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <div className="flex items-baseline gap-3">
-          <span className="edp-num text-2xl font-bold tracking-tight text-foreground">
+          <StatNumber className="text-2xl font-bold tracking-tight text-foreground">
             {filtrados.length.toLocaleString('pt-BR')}
-          </span>
-          <span className="edp-eyebrow text-xs text-text-mute uppercase tracking-wider font-mono">
+          </StatNumber>
+          <Eyebrow className="text-xs tracking-wider">
             {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} notas encontradas` : 'notas cadastradas'}
-          </span>
+          </Eyebrow>
         </div>
         <div className="flex items-center gap-2">
           <Button

@@ -8,8 +8,10 @@ import { detectarNoveExtra } from './malha-fina';
 import { MalhaFinaPanel } from './malha-fina-panel';
 import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
+import { Eyebrow } from '@/components/branded/section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';
 
@@ -125,7 +127,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         <div className="flex gap-[12px] items-end py-[12px] px-[22px] flex-wrap">
           <Field label="Buscar · ID, referência, tipo, setor" grow>
             <div className="relative w-full">
-              <input className="edp-field w-full" style={{ paddingRight: q ? 30 : 11 }} value={q}
+              <Input className="w-full" style={{ paddingRight: q ? 30 : 11 }} value={q}
                      onChange={(e) => setQ(e.target.value)} placeholder="Ex.: 104728801, VIX-04, poda…" />
               {q && (
                 <button type="button" aria-label="Limpar busca" onClick={() => setQ("")}
@@ -137,7 +139,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
           <Field label="Estado (UF)" accent>
             <Select value={uf} onValueChange={setUf}>
-              <SelectTrigger className="edp-field w-full">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -148,7 +150,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
           <Field label="Setor" accent>
             <Select value={setor} onValueChange={setSetor}>
-              <SelectTrigger className="edp-field w-full">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +161,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
           <Field label="Urgência">
             <Select value={urg} onValueChange={setUrg}>
-              <SelectTrigger className="edp-field w-full">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +172,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
           <Field label="Status">
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="edp-field w-full">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -182,7 +184,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           </Field>
           <Field label="Situação">
             <Select value={situacao} onValueChange={setSituacao}>
-              <SelectTrigger className="edp-field w-full">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -195,7 +197,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         </div>
 
         <div className="flex items-center gap-[9px] flex-wrap pt-0 px-[22px] pb-[13px]">
-          <span className="edp-eyebrow mr-[2px]">Bloqueio</span>
+          <Eyebrow className="mr-[2px]">Bloqueio</Eyebrow>
           {Object.entries(ruleStats).sort((a, b) => b[1] - a[1]).map(([r, n]) => (
             <button key={r} className={"rchip" + (rules.has(r) ? " on" : "")} onClick={() => toggleRule(r)}>
               {ruleMeta(r).label}<span className="c">{n}</span></button>
@@ -204,7 +206,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
         {chips.length > 0 && (
           <div className="flex items-center gap-[8px] flex-wrap pt-0 px-[22px] pb-[13px]">
-            <span className="edp-eyebrow mr-[2px]">Ativos</span>
+            <Eyebrow className="mr-[2px]">Ativos</Eyebrow>
             {chips.map((c, i) => (
               <button key={i} className="fchip" onClick={c.clear}>{c.k}<span className="text-[14px] leading-none">×</span></button>
             ))}
@@ -233,7 +235,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             <div className="flex items-center gap-[9px]">
               <Button variant="ghost" size="icon-sm" title="Recolher fila" aria-label="Recolher fila"
                       onClick={toggleQueue}>«</Button>
-              <span className="edp-eyebrow">Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</span>
+              <Eyebrow>Fila · {filtered.length} {filtered.length === 1 ? "nota" : "notas"}</Eyebrow>
             </div>
             {filtered.length > 0 && (
               <Button variant="ghost" size="sm"
@@ -260,7 +262,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   <PriorityChip p={n.prioridade} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px]">
-                      <span className="edp-mono text-[13px] font-semibold">{n.id}</span>
+                      <span className="font-mono text-[13px] font-semibold">{n.id}</span>
                       {flagDup && <span title="Possível duplicata" className="text-indigo text-[13px]">⧉</span>}
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
@@ -275,7 +277,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   )}
                   {isDup ? <Badge variant="tagDup"><span className="w-[6px] h-[6px] rounded-full bg-current" />Dup.</Badge>
                     : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>
-                    : n.errors.length ? <span className="edp-mono text-[11px] text-red font-semibold shrink-0">
+                    : n.errors.length ? <span className="font-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
                     : <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>}
                 </div>
@@ -362,11 +364,12 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
       <div className="py-[15px] px-[24px] bg-surface flex items-start justify-between gap-[16px] shrink-0 border-b-[1px] border-b-line">
         <div>
           <div className="flex items-center gap-[10px]">
-            <h2 className="edp-title text-[21px] whitespace-nowrap m-0">Nota {sel.id}</h2>
+            {/* ponytail: sem `text-balance` — o `whitespace-nowrap` do call site já vencia a classe legada. */}
+            <h2 className="text-[21px] font-semibold leading-[1.15] tracking-display whitespace-nowrap m-0">Nota {sel.id}</h2>
             <PriorityChip p={sel.prioridade} />
             <StatusTag status={sel.status} done={done} dup={dup} />
           </div>
-          <div className="edp-mono text-[12px] text-text-mute mt-[5px]">
+          <div className="font-mono text-[12px] text-text-mute mt-[5px]">
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
         </div>
         <div className="flex gap-[8px] shrink-0">
@@ -386,14 +389,14 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
         {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />}
 
         <section>
-          <div className="edp-eyebrow mb-[11px]">
+          <Eyebrow asChild><div className="mb-[11px]">
             {otherErrors.length ? `⚠ Falhas encontradas (${otherErrors.length})`
-              : hasDup ? "Outras falhas" : "Status"}</div>
+              : hasDup ? "Outras falhas" : "Status"}</div></Eyebrow>
           {otherErrors.length ? (
             <div className="flex flex-col gap-[8px]">
               {otherErrors.map((e) => (
-                <div key={e.rule} className="bg-tint-red rounded-edp-sm py-[11px] px-[14px]" style={{ border: "1px solid rgba(240,85,92,0.25)", borderLeft: "3px solid var(--red)" }}>
-                  <div className="edp-mono text-[10.5px] text-red tracking-[.08em]">{e.rule}</div>
+                <div key={e.rule} className="bg-tint-red rounded-app-sm py-[11px] px-[14px]" style={{ border: "1px solid rgba(240,85,92,0.25)", borderLeft: "3px solid var(--red)" }}>
+                  <div className="font-mono text-[10.5px] text-red tracking-[.08em]">{e.rule}</div>
                   <div className="text-[14px] font-semibold mt-[2px]">{e.rule_name}</div>
                   <div className="text-[12.5px] text-text-dim mt-[2px]">Valor: {e.value}</div>
                 </div>
@@ -403,10 +406,10 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             : <div className="text-[12.5px] text-text-dim">Sem outras falhas além da duplicata.</div>}
         </section>
         <section>
-          <div className="edp-eyebrow mb-[11px]">Identificação & localização</div>
-          <div className="gap-[1px] rounded-edp-sm overflow-hidden border border-line grid [grid-template-columns:repeat(3,1fr)] bg-line">
+          <Eyebrow asChild><div className="mb-[11px]">Identificação & localização</div></Eyebrow>
+          <div className="gap-[1px] rounded-app-sm overflow-hidden border border-line grid [grid-template-columns:repeat(3,1fr)] bg-line">
             {fields.map(([k, val]) => (
-              <div key={k} className="kv"><small>{k}</small><div className="edp-mono text-[12.5px]">{val}</div></div>
+              <div key={k} className="kv"><small>{k}</small><div className="font-mono text-[12.5px]">{val}</div></div>
             ))}
           </div>
           {sel.latitude && sel.longitude && (

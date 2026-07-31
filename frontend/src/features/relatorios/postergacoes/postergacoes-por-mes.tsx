@@ -1,12 +1,14 @@
 import React from 'react';
 
+import { Card } from '@/components/ui/card';
+
 import { MESES_ABREV_PT, fmtQtd } from '../fmt';
 import type { DashboardRelatorios } from '../types';
 import { TituloPainel } from '../relatorios-ui';
 
 export function PostergacoesPorMes({ dashboard }: { dashboard: DashboardRelatorios }): React.JSX.Element {
   return (
-    <section className="edp-panel flex flex-col gap-4">
+    <Card className="flex flex-col gap-4 p-[var(--pad)]">
       <TituloPainel
         titulo="Postergações por mês"
         detalhe="O backend informa o total de postergações apenas para o mês corrente."
@@ -16,9 +18,9 @@ export function PostergacoesPorMes({ dashboard }: { dashboard: DashboardRelatori
           const mes = indice + 1;
           const corrente = mes === dashboard.mes_referencia;
           return (
-            <div key={nome} className={`rounded-edp border p-3 ${corrente ? 'border-amber bg-tint-amber' : 'border-line bg-bg-2'}`}>
+            <div key={nome} className={`rounded-app border p-3 ${corrente ? 'border-amber bg-tint-amber' : 'border-line bg-bg-2'}`}>
               <div className="flex items-center justify-between gap-2">
-                <span className="edp-mono text-xs capitalize text-text-dim">{nome}</span>
+                <span className="font-mono text-xs capitalize text-text-dim">{nome}</span>
                 {corrente && <span className="size-1.5 rounded-full bg-amber" aria-label="Mês corrente" />}
               </div>
               <p className={`mt-3 text-lg font-semibold tracking-display ${corrente ? 'text-amber' : 'text-text-mute'}`}>
@@ -28,6 +30,6 @@ export function PostergacoesPorMes({ dashboard }: { dashboard: DashboardRelatori
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

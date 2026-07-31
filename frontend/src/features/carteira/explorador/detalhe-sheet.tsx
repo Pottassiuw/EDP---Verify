@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Eyebrow } from '@/components/branded/section';
 import { CarteiraApi } from '../api';
 import { SITUACAO_INFO } from '../situacao';
 
@@ -30,7 +31,7 @@ export function DetalheSheet({ idOnr, onClose }: {
   const info = data ? SITUACAO_INFO[data.situacao] : null;
   return (
     <Sheet open={idOnr !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent className="edp carteira-scope">
+      <SheetContent >
         <SheetHeader>
           <SheetTitle>Nota ONR {idOnr}</SheetTitle>
         </SheetHeader>
@@ -40,7 +41,7 @@ export function DetalheSheet({ idOnr, onClose }: {
             <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 12px' }}>
               {CAMPOS.map(({ chave, rotulo }) => (
                 <React.Fragment key={chave}>
-                  <dt className="edp-eyebrow">{rotulo}</dt>
+                  <Eyebrow asChild><dt>{rotulo}</dt></Eyebrow>
                   <dd style={{ margin: 0 }}>{String(data[chave] ?? '—')}</dd>
                 </React.Fragment>
               ))}

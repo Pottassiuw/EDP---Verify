@@ -7,6 +7,7 @@ import { useRecarregarInput } from './use-input-data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eyebrow } from '@/components/branded/section';
 import { useDashboardRelatorios } from '../relatorios/use-dashboard';
 import { RefreshCw, UserCheck, Download, Upload, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 
@@ -14,7 +15,7 @@ function Cartao({ titulo, eyebrow, children }: { titulo: string; eyebrow?: strin
   return (
     <Card className="border border-line bg-surface shadow-sm">
       <CardHeader className="pb-3">
-        {eyebrow && <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">{eyebrow}</span>}
+        {eyebrow && <Eyebrow className="text-xs tracking-wider">{eyebrow}</Eyebrow>}
         <CardTitle className="text-base font-semibold text-foreground">{titulo}</CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>

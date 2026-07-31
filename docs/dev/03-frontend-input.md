@@ -47,6 +47,15 @@ mesmo padrão do hub COFFEE documentado em `02-frontend-coffee.md`.
 sub-aba, todos recebendo o mesmo `dados: InputDataset` já carregado
 (exceto `Logs`, que não depende dele).
 
+O `PageHeader` fica dentro de uma barra `shrink-0 bg-surface border-b
+border-b-line pt-[13px] px-[22px] pb-[11px]` — o mesmo recuo do cabeçalho
+do hub COFFEE (`coffee-hub.tsx:42-43`). O recuo precisa morar na barra, e
+não no `PageHeader`: sem ele o cabeçalho encosta na sidebar, porque
+`InputSection` usa uma casca de scroll própria (`flex flex-col
+overflow-hidden h-full`) em vez do `SectionPage`
+(`components/branded/section.tsx`) que dá o `padding: var(--pad)` a Carteira
+e Relatórios.
+
 Acima do conteúdo da sub-aba, `input-section.tsx` mostra até dois
 banners independentes: aviso de importação inicial pendente por rede
 indisponível (com botão "Tentar importar de novo" que chama

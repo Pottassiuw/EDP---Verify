@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { SegTabs } from '@/components/branded/section';
+import { SegTabs, SectionPage, Eyebrow } from '@/components/branded/section';
 import {
   Search,
   Sparkles,
@@ -475,10 +475,10 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
   }, [notasMaesUnicas, buscaMae, dados.registros]);
 
   return (
-    <div className="edp-page overflow-y-auto">
+    <SectionPage className="overflow-y-auto">
       <div className="mb-[20px]">
-        <span className="edp-eyebrow">Rateio de Medidas</span>
-        <h2 className="edp-title text-[18px]">Ajuste e Rateio de Medidas SAP</h2>
+        <Eyebrow>Rateio de Medidas</Eyebrow>
+        <h2 className="text-[18px] font-semibold leading-[1.15] tracking-display text-balance">Ajuste e Rateio de Medidas SAP</h2>
         <p className="text-[12.5px] text-text-mute mt-[2px]">
           Distribua ou corrija as medidas físicas de suas notas diretamente no SAP GUI de forma estruturada, automatizada e validada.
         </p>
@@ -615,7 +615,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     <CardContent className="pt-[14px] pb-[14px]">
                       <div className="flex items-center justify-between border-b border-line pb-[8px] mb-[10px]">
                         <h4 className="text-[13px] font-bold text-text flex items-center gap-[6px]">
-                          📌 Detalhes da Nota Mãe <span className="edp-mono text-primary">{maeSelecionada}</span>
+                          📌 Detalhes da Nota Mãe <span className="font-mono text-primary">{maeSelecionada}</span>
                         </h4>
                         <span className="text-[11.5px] px-[8px] py-[2px] rounded-full bg-primary/10 text-primary font-semibold">
                           {filhasDaMae.length} Nota(s) Filha(s) Vinculada(s)
@@ -627,7 +627,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                           <span className="text-text-mute">Regional:</span> <strong>{maeRowDetails.Regional}</strong>
                         </div>
                         <div>
-                          <span className="text-text-mute">Local Instalação:</span> <span className="edp-mono font-medium">{maeRowDetails.Local_Instalacao}</span><br/>
+                          <span className="text-text-mute">Local Instalação:</span> <span className="font-mono font-medium">{maeRowDetails.Local_Instalacao}</span><br/>
                           <span className="text-text-mute">Status Nota:</span> <strong>{maeRowDetails.Status_Nota}</strong>
                         </div>
                         <div>
@@ -649,7 +649,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                         variant="default"
                         size="sm"
                         onClick={ratearProporcionalmente}
-                        className="h-[30px] text-[12px] gap-[4px] bg-primary hover:bg-primary/90 text-white"
+                        className="h-[30px] text-[12px] gap-[4px] bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         <Zap size={13} /> Ratear Proporcionalmente
                       </Button>
@@ -691,8 +691,8 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                         {/* Linha da Mãe */}
                         <tr className="border-b border-b-line hover:bg-surface-2 font-semibold">
                           <td className="py-[10px] px-[12px] text-primary">MÃE</td>
-                          <td className="py-[10px] px-[12px] edp-mono">{maeRowDetails.Numero_Nota}</td>
-                          <td className="py-[10px] px-[12px] edp-mono">{maeRowDetails.Local_Instalacao}</td>
+                          <td className="py-[10px] px-[12px] font-mono">{maeRowDetails.Numero_Nota}</td>
+                          <td className="py-[10px] px-[12px] font-mono">{maeRowDetails.Local_Instalacao}</td>
                           <td className="py-[10px] px-[12px] text-right">{maeRowDetails.Planejado_DDPM}</td>
                           <td className="py-[10px] px-[12px]">{maeRowDetails.Medida_SAP}</td>
                           <td className="py-[10px] px-[12px] text-center">{maeRowDetails.Medida_vs_Planejado}</td>
@@ -725,8 +725,8 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                         {filhasDaMae.map((f) => (
                           <tr key={f.Numero_Nota} className="border-b border-b-line hover:bg-surface-2">
                             <td className="py-[10px] px-[12px] text-text-mute">FILHA</td>
-                            <td className="py-[10px] px-[12px] edp-mono">{f.Numero_Nota}</td>
-                            <td className="py-[10px] px-[12px] edp-mono">{f['Local_Instalacao']}</td>
+                            <td className="py-[10px] px-[12px] font-mono">{f.Numero_Nota}</td>
+                            <td className="py-[10px] px-[12px] font-mono">{f['Local_Instalacao']}</td>
                             <td className="py-[10px] px-[12px] text-right">{f['Planejado_DDPM']}</td>
                             <td className="py-[10px] px-[12px]">{f['Medida_SAP']}</td>
                             <td className="py-[10px] px-[12px] text-center">{f['Medida_vs_Planejado']}</td>
@@ -828,7 +828,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                         variant="default"
                         onClick={executarNoSap}
                         disabled={loadingRobot || (!somaFechada && !forcarValidacao) || (undMae === 'un' && !unidadeCorreta)}
-                        className="ml-auto bg-primary hover:bg-primary/90 text-white"
+                        className="ml-auto bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         {loadingRobot ? 'Processando SAP...' : '🚀 Executar no SAP'}
                       </Button>
@@ -852,12 +852,12 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
               <div className="flex items-center justify-between gap-[12px] flex-wrap bg-surface border border-line p-[12px] rounded-[8px] shadow-sm">
                 <div className="relative flex items-center w-[280px]">
                   <Search size={14} className="absolute left-[11px] text-text-mute" />
-                  <input
+                  <Input
                     type="text"
                     value={buscaInd}
                     onChange={(e) => setBuscaInd(e.target.value)}
                     placeholder="Buscar nota, conjunto ou local..."
-                    className="edp-field pl-[32px] pr-[10px] w-full"
+                    className="pl-[32px] pr-[10px] w-full"
                   />
                 </div>
 
@@ -876,7 +876,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     size="sm"
                     onClick={igualarPlanejadoEmLote}
                     disabled={selecionadasInd.size === 0}
-                    className="h-[34px] text-[12px] gap-[6px] bg-primary hover:bg-primary/90 text-white"
+                    className="h-[34px] text-[12px] gap-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Zap size={14} /> Igualar ao Planejado DDPM ({selecionadasInd.size})
                   </Button>
@@ -917,12 +917,12 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                               className="w-[15px] h-[15px] cursor-pointer"
                             />
                           </td>
-                          <td className="py-[10px] px-[12px] edp-mono font-medium">{num}</td>
+                          <td className="py-[10px] px-[12px] font-mono font-medium">{num}</td>
                           <td className="py-[10px] px-[12px]">{r.Conjunto}</td>
-                          <td className="py-[10px] px-[12px] edp-mono">{r.Local_Instalacao}</td>
+                          <td className="py-[10px] px-[12px] font-mono">{r.Local_Instalacao}</td>
                           <td className="py-[10px] px-[12px] text-right font-medium">{r.Planejado_DDPM}</td>
                           <td className="py-[10px] px-[12px]">{r.Medida_SAP}</td>
-                          <td className="py-[10px] px-[12px] edp-mono">{r.Nota_Mae}</td>
+                          <td className="py-[10px] px-[12px] font-mono">{r.Nota_Mae}</td>
                           <td className="py-[6px] px-[12px]">
                             <select
                               value={unit}
@@ -973,7 +973,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                     variant="default"
                     onClick={executarNoSap}
                     disabled={loadingRobot || selecionadasInd.size === 0 || !individualValido}
-                    className="bg-primary hover:bg-primary/90 text-white"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {loadingRobot ? 'Processando SAP...' : '🚀 Corrigir Selecionadas no SAP'}
                   </Button>
@@ -1003,7 +1003,7 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
                 <tbody>
                   {relatorio.map((r, i) => (
                     <tr key={i} className="border-b border-line hover:bg-surface-2">
-                      <td className="py-[8px] px-[12px] edp-mono font-medium">{r.Nota}</td>
+                      <td className="py-[8px] px-[12px] font-mono font-medium">{r.Nota}</td>
                       <td className="py-[8px] px-[12px] text-center">
                         <span
                           className={`inline-block py-[2px] px-[6px] rounded-[4px] font-semibold text-[10px] uppercase ${
@@ -1026,6 +1026,6 @@ export function Rateio({ dados, estadoFiltros, recarregar }: RateioProps): React
           </CardContent>
         </Card>
       )}
-    </div>
+    </SectionPage>
   );
 }
