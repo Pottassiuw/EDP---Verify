@@ -1324,3 +1324,125 @@ def test_criar_notas_origem_default_manual(banco_temporario):
     row = conn.execute("SELECT origem FROM notas WHERE Numero_Nota=778002").fetchone()
     conn.close()
     assert row[0] == "manual"
+
+
+# ── Perfil de execução: local x produção ─────────────────────────────────────
+def test_perfil_padrao_e_local(monkeypatch):
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    assert config.perfil() == config.PERFIL_LOCAL
+    assert config.em_producao() is False
+
+
+def test_perfil_producao_reconhecido(monkeypatch):
+    monkeypatch.setenv("EDP_PERFIL", "PRODUCAO")
+    assert config.perfil() == config.PERFIL_PRODUCAO
+    assert config.em_producao() is True
+
+
+def test_perfil_local_usa_banco_do_data_dir(monkeypatch, tmp_path):
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    assert config.caminho_banco_notas() == str(tmp_path / "notas_departamento.db")
+
+
+def test_perfil_producao_usa_banco_da_rede(monkeypatch, tmp_path):
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    assert config.caminho_banco_notas() == config.REDE_DB_ORIGEM
+
+
+def test_input_db_path_vence_o_perfil(monkeypatch, tmp_path):
+    alvo = tmp_path / "compartilhado.db"
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.setenv("INPUT_DB_PATH", str(alvo))
+    assert config.caminho_banco_notas() == str(alvo)
+
+
+def test_producao_sem_banco_acessivel_falha_alto(monkeypatch, tmp_path):
+    """Produção sem rede levanta erro — jamais cai no banco local silenciosamente."""
+    from input_module import db
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.setenv("INPUT_DB_PATH", str(tmp_path / "inexistente.db"))
+    with pytest.raises(db.BancoRedeIndisponivelErro) as erro:
+        db.migrar_da_rede_se_preciso()
+    mensagem = str(erro.value)
+    assert "EDP_PERFIL=producao" in mensagem
+    assert "inexistente.db" in mensagem          # nome lógico do banco: útil
+    assert str(tmp_path) not in mensagem         # diretório completo: não vaza
+
+
+def test_producao_com_banco_acessivel_nao_copia_nada(monkeypatch, tmp_path):
+    from input_module import db
+    compartilhado = tmp_path / "compartilhado.db"
+    monkeypatch.setenv("INPUT_DB_PATH", str(compartilhado))
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    db.inicializar_banco()
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    assert db.migrar_da_rede_se_preciso() == "rede"
+    assert not (tmp_path / "notas_departamento.db").exists()
+
+
+def test_mascarar_caminho_nao_expoe_host_nem_diretorio():
+    mascarado = config.mascarar_caminho(config.REDE_DB_ORIGEM)
+    assert "notas_departamento.db" in mascarado
+    assert "ebeat-fp1" not in mascarado
+    assert "Diretoria Tecnica" not in mascarado
+    assert config.mascarar_caminho(r"C:\dados\notas.db").startswith("local:")
+
+
+def test_descrever_conexao_resume_sem_caminho_completo(monkeypatch, tmp_path):
+    from input_module import db
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    db.inicializar_banco()
+    db.salvar_em_massa(pd.DataFrame([_nota(9100)]))
+    resumo = db.descrever_conexao()
+    assert resumo["ambiente"] == "local"
+    assert resumo["tipo"] == "sqlite"
+    assert resumo["status"] == "ok"
+    assert resumo["qtd_notas"] == 1
+    assert str(tmp_path) not in resumo["alvo"]
+
+
+def test_rede_raiz_respeita_env(monkeypatch):
+    """INPUT_REDE_RAIZ redireciona todos os caminhos derivados da rede."""
+    import importlib
+    monkeypatch.setenv("INPUT_REDE_RAIZ", r"\outro-host\Compartilhado")
+    try:
+        importlib.reload(config)
+        assert config.REDE_RAIZ == r"\outro-host\Compartilhado"
+        assert config.REDE_DB_ORIGEM.startswith(r"\outro-host\Compartilhado")
+        assert config.CAMINHO_BASE_IW28.startswith(r"\outro-host\Compartilhado")
+    finally:
+        monkeypatch.delenv("INPUT_REDE_RAIZ", raising=False)
+        importlib.reload(config)
+    assert "outro-host" not in config.REDE_RAIZ
+
+
+# ── Ramal: idempotência do ID_Cronologia ─────────────────────────────────────
+def test_ramal_lote_parcial_preserva_id_cronologia(banco_temporario):
+    """Reprocessar uma nota não renumera a cronologia nem colide com as outras."""
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame(
+        [_nota_ramal(5201), _nota_ramal(5202), _nota_ramal(5203)]))
+    antes = dict(zip(db.carregar_dados_ramal()["Numero_Nota"],
+                     db.carregar_dados_ramal()["ID_Cronologia"]))
+    assert len(set(antes.values())) == 3  # cronologias distintas
+
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5203, Observacao="editada")]))
+    depois = dict(zip(db.carregar_dados_ramal()["Numero_Nota"],
+                      db.carregar_dados_ramal()["ID_Cronologia"]))
+    assert depois == antes
+    assert len(db.carregar_dados_ramal()) == 3
+
+
+def test_ramal_nota_nova_continua_a_numeracao(banco_temporario):
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5301), _nota_ramal(5302)]))
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5303)]))
+    df = db.carregar_dados_ramal()
+    cronologias = sorted(int(x) for x in df["ID_Cronologia"])
+    assert cronologias == [1, 2, 3]

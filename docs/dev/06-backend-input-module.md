@@ -11,6 +11,40 @@ local; as bases de cruzamento também foram migradas para SQLite (ver
 "Cache SQLite" abaixo). O resultado consolidado é exposto ao frontend
 via `/api/input/*`.
 
+## Perfil de execução: onde o banco de notas vive
+
+O banco de notas é resolvido em `config.caminho_banco_notas()`, nesta ordem:
+
+1. `INPUT_DB_PATH` — override explícito (é também a variável que
+   `_rotina_sap_background` passa para o `Sap_Robot.py`);
+2. perfil `producao` (`EDP_PERFIL=producao`) — o banco **é** o arquivo
+   compartilhado `config.REDE_DB_ORIGEM`; leituras e escritas caem direto
+   nele, então notas criadas por outra pessoa aparecem sem nenhuma cópia;
+3. perfil `local` (padrão) — `backend/data/notas_departamento.db`, com a
+   migração de primeira execução copiando o banco da rede.
+
+| Variável | Efeito |
+|---|---|
+| `EDP_PERFIL` | `local` (padrão) ou `producao`. |
+| `INPUT_REDE_RAIZ` | Raiz do compartilhamento; todos os `config.CAMINHO_*` derivam dela. |
+| `INPUT_DB_PATH` | Caminho absoluto do banco de notas; vence o perfil. |
+| `INPUT_MIGRAR_STATUS_OBRA` | `1` libera o UPDATE em massa `Status_Obra → Observacao` no perfil de produção (ignorado por padrão lá). |
+
+**Sem fallback silencioso.** Em `producao`, se o banco compartilhado não
+estiver acessível, `db.migrar_da_rede_se_preciso()` levanta
+`BancoRedeIndisponivelErro` e a requisição falha com a causa provável
+(rede, caminho, permissão). Servir a cópia local nesse cenário esconderia
+notas desatualizadas de todo o setor — por isso o erro é explícito e é
+reavaliado a cada requisição.
+
+**Perfil local não espelha o banco.** As escritas ficam na máquina; só as
+planilhas Excel (`Base_Notas_Sincronizada.xlsx`, `Input Nota.xlsx`) vão
+para a rede. `garantir_banco()` e `gerar_copia_excel_rede()` avisam isso no
+log. A sincronização por `sqlite3.Connection.backup()` que existia até
+`ef19f4f` **não pode voltar**: ela sobrescreve o arquivo inteiro da rede e
+apaga o que os outros usuários gravaram. Se o perfil local algum dia
+precisar publicar, o caminho é UPSERT por `Numero_Nota`.
+
 ## Origem das extrações SAP
 
 IW28, IW38 e IW66 são lidas e gravadas sob a raiz única
@@ -212,11 +246,12 @@ vivia dentro de `routes.py`, para que outros módulos (ex.: a
 integração Coffee→Input) possam reusar exatamente a mesma lógica sem
 importar internals de rotas:
 
-- `garantir_banco() -> str` — roda a migração da rede
-  (`db.migrar_da_rede_se_preciso()`) e `db.inicializar_banco()` uma
+- `garantir_banco() -> str` — resolve o banco do perfil ativo
+  (`db.migrar_da_rede_se_preciso()`) e roda `db.inicializar_banco()` uma
   única vez por processo (protegido por `threading.Lock`); retorna
-  `"ja-existe"`, `"migrado"` ou `"rede-indisponivel"`. `resetar_migracao()`
-  zera esse estado (usado por `POST /migrar`).
+  `"rede"` (produção), `"ja-existe"`, `"migrado"` ou `"rede-indisponivel"`.
+  Loga um resumo seguro da conexão (`db.descrever_conexao()`).
+  `resetar_migracao()` zera esse estado (usado por `POST /migrar`).
 - `NovaNota` (Pydantic) — schema de uma nota nova, mesmos campos/defaults
   usados pelos endpoints `POST /notas` e `POST /notas/bulk`.
 - `criar_notas(notas: list[NovaNota], usuario: str, origem: str = "manual")
@@ -277,7 +312,17 @@ regional ativo.
 
 Toda escrita bem-sucedida chama `_pos_escrita()` (`routes.py:83`), que
 invalida o cache do engine e agenda `engine.gerar_copia_excel_rede()`
-em background para manter o Excel espelhado na rede atualizado.
+em background para manter o Excel espelhado na rede atualizado. O banco em
+si não é copiado por essa rotina — ver "Perfil de execução" acima.
+
+### Ramal: `ID_Cronologia`
+
+`db.salvar_ramal_em_massa()` resolve o `ID_Cronologia` sozinho
+(`_resolver_id_cronologia_ramal`): quem já existe mantém o valor gravado e
+só as notas novas continuam a numeração a partir do máximo. Antes disso,
+`POST /ramal/bulk` renumerava o lote inteiro para `1..n`, então uma edição
+parcial (a Edição Rápida manda só as notas alteradas) colidia com as
+demais linhas e embaralhava o `ORDER BY ID_Cronologia` da aba Ramal.
 
 ## Robô SAP (`backend/Sap_Robot.py`) — setup
 

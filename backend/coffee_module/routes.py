@@ -1,10 +1,32 @@
 """Rotas /api/coffee/* -- fundacao do hub COFFEE."""
+import os
+import time
+from contextlib import contextmanager
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from coffee_module import client, config, db, jobs, operation_service
+
+_PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
+
+
+@contextmanager
+def _medir(etapa: str):
+    """Mede uma etapa do handler (consulta ao banco) quando EDP_PERF=1.
+
+    O middleware de main.py já mede a requisição inteira; isto separa o tempo
+    de banco do tempo de serialização/rede.
+    """
+    if not _PERF_ATIVO:
+        yield
+        return
+    inicio = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f"[COFFEE-PERF]   {etapa}: {(time.perf_counter() - inicio) * 1000:.0f}ms")
 
 async def usuario_coffee(x_user: Optional[str] = Header(default=None, alias="X-User")) -> Optional[str]:
     """Identidade do dono das notas: header X-User quando presente, senão None (fallback local).
@@ -121,7 +143,9 @@ def job(job_id: str):
 @router.get("/notas")
 def notas(status: Optional[str] = None, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
-    return {"registros": db.listar_notas(status, usuario=usuario)}
+    with _medir("db.listar_notas"):
+        registros = db.listar_notas(status, usuario=usuario)
+    return {"registros": registros}
 
 
 @router.get("/consultar/{id}")
@@ -222,7 +246,8 @@ def local_instalacao(pedido: LocalPedido):
 @router.get("/operacao")
 def obter_operacao():
     _garantir_banco()
-    return operation_service.listar_quadro()
+    with _medir("operation_service.listar_quadro"):
+        return operation_service.listar_quadro()
 
 
 @router.post("/operacao/consultar")

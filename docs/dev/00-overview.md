@@ -148,6 +148,23 @@ cd frontend && npm run build                    # type-check (tsc) + build
   backend. As duas funções agora logam a falha em vez de engoli-la.
 - `backend/main.py:17-22` — CORS liberado para `allow_origins=["*"]`,
   `allow_methods=["*"]`, `allow_headers=["*"]`.
+- `backend/main.py` — `GET /api/data` só envia em `raw` as colunas da
+  interface `NoteRaw` (`_RAW_UTEIS`/`slim_raw`). A planilha de verificação
+  traz dezenas de colunas extras que o frontend nunca lê: mandar todas
+  representava ~76% do corpo. Medido com a sonda `[COFFEE-PERF]`
+  (5000 notas): 1232 ms / 10,6 MB antes, 459 ms / 3,4 MB depois. Esse é o
+  payload que a seção COFFEE > Verificar consome ao abrir, e que o
+  `App.tsx` serializa no snapshot de `sessionStorage`.
+- Instrumentação de performance: `EDP_PERF=1` no backend loga
+  `[COFFEE-PERF] <método> <rota> <status> <ms> <bytes>` para `/api/data` e
+  `/api/coffee/*` (mais o tempo de banco em `GET /coffee/notas` e
+  `GET /coffee/operacao`); `localStorage.setItem('edp_perf','1')` no
+  navegador loga rede/parse/normalize e numera as chamadas, expondo
+  chamadas duplicadas. Desligada por padrão nos dois lados.
+- Perfil de banco do módulo Input (`EDP_PERFIL`): em `producao` o banco de
+  notas **é** o arquivo da rede e a falta de acesso levanta erro em vez de
+  cair no banco local. Detalhes em
+  [06-backend-input-module.md](./06-backend-input-module.md).
 - `backend/main.py:37-53` — o agendador da extração noturna do SAP não usa
   um scheduler de verdade: é um `while True` que testa `hour == 3 and
   minute == 0` a cada 30 segundos e depois dorme 61 minutos para não

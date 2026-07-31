@@ -904,12 +904,20 @@ def gerar_copia_excel_rede():
         except Exception as e2:
             print(f"Erro ao gerar cópia de compatibilidade Input Nota.xlsx na rede: {e2}")
             
-        # 4. Sincronização segura com o banco da rede (Apenas UPSERT, jamais backup() destrutivo que sobrescreve o arquivo inteiro)
-        try:
-            print("ℹ️ Sincronização de arquivo SQLite concluída (backup destrutivo desativado para segurança da rede).")
-        except Exception as e3:
-            print(f"Erro na verificação do banco de rede: {e3}")
-            
+        # 4. Banco de notas.
+        # Em produção o banco EM USO já é o da rede (config.caminho_banco_notas),
+        # então não existe cópia a sincronizar — a escrita já caiu no arquivo
+        # compartilhado. No perfil local não há sincronização: a versão anterior
+        # deste bloco fazia src.backup(dst), que sobrescreve o arquivo inteiro da
+        # rede e apaga o que os outros usuários gravaram (removida em ef19f4f).
+        # Nunca reintroduzir backup() aqui: se o perfil local precisar publicar,
+        # o caminho é UPSERT por Numero_Nota, nunca cópia de arquivo.
+        if not config.em_producao():
+            print("⚠️ [input] Perfil LOCAL: alterações do banco NÃO foram "
+                  "espelhadas para a rede (apenas as planilhas Excel acima). "
+                  "Rode o servidor com EDP_PERFIL=producao para gravar direto "
+                  "no banco compartilhado.")
+
     except Exception as e:
         print(f"Erro ao gerar cópia Excel na rede: {e}")
     finally:

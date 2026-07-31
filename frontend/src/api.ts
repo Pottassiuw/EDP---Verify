@@ -138,12 +138,39 @@ function normalize(j: ApiData): FetchResult {
   return { notes, completed: new Set(j.completed ?? []), source: "api" };
 }
 
+// Instrumentação opcional da abertura da seção COFFEE:
+// localStorage.setItem('edp_perf', '1') e recarregue. Loga rede, parse e
+// normalização separados, além da contagem de chamadas (chamadas duplicadas
+// aparecem como #2, #3… para a mesma rota).
+const perfAtivo = localStorage.getItem("edp_perf") === "1";
+const perfChamadas = new Map<string, number>();
+function perfLog(rota: string, etapas: Record<string, number>, sufixo = ""): void {
+  const n = (perfChamadas.get(rota) ?? 0) + 1;
+  perfChamadas.set(rota, n);
+  const detalhe = Object.entries(etapas)
+    .map(([k, v]) => `${k}=${Math.round(v)}ms`)
+    .join(" ");
+  console.info(`[COFFEE-PERF] ${rota} #${n} ${detalhe} ${sufixo}`.trimEnd());
+}
+
 export async function fetchData(): Promise<FetchResult> {
+  const t0 = performance.now();
   const res = await fetch(BASE + "/data", {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error("GET /data -> " + res.status);
-  return normalize((await res.json()) as ApiData);
+  const t1 = performance.now();
+  const json = (await res.json()) as ApiData;
+  const t2 = performance.now();
+  const resultado = normalize(json);
+  if (perfAtivo) {
+    perfLog("GET /data", {
+      rede: t1 - t0,
+      parse: t2 - t1,
+      normalize: performance.now() - t2,
+    }, `notas=${resultado.notes.length}`);
+  }
+  return resultado;
 }
 
 async function erroComDetail(res: Response, fallback: string): Promise<Error> {

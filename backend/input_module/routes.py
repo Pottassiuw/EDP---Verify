@@ -426,9 +426,8 @@ def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
     garantir_banco()
     if not pedido.notas:
         raise HTTPException(400, "Lote vazio.")
-    import pandas as pd
+    # ID_Cronologia é resolvido no db (preserva o de quem já existe).
     df = pd.DataFrame([n.model_dump() for n in pedido.notas])
-    df["ID_Cronologia"] = list(range(1, len(df) + 1))
     db.salvar_ramal_em_massa(df)
     pos_escrita(tasks)
     return {"inseridas": len(df)}

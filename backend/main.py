@@ -1,7 +1,9 @@
 import io
 import json
+import os
 import pathlib
 import re
+import time
 import uuid
 
 import pandas as pd
@@ -26,10 +28,25 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 
+# Instrumentação opcional: ligue com EDP_PERF=1 para medir a abertura da seção
+# COFFEE em produção sem recompilar nada. Loga só rota, duração e tamanho —
+# nunca corpo, header ou identificador de usuário.
+_PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
+_PERF_ROTAS = ("/api/data", "/api/coffee/")
+
+
 @app.middleware("http")
 async def _trace_middleware(request, call_next):
     _coffee_db.definir_trace(uuid.uuid4().hex[:12])
-    return await call_next(request)
+    if not _PERF_ATIVO or not request.url.path.startswith(_PERF_ROTAS):
+        return await call_next(request)
+    inicio = time.perf_counter()
+    resposta = await call_next(request)
+    duracao_ms = (time.perf_counter() - inicio) * 1000
+    tamanho = resposta.headers.get("content-length", "?")
+    print(f"[COFFEE-PERF] {request.method} {request.url.path} "
+          f"status={resposta.status_code} {duracao_ms:.0f}ms bytes={tamanho}")
+    return resposta
 
 
 # ── Scheduler (Extração Noturna do SAP) ──────────────────────────────────────
@@ -66,6 +83,22 @@ COMPLETED = set()
 
 STATE_FILE = pathlib.Path(__file__).parent / "app_state.json"
 
+# Colunas que o frontend realmente lê de `raw` (interface NoteRaw em
+# frontend/src/types.ts). A planilha de verificação traz dezenas de colunas
+# extras: mandar todas era ~76% do corpo de GET /api/data (medido: 4.5 MB para
+# 2000 notas, 3.4 MB só de `raw`) sem nenhum consumidor no frontend.
+_RAW_UTEIS = frozenset({
+    "id", "tipo_nota", "referencia_fisica", "prioridade", "setor", "uf",
+    "local_instalacao", "alimentador", "colaborador", "executor",
+    "imagens_totais", "imagens_recebidas", "latitude", "longitude",
+    "id_sap", "descricao", "poste", "postes", "problema",
+})
+
+
+def slim_raw(raw: dict) -> dict:
+    """Projeta um dict `raw` nas colunas que o frontend consome."""
+    return {k: v for k, v in raw.items() if k in _RAW_UTEIS}
+
 
 # ── Persistência ─────────────────────────────────────────────────────────────
 
@@ -101,6 +134,12 @@ def load_state():
         state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
         RECORDS = state.get("records", [])
         COMPLETED = set(state.get("completed", []))
+        # Estado gravado antes do enxugamento do `raw` continua no disco com
+        # todas as colunas da planilha. Projeta uma vez na carga em vez de a
+        # cada GET /api/data.
+        for registro in RECORDS:
+            if isinstance(registro.get("raw"), dict):
+                registro["raw"] = slim_raw(registro["raw"])
     except Exception as e:
         print(
             f"Falha ao ler {STATE_FILE.name}: {e}. "
@@ -256,7 +295,8 @@ async def upload_file(file: UploadFile = File(...)):
                 "errors":     errors,
                 "status":     "erro" if errors else "ok",
                 "_dup_raw":   str(row.get("chk_duplicada", "") or "").strip(),
-                "raw":        {str(k): str(v) if pd.notna(v) else "-" for k, v in row.items()},
+                "raw":        {str(k): str(v) if pd.notna(v) else "-"
+                               for k, v in row.items() if str(k) in _RAW_UTEIS},
             }
         )
 

@@ -17,26 +17,85 @@ from input_module import config
 from input_module.config import DE_PARA_CIDADES, DE_PARA_REGIONAL, INV_STATUS_MAP, STATUS_MAP
 
 
+class BancoRedeIndisponivelErro(RuntimeError):
+    """Perfil de produção sem acesso ao banco compartilhado da rede.
+
+    Levantada em vez de cair silenciosamente no banco local: um servidor de
+    produção lendo a cópia local serve notas desatualizadas sem nenhum sinal.
+    """
+
+
 def obter_caminho_banco() -> str:
-    return str(config.data_dir() / "notas_departamento.db")
+    return config.caminho_banco_notas()
 
 
 def get_db_connection() -> sqlite3.Connection:
-    config.data_dir().mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(obter_caminho_banco(), timeout=30, check_same_thread=False)
+    caminho = obter_caminho_banco()
+    # Em produção o banco vive na rede: o diretório já existe e não é nosso
+    # para criar. Só o perfil local materializa backend/data/.
+    if not config.em_producao():
+        config.data_dir().mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(caminho, timeout=30, check_same_thread=False)
+    # WAL não funciona em compartilhamento SMB (precisa de memória
+    # compartilhada); o SQLite mantém o journal de rollback e o PRAGMA vira
+    # no-op. Em produção a serialização vem do timeout de 30s.
     conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
 
+def descrever_conexao() -> dict:
+    """Resumo seguro da conexão para log/diagnóstico — nunca caminho completo."""
+    caminho = obter_caminho_banco()
+    resumo = {
+        "ambiente": config.perfil(),
+        "tipo": "sqlite",
+        "alvo": config.mascarar_caminho(caminho),
+        "database": os.path.basename(caminho),
+        "status": "indisponivel",
+        "qtd_notas": None,
+    }
+    if not os.path.exists(caminho):
+        return resumo
+    try:
+        conn = sqlite3.connect(caminho, timeout=5)
+        try:
+            resumo["qtd_notas"] = conn.execute("SELECT count(*) FROM notas").fetchone()[0]
+        finally:
+            conn.close()
+        resumo["status"] = "ok"
+    except Exception as e:  # noqa: BLE001
+        resumo["status"] = f"erro: {type(e).__name__}"
+    return resumo
+
+
 def migrar_da_rede_se_preciso() -> str:
-    """Primeira execução ou recuperação: copia o banco da rede para o diretório local.
+    """Prepara o banco de notas conforme o perfil de execução.
 
-    Se o banco local já existir mas estiver zerado/incompleto (< 100 notas), e a rede tiver
-    a base completa (>= 100 notas), restaura automaticamente da rede.
+    Produção: o banco EM USO já é o da rede — nada é copiado. Se ele não
+    estiver acessível, levanta ``BancoRedeIndisponivelErro`` em vez de servir
+    a cópia local desatualizada.
 
-    Retorna "ja-existe", "migrado" ou "rede-indisponivel".
+    Local: primeira execução ou recuperação copia o banco da rede para
+    ``backend/data/``. Se o banco local já existir mas estiver zerado/incompleto
+    (< 100 notas) e a rede tiver a base completa (>= 100 notas), restaura.
+
+    Retorna "rede" (produção), "ja-existe", "migrado" ou "rede-indisponivel".
     """
     destino = obter_caminho_banco()
+
+    if config.em_producao():
+        if not os.path.exists(destino):
+            raise BancoRedeIndisponivelErro(
+                "Perfil de produção (EDP_PERFIL=producao) não encontrou o banco "
+                f"compartilhado em {config.mascarar_caminho(destino)}. "
+                "Verifique se a máquina está na rede EDP, se INPUT_REDE_RAIZ/"
+                "INPUT_DB_PATH apontam para o compartilhamento correto e se o "
+                "usuário do serviço tem permissão de leitura e escrita. "
+                "O sistema NÃO cai para o banco local nesse perfil — isso "
+                "esconderia notas desatualizadas de todo o setor."
+            )
+        return "rede"
+
     if not os.path.exists(config.REDE_DB_ORIGEM):
         return "rede-indisponivel"
 
@@ -185,9 +244,20 @@ def inicializar_banco() -> None:
     if "origem" not in colunas_existentes:
         cursor.execute("ALTER TABLE notas ADD COLUMN origem TEXT")
 
-    # Migração: concatena Status_Obra em Observacao (mantendo apenas Observacao e Check)
+    # Migração: concatena Status_Obra em Observacao (mantendo apenas Observacao e Check).
+    # É um UPDATE em massa. Em produção o alvo é o banco compartilhado do setor,
+    # então ela só roda com INPUT_MIGRAR_STATUS_OBRA=1 explícito — reescrever a
+    # base de todo mundo não pode ser efeito colateral de um restart.
+    migrar_status_obra = (
+        not config.em_producao()
+        or os.environ.get("INPUT_MIGRAR_STATUS_OBRA", "").strip() == "1"
+    )
+    if not migrar_status_obra:
+        print("ℹ️ [input] Migração Status_Obra ignorada no perfil de produção "
+              "(defina INPUT_MIGRAR_STATUS_OBRA=1 para executá-la uma vez).")
+
     try:
-        if "Status_Obra" in colunas_existentes:
+        if migrar_status_obra and "Status_Obra" in colunas_existentes:
             cursor.execute("""
                 UPDATE notas
                 SET Observacao = CASE
@@ -203,7 +273,7 @@ def inicializar_banco() -> None:
     try:
         cursor.execute("PRAGMA table_info(notas_ramal)")
         cols_ramal = [coluna[1] for coluna in cursor.fetchall()]
-        if "Status_Obra" in cols_ramal:
+        if migrar_status_obra and "Status_Obra" in cols_ramal:
             cursor.execute("""
                 UPDATE notas_ramal
                 SET Observacao = CASE
@@ -643,12 +713,41 @@ def carregar_dados_ramal() -> pd.DataFrame:
     return df
 
 
+def _resolver_id_cronologia_ramal(df: pd.DataFrame) -> list:
+    """Mantém o ID_Cronologia de quem já existe e numera só as notas novas.
+
+    Sem isso, um lote parcial (edição rápida manda só as notas alteradas)
+    reescrevia ID_Cronologia = 1..n, colidindo com as demais linhas e
+    embaralhando o ``ORDER BY ID_Cronologia`` da aba Ramal.
+    """
+    conn = get_db_connection()
+    try:
+        existentes = dict(conn.execute(
+            "SELECT Numero_Nota, ID_Cronologia FROM notas_ramal").fetchall())
+        maximo = conn.execute(
+            "SELECT MAX(ID_Cronologia) FROM notas_ramal").fetchone()[0] or 0
+    finally:
+        conn.close()
+
+    proximo = int(maximo) + 1
+    ids = []
+    for numero in df["Numero_Nota"]:
+        atual = existentes.get(int(numero))
+        if atual is None:
+            ids.append(proximo)
+            proximo += 1
+        else:
+            ids.append(int(atual))
+    return ids
+
+
 def salvar_ramal_em_massa(df: pd.DataFrame) -> None:
     realizar_backup()
     df_s = df.copy()
     for col in _COLUNAS_RAMAL:
         if col not in df_s.columns:
             df_s[col] = "-"
+    df_s['ID_Cronologia'] = _resolver_id_cronologia_ramal(df_s)
     df_s['Planejado_DDPM'] = pd.to_numeric(df_s['Planejado_DDPM'], errors='coerce').fillna(0.0)
     if 'Mes_Execucao_Planejado' in df_s.columns:
         df_s['Mes_Execucao_Planejado'] = df_s['Mes_Execucao_Planejado'].apply(converter_para_iso_data)

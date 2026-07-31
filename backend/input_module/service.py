@@ -15,11 +15,34 @@ _banco_lock = threading.Lock()
 
 
 def garantir_banco() -> str:
+    """Resolve o banco de notas do perfil ativo (uma vez por processo).
+
+    No perfil de produção uma falha de rede/permissão sobe como
+    ``BancoRedeIndisponivelErro`` e é reavaliada na próxima requisição — nunca
+    é convertida em fallback silencioso para o banco local.
+    """
     with _banco_lock:
         if _migracao["resultado"] is None:
-            _migracao["resultado"] = db.migrar_da_rede_se_preciso()
+            resultado = db.migrar_da_rede_se_preciso()
             db.inicializar_banco()
+            _registrar_conexao(resultado)
+            _migracao["resultado"] = resultado
     return _migracao["resultado"]
+
+
+def _registrar_conexao(resultado: str) -> None:
+    """Log seguro da origem dos dados — sem caminho completo nem credenciais."""
+    resumo = db.descrever_conexao()
+    print(
+        f"ℹ️ [input] ambiente={resumo['ambiente']} tipo={resumo['tipo']} "
+        f"alvo={resumo['alvo']} database={resumo['database']} "
+        f"status={resumo['status']} notas={resumo['qtd_notas']} "
+        f"resolucao={resultado}"
+    )
+    if not config.em_producao():
+        print("⚠️ [input] Perfil LOCAL: escritas ficam apenas nesta máquina e "
+              "notas novas do banco da rede não aparecem até uma nova migração. "
+              "Use EDP_PERFIL=producao no servidor do setor.")
 
 
 def resetar_migracao() -> None:

@@ -84,3 +84,39 @@ def test_gzip_comprime_resposta_grande(monkeypatch):
     assert r.headers.get("content-encoding") == "gzip"
     # httpx descomprime transparentemente: o corpo continua íntegro
     assert len(r.json()["records"]) == 500
+
+
+def test_slim_raw_mantem_so_colunas_consumidas():
+    """`raw` era ~76% do corpo de GET /api/data com colunas que o front ignora."""
+    from main import slim_raw
+
+    resultado = slim_raw({
+        "id": "100", "local_instalacao": "SER-11", "postes": "TR-088",
+        "coluna_interna_do_excel": "x" * 500, "chk_coordenada": "ok",
+    })
+    assert resultado == {"id": "100", "local_instalacao": "SER-11", "postes": "TR-088"}
+
+
+def test_upload_nao_devolve_colunas_extras_em_raw(tmp_path):
+    """Round-trip: colunas fora de NoteRaw não chegam ao cliente."""
+    import io
+    import pandas as pd
+    from fastapi.testclient import TestClient
+    import main
+
+    planilha = io.BytesIO()
+    pd.DataFrame([{
+        "id": 100728801, "prioridade": 1, "tipo_nota": "Poda",
+        "referencia_fisica": "SER-11", "uf": "SP", "setor": "Centro",
+        "postes": "TR-088", "chk_coordenada": "ok",
+        "coluna_gigante_do_excel": "y" * 400,
+    }]).to_excel(planilha, index=False)
+
+    cliente = TestClient(main.app)
+    r = cliente.post("/api/upload", files={"file": ("p.xlsx", planilha.getvalue())})
+    assert r.status_code == 200
+
+    registro = cliente.get("/api/data").json()["records"][0]
+    assert "coluna_gigante_do_excel" not in registro["raw"]
+    assert "chk_coordenada" not in registro["raw"]
+    assert registro["raw"]["postes"] == "TR-088"
