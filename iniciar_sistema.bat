@@ -30,8 +30,8 @@ echo =======================================================================
 echo                 EDP VERIFY - DE OLHO NO PROBLEMA
 echo =======================================================================
 echo.
-echo  [1] Iniciar Sistema (Recomendado - http://localhost:8000)
-echo  [2] Iniciar Modo Desenvolvedor (Backend :8000 + Frontend Vite :5173)
+echo  [1] Iniciar Sistema (Recomendado - http://localhost:6328)
+echo  [2] Iniciar Modo Desenvolvedor (Backend :6328 + Frontend Vite :5173)
 echo  [3] Recompilar Frontend (npm run build)
 echo  [4] Sair
 echo.
@@ -58,15 +58,15 @@ if not exist "%PROJECT_ROOT%frontend\dist" (
 echo [2/2] Iniciando o servidor EDP Verify (Backend + Frontend)...
 echo.
 echo -----------------------------------------------------------------------
-echo  O sistema abrira automaticamente no navegador: http://localhost:8000
+echo  O sistema abrira automaticamente no navegador: http://localhost:6328
 echo  Para encerrar o sistema, feche esta janela ou pressione Ctrl+C.
 echo -----------------------------------------------------------------------
 echo.
 
-start "" "http://localhost:8000"
+start "" "http://localhost:6328"
 
 cd /d "%PROJECT_ROOT%backend"
-"!PYTHON_EXE!" -m uvicorn main:app --host 127.0.0.1 --port 8000
+"!PYTHON_EXE!" -m uvicorn main:app --host 0.0.0.0 --port 6328
 goto FIM
 
 :DEV_MODE
@@ -77,15 +77,15 @@ echo                   INICIANDO MODO DESENVOLVEDOR
 echo =======================================================================
 echo.
 
-echo [1/2] Iniciando Backend FastAPI em segundo plano (:8000)...
-start "EDP Verify - Backend" cmd /k "cd /d "%PROJECT_ROOT%backend" && "!PYTHON_EXE!" -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+echo [1/2] Iniciando Backend FastAPI em segundo plano (:6328)...
+start "EDP Verify - Backend" cmd /k "cd /d "%PROJECT_ROOT%backend" && "!PYTHON_EXE!" -m uvicorn main:app --host 0.0.0.0 --port 6328 --reload"
 
 echo [2/2] Iniciando Frontend Vite (:5173)...
 start "EDP Verify - Frontend Vite" cmd /k "cd /d "%PROJECT_ROOT%frontend" && npm run dev"
 
 echo.
 echo Servidores iniciados em janelas separadas!
-echo Backend:  http://localhost:8000
+echo Backend:  http://localhost:6328
 echo Frontend: http://localhost:5173
 echo.
 goto FIM
