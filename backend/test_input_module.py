@@ -63,8 +63,7 @@ def test_inicializar_banco_cria_tabelas(banco_temporario):
     tabelas = {r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     conn.close()
-    assert {"notas", "log_alteracoes", "log_arquivos"} <= tabelas
-    assert "bloqueios" not in tabelas  # fora do escopo (spec)
+    assert {"notas", "log_alteracoes", "log_arquivos", "bloqueios"} <= tabelas
 
 
 def test_inicializar_banco_cria_indices(banco_temporario):
@@ -164,12 +163,27 @@ def test_reverter_ultima_alteracao(banco_temporario):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(3000)]))
     db.aplicar_edicoes([{"Numero_Nota": 3000, "Status_Nota": "99 Encerrado"}], usuario="t")
-    ok, _msg = db.reverter_ultima_alteracao()
+    ok, _msg = db.reverter_ultima_alteracao("t")
     assert ok
     df = db.carregar_dados()
     assert df[df["Numero_Nota"] == 3000].iloc[0]["Status_Nota"] == "10 Em planejamento"
-    ok, _msg = db.reverter_ultima_alteracao()
+    ok, _msg = db.reverter_ultima_alteracao("t")
     assert not ok
+
+
+def test_reverter_nao_desfaz_alteracao_de_outro_usuario(banco_temporario):
+    """O undo é por usuário: com o banco compartilhado, desfazer o próprio
+    trabalho não pode reverter o da colega que salvou depois."""
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(3100)]))
+    db.aplicar_edicoes([{"Numero_Nota": 3100, "Observacao": "minha"}], usuario="eu")
+    db.aplicar_edicoes([{"Numero_Nota": 3100, "Observacao": "dela"}], usuario="outra")
+
+    ok, _msg = db.reverter_ultima_alteracao("eu")
+    assert ok
+    df = db.carregar_dados()
+    # A edição da outra pessoa (mais recente) permanece intocada.
+    assert df[df["Numero_Nota"] == 3100].iloc[0]["Observacao"] == "dela"
 
 
 def test_deletar_notas(banco_temporario):
@@ -215,6 +229,85 @@ def test_deletar_notas_gera_log(banco_temporario):
     linha = logs[logs["Numero_Nota"] == 4100].iloc[0]
     assert linha["Campo_Alterado"] == "EXCLUSÃO DE NOTA"
     assert linha["Usuario"] == "tester"
+
+
+# ── Fase 2: bloqueios (edição concorrente no banco compartilhado) ────────
+def test_travar_nota_bloqueia_outro_usuario(banco_temporario):
+    from input_module import db
+    assert db.travar_nota(4200, "ana") == {"ok": True}
+    resultado = db.travar_nota(4200, "bob")
+    assert resultado["ok"] is False
+    assert resultado["usuario"] == "ana"
+    assert "desde" in resultado
+
+
+def test_travar_nota_mesmo_usuario_renova(banco_temporario):
+    from input_module import db
+    assert db.travar_nota(4201, "ana")["ok"] is True
+    # Segunda chamada da MESMA pessoa não é bloqueio — é renovação do TTL.
+    assert db.travar_nota(4201, "ana")["ok"] is True
+
+
+def test_destravar_libera_para_outro_usuario(banco_temporario):
+    from input_module import db
+    db.travar_nota(4202, "ana")
+    assert db.destravar_notas([4202], "ana") == 1
+    assert db.travar_nota(4202, "bob")["ok"] is True
+
+
+def test_destravar_nao_derruba_lock_de_outro(banco_temporario):
+    """Um release tardio de quem perdeu a corrida não pode apagar o lock de
+    quem já assumiu a nota no meio tempo."""
+    from input_module import db
+    db.travar_nota(4203, "ana")
+    assert db.destravar_notas([4203], "bob") == 0  # bob nunca foi o dono
+    assert db.obter_bloqueios([4203])[4203]["usuario"] == "ana"
+
+
+def test_bloqueio_expira_por_ttl(banco_temporario, monkeypatch):
+    from input_module import db
+    import datetime
+    db.travar_nota(4204, "ana")
+    # Simula um lock antigo sem esperar o TTL de verdade.
+    expirado = datetime.datetime.now() - datetime.timedelta(minutes=db.BLOQUEIO_TTL_MINUTOS + 1)
+    conn = db.get_db_connection()
+    conn.execute("UPDATE bloqueios SET Data_Hora = ? WHERE Numero_Nota = ?", (expirado, 4204))
+    conn.commit()
+    conn.close()
+    assert db.obter_bloqueios([4204]) == {}
+    assert db.travar_nota(4204, "bob")["ok"] is True
+
+
+def test_aplicar_edicoes_pula_nota_travada_por_outro(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4205)]))
+    db.travar_nota(4205, "outra")
+    resultado = db.aplicar_edicoes(
+        [{"Numero_Nota": 4205, "Observacao": "tentativa"}], usuario="eu")
+    assert resultado["alteradas"] == 0
+    assert resultado["bloqueadas"] == [4205]
+    df = db.carregar_dados()
+    assert df[df["Numero_Nota"] == 4205].iloc[0]["Observacao"] == ""
+
+
+def test_aplicar_edicoes_permite_dono_do_bloqueio(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4206)]))
+    db.travar_nota(4206, "eu")
+    resultado = db.aplicar_edicoes(
+        [{"Numero_Nota": 4206, "Observacao": "minha edicao"}], usuario="eu")
+    assert resultado["alteradas"] == 1
+    assert resultado["bloqueadas"] == []
+
+
+def test_deletar_notas_pula_travada_por_outro(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4207), _nota(4208)]))
+    db.travar_nota(4207, "outra")
+    assert db.deletar_notas([4207, 4208], usuario="eu") == 1
+    numeros = set(db.carregar_dados()["Numero_Nota"])
+    assert 4207 in numeros   # travada: sobreviveu
+    assert 4208 not in numeros  # livre: excluída
 
 
 def test_backup_rotativo(banco_temporario):
@@ -678,6 +771,42 @@ def test_delete_e_desfazer(cliente):
     r = cliente.request("DELETE", "/api/input/notas", headers=CABECALHO_USER,
                         json={"numeros": [8000]})
     assert r.status_code == 200 and r.json()["excluidas"] == 1
+
+
+def test_travar_e_listar_bloqueios_api(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8100)]))
+    r = cliente.post("/api/input/notas/8100/travar", headers=CABECALHO_USER, json={})
+    assert r.status_code == 200 and r.json()["ok"] is True
+
+    ativos = cliente.get("/api/input/bloqueios").json()["bloqueios"]
+    assert any(b["Numero_Nota"] == 8100 and b["Usuario"] == "ana" for b in ativos)
+
+    r = cliente.post("/api/input/notas/8100/travar", headers={"X-User": "bob"}, json={})
+    assert r.status_code == 200  # não é erro HTTP — o conflito vem no corpo, como /desfazer
+    assert r.json()["ok"] is False
+    assert r.json()["usuario"] == "ana"
+
+
+def test_destravar_api(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8101)]))
+    cliente.post("/api/input/notas/8101/travar", headers=CABECALHO_USER, json={})
+    r = cliente.post("/api/input/notas/destravar", headers=CABECALHO_USER,
+                     json={"numeros": [8101]})
+    assert r.status_code == 200 and r.json()["liberadas"] == 1
+    assert cliente.get("/api/input/bloqueios").json()["bloqueios"] == []
+
+
+def test_patch_retorna_notas_bloqueadas(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8102)]))
+    cliente.post("/api/input/notas/8102/travar", headers={"X-User": "outra"}, json={})
+    r = cliente.patch("/api/input/notas", headers=CABECALHO_USER,
+                      json={"linhas": [{"Numero_Nota": 8102, "Observacao": "via api"}]})
+    assert r.status_code == 200
+    assert r.json()["alteradas"] == 0
+    assert r.json()["bloqueadas"] == [8102]
 
 
 def test_export_gera_xlsx(cliente):

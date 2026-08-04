@@ -28,7 +28,64 @@ O banco de notas é resolvido em `config.caminho_banco_notas()`, nesta ordem:
 | `EDP_PERFIL` | `local` (padrão) ou `producao`. |
 | `INPUT_REDE_RAIZ` | Raiz do compartilhamento; todos os `config.CAMINHO_*` derivam dela. |
 | `INPUT_DB_PATH` | Caminho absoluto do banco de notas; vence o perfil. |
-| `INPUT_MIGRAR_STATUS_OBRA` | `1` libera o UPDATE em massa `Status_Obra → Observacao` no perfil de produção (ignorado por padrão lá). |
+| `INPUT_MIGRAR_STATUS_OBRA` | Sem efeito: o perfil de produção retorna antes de qualquer DDL/DML de esquema. Para aplicar a migração de propósito no banco compartilhado, rode uma vez com `EDP_PERFIL=local` + `INPUT_DB_PATH` apontando para ele. |
+
+## Quem mais escreve no banco compartilhado
+
+O arquivo da rede **não é exclusivo deste backend**. O `log_arquivos` dele
+registra escritas do robô SAP (`Usuario = "robo-sap"`, ação `Sync SAP`), que
+grava as tabelas `base_iw28`/`base_iw38`/`base_iw66` diretamente lá — foi o
+robô, não este app, que levou o arquivo de ~14 MB para ~59 MB. O app legado
+(origem do porte) também escreve no mesmo arquivo.
+
+Consequência prática: **não faz sentido manter uma cópia local das bases do
+SAP para "proteger" o banco da rede**. Elas já vivem lá e são atualizadas pelo
+robô; ler de uma cópia local reintroduziria exatamente a defasagem que o
+perfil de produção existe para eliminar. Por isso há uma conexão só
+(`db.get_db_connection()`) e todas as tabelas seguem o perfil ativo.
+
+**O esquema da rede é somente-leitura para este app.** Em `producao`,
+`db.inicializar_banco()` chama apenas `_conferir_esquema_compartilhado()`, que
+*inspeciona* e registra o que falta. Nenhum `CREATE TABLE`/`ALTER TABLE` é
+aplicado no arquivo do setor — alterar o esquema de todo mundo não pode ser
+efeito colateral de um restart. Como consequência, `salvar_em_massa()` filtra
+as colunas do upsert pelo `PRAGMA table_info(notas)` real: colunas que este app
+usa mas que porventura não existam lá simplesmente não são gravadas.
+
+**Undo é por usuário.** Com o banco compartilhado, `reverter_ultima_alteracao`
+recebe o usuário e filtra o log por ele — sem isso o botão "Reverter Última
+Alteração" de uma pessoa desfaria o trabalho de outra, já que o agrupamento é
+por `MAX(Data_Hora)`. Além disso, cada campo só é revertido se ainda tiver o
+valor que *aquele* usuário gravou; se alguém editou depois, o campo é pulado e
+contabilizado como sobrescrito na mensagem de retorno.
+
+**Bloqueios por nota (edição concorrente).** A tabela `bloqueios` já existia
+no schema real do banco da rede (legado, nunca portada por falta de uso) —
+`Numero_Nota` PK, `Usuario`, `Data_Hora`. Ela agora trava a edição inline:
+
+- `db.travar_nota(numero, usuario)` reivindica a edição. Se a nota já está
+  travada por OUTRO usuário e o lock não expirou, devolve `{"ok": False,
+  "usuario": ..., "desde": ...}` em vez de lançar erro — mesmo padrão de
+  `reverter_ultima_alteracao` (conflito no corpo da resposta, não em HTTP 409).
+  Se o lock já é do próprio usuário, é um upsert que renova o `Data_Hora`.
+- **Sem heartbeat dedicado.** Cada clique numa célula de uma nota já travada
+  pelo mesmo usuário chama `travar_nota` de novo, renovando o TTL
+  (`BLOQUEIO_TTL_MINUTOS = 20`) como efeito colateral. Se o usuário fecha a
+  aba no meio de uma edição, o lock expira sozinho — não existe liberação
+  automática no fechamento da aba, só o TTL.
+- `db.destravar_notas(numeros, usuario)` só apaga locks que pertencem a
+  `usuario` — um release tardio (TTL já expirou, outra pessoa já travou a
+  mesma nota) nunca derruba o lock de quem assumiu o lugar.
+- **Defesa em profundidade**, não só sinalização de UI: `aplicar_edicoes` e
+  `deletar_notas` conferem o lock de novo no momento da escrita e pulam
+  qualquer nota travada por outro usuário — cobre o caso raro de alguém
+  editar por fora da UI (outra aba, chamada direta à API) ou o TTL expirar
+  entre o clique e o salvamento. `aplicar_edicoes` devolve as notas puladas em
+  `bloqueadas`, para a UI manter a edição pendente em vez de descartá-la.
+- Escopo desta fase: só a tabela `notas` (Gerenciar → Geral → Edição
+  Rápida/Lote/Exclusão). `notas_ramal` não trava — não há evidência de que o
+  Numero_Nota colida entre as duas tabelas, mas a tabela `bloqueios` não tem
+  coluna para discriminar "qual tabela", então extensão futura precisa disso.
 
 **Sem fallback silencioso.** Em `producao`, se o banco compartilhado não
 estiver acessível, `db.migrar_da_rede_se_preciso()` levanta
@@ -289,9 +346,12 @@ Router `/api/input` (prefixo). Todo endpoint de leitura/escrita chama
 | `GET /relatorios/dashboard?regional=<opcional>&mes=<opcional, 1-12>` | Home do app. `mes` seleciona o mês de referência do hero/regionais (padrão: mês corrente do servidor); fora de `1..12` retorna `422`. Chama `metas.sincronizar_se_preciso()` (no-op se o mtime não mudou), monta o payload via `relatorios.montar_dashboard(..., mes_referencia=...)` a partir de `engine.get_dataset()` + `db.carregar_dados_ramal()` + `db.carregar_metas()` + `db.carregar_planos_depara()` + `db.carregar_postergacoes()`, e anexa `regionais_disponiveis`/`metas_info`. O payload traz `mes_referencia` (renomeado de `mes_corrente`), `hero.postergadas` (soma do mês de referência) e `visao_anual[].postergado` (soma do ano por plano) — ambos respeitam o filtro de `regional`. Mesmo contrato de ETag/304 de `GET /notas`, mas o ETag agora inclui `versao-mes-regional` (`routes.py:79`) — cada combinação de filtro tem sua própria entidade cacheável, então trocar de mês/regional nunca serve payload de outra combinação. Como o sync de metas grava em `log_arquivos`, a versão computada logo depois já reflete uma reimportação — o ETag nunca serve payload velho pós-sync. |
 | `POST /metas/sincronizar` | Força `metas.sincronizar_se_preciso(forcar=True)` (ignora mtime) e devolve o estado; usado pelo botão "Sincronizar agora" em Configurações. |
 | `GET /logs`, `GET /logs/arquivos`, `GET /logs/nota/{numero}` | Log de alterações e de substituição de arquivos. |
-| `PATCH /notas` | Edição parcial (`db.aplicar_edicoes`), com diff campo a campo e log; exige header `X-User`. |
+| `PATCH /notas` | Edição parcial (`db.aplicar_edicoes`), com diff campo a campo e log; exige header `X-User`. Pula notas travadas por outro usuário e devolve os números em `bloqueadas`. |
 | `POST /notas`, `POST /notas/bulk` | Criação de notas (unitária/lote), validando duplicatas contra o lote e contra o banco. |
-| `DELETE /notas` | Exclusão em lote, com log de auditoria. |
+| `DELETE /notas` | Exclusão em lote, com log de auditoria. Pula notas travadas por outro usuário (contagem real de `excluidas` reflete isso). |
+| `GET /bloqueios` | Lista os bloqueios ATIVOS (não expirados) — `[{Numero_Nota, Usuario, Data_Hora}]`. Sem `X-User`, como `/sync`. |
+| `POST /notas/{numero}/travar` | Reivindica a edição da nota (`db.travar_nota`). Conflito volta no corpo (`{"ok": false, "usuario", "desde"}`, HTTP 200), não como erro — mesmo padrão de `/desfazer`. |
+| `POST /notas/destravar` | Libera os bloqueios de `numeros` que pertencem ao usuário do header. |
 | `POST /desfazer` | Reverte a última transação de edição (`db.reverter_ultima_alteracao`). |
 | `POST /export` | Gera um `.xlsx` filtrado (linhas/colunas selecionadas) com nomes amigáveis. |
 | `GET /responsaveis`, `PUT /responsaveis` | Mapa Regional → responsável (JSON local). |

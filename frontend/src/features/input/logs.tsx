@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { InputApi } from './api';
 import type { LogArquivo, LogRegistro } from './types';
+import { formatarDataHora } from './lib';
 import { SegTabs, type SegTab } from '@/components/branded/section';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -14,12 +15,6 @@ const LOG_TABS: SegTab<SubAba>[] = [
   { id: 'arquivos', rotulo: 'Bases de Apoio' },
   { id: 'timeline', rotulo: 'Linha do Tempo' },
 ];
-
-export function formatarDataHora(v: string | number | null): string {
-  if (v === null || v === undefined || v === '') return '—';
-  const d = typeof v === 'number' ? new Date(v) : new Date(String(v).replace(' ', 'T'));
-  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('pt-BR');
-}
 
 export function Logs(): React.JSX.Element {
   const [sub, setSub] = React.useState<SubAba>('notas');

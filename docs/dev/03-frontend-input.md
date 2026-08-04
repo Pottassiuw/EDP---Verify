@@ -22,7 +22,8 @@ enquanto o usuário está com a tela aberta.
 | `frontend/src/features/input/reports.tsx` | Sub-aba "Relatórios" (Painel Executivo): Permite navegar entre três relatórios interativos: "Auditoria de Prazos" (KPIs, cronograma, gráfico de rosca SVG), "Visão Financeira (Custos)" (totais, regional e status em barras de progresso) e "Em Planejamento (Status 10)" (backlog de planejamento, priorização e distribuição regional). Todos usam filtros avançados via `MultiSelect` e exportação customizada para Excel. |
 | `frontend/src/features/input/logs.tsx` | Sub-aba "Logs": três sub-abas (Alterações nas Notas, Bases de Apoio, Linha do Tempo), cada uma consumindo um endpoint próprio via `useQuery`. |
 | `frontend/src/features/input/settings.tsx` | Sub-aba "Configurações": nome do usuário (log de auditoria), responsáveis por conjunto, status/substituição das bases de apoio, lista de backups locais para download. |
-| `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. |
+| `frontend/src/features/input/notes-table.tsx` | Tabela windowed (virtualização manual por `scrollTop`) usada nos modos editáveis/selecionáveis de `manage.tsx`/`ramal.tsx`: seleção por checkbox, edição inline por duplo clique, ordenação por coluna. Se recebe `bloqueios`/`onIniciarEdicao`, mostra um badge de cadeado na linha travada por outro usuário e intercepta o clique de edição para travar a nota antes de abrir a célula. |
+| `frontend/src/features/input/use-bloqueios.ts` | `useBloqueios`: polling de `GET /bloqueios` a cada 15s (React Query, sem cache em disco — é estado efêmero de TTL curto), devolve um `Map<Numero_Nota, Bloqueio>` e uma função `recarregar` para invalidar sob demanda (chamada logo após travar/destravar, sem esperar o próximo tick). |
 | `frontend/src/features/input/hierarquia-card.tsx` | Card de vínculo manual de hierarquia (nota-mãe/notas-filhas): busca a hierarquia de uma nota, lista candidatas órfãs do mesmo conjunto e aplica o vínculo (`InputApi.vincularHierarquia`). |
 | `frontend/src/features/input/data-grid.tsx` | Grid somente-leitura estilo Excel sobre `react-datasheet-grid`: ordenação, redimensionamento/autofit de colunas por arraste, barra de status com soma/média/contagem da seleção e a ação de detalhes fixa criada por `stickyRightColumn`, fora de `COLUNAS` e da exportação. |
 | `frontend/src/features/input/input-nota-inspector.tsx` | `InputNotaInspector`: `Sheet` read-only aberto pela ação fixa da grade; mostra primeiro dez campos presentes em `NotaInput` e depois reutiliza `CarteiraEnriquecimentoCard` por `Numero_Nota`, sem persistir ou criar colunas enriquecidas no Input. |
@@ -136,6 +137,27 @@ campos preenchidos e recusa a operação (mensagem de erro) se nenhuma
 nota estiver selecionada ou nenhum campo tiver sido escolhido. O
 `Select` customizado em si (`@/components/ui/select`) não tem doc
 próprio ainda — não está documentado em `04-frontend-shared.md`.
+
+### Bloqueio por nota (edição concorrente)
+
+No modo "Edição Rápida", `manage.tsx` passa `bloqueios` (de `useBloqueios`),
+`usuarioAtual` (`getUsuario()`) e `onIniciarEdicao` para a `NotesTable`.
+`onIniciarEdicao` chama `InputApi.travarNota` antes de abrir a célula para
+edição; se outra pessoa já está editando a nota, a `NotesTable` mostra um
+`toast.warning` e nunca chama `onIniciarEdicao` (checagem local pelo mapa já
+carregado) — `onIniciarEdicao` só é chamado, e só falha, na corrida rara em
+que o mapa local está desatualizado (poll de 15s) e o backend recusa o lock.
+As notas travadas por outro usuário ganham um badge de cadeado na coluna
+"Nº Nota" e uma borda âmbar na linha inteira.
+
+Como o backend confere o lock de novo no momento de salvar
+(`aplicar_edicoes`), `salvarRapida` (`manage.tsx`) trata a resposta:
+notas que vieram em `resultado.bloqueadas` permanecem em `edicoes` (a
+digitação do usuário não é descartada) e as demais têm o lock liberado via
+`InputApi.destravarNotas`. O botão "Descartar" libera o lock de todas as
+notas pendentes antes de limpar `edicoes`. Não há liberação no fechamento da
+aba — o TTL do backend (`BLOQUEIO_TTL_MINUTOS`, ver `06-backend-input-module.md`)
+é o único mecanismo de limpeza para uma edição abandonada.
 
 ### Registro de notas — `MesExecucaoPicker` e `ColagemPlanilha`
 
@@ -263,6 +285,7 @@ o Input em si não guarda essa informação.
 | `60_000ms` | `use-input-data.ts:29` | Polling de `InputApi.sync()` (`useSincronizacaoAutomatica`); compara `versao` com o valor conhecido e, se mudou, avisa via `toast.info` e invalida `INPUT_DADOS_KEY` em background. |
 | `300_000ms` | `use-input-data.ts:12` | `staleTime` da query `useInputData` (React Query): por 5 minutos os dados carregados são considerados "frescos" e não disparam refetch automático em background (o default global de 60s do `QueryClient`, ver `04-frontend-shared.md`, não se aplica aqui). |
 | `300_000ms` | `use-ramal-data.ts:8` | `staleTime` da query `useRamalData`, mesmo racional do `useInputData` acima — dataset separado (base "Ramal"), mesma cadência de frescor. |
+| `15_000ms` | `use-bloqueios.ts` | Polling de `GET /bloqueios` (`useBloqueios`); mais curto que o dataset principal porque um lock é estado efêmero (TTL de minutos) — precisa refletir mudanças rápido para o badge/toast de conflito fazerem sentido. |
 
 ## Pontos de atenção
 
