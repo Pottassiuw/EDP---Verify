@@ -125,6 +125,39 @@ def test_upload_enriquece_gerador_com_de_para(tmp_path, monkeypatch):
     gerador = cliente.get("/api/data").json()["records"][0]["gerador"]
     assert gerador == {
         "matricula": "204565", "nome": "Fabricio Dias", "uf": "ES", "inspetor": True,
+        "cadastrado": True,
+    }
+
+
+def test_upload_gerador_sem_registro_no_de_para(tmp_path, monkeypatch):
+    """Matrícula da nota sem linha correspondente no De-Para vira gerador não cadastrado."""
+    import io
+    import pandas as pd
+    from fastapi.testclient import TestClient
+    import main
+
+    de_para = tmp_path / "membros.xlsx"
+    pd.DataFrame([{
+        "Matrícula": 204565, "Nome": "Fabricio", "Sobrenome": "Dias",
+        "Uf": "ES", "Permissoes": "colaborador, inspetor_planejamento",
+    }]).to_excel(de_para, sheet_name="Colaboradores", index=False)
+    monkeypatch.setenv("DE_PARA_MEMBROS_PATH", str(de_para))
+
+    planilha = io.BytesIO()
+    pd.DataFrame([{
+        "id": 100728802, "prioridade": 1, "tipo_nota": "Poda",
+        "referencia_fisica": "SER-12", "uf": "ES", "setor": "Centro",
+        "colaborador": 999999, "chk_coordenada": "ok",
+    }]).to_excel(planilha, index=False)
+
+    cliente = TestClient(main.app)
+    resposta = cliente.post("/api/upload", files={"file": ("p.xlsx", planilha.getvalue())})
+    assert resposta.status_code == 200
+
+    gerador = cliente.get("/api/data").json()["records"][0]["gerador"]
+    assert gerador == {
+        "matricula": "999999", "nome": "999999", "uf": "", "inspetor": False,
+        "cadastrado": False,
     }
 
 

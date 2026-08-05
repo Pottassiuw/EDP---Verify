@@ -143,6 +143,7 @@ def carregar_membros() -> dict[str, dict[str, object]]:
             "nome": nome or matricula,
             "uf": uf,
             "inspetor": uf in {"ES", "SP"} and "inspetor_planejamento" in permissoes,
+            "cadastrado": True,
         }
     return resultado
 
@@ -155,6 +156,7 @@ def enriquecer_gerador(registro: dict, membros: dict[str, dict[str, object]]) ->
         "nome": matricula or "Não informado",
         "uf": "",
         "inspetor": False,
+        "cadastrado": False,
     })
 
 
