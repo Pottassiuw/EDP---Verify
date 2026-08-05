@@ -163,7 +163,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
           {inspetorOpts.length > 0 && (
             <Field label="Gerada por" accent>
               <ToggleGroup type="multiple" variant="outline" size="sm" value={geradorInspetores}
-                           onValueChange={setGeradorInspetores}
+                           onValueChange={setGeradorInspetores} className="flex-wrap"
                            aria-label="Filtrar por inspetor de planejamento ES/SP">
                 {inspetorOpts.map((i) => (
                   <ToggleGroupItem key={i.matricula} value={i.matricula}>
@@ -296,7 +296,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       <div className="text-[11px] text-text-mute whitespace-nowrap overflow-hidden text-ellipsis">
                         Gerada por {n.gerador.nome}
                         {n.gerador.uf && ` · ${n.gerador.uf}`}
-                        {!n.gerador.cadastrado && " (matrícula não cadastrada)"}
+                        {n.gerador.cadastrado === false && n.gerador.matricula && " (matrícula não cadastrada)"}
                       </div>
                     )}
                   </div>
@@ -385,7 +385,9 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
   const fields: Array<[string, string]> = [
     ["Tipo de nota", v(sel.tipo_nota)], ["Referência", v(sel.referencia)], ["Problema", v(sel.problema || sel.descricao)],
     ["Gerada por", sel.gerador
-      ? `${sel.gerador.nome} · ${sel.gerador.matricula}${sel.gerador.cadastrado ? "" : " (não cadastrado)"}`
+      ? sel.gerador.matricula
+        ? `${sel.gerador.nome} · ${sel.gerador.matricula}${sel.gerador.cadastrado === false ? " (não cadastrado)" : ""}`
+        : sel.gerador.nome
       : v(sel.colaborador)],
     ["Estado", v(sel.uf)], ["Setor", v(sel.setor)],
     ["Local instal.", v(sel.local_instalacao)], ["Poste", v(sel.poste)], ["ID SAP", v(sel.id_sap)],

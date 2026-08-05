@@ -37,6 +37,7 @@ type CssVars = React.CSSProperties & Record<`--${string}`, string>;
 const VERIFY_FILTER_KEYS = [
   "edp_verify_q", "edp_verify_uf", "edp_verify_setor", "edp_verify_urg",
   "edp_verify_status", "edp_verify_situacao", "edp_verify_rules", "edp_verify_sel",
+  "edp_verify_gerador_insp",
 ];
 function limparFiltrosVerify(): void {
   try { VERIFY_FILTER_KEYS.forEach((k) => sessionStorage.removeItem(k)); } catch { /* ignore */ }

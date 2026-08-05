@@ -15,9 +15,10 @@ tem registro no `De-Para Membros.xlsx`.
 
 No upload, o backend cruza a matrícula da coluna `colaborador` (quem gerou a
 nota) com `De-Para Membros.xlsx`. Para cada registro, devolve somente
-`gerador.matricula`, `gerador.nome`, `gerador.uf` e `gerador.inspetor`; senhas
-e outros campos do De-Para nunca são expostos. O arquivo pode ser apontado por
-`DE_PARA_MEMBROS_PATH`; sem a variável, usa o arquivo na raiz do repositório.
+`gerador.matricula`, `gerador.nome`, `gerador.uf`, `gerador.inspetor` e
+`gerador.cadastrado`; senhas e outros campos do De-Para nunca são expostos.
+O arquivo pode ser apontado por `DE_PARA_MEMBROS_PATH`; sem a variável, usa
+o arquivo na raiz do repositório.
 
 ## Arquivos principais
 
@@ -62,12 +63,13 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   (`edp_verify_gerador_insp`) guarda as matrículas de inspetor selecionadas;
   as opções do multi-select são derivadas das notas do lote atual
   (`inspetorOpts`): diferente de `ufOpts`/`setorOpts` (simples arrays de strings),
-  `inspetorOpts` é um `Map<matrícula, NoteGenerator>` que filtra apenas inspetores
-  com `n.gerador?.inspetor` verdadeiro e ordena por nome. A fila sempre
-  informa nome e UF de quem gerou cada nota — não só quando o filtro de
-  inspetor está ativo — e o detalhe mostra nome e matrícula; em ambos, uma
-  matrícula sem registro no De-Para recebe um indicador not-cadastrado (fila: 
-  "(matrícula não cadastrada)", detalhe: "(não cadastrado)").
+  `inspetorOpts` deduplica por matrícula usando um `Map` interno e retorna um
+  array `NoteGenerator[]` ordenado por nome, filtrando apenas inspetores com
+  `n.gerador?.inspetor` verdadeiro. A fila sempre informa nome e UF de quem
+  gerou cada nota — não só quando o filtro de inspetor está ativo — e o
+  detalhe mostra nome e matrícula; em ambos, uma matrícula sem registro no
+  De-Para recebe um indicador não cadastrado (fila: "(matrícula não
+  cadastrada)", detalhe: "(não cadastrado)").
   Ações do usuário (concluir,
   marcar duplicata, enviar ao COFFEE) sobem via callbacks
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)

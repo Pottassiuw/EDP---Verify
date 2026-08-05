@@ -112,4 +112,50 @@ describe('Dashboard — filtro por inspetor', () => {
     );
     expect(html).toContain('Gerada por Fabricio Dias · ES');
   });
+
+  it('com duas ou mais matrículas selecionadas, mostra as notas de ambos os inspetores e exclui as demais', () => {
+    sessionStorage.setItem('edp_verify_gerador_insp', JSON.stringify(['204565', '111']));
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html).toContain('>100<');
+    expect(html).toContain('>200<');
+    expect(html).not.toContain('>300<');
+  });
+
+  it('nota cadastrada não recebe a marca de "matrícula não cadastrada" na fila', () => {
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html.includes('Fabricio Dias · ES (matrícula não cadastrada)')).toBe(false);
+    expect(html.includes('Fabricio Dias · ES')).toBe(true);
+  });
+
+  it('painel de detalhe mostra "(não cadastrado)" só para a nota sem registro no De-Para', () => {
+    // notes[0] é sempre a nota selecionada por padrão (selId cai para
+    // notes[0].id quando não há valor persistido em sessionStorage), então
+    // cada render abaixo usa um lote de uma nota só para controlar quem
+    // aparece no painel de detalhe.
+    const cadastrada = nota({
+      id: '500', gerador: { matricula: '204565', nome: 'Fabricio Dias', uf: 'ES', inspetor: true, cadastrado: true },
+    });
+    const naoCadastrada = nota({
+      id: '600', gerador: { matricula: '777777', nome: 'Sem Registro', uf: 'SP', inspetor: false, cadastrado: false },
+    });
+
+    const htmlCadastrada = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[cadastrada]} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(htmlCadastrada).toContain('Fabricio Dias · 204565');
+    expect(htmlCadastrada).not.toContain('Fabricio Dias · 204565 (não cadastrado)');
+
+    const htmlNaoCadastrada = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[naoCadastrada]} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(htmlNaoCadastrada).toContain('Sem Registro · 777777 (não cadastrado)');
+  });
 });
