@@ -1,6 +1,6 @@
 import re
 import pytest
-from main import parse_duplicate_ids, enrich_candidate
+from main import enrich_candidate, parse_coord, parse_duplicate_ids
 
 
 def test_ok_returns_empty():
@@ -12,6 +12,12 @@ def test_empty_returns_empty():
 
 def test_nan_returns_empty():
     assert parse_duplicate_ids("nan", "100", set()) == []
+
+
+def test_parse_coord_descarta_nan_e_infinito():
+    assert parse_coord("nan") is None
+    assert parse_coord("inf") is None
+    assert parse_coord("-20,3") == -20.3
 
 def test_non_numeric_sentinel_returns_empty():
     assert parse_duplicate_ids("coordenada_invalida", "100", set()) == []

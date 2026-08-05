@@ -8,7 +8,9 @@ leitura; o usuário não importa mais uma planilha.
 
 O backend preserva o contrato já consumido pelo dashboard: converte as colunas
 `chk_*` em falhas, ignora `chk_trafo`, resolve `chk_duplicada`, monta o de-para
-do gerador e devolve somente as colunas de `raw` usadas no frontend.
+do gerador e devolve somente as colunas de `raw` usadas no frontend. Coordenadas
+inválidas, `NaN` ou infinitas são normalizadas para `null`, preservando a
+resposta JSON e a nota na triagem.
 
 ## Fonte SQLite
 

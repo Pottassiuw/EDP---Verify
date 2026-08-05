@@ -1,5 +1,6 @@
 import io
 import json
+import math
 import os
 import pathlib
 import re
@@ -226,9 +227,10 @@ def parse_coord(v):
         return None
     s = str(v).strip().replace(",", ".")
     try:
-        return float(s)
+        coordenada = float(s)
     except ValueError:
         return None
+    return coordenada if math.isfinite(coordenada) else None
 
 
 def extract_str(row, *keys):
