@@ -53,7 +53,7 @@ por request de `/api/data` (`main.py: enriquecer_candidatos_externos`),
 nunca uma chamada por candidata.
 
 Candidata com linha na Carteira ganha comparação real de Local de instalação
-e Problema (`sintoma` + `componente_novo`), além de contexto (Status SAP,
+e Problema (`componente_novo` + `sintoma`), além de contexto (Status SAP,
 Prioridade SAP, Conjunto). A Carteira não tem Poste/Referência — um botão por
 card busca esses 2 campos ao vivo na API COFFEE (`GET
 /api/coffee/consultar/{id}`), sob demanda, nunca em lote (evita travar o

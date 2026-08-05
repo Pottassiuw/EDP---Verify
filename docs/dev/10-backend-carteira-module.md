@@ -54,7 +54,7 @@ explícita: a versão e a nota são lidas da mesma snapshot antes do fechamento.
 
 ### Consumidor: duplicatas externas do Verificar
 
-`backend/main.py: enriquecer_candidatos_externos()` usa `repository.obter_muitos`
+`backend/main.py: enriquecer_candidatos_externos()` usa `repository.obter_muitas`
 (não `obter_por_id_sap`) pra cruzar candidatas duplicatas externas do Verificar
 com `nota_carteira` por `id_onr` — o ID das duplicatas do Verificar é o mesmo
 `id_onr` da Carteira, não o `id_sap`. Diferente do enriquecimento por SAP
