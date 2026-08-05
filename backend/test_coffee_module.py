@@ -613,6 +613,35 @@ def test_rota_consultar_retorna_campos(coffee_cliente, monkeypatch):
     assert body["arquivado"] is False
 
 
+def test_rota_consultar_retorna_poste_e_referencia(coffee_cliente, monkeypatch):
+    from coffee_module import client
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "local_instalacao": "718ET00026773",
+                   "fields": {"id_sap": 17247854, "postes": "TR-088",
+                              "referencia_fisica": "SER-11"}},
+    )
+    r = coffee_cliente.get("/api/coffee/consultar/355617")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["poste"] == "TR-088"
+    assert body["referencia"] == "SER-11"
+
+
+def test_rota_consultar_poste_referencia_ausentes_vira_none(coffee_cliente, monkeypatch):
+    from coffee_module import client
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "local_instalacao": None, "fields": {"id_sap": 17247854}},
+    )
+    r = coffee_cliente.get("/api/coffee/consultar/355617")
+    body = r.json()
+    assert body["poste"] is None
+    assert body["referencia"] is None
+
+
 def test_compor_local_instalacao():
     from coffee_module import client
     # cidade(3) + tipo(2) + numero(8, zero a esquerda) — formato real da API COFFEE
