@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 
 from coffee_module import db as _coffee_db
-from verificar_module.source import FonteVerificarIndisponivelErro, carregar_registros
+from verificar_module.source import FonteVerificarIndisponivelErro, carregar_fonte
 
 app = FastAPI(title="De olho no Problema")
 
@@ -389,11 +389,13 @@ async def upload_file(file: UploadFile = File(...)):
 @app.get("/api/data")
 def get_data():
     completed = COMPLETED
+    fonte = None
     if RECORDS:
         records = RECORDS
     else:
         try:
-            records = montar_registros_triagem(carregar_registros())
+            fonte = carregar_fonte()
+            records = montar_registros_triagem(fonte.registros)
         except FonteVerificarIndisponivelErro as erro:
             raise HTTPException(status_code=503, detail=str(erro)) from erro
         except (FileNotFoundError, ValueError, OSError) as erro:
@@ -423,6 +425,11 @@ def get_data():
         "rule_stats": rule_stats,
         "uf_options": sorted(uf_set),
         "setor_options": sorted(setor_set),
+        "fonte": None if fonte is None else {
+            "arquivo": fonte.arquivo,
+            "schema_version": fonte.schema_version,
+            "atualizado_em": fonte.atualizado_em,
+        },
     }
 
 

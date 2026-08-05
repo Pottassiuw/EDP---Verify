@@ -147,10 +147,17 @@ export interface RuleMeta {
 export type Accent = [string, string, string, string];
 
 // ── Camada de dados / API ────────────────────────────────────────────────
+export interface TriageSourceInfo {
+  arquivo: string;
+  schema_version: number;
+  atualizado_em: string | null;
+}
+
 export interface FetchResult {
   notes: Note[];
   completed: Set<string>;
   source: Source;
+  fonte: TriageSourceInfo | null;
 }
 export interface ToggleResult {
   status: string;

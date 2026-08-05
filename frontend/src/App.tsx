@@ -115,6 +115,33 @@ function AppContent(): React.JSX.Element {
     setCompleted(triagemQuery.data.completed);
   }, [triagemQuery.data]);
 
+  const atualizarTriagem = React.useCallback((): void => {
+    const idsAnteriores = new Set(notes.map((note) => note.id));
+    const atualizacao = triagemQuery.refetch({ throwOnError: true });
+    toast.promise(atualizacao, {
+      loading: 'Atualizando Verificar.db…',
+      success: (resultado) => {
+        const notasAtuais = resultado.data?.notes ?? [];
+        const idsAtuais = new Set(notasAtuais.map((note) => note.id));
+        const novas = notasAtuais.filter((note) => !idsAnteriores.has(note.id)).length;
+        const removidas = notes.filter((note) => !idsAtuais.has(note.id)).length;
+        if (novas > 0) {
+          const saida = removidas > 0
+            ? ` ${removidas} ${removidas === 1 ? 'saiu' : 'saíram'} da triagem.`
+            : '';
+          return `Atualização concluída: ${novas} nova${novas === 1 ? '' : 's'} nota${novas === 1 ? '' : 's'}.${saida}`;
+        }
+        if (removidas > 0) {
+          return `Atualização concluída: ${removidas} nota${removidas === 1 ? '' : 's'} ${removidas === 1 ? 'saiu' : 'saíram'} da triagem.`;
+        }
+        return 'Atualização concluída: nenhuma nota nova.';
+      },
+      error: (error: unknown) => (
+        `Falha ao atualizar: ${error instanceof Error ? error.message : String(error)}`
+      ),
+    });
+  }, [notes, triagemQuery]);
+
   function toggleComplete(id: string): void {
     const reopening = completed.has(id);
     const concluding = !reopening;
@@ -197,9 +224,11 @@ function AppContent(): React.JSX.Element {
     resolvedTheme,
     showKpis: settings.showKpis,
     notes, completed, dupResolved, source,
+    fonte: triagemQuery.data?.fonte ?? null,
     isLoading: triagemQuery.isLoading,
+    isRefreshing: triagemQuery.isFetching,
     error: triagemQuery.error,
-    onRetry: () => { void triagemQuery.refetch(); },
+    onRetry: atualizarTriagem,
     onToggleComplete: toggleComplete,
     onMarkMany: markMany,
     onMarkDuplicate: markDuplicate,

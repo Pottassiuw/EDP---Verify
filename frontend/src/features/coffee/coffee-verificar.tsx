@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Note, Source } from '../../types';
+import type { Note, Source, TriageSourceInfo } from '../../types';
 import { Dashboard } from '../verificar/dashboard';
 import { SourceScreen } from '../verificar/source-screen';
 
@@ -10,7 +10,9 @@ export interface TriageHandoff {
   completed: Set<string>;
   dupResolved: Set<string>;
   source: Source;
+  fonte: TriageSourceInfo | null;
   isLoading: boolean;
+  isRefreshing: boolean;
   error: unknown;
   onRetry: () => void;
   onToggleComplete: (id: string) => void;

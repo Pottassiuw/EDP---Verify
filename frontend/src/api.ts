@@ -8,6 +8,7 @@ import type {
   NoteRaw,
   NoteStatus,
   DuplicateCandidate,
+  TriageSourceInfo,
   ToggleResult,
   DuplicateResult,
 } from "./types";
@@ -92,6 +93,7 @@ interface ApiRecord {
 interface ApiData {
   records?: ApiRecord[];
   completed?: string[];
+  fonte?: TriageSourceInfo | null;
 }
 
 function str(v: unknown, fb = ""): string {
@@ -137,7 +139,12 @@ function normalize(j: ApiData): FetchResult {
       raw: raw as NoteRaw,
     };
   });
-  return { notes, completed: new Set(j.completed ?? []), source: "api" };
+  return {
+    notes,
+    completed: new Set(j.completed ?? []),
+    source: "api",
+    fonte: j.fonte ?? null,
+  };
 }
 
 // Instrumentação opcional da abertura da seção COFFEE:

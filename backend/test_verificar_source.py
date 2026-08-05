@@ -2,7 +2,7 @@ import sqlite3
 
 from coffee_module import db as coffee_db
 from coffee_module import config
-from verificar_module.source import carregar_registros
+from verificar_module.source import carregar_fonte
 
 
 def criar_fonte(tmp_path):
@@ -32,9 +32,13 @@ def test_fonte_le_clone_sem_alterar_schema(tmp_path, monkeypatch):
     caminho = criar_fonte(tmp_path)
     monkeypatch.setenv("VERIFICAR_DB_PATH", str(caminho))
 
-    registros = carregar_registros()
+    fonte = carregar_fonte()
+    registros = fonte.registros
 
     assert registros["id"].tolist() == ["123456"]
+    assert fonte.arquivo == "Verificar.clone.db"
+    assert fonte.schema_version > 0
+    assert fonte.atualizado_em is not None
     conn = sqlite3.connect(caminho)
     try:
         tabelas = conn.execute(
@@ -62,7 +66,10 @@ def test_api_oculta_da_triagem_nota_corrigida_no_coffee(tmp_path, monkeypatch):
     response = TestClient(main.app).get("/api/data")
 
     assert response.status_code == 200
-    assert response.json()["records"] == []
+    body = response.json()
+    assert body["records"] == []
+    assert body["fonte"]["arquivo"] == "Verificar.clone.db"
+    assert body["fonte"]["schema_version"] > 0
 
 
 def test_rastreia_chave_da_fonte_mesmo_quando_pk_coffee_e_diferente(

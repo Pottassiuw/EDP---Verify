@@ -19,7 +19,9 @@ journal ou outro artefato no banco da rede.
 
 Se a fonte estiver indisponível, a seção mostra uma mensagem com ação **Tentar
 novamente**. Não há fallback silencioso para dados antigos ou cópia local. A
-query React Query atualiza a fonte a cada 30 segundos.
+query React Query atualiza a fonte a cada 30 segundos. O cabeçalho mostra o
+arquivo, a `schema_version` SQLite e a data de modificação; `user_version` não
+é usado porque a fonte atual o mantém em `0`.
 
 ## Fluxo COFFEE
 
@@ -40,7 +42,8 @@ real é terminal para este fluxo; notas corrigidas não retornam à triagem.
 `dashboard.tsx` é responsável por filtros, seleção e apresentação. A ação que
 antes dizia “Concluir” agora é **Encaminhar**; “concluída” fica reservado ao
 resultado real no SAP. `source-screen.tsx` representa carregamento ou
-indisponibilidade da fonte.
+indisponibilidade da fonte. O botão **Atualizar** exibe Sonner de carregamento
+e conclusão, indicando quantas notas entraram ou saíram da triagem.
 
 O filtro **Gerada por** alterna entre **Todos** e **Inspetores ES/SP**. Neste
 último escopo, o filtro **Inspetor** permite selecionar uma matrícula. A fila
