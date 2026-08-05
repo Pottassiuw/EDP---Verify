@@ -113,8 +113,11 @@ tabelas criadas/migradas em `inicializar_banco()`:
   `classificacao`, `dados_json` (fields brutos), `a_gerar` (flag da fila),
   `origem` (`"avulsa"` | `"verificar"` | `NULL`), `classificacao_em` e a
   rastreabilidade da triagem: `verificar_id` (não assume que o ID da fonte é o
-  PK COFFEE), `verificar_ativa`, `verificar_em`/`verificar_por` e
-  `corrigida_em`/`corrigida_por`. Os timestamps são preservados entre
+  PK COFFEE), `verificar_ativa`, `verificar_em`/`verificar_por`, o último
+  encaminhamento `encaminhada_em`/`encaminhada_por` e
+  `corrigida_em`/`corrigida_por`. `resumo_triagem_verificar()` cruza essa
+  origem com a fila operacional para expor encaminhadas, falhas operacionais
+  e o total diário separado por usuário. Os timestamps são preservados entre
   re-buscas que não mudam a classe.
 - **`coffee_logs`** — log de auditoria (`api_call` / `acao_usuario` /
   `transicao`), com `usuario` (best-effort via `getpass.getuser()`, nunca
@@ -124,6 +127,10 @@ tabelas criadas/migradas em `inicializar_banco()`:
   progresso, erro e resultado.
 - **`coffee_fila_operacao`** — cards da fila com entrada original, PK
   resolvida, etapa, origem, job associado e erro recuperável.
+
+O startup do FastAPI chama `inicializar_banco()` antes de atender a triagem,
+para que `GET /api/data` sempre encontre o schema de rastreabilidade mesmo se
+nenhuma rota `/api/coffee/*` tiver sido acessada nesta execução.
 
 `upsert_nota()` é o ponto único de escrita de notas: lê o
 `id_sap`/`classificacao`/`origem` anteriores, chama `classify.classificar()`

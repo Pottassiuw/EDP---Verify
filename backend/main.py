@@ -75,6 +75,9 @@ async def _agendador_sap_noturno():
 
 @app.on_event("startup")
 async def start_scheduler():
+    # Verificar lê o estado da fila no coffee.db antes de qualquer rota
+    # /api/coffee/*; aplica as migrações também nesse caminho.
+    _coffee_db.inicializar_banco()
     asyncio.create_task(_agendador_sap_noturno())
 
 
