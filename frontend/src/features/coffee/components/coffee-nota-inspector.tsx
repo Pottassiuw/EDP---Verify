@@ -59,6 +59,16 @@ function unmaskLocal(value: string): string {
   return value.toUpperCase().replace(/[^0-9A-Z]/g, '');
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 function nextStep(etapa: OperacaoEtapa | undefined, classificacao: string): string {
   if (etapa === 'fila') return 'Aguarde a consulta ou tente novamente.';
   if (etapa === 'pronta') return 'Revise o local e gere a nota.';
@@ -200,6 +210,29 @@ export function CoffeeNotaInspector({
                 )}
               </section>
               <NotaSummary revisao={revisao.data} />
+              {revisao.data.coffee.origem === 'verificar' && (
+                <section className="rounded-[11px] border border-line bg-surface-2 p-3">
+                  <Eyebrow asChild><h2>Rastreabilidade da correção</h2></Eyebrow>
+                  <dl className="mt-2 grid gap-2 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Veio de Verificar</dt>
+                      <dd className="text-right">{formatDateTime(revisao.data.coffee.verificar_em)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Encaminhada por</dt>
+                      <dd className="text-right">{revisao.data.coffee.verificar_por ?? '—'}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Corrigida</dt>
+                      <dd className="text-right">{formatDateTime(revisao.data.coffee.corrigida_em)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Concluída por</dt>
+                      <dd className="text-right">{revisao.data.coffee.corrigida_por ?? '—'}</dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
               <CarteiraEnriquecimentoCard
                 numeroSap={revisao.data.coffee.id_sap}
                 enabled={open}

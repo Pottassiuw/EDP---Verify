@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Note, Source } from '../../types';
-import { UploadScreen } from '../verificar/upload-screen';
 import { Dashboard } from '../verificar/dashboard';
+import { SourceScreen } from '../verificar/source-screen';
 
 export interface TriageHandoff {
   resolvedTheme: "dark" | "light";
@@ -10,21 +10,20 @@ export interface TriageHandoff {
   completed: Set<string>;
   dupResolved: Set<string>;
   source: Source;
-  file: string;
-  screen: "upload" | "dashboard";
+  isLoading: boolean;
+  error: unknown;
+  onRetry: () => void;
   onToggleComplete: (id: string) => void;
   onMarkMany: (ids: string[], action: "done" | "reopen") => void;
   onMarkDuplicate: (id: string) => void;
   onSendToCoffee: (ids: string[], sourceId?: string) => void;
-  onUpload: (file: File) => Promise<void>;
-  onReset: () => void;
 }
 
 export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JSX.Element {
-  if (triage.screen === "upload") {
+  if (triage.isLoading || triage.error) {
     return (
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        <UploadScreen theme={triage.resolvedTheme} onUpload={triage.onUpload} />
+        <SourceScreen error={triage.error} onRetry={triage.onRetry} />
       </div>
     );
   }

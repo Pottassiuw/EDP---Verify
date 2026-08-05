@@ -10,6 +10,12 @@ export interface CoffeeNota {
   erro: string | null;
   a_gerar?: boolean;
   origem?: string | null;
+  verificar_id?: number | null;
+  verificar_ativa?: boolean;
+  verificar_em?: string | null;
+  verificar_por?: string | null;
+  corrigida_em?: string | null;
+  corrigida_por?: string | null;
 }
 
 export interface CoffeeJob {

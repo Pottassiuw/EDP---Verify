@@ -106,7 +106,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   if (setor !== "all") chips.push({ k: "Setor: " + setor, clear: () => setSetor("all") });
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
   if (status !== "all") chips.push({ k: "Status: " + (status === "ok" ? "Conforme" : "Com erro"), clear: () => setStatus("all") });
-  if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Concluídas" : "Pendentes"), clear: () => setSituacao("all") });
+  if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Em correção" : "Pendentes"), clear: () => setSituacao("all") });
   rules.forEach((r) => chips.push({ k: "Bloqueio: " + ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
   function clearAll(): void { setQ(""); setUf("all"); setGerador("all"); setInspetor("all"); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
   function changeGerador(value: string): void { setGerador(value); if (value === "all") setInspetor("all"); }
@@ -233,7 +233,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="pending">Pendentes</SelectItem>
-                <SelectItem value="done">Concluídas</SelectItem>
+                <SelectItem value="done">Em correção</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -326,7 +326,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     </button>
                   )}
                   {isDup ? <Badge variant="tagDup"><span className="w-[6px] h-[6px] rounded-full bg-current" />Dup.</Badge>
-                    : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>
+                    : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />COFFEE</Badge>
                     : n.errors.length ? <span className="font-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
                     : <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>}
@@ -346,12 +346,12 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   <strong className="text-[15px] text-[var(--accent)] [font-family:var(--font-display)]">{selBatch.size}</strong> selec.</span>
                 {!allDone && (
                   <Button size="sm" onClick={() => doAction("done")}>
-                    <Check /> {allOpen ? "Concluir" : "Concluir pendentes"}
+                    <Check /> {allOpen ? "Encaminhar" : "Encaminhar pendentes"}
                   </Button>
                 )}
                 {!allOpen && (
                   <Button variant="ghost" size="sm" onClick={() => doAction("reopen")}>
-                    ↺ {allDone ? "Reabrir" : "Reabrir concluídas"}
+                    ↺ {allDone ? "Retirar da correção" : "Retirar selecionadas"}
                   </Button>
                 )}
                 <Button size="sm" onClick={() => { toast("Abrindo no COFFEE…"); EDPApi.openCoffee(ids); }}>
@@ -436,7 +436,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {fs ? <Minimize2 /> : <Maximize2 />}
           </Button>
           <Button variant={done ? "outline" : "default"} size="sm" onClick={() => onToggleDone(sel.id)}>
-            {done ? <><RotateCcw /> Reabrir</> : <><Check /> Concluir</>}
+            {done ? <><RotateCcw /> Retirar da correção</> : <><Check /> Encaminhar</>}
           </Button>
         </div>
       </div>
@@ -457,7 +457,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
                 </div>
               ))}
             </div>
-          ) : !hasDup ? <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />Conforme — nenhuma falha, pronta para o SAP</Badge>
+          ) : !hasDup ? <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />Conforme — nenhuma falha encontrada</Badge>
             : <div className="text-[12.5px] text-text-dim">Sem outras falhas além da duplicata.</div>}
         </section>
         <section>

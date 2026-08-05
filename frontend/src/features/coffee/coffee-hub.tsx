@@ -47,20 +47,19 @@ export function CoffeeHub({
               Geração de notas
             </strong>
           </div>
-          {sub === "verificar" && triage.screen === "dashboard" && (
+          {sub === "verificar" && !triage.isLoading && !triage.error && (
             <div className="flex items-center gap-[12px] shrink-0">
               <span className="font-mono text-[11px] text-text-mute bg-bg-2
-                    py-[5px] px-[10px] rounded-[6px] border border-line">{triage.file}</span>
-              <span title="Conectado ao backend"
+                    py-[5px] px-[10px] rounded-[6px] border border-line">Verificar.db</span>
+              <span title="Banco de triagem conectado"
                     className="inline-flex items-center gap-[6px] text-[10.5px]
                              font-mono tracking-[.06em] uppercase
                              py-[4px] px-[9px] rounded-[999px]
-                             text-green bg-tint-green"
-                    style={{ border: "1px solid rgba(0,168,89,.3)" }}>
+                             text-green bg-tint-green">
                 <span className="w-[6px] h-[6px] rounded-[50%] bg-[currentColor]" />
-                API
+                Banco conectado
               </span>
-              <Button variant="ghost" size="sm" title="Nova planilha" onClick={triage.onReset}>↑ Nova</Button>
+              <Button variant="ghost" size="sm" onClick={triage.onRetry}>Atualizar</Button>
             </div>
           )}
         </div>

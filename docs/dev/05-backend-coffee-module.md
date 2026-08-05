@@ -111,9 +111,11 @@ tabelas criadas/migradas em `inicializar_banco()`:
 - **`notas_coffee`** — uma linha por `pk` de nota, com `id_sap`,
   `id_sap_anterior` (snapshot para a classificação), `arquivado`,
   `classificacao`, `dados_json` (fields brutos), `a_gerar` (flag da fila),
-  `origem` (`"avulsa"` | `"verificar"` | `NULL`) e `classificacao_em`
-  (timestamp da última mudança de classificação, preservado entre
-  re-buscas que não mudam a classe).
+  `origem` (`"avulsa"` | `"verificar"` | `NULL`), `classificacao_em` e a
+  rastreabilidade da triagem: `verificar_id` (não assume que o ID da fonte é o
+  PK COFFEE), `verificar_ativa`, `verificar_em`/`verificar_por` e
+  `corrigida_em`/`corrigida_por`. Os timestamps são preservados entre
+  re-buscas que não mudam a classe.
 - **`coffee_logs`** — log de auditoria (`api_call` / `acao_usuario` /
   `transicao`), com `usuario` (best-effort via `getpass.getuser()`, nunca
   levanta) e `trace_id` (correlaciona um lote e suas chamadas filhas,
@@ -123,10 +125,12 @@ tabelas criadas/migradas em `inicializar_banco()`:
 - **`coffee_fila_operacao`** — cards da fila com entrada original, PK
   resolvida, etapa, origem, job associado e erro recuperável.
 
-`upsert_nota()` (`db.py:102`) é o ponto único de escrita de notas: lê o
+`upsert_nota()` é o ponto único de escrita de notas: lê o
 `id_sap`/`classificacao`/`origem` anteriores, chama `classify.classificar()`
 e grava, registrando uma entrada `transicao` em `coffee_logs` quando a
-classificação muda. Nota: `arquivado` é intencionalmente **excluído** do
+classificação muda. Na transição para `corrigida`, fixa também o usuário e o
+horário da conclusão; a rota `/marcar-gerar` fixa o vínculo e o usuário de
+entrada da triagem. Nota: `arquivado` é intencionalmente **excluído** do
 upsert (comentário `ponytail`, `db.py:103-104`) — representa uma ação do
 usuário no app (via `arquivar_nota()`), não o estado do COFFEE, que arquiva
 como parte do seu próprio workflow normal ao gerar.
