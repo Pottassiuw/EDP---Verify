@@ -8,8 +8,10 @@ a lista de notas com suas falhas de conformidade, e o dashboard permite
 filtrar, buscar, marcar notas como concluídas e comparar candidatas a
 duplicata lado a lado. Um drawer de KPIs mostra a taxa de conformidade e
 contagens (erro, duplicata, visíveis, concluídas) sobre o conjunto
-carregado. O filtro **Gerada por** alterna entre todas as notas e as notas
-criadas pelos inspetores de planejamento de ES/SP.
+carregado. O filtro **Gerada por** permite selecionar um ou mais
+inspetores de planejamento de ES/SP específicos (multi-select); a fila
+sempre mostra quem gerou cada nota, com uma marca quando a matrícula não
+tem registro no `De-Para Membros.xlsx`.
 
 No upload, o backend cruza a matrícula da coluna `colaborador` (quem gerou a
 nota) com `De-Para Membros.xlsx`. Para cada registro, devolve somente
@@ -57,8 +59,13 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
 - **Dashboard**: recebe `notes`/`completed`/`dupResolved` como props e
   deriva todo o resto (filtros, fila ordenada, seleção) localmente com
   `useState`/`useMemo`/`usePersistedState`. O filtro persistido `Gerada por`
-  usa `note.gerador.inspetor`; no modo de inspetores a fila informa nome e UF
-  de quem criou a nota, e o detalhe mostra nome e matrícula. Ações do usuário (concluir,
+  (`edp_verify_gerador_insp`) guarda as matrículas de inspetor selecionadas;
+  as opções do multi-select são derivadas das notas do lote atual
+  (`inspetorOpts`, mesmo padrão de `ufOpts`/`setorOpts`). A fila sempre
+  informa nome e UF de quem gerou cada nota — não só quando o filtro de
+  inspetor está ativo — e o detalhe mostra nome e matrícula; em ambos, uma
+  matrícula sem registro no De-Para aparece com o sufixo "não cadastrada".
+  Ações do usuário (concluir,
   marcar duplicata, enviar ao COFFEE) sobem via callbacks
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)
   para `App.tsx`, que atualiza o estado e, quando `source === "api"`,
