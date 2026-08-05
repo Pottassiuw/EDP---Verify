@@ -82,6 +82,7 @@ RECORDS = []
 COMPLETED = set()
 
 STATE_FILE = pathlib.Path(__file__).parent / "app_state.json"
+DE_PARA_MEMBROS_PADRAO = pathlib.Path(__file__).parent.parent / "De-Para Membros.xlsx"
 
 # Colunas que o frontend realmente lê de `raw` (interface NoteRaw em
 # frontend/src/types.ts). A planilha de verificação traz dezenas de colunas
@@ -98,6 +99,63 @@ _RAW_UTEIS = frozenset({
 def slim_raw(raw: dict) -> dict:
     """Projeta um dict `raw` nas colunas que o frontend consome."""
     return {k: v for k, v in raw.items() if k in _RAW_UTEIS}
+
+
+def normalizar_matricula(valor: object) -> str:
+    """Normaliza matrículas vindas do Excel sem perder a chave de cruzamento."""
+    if valor is None or pd.isna(valor):
+        return ""
+    texto = str(valor).strip()
+    return texto[:-2] if texto.endswith(".0") else texto
+
+
+def caminho_de_para_membros() -> pathlib.Path:
+    caminho = os.environ.get("DE_PARA_MEMBROS_PATH")
+    return pathlib.Path(caminho) if caminho else DE_PARA_MEMBROS_PADRAO
+
+
+def carregar_membros() -> dict[str, dict[str, object]]:
+    """Lê os campos públicos do De-Para necessários à identificação do gerador."""
+    caminho = caminho_de_para_membros()
+    if not caminho.is_file():
+        raise FileNotFoundError(f"Arquivo De-Para de membros não encontrado: {caminho}")
+
+    membros = pd.read_excel(caminho, sheet_name="Colaboradores")
+    colunas_necessarias = {"Matrícula", "Nome", "Sobrenome", "Uf", "Permissoes"}
+    ausentes = colunas_necessarias - set(membros.columns)
+    if ausentes:
+        nomes = ", ".join(sorted(ausentes))
+        raise ValueError(f"De-Para de membros sem as colunas obrigatórias: {nomes}")
+
+    resultado: dict[str, dict[str, object]] = {}
+    for _, membro in membros.iterrows():
+        matricula = normalizar_matricula(membro["Matrícula"])
+        if not matricula:
+            continue
+        nome = " ".join(
+            parte for parte in (str(membro["Nome"]).strip(), str(membro["Sobrenome"]).strip())
+            if parte and parte.lower() != "nan"
+        )
+        uf = "" if pd.isna(membro["Uf"]) else str(membro["Uf"]).strip()
+        permissoes = "" if pd.isna(membro["Permissoes"]) else str(membro["Permissoes"]).lower()
+        resultado[matricula] = {
+            "matricula": matricula,
+            "nome": nome or matricula,
+            "uf": uf,
+            "inspetor": uf in {"ES", "SP"} and "inspetor_planejamento" in permissoes,
+        }
+    return resultado
+
+
+def enriquecer_gerador(registro: dict, membros: dict[str, dict[str, object]]) -> None:
+    """Acrescenta o gerador identificado pelo campo colaborador da nota."""
+    matricula = normalizar_matricula(registro.get("raw", {}).get("colaborador"))
+    registro["gerador"] = membros.get(matricula, {
+        "matricula": matricula,
+        "nome": matricula or "Não informado",
+        "uf": "",
+        "inspetor": False,
+    })
 
 
 # ── Persistência ─────────────────────────────────────────────────────────────
@@ -137,9 +195,11 @@ def load_state():
         # Estado gravado antes do enxugamento do `raw` continua no disco com
         # todas as colunas da planilha. Projeta uma vez na carga em vez de a
         # cada GET /api/data.
+        membros = carregar_membros()
         for registro in RECORDS:
             if isinstance(registro.get("raw"), dict):
                 registro["raw"] = slim_raw(registro["raw"])
+                enriquecer_gerador(registro, membros)
     except Exception as e:
         print(
             f"Falha ao ler {STATE_FILE.name}: {e}. "
@@ -229,6 +289,11 @@ async def upload_file(file: UploadFile = File(...)):
             df = pd.read_excel(io.BytesIO(content))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
+
+    try:
+        membros = carregar_membros()
+    except (FileNotFoundError, ValueError, OSError) as erro:
+        raise HTTPException(status_code=500, detail=f"Não foi possível identificar quem gerou as notas: {erro}")
 
     chk_cols = [
         c for c in df.columns
@@ -328,6 +393,9 @@ async def upload_file(file: UploadFile = File(...)):
             }
         )
         rec["status"] = "erro"
+
+    for registro in records:
+        enriquecer_gerador(registro, membros)
 
     RECORDS = records
     COMPLETED = set()

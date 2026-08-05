@@ -85,6 +85,13 @@ export interface DuplicateCandidate extends ComparableFields {
   longitude: string | null;
 }
 
+export interface NoteGenerator {
+  matricula: string;
+  nome: string;
+  uf: string;
+  inspetor: boolean;
+}
+
 export interface NoteRaw {
   id: string;
   tipo_nota: string;
@@ -110,6 +117,7 @@ export interface Note extends ComparableFields {
   latitude: string | null;
   longitude: string | null;
   colaborador: string | null;
+  gerador?: NoteGenerator;
   imagens_totais: number | null;
   imagens_recebidas: number | null;
   // kept for Detail view display; not comparison keys

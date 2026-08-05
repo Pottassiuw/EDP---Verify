@@ -97,6 +97,37 @@ def test_slim_raw_mantem_so_colunas_consumidas():
     assert resultado == {"id": "100", "local_instalacao": "SER-11", "postes": "TR-088"}
 
 
+def test_upload_enriquece_gerador_com_de_para(tmp_path, monkeypatch):
+    """O filtro de inspetores usa a matrícula da coluna colaborador da nota."""
+    import io
+    import pandas as pd
+    from fastapi.testclient import TestClient
+    import main
+
+    de_para = tmp_path / "membros.xlsx"
+    pd.DataFrame([{
+        "Matrícula": 204565, "Nome": "Fabricio", "Sobrenome": "Dias",
+        "Uf": "ES", "Permissoes": "colaborador, inspetor_planejamento",
+    }]).to_excel(de_para, sheet_name="Colaboradores", index=False)
+    monkeypatch.setenv("DE_PARA_MEMBROS_PATH", str(de_para))
+
+    planilha = io.BytesIO()
+    pd.DataFrame([{
+        "id": 100728801, "prioridade": 1, "tipo_nota": "Poda",
+        "referencia_fisica": "SER-11", "uf": "ES", "setor": "Centro",
+        "colaborador": 204565, "chk_coordenada": "ok",
+    }]).to_excel(planilha, index=False)
+
+    cliente = TestClient(main.app)
+    resposta = cliente.post("/api/upload", files={"file": ("p.xlsx", planilha.getvalue())})
+    assert resposta.status_code == 200
+
+    gerador = cliente.get("/api/data").json()["records"][0]["gerador"]
+    assert gerador == {
+        "matricula": "204565", "nome": "Fabricio Dias", "uf": "ES", "inspetor": True,
+    }
+
+
 def test_upload_nao_devolve_colunas_extras_em_raw(tmp_path):
     """Round-trip: colunas fora de NoteRaw não chegam ao cliente."""
     import io

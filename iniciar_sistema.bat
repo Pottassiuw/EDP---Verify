@@ -1,23 +1,32 @@
 @echo off
 :: =======================================================================
-:: EDP Verify - Script de Inicializacao Automatizado
+:: Helios - Script de Inicializacao Automatizado
 :: =======================================================================
 chcp 65001 > nul
-title EDP Verify - De olho no Problema
-
 setlocal enabledelayedexpansion
 
+title Helios
 set "PROJECT_ROOT=%~dp0"
 cd /d "%PROJECT_ROOT%"
 
-:: Adiciona caminhos do Node.js e FNM ao PATH da sessao caso necessario
-if exist "%USERPROFILE%\Node" set "PATH=%USERPROFILE%\Node;!PATH!"
-if exist "%USERPROFILE%\AppData\Roaming\fnm\current" set "PATH=%USERPROFILE%\AppData\Roaming\fnm\current;!PATH!"
-if exist "%USERPROFILE%\Node\fnm.exe" (
-    for /f "tokens=*" %%i in ('"%USERPROFILE%\Node\fnm.exe" env --shell cmd') do %%i
+:: Inicializa o Node.js pelo FNM quando ele estiver instalado.
+set "FNM_EXE="
+for %%F in (
+    "%USERPROFILE%\Documents\fnm-windows\fnm.exe"
+    "%USERPROFILE%\Node\fnm.exe"
+    "%APPDATA%\fnm\fnm.exe"
+    "%LOCALAPPDATA%\fnm\fnm.exe"
+) do if exist "%%~F" if not defined FNM_EXE set "FNM_EXE=%%~F"
+
+if not defined FNM_EXE (
+    for /f "delims=" %%F in ('where fnm 2^>nul') do if not defined FNM_EXE set "FNM_EXE=%%F"
 )
 
-:: Identifica o executavel do Python pelo caminho absoluto
+if defined FNM_EXE (
+    for /f "tokens=*" %%i in ('"!FNM_EXE!" env --shell cmd') do %%i
+)
+
+:: Identifica o executavel do Python pelo caminho absoluto.
 if exist "%PROJECT_ROOT%backend\.venv\Scripts\python.exe" (
     set "PYTHON_EXE=%PROJECT_ROOT%backend\.venv\Scripts\python.exe"
 ) else if exist "%PROJECT_ROOT%.venv\Scripts\python.exe" (
@@ -26,36 +35,33 @@ if exist "%PROJECT_ROOT%backend\.venv\Scripts\python.exe" (
     set "PYTHON_EXE=python"
 )
 
+:MENU
+cls
 echo =======================================================================
-echo                 EDP VERIFY - DE OLHO NO PROBLEMA
+echo                              HELIOS
 echo =======================================================================
 echo.
-echo  [1] Iniciar Sistema (Recomendado - http://localhost:8000)
-echo  [2] Iniciar Modo Desenvolvedor (Backend :8000 + Frontend Vite :5173)
-echo  [3] Recompilar Frontend (npm run build)
+echo  [1] Iniciar sistema (build + http://localhost:8000)
+echo  [2] Iniciar modo desenvolvedor (Backend :8000 + Vite :5173)
+echo  [3] Recompilar frontend
 echo  [4] Sair
 echo.
 echo =======================================================================
 
-choice /C 1234 /T 5 /D 1 /M "Selecione uma opcao (Iniciando modo padrao em 5s):"
-
+choice /C 1234 /T 10 /D 1 /M "Selecione uma opcao (modo padrao em 10s)"
 if errorlevel 4 goto SAIR
 if errorlevel 3 goto REBUILD
 if errorlevel 2 goto DEV_MODE
-if errorlevel 1 goto PROD_MODE
+goto PROD_MODE
 
 :PROD_MODE
 cls
 echo.
-echo [1/2] Verificando arquivos do Frontend (dist)...
-if not exist "%PROJECT_ROOT%frontend\dist" (
-    echo.
-    echo Frontend ainda nao foi compilado. Gerando build agora...
-    cd /d "%PROJECT_ROOT%frontend"
-    call npm run build
-)
+echo [1/2] Compilando o frontend...
+call :BUILD_FRONTEND
+if errorlevel 1 goto BUILD_FAILURE
 
-echo [2/2] Iniciando o servidor EDP Verify (Backend + Frontend)...
+echo [2/2] Iniciando o servidor Helios (Backend + Frontend)...
 echo.
 echo -----------------------------------------------------------------------
 echo  O sistema abrira automaticamente no navegador: http://localhost:8000
@@ -64,7 +70,6 @@ echo -----------------------------------------------------------------------
 echo.
 
 start "" "http://localhost:8000"
-
 cd /d "%PROJECT_ROOT%backend"
 "!PYTHON_EXE!" -m uvicorn main:app --host 127.0.0.1 --port 8000
 goto FIM
@@ -77,11 +82,17 @@ echo                   INICIANDO MODO DESENVOLVEDOR
 echo =======================================================================
 echo.
 
+where npm > nul 2>&1
+if errorlevel 1 (
+    echo ERRO: npm nao foi encontrado. Instale ou configure o Node.js e tente novamente.
+    goto FIM
+)
+
 echo [1/2] Iniciando Backend FastAPI em segundo plano (:8000)...
-start "EDP Verify - Backend" cmd /k "cd /d "%PROJECT_ROOT%backend" && "!PYTHON_EXE!" -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+start "Helios - Backend" /D "%PROJECT_ROOT%backend" cmd /k ""!PYTHON_EXE!" -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
 
 echo [2/2] Iniciando Frontend Vite (:5173)...
-start "EDP Verify - Frontend Vite" cmd /k "cd /d "%PROJECT_ROOT%frontend" && npm run dev"
+start "Helios - Frontend Vite" /D "%PROJECT_ROOT%frontend" cmd /k "npm run dev"
 
 echo.
 echo Servidores iniciados em janelas separadas!
@@ -93,15 +104,41 @@ goto FIM
 :REBUILD
 cls
 echo.
-echo Recompilando o frontend React...
-echo.
-cd /d "%PROJECT_ROOT%frontend"
-call npm run build
+echo Recompilando o frontend...
+call :BUILD_FRONTEND
+if errorlevel 1 goto BUILD_FAILURE
+
 echo.
 echo Build concluido com sucesso!
 echo.
 pause
-goto PROD_MODE
+goto MENU
+
+:BUILD_FRONTEND
+where npm > nul 2>&1
+if errorlevel 1 (
+    echo ERRO: npm nao foi encontrado. Instale ou configure o Node.js e tente novamente.
+    exit /b 1
+)
+
+cd /d "%PROJECT_ROOT%frontend"
+if not exist "node_modules\" (
+    echo Dependencias do frontend ausentes. Instalando com npm ci...
+    call npm ci
+    if errorlevel 1 exit /b 1
+)
+
+call npm run build
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:BUILD_FAILURE
+echo.
+echo ERRO: o frontend nao foi compilado. O sistema nao sera iniciado.
+echo Reveja as mensagens acima, corrija o problema e tente novamente.
+echo.
+pause
+goto MENU
 
 :SAIR
 exit /b 0

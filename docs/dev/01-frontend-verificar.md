@@ -8,13 +8,20 @@ a lista de notas com suas falhas de conformidade, e o dashboard permite
 filtrar, buscar, marcar notas como concluídas e comparar candidatas a
 duplicata lado a lado. Um drawer de KPIs mostra a taxa de conformidade e
 contagens (erro, duplicata, visíveis, concluídas) sobre o conjunto
-carregado.
+carregado. O filtro **Gerada por** alterna entre todas as notas e as notas
+criadas pelos inspetores de planejamento de ES/SP.
+
+No upload, o backend cruza a matrícula da coluna `colaborador` (quem gerou a
+nota) com `De-Para Membros.xlsx`. Para cada registro, devolve somente
+`gerador.matricula`, `gerador.nome`, `gerador.uf` e `gerador.inspetor`; senhas
+e outros campos do De-Para nunca são expostos. O arquivo pode ser apontado por
+`DE_PARA_MEMBROS_PATH`; sem a variável, usa o arquivo na raiz do repositório.
 
 ## Arquivos principais
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `frontend/src/features/verificar/dashboard.tsx` | Tela principal pós-upload: filtros (busca, UF, setor, urgência, status, situação, bloqueio/regra), fila de notas, painel de detalhe da nota selecionada, seleção em lote e ações (concluir/reabrir/enviar ao COFFEE). |
+| `frontend/src/features/verificar/dashboard.tsx` | Tela principal pós-upload: filtros (busca, UF, gerador/inspetores, setor, urgência, status, situação, bloqueio/regra), fila de notas, painel de detalhe da nota selecionada, seleção em lote e ações (concluir/reabrir/enviar ao COFFEE). |
 | `frontend/src/features/verificar/upload-screen.tsx` | Tela de upload (drag-and-drop ou seleção de arquivo), barra de progresso simulada e mensagem de erro de conexão com o backend. |
 | `frontend/src/features/verificar/kpi-drawer.tsx` | Drawer lateral (FAB + painel deslizante) com o percentual de conformidade e contagens de erro/duplicata/visíveis/concluídas; lista as notas selecionadas em lote. |
 | `frontend/src/features/verificar/duplicate-compare.tsx` | Comparação campo a campo entre a nota aberta e cada candidata a duplicata, com indicação de campos-chave iguais/diferentes e ação de marcar/desmarcar duplicata. |
@@ -49,7 +56,9 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   refazer o upload.
 - **Dashboard**: recebe `notes`/`completed`/`dupResolved` como props e
   deriva todo o resto (filtros, fila ordenada, seleção) localmente com
-  `useState`/`useMemo`/`usePersistedState`. Ações do usuário (concluir,
+  `useState`/`useMemo`/`usePersistedState`. O filtro persistido `Gerada por`
+  usa `note.gerador.inspetor`; no modo de inspetores a fila informa nome e UF
+  de quem criou a nota, e o detalhe mostra nome e matrícula. Ações do usuário (concluir,
   marcar duplicata, enviar ao COFFEE) sobem via callbacks
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)
   para `App.tsx`, que atualiza o estado e, quando `source === "api"`,

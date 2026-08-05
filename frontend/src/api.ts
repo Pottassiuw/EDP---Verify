@@ -4,6 +4,7 @@ import type {
   FetchResult,
   Note,
   NoteError,
+  NoteGenerator,
   NoteRaw,
   NoteStatus,
   DuplicateCandidate,
@@ -76,6 +77,7 @@ interface ApiRecord {
   latitude?: string | null;
   longitude?: string | null;
   colaborador?: string | null;
+  gerador?: NoteGenerator;
   imagens_totais?: number | null;
   imagens_recebidas?: number | null;
   local_instalacao?: string;
@@ -124,6 +126,7 @@ function normalize(j: ApiData): FetchResult {
       longitude:
         r.longitude ?? (raw.longitude != null ? String(raw.longitude) : null),
       colaborador: r.colaborador ?? (str(raw.colaborador) || null),
+      gerador: r.gerador,
       imagens_totais: r.imagens_totais ?? num(raw.imagens_totais),
       imagens_recebidas: r.imagens_recebidas ?? num(raw.imagens_recebidas),
       errors: r.errors ?? [],

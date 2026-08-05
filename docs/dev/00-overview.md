@@ -106,7 +106,13 @@ cd ../backend && uvicorn main:app
 ```
 
 O FastAPI serve `frontend/dist/` como estático e expõe a API no mesmo
-processo (`backend/main.py:330-332`).
+processo (`backend/main.py:330-332`). No Windows, `iniciar_sistema.bat` oferece
+os modos de produção, desenvolvimento e recompilação. O modo de produção
+sempre executa `npm run build` antes de iniciar o servidor; se o Node, as
+dependências (`npm ci`) ou o build falharem, ele informa o erro e não inicia
+com um `dist` potencialmente desatualizado. O script inicializa o `fnm`
+(instalado em locais usuais ou disponível no `PATH`) antes de buscar `npm`. A
+seleção padrão do menu aguarda 10 segundos.
 
 Testes (`README.md`):
 
