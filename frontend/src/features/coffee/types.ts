@@ -83,6 +83,8 @@ export interface CoffeeConsulta {
   local_instalacao: string | null;
   classificacao: string;
   arquivado: boolean | null;
+  poste: string | null;
+  referencia: string | null;
 }
 
 export interface PropostaPlano {
