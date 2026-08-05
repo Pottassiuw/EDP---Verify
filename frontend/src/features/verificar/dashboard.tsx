@@ -13,8 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin, UserRound } from 'lucide-react';
+import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-react';
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
@@ -35,7 +34,8 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const { showKpis, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
   const [q, setQ] = usePersistedState("edp_verify_q", "");
   const [uf, setUf] = usePersistedState("edp_verify_uf", "all");
-  const [geradorInspetores, setGeradorInspetores] = usePersistedState<string[]>("edp_verify_gerador_insp", []);
+  const [gerador, setGerador] = usePersistedState("edp_verify_gerador", "all");
+  const [inspetor, setInspetor] = usePersistedState("edp_verify_inspetor", "all");
   const [setor, setSetor] = usePersistedState("edp_verify_setor", "all");
   const [urg, setUrg] = usePersistedState("edp_verify_urg", "all");
   const [status, setStatus] = usePersistedState("edp_verify_status", "all");
@@ -68,7 +68,8 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
       if (!terms.some((tm) => hay.includes(tm))) return false;
     }
     if (uf !== "all" && n.uf !== uf) return false;
-    if (geradorInspetores.length && !geradorInspetores.includes(n.gerador?.matricula ?? "")) return false;
+    if (gerador === "inspectors" && !n.gerador?.inspetor) return false;
+    if (gerador === "inspectors" && inspetor !== "all" && n.gerador?.matricula !== inspetor) return false;
     if (setor !== "all" && n.setor !== setor) return false;
     if (urg !== "all" && urgBand(n.prioridade) !== urg) return false;
     if (status !== "all" && n.status !== status) return false;
@@ -83,7 +84,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
   React.useEffect(() => {
     if (filtered.length && !filtered.some((n) => n.id === selId)) setSelId(filtered[0]?.id ?? null);
-  }, [q, uf, geradorInspetores, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, uf, gerador, inspetor, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
   const sel: Note | undefined = notes.find((n) => n.id === selId) ?? filtered[0];
 
   const cTotal = notes.length;
@@ -97,16 +98,18 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   // (1 chip por nota, sem scroll). Gerenciamento de IDs é feito direto na search bar.
   const chips: Array<{ k: string; clear: () => void }> = [];
   if (uf !== "all") chips.push({ k: "UF: " + uf, clear: () => setUf("all") });
-  geradorInspetores.forEach((matricula) => {
-    const nome = inspetorOpts.find((i) => i.matricula === matricula)?.nome ?? matricula;
-    chips.push({ k: "Gerada por: " + nome, clear: () => setGeradorInspetores(geradorInspetores.filter((m) => m !== matricula)) });
-  });
+  if (gerador === "inspectors") chips.push({ k: "Gerada por: Inspetores ES/SP", clear: () => { setGerador("all"); setInspetor("all"); } });
+  if (gerador === "inspectors" && inspetor !== "all") {
+    const selecionado = inspetorOpts.find((opcao) => opcao.matricula === inspetor);
+    chips.push({ k: "Inspetor: " + (selecionado?.nome ?? inspetor), clear: () => setInspetor("all") });
+  }
   if (setor !== "all") chips.push({ k: "Setor: " + setor, clear: () => setSetor("all") });
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
   if (status !== "all") chips.push({ k: "Status: " + (status === "ok" ? "Conforme" : "Com erro"), clear: () => setStatus("all") });
   if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Concluídas" : "Pendentes"), clear: () => setSituacao("all") });
   rules.forEach((r) => chips.push({ k: "Bloqueio: " + ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
-  function clearAll(): void { setQ(""); setUf("all"); setGeradorInspetores([]); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
+  function clearAll(): void { setQ(""); setUf("all"); setGerador("all"); setInspetor("all"); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
+  function changeGerador(value: string): void { setGerador(value); if (value === "all") setInspetor("all"); }
 
   function toggleRule(r: RuleKey): void { const s = new Set(rules); if (s.has(r)) s.delete(r); else s.add(r); setRules(s); }
   function toggleBatch(id: string): void { const s = new Set(selBatch); if (s.has(id)) s.delete(id); else s.add(id); setSelBatch(s); }
@@ -160,17 +163,32 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               </SelectContent>
             </Select>
           </Field>
-          {inspetorOpts.length > 0 && (
-            <Field label="Gerada por" accent>
-              <ToggleGroup type="multiple" variant="outline" size="sm" value={geradorInspetores}
-                           onValueChange={setGeradorInspetores} className="flex-wrap"
-                           aria-label="Filtrar por inspetor de planejamento ES/SP">
-                {inspetorOpts.map((i) => (
-                  <ToggleGroupItem key={i.matricula} value={i.matricula}>
-                    <UserRound /> {i.nome} ({i.uf})
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+          <Field label="Gerada por" accent>
+            <Select value={gerador} onValueChange={changeGerador}>
+              <SelectTrigger className="w-full" aria-label="Filtrar por quem gerou a nota">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="inspectors">Inspetores ES/SP</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          {gerador === "inspectors" && inspetorOpts.length > 0 && (
+            <Field label="Inspetor" accent>
+              <Select value={inspetor} onValueChange={setInspetor}>
+                <SelectTrigger className="w-full" aria-label="Filtrar por inspetor">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os inspetores</SelectItem>
+                  {inspetorOpts.map((opcao) => (
+                    <SelectItem key={opcao.matricula} value={opcao.matricula}>
+                      {opcao.nome} ({opcao.uf})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           )}
           <Field label="Setor" accent>

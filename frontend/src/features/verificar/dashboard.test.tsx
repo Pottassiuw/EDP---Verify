@@ -55,10 +55,11 @@ const noop = (): void => {};
 describe('Dashboard — filtro por inspetor', () => {
   // O mock de sessionStorage é um Map compartilhado por todo o arquivo (ver
   // vi.hoisted acima); sem limpar entre testes, o filtro persistido por um
-  // teste (ex.: "com inspetor selecionado") vaza para os seguintes e filtra
+  // teste (ex.: "com inspetores selecionado") vaza para os seguintes e filtra
   // a fila de forma inesperada.
   beforeEach(() => {
-    sessionStorage.removeItem('edp_verify_gerador_insp');
+    sessionStorage.removeItem('edp_verify_gerador');
+    sessionStorage.removeItem('edp_verify_inspetor');
   });
 
   it('sem seleção, mostra notas de todos os geradores', () => {
@@ -75,25 +76,31 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(html).toContain('>300<');
   });
 
-  it('com inspetor selecionado (via sessionStorage persistido), mostra só notas daquele inspetor', () => {
-    sessionStorage.setItem('edp_verify_gerador_insp', JSON.stringify(['204565']));
+  it('com inspetores ES/SP selecionado (via sessionStorage persistido), exclui notas de não inspetores', () => {
+    sessionStorage.setItem('edp_verify_gerador', JSON.stringify('inspectors'));
     const html = renderToStaticMarkup(
       <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('>100<');
-    expect(html).not.toContain('>200<');
+    expect(html).toContain('>200<');
     expect(html).not.toContain('>300<');
   });
 
-  it('lista as opções de inspetor derivadas do lote, uma por matrícula distinta', () => {
+  it('permite filtrar um inspetor após selecionar o escopo ES/SP', () => {
+    sessionStorage.setItem('edp_verify_gerador', JSON.stringify('inspectors'));
+    sessionStorage.setItem('edp_verify_inspetor', JSON.stringify('204565'));
     const html = renderToStaticMarkup(
       <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
-    expect(html).toContain('aria-label="Filtrar por inspetor de planejamento ES/SP"');
-    expect(html).toContain('Fabricio Dias');
-    expect(html).toContain('Outro Inspetor');
+    expect(html).toContain('aria-label="Filtrar por quem gerou a nota"');
+    expect(html).toContain('aria-label="Filtrar por inspetor"');
+    expect(html).toContain('Gerada por: Inspetores ES/SP');
+    expect(html).toContain('Inspetor: Fabricio Dias');
+    expect(html).toContain('>100<');
+    expect(html).not.toContain('>200<');
+    expect(html).not.toContain('>300<');
   });
 
   it('mostra "Gerada por" na fila mesmo sem filtro de inspetor ativo, para nota não-inspetor', () => {
@@ -111,17 +118,6 @@ describe('Dashboard — filtro por inspetor', () => {
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('Gerada por Fabricio Dias · ES');
-  });
-
-  it('com duas ou mais matrículas selecionadas, mostra as notas de ambos os inspetores e exclui as demais', () => {
-    sessionStorage.setItem('edp_verify_gerador_insp', JSON.stringify(['204565', '111']));
-    const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
-                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
-    );
-    expect(html).toContain('>100<');
-    expect(html).toContain('>200<');
-    expect(html).not.toContain('>300<');
   });
 
   it('nota cadastrada não recebe a marca de "matrícula não cadastrada" na fila', () => {

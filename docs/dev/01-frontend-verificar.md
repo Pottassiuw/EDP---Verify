@@ -8,10 +8,10 @@ a lista de notas com suas falhas de conformidade, e o dashboard permite
 filtrar, buscar, marcar notas como concluídas e comparar candidatas a
 duplicata lado a lado. Um drawer de KPIs mostra a taxa de conformidade e
 contagens (erro, duplicata, visíveis, concluídas) sobre o conjunto
-carregado. O filtro **Gerada por** permite selecionar um ou mais
-inspetores de planejamento de ES/SP específicos (multi-select); a fila
-sempre mostra quem gerou cada nota, com uma marca quando a matrícula não
-tem registro no `De-Para Membros.xlsx`.
+carregado. O filtro **Gerada por** é um dropdown que alterna entre **Todos**
+e **Inspetores ES/SP**; neste último escopo, um segundo dropdown permite
+selecionar um inspetor específico. A fila sempre mostra quem gerou cada nota,
+com uma marca quando a matrícula não tem registro no `De-Para Membros.xlsx`.
 
 No upload, o backend cruza a matrícula da coluna `colaborador` (quem gerou a
 nota) com `De-Para Membros.xlsx`. Para cada registro, devolve somente
@@ -60,16 +60,13 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
 - **Dashboard**: recebe `notes`/`completed`/`dupResolved` como props e
   deriva todo o resto (filtros, fila ordenada, seleção) localmente com
   `useState`/`useMemo`/`usePersistedState`. O filtro persistido `Gerada por`
-  (`edp_verify_gerador_insp`) guarda as matrículas de inspetor selecionadas;
-  as opções do multi-select são derivadas das notas do lote atual
-  (`inspetorOpts`): diferente de `ufOpts`/`setorOpts` (simples arrays de strings),
-  `inspetorOpts` deduplica por matrícula usando um `Map` interno e retorna um
-  array `NoteGenerator[]` ordenado por nome, filtrando apenas inspetores com
-  `n.gerador?.inspetor` verdadeiro. A fila sempre informa nome e UF de quem
-  gerou cada nota — não só quando o filtro de inspetor está ativo — e o
-  detalhe mostra nome e matrícula; em ambos, uma matrícula sem registro no
-  De-Para recebe um indicador não cadastrado (fila: "(matrícula não
-  cadastrada)", detalhe: "(não cadastrado)").
+  (`edp_verify_gerador`) guarda `"all"` ou `"inspectors"`; nesta última opção,
+  mostra apenas notas cujo `n.gerador?.inspetor` é verdadeiro. Então o
+  dropdown `edp_verify_inspetor` permite reduzir o resultado a uma matrícula
+  específica. A fila sempre informa nome e UF de quem gerou cada nota — não só
+  quando o filtro de inspetor está ativo — e o detalhe mostra nome e matrícula;
+  em ambos, uma matrícula sem registro no De-Para recebe um indicador não
+  cadastrado (fila: "(matrícula não cadastrada)", detalhe: "(não cadastrado)").
   Ações do usuário (concluir,
   marcar duplicata, enviar ao COFFEE) sobem via callbacks
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)
