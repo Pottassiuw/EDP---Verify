@@ -1,5 +1,11 @@
 import React from 'react';
-import type { Note, Source, TriageSourceInfo } from '../../types';
+import type {
+  Note,
+  Source,
+  TriageDailyForwarding,
+  TriageForwarding,
+  TriageSourceInfo,
+} from '../../types';
 import { Dashboard } from '../verificar/dashboard';
 import { SourceScreen } from '../verificar/source-screen';
 
@@ -11,6 +17,8 @@ export interface TriageHandoff {
   dupResolved: Set<string>;
   source: Source;
   fonte: TriageSourceInfo | null;
+  encaminhamentos: Record<string, TriageForwarding>;
+  encaminhadasHoje: TriageDailyForwarding[];
   isLoading: boolean;
   isRefreshing: boolean;
   error: unknown;
@@ -32,6 +40,7 @@ export function CoffeeVerificar({ triage }: { triage: TriageHandoff }): React.JS
   return (
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       <Dashboard showKpis={triage.showKpis} notes={triage.notes} completed={triage.completed}
+                 encaminhamentos={triage.encaminhamentos} encaminhadasHoje={triage.encaminhadasHoje}
                  dupResolved={triage.dupResolved}
                  onToggleComplete={triage.onToggleComplete} onMarkMany={triage.onMarkMany}
                  onMarkDuplicate={triage.onMarkDuplicate} onSendToCoffee={triage.onSendToCoffee} />

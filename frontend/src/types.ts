@@ -153,11 +153,28 @@ export interface TriageSourceInfo {
   atualizado_em: string | null;
 }
 
+export type TriageSituation = 'encaminhada' | 'falha_operacional';
+
+export interface TriageForwarding {
+  situacao: TriageSituation;
+  etapa: string | null;
+  erro: string | null;
+  encaminhada_em: string | null;
+  encaminhada_por: string | null;
+}
+
+export interface TriageDailyForwarding {
+  usuario: string;
+  total: number;
+}
+
 export interface FetchResult {
   notes: Note[];
   completed: Set<string>;
   source: Source;
   fonte: TriageSourceInfo | null;
+  encaminhamentos: Record<string, TriageForwarding>;
+  encaminhadasHoje: TriageDailyForwarding[];
 }
 export interface ToggleResult {
   status: string;
@@ -187,8 +204,10 @@ export interface KpiDrawerProps {
   cOk: number;      // notas sem falha
   cErr: number;     // notas com erro
   cDup: number;     // notas com duplicatas
-  cDone: number;    // notas concluídas
+  cEncaminhadas: number; // notas atualmente encaminhadas ao COFFEE
+  cFalhasOperacionais: number;
   cVisible: number; // notas visíveis no filtro atual
+  encaminhadasHoje: TriageDailyForwarding[];
   selectedNotes?: Note[];
   onRemoveSelected?: (id: string) => void;
 }

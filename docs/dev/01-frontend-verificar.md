@@ -29,7 +29,9 @@ arquivo, a `schema_version` SQLite e a data de modificação; `user_version` nã
 2. **Encaminhar** registra a origem no `coffee.db`, relacionando `verificar_id`
    ao `pk` real retornado pelo COFFEE. A relação é persistida porque os IDs não
    são assumidos como iguais.
-3. Enquanto estiver em tratamento, a nota recebe o estado **Em correção**.
+3. Enquanto estiver em tratamento, a nota recebe o estado **Encaminhada**.
+   Uma falha registrada pela fila operacional é exposta como **Falha operacional**,
+   sem confundi-la com as falhas de validação da fonte.
 4. Com SAP real, a transição a classifica como `corrigida`, registra data/hora
    e usuário da conclusão e a remove da triagem.
 5. Ela fica em **COFFEE > Concluídas > Corrigidas**.
@@ -43,7 +45,14 @@ real é terminal para este fluxo; notas corrigidas não retornam à triagem.
 antes dizia “Concluir” agora é **Encaminhar**; “concluída” fica reservado ao
 resultado real no SAP. `source-screen.tsx` representa carregamento ou
 indisponibilidade da fonte. O botão **Atualizar** exibe Sonner de carregamento
-e conclusão, indicando quantas notas entraram ou saíram da triagem.
+e conclusão, indicando quantas notas entraram ou saíram da triagem. O filtro
+**Situação** separa notas não encaminhadas, encaminhadas e com falha operacional;
+as falhas de validação continuam nos bloqueios e no detalhe da nota.
+
+O painel de KPIs mostra encaminhamentos atuais, falhas operacionais e o total
+**Encaminhadas hoje** para todos os usuários, discriminado por usuário. O
+backend persiste o último encaminhamento em `coffee.db`, sem escrever na fonte
+compartilhada.
 
 O filtro **Gerada por** alterna entre **Todos** e **Inspetores ES/SP**. Neste
 último escopo, o filtro **Inspetor** permite selecionar uma matrícula. A fila
