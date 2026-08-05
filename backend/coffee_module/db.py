@@ -47,7 +47,8 @@ def trace_atual():
 _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem",
             "classificacao_em", "usuario", "verificar_id", "verificar_ativa",
-            "verificar_em", "verificar_por", "corrigida_em", "corrigida_por"]
+            "verificar_em", "verificar_por", "encaminhada_em", "encaminhada_por",
+            "corrigida_em", "corrigida_por"]
 
 
 def _linha_para_dict(row: tuple) -> dict:
@@ -104,6 +105,10 @@ def inicializar_banco() -> None:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN verificar_em TEXT")
     if "verificar_por" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN verificar_por TEXT")
+    if "encaminhada_em" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN encaminhada_em TEXT")
+    if "encaminhada_por" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN encaminhada_por TEXT")
     if "corrigida_em" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN corrigida_em TEXT")
     if "corrigida_por" not in cols_notas:
@@ -527,10 +532,11 @@ def registrar_origem_verificar(pk: int, verificar_id: int) -> None:
         UPDATE notas_coffee
         SET origem = 'verificar', verificar_id = ?, verificar_ativa = 1,
             verificar_em = COALESCE(verificar_em, ?),
-            verificar_por = COALESCE(verificar_por, ?)
+            verificar_por = COALESCE(verificar_por, ?),
+            encaminhada_em = ?, encaminhada_por = ?
         WHERE pk = ?
         """,
-        (verificar_id, agora, _usuario_atual(), pk),
+        (verificar_id, agora, _usuario_atual(), agora, _usuario_atual(), pk),
     )
     conn.commit()
     conn.close()
@@ -556,6 +562,52 @@ def desativar_verificar_por_pk(pk: int) -> None:
     )
     conn.commit()
     conn.close()
+
+
+def resumo_triagem_verificar() -> dict:
+    """Retorna o estado operacional e os encaminhamentos de Verificar no dia."""
+    conn = get_db_connection()
+    try:
+        ativos = conn.execute(
+            """
+            SELECT n.verificar_id, n.encaminhada_em, n.encaminhada_por,
+                   f.etapa, f.erro
+            FROM notas_coffee n
+            LEFT JOIN coffee_fila_operacao f ON f.nota_pk = n.pk
+            WHERE n.verificar_ativa = 1 AND n.verificar_id IS NOT NULL
+            """
+        ).fetchall()
+        hoje = conn.execute(
+            """
+            SELECT COALESCE(encaminhada_por, 'Desconhecido'), COUNT(*)
+            FROM notas_coffee
+            WHERE verificar_id IS NOT NULL
+              AND date(encaminhada_em) = date('now', 'localtime')
+            GROUP BY encaminhada_por
+            ORDER BY COUNT(*) DESC, encaminhada_por COLLATE NOCASE
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return {"encaminhamentos": {}, "encaminhadas_hoje": []}
+    finally:
+        conn.close()
+
+    encaminhamentos = {
+        str(verificar_id): {
+            "situacao": "falha_operacional" if erro else "encaminhada",
+            "etapa": etapa,
+            "erro": erro,
+            "encaminhada_em": encaminhada_em,
+            "encaminhada_por": encaminhada_por,
+        }
+        for verificar_id, encaminhada_em, encaminhada_por, etapa, erro in ativos
+    }
+    return {
+        "encaminhamentos": encaminhamentos,
+        "encaminhadas_hoje": [
+            {"usuario": usuario, "total": total} for usuario, total in hoje
+        ],
+    }
 
 
 def ids_verificar_em_correcao() -> set[str]:

@@ -4,7 +4,19 @@ import { Progress } from '@/components/ui/progress';
 import type { KpiDrawerProps } from '../../types';
 
 export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
-  const { pct, cTotal, cOk, cErr, cDup, cDone, cVisible, selectedNotes = [], onRemoveSelected } = props;
+  const {
+    pct,
+    cTotal,
+    cOk,
+    cErr,
+    cDup,
+    cEncaminhadas,
+    cFalhasOperacionais,
+    cVisible,
+    encaminhadasHoje,
+    selectedNotes = [],
+    onRemoveSelected,
+  } = props;
   const [open, setOpen] = React.useState(false);
 
   const safePct = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
@@ -29,9 +41,11 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
     mountedRef.current = true;
   }, [open]);
 
+  const encaminhadasHojeTotal = encaminhadasHoje.reduce((total, item) => total + item.total, 0);
   const rows: Array<[string, number, "red" | "indigo" | "blue" | "green"]> = [
-    ["Com erro", cErr, "red"], ["Duplicatas", cDup, "indigo"],
-    ["Visíveis (filtro atual)", cVisible, "blue"], ["Concluídas", cDone, "green"],
+    ["Falhas de validação", cErr, "red"], ["Duplicatas", cDup, "indigo"],
+    ["Encaminhadas", cEncaminhadas, "green"], ["Falha operacional", cFalhasOperacionais, "red"],
+    ["Visíveis (filtro atual)", cVisible, "blue"],
   ];
 
   return (
@@ -77,6 +91,25 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
                 <span className="text-[18px] [font-family:var(--font-display)] font-extrabold leading-none" style={{ color: "var(--" + c + ")" }}>{val}</span>
               </div>
             ))}
+            <div className="bg-surface-2 rounded-app-sm py-[10px] px-[14px]">
+              <Eyebrow asChild><div>Encaminhadas hoje</div></Eyebrow>
+              <div className="flex items-baseline justify-between mt-[4px]">
+                <span className="text-[18px] [font-family:var(--font-display)] font-extrabold leading-none text-green">
+                  {encaminhadasHojeTotal}
+                </span>
+                <span className="font-mono text-[10px] text-text-mute">todos os usuários</span>
+              </div>
+              {encaminhadasHoje.length > 0 && (
+                <div className="flex flex-col gap-[4px] mt-[9px] pt-[8px] border-t border-line">
+                  {encaminhadasHoje.map((item) => (
+                    <div key={item.usuario} className="flex items-center justify-between gap-[8px] text-[12px]">
+                      <span className="text-text-dim truncate">{item.usuario}</span>
+                      <span className="font-mono text-text font-semibold">{item.total}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             {selectedNotes.length > 0 && (
               <div className="bg-surface-2 rounded-app-sm py-[10px] px-[14px]">
                 <Eyebrow asChild><div className="mb-[8px]">

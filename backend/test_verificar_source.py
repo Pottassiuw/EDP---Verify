@@ -72,6 +72,41 @@ def test_api_oculta_da_triagem_nota_corrigida_no_coffee(tmp_path, monkeypatch):
     assert body["fonte"]["schema_version"] > 0
 
 
+def test_resumo_triagem_separa_encaminhadas_de_falhas_e_usuarios_do_dia(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setenv("COFFEE_DATA_DIR", str(tmp_path))
+    coffee_db.inicializar_banco()
+    try:
+        coffee_db.definir_usuario("ana")
+        coffee_db.upsert_nota(900001, config.SAP_PENDENTE, {"id": 900001})
+        coffee_db.registrar_origem_verificar(900001, 123456)
+
+        coffee_db.definir_usuario("bruno")
+        coffee_db.upsert_nota(900002, config.SAP_PENDENTE, {"id": 900002})
+        coffee_db.registrar_origem_verificar(900002, 123457)
+        coffee_db.upsert_item_operacao(
+            entrada_id=900002,
+            nota_pk=900002,
+            etapa="aguardando_sap",
+            origem="verificar",
+            erro="Falha ao consultar SAP.",
+        )
+
+        resumo = coffee_db.resumo_triagem_verificar()
+
+        assert resumo["encaminhamentos"]["123456"]["situacao"] == "encaminhada"
+        assert resumo["encaminhamentos"]["123457"]["situacao"] == "falha_operacional"
+        assert resumo["encaminhamentos"]["123457"]["erro"] == "Falha ao consultar SAP."
+        assert resumo["encaminhadas_hoje"] == [
+            {"usuario": "ana", "total": 1},
+            {"usuario": "bruno", "total": 1},
+        ]
+    finally:
+        coffee_db.definir_usuario(None)
+
+
 def test_rastreia_chave_da_fonte_mesmo_quando_pk_coffee_e_diferente(
     tmp_path,
     monkeypatch,

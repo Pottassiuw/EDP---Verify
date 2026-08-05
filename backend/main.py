@@ -389,6 +389,8 @@ async def upload_file(file: UploadFile = File(...)):
 @app.get("/api/data")
 def get_data():
     completed = COMPLETED
+    encaminhamentos: dict = {}
+    encaminhadas_hoje: list[dict] = []
     fonte = None
     if RECORDS:
         records = RECORDS
@@ -405,7 +407,10 @@ def get_data():
             ) from erro
         corrigidos = _coffee_db.ids_verificar_corrigidos()
         records = [record for record in records if record["id"] not in corrigidos]
-        completed = _coffee_db.ids_verificar_em_correcao()
+        resumo_triagem = _coffee_db.resumo_triagem_verificar()
+        encaminhamentos = resumo_triagem["encaminhamentos"]
+        encaminhadas_hoje = resumo_triagem["encaminhadas_hoje"]
+        completed = set(encaminhamentos)
 
     rule_stats = {}
     uf_set = set()
@@ -422,6 +427,8 @@ def get_data():
     return {
         "records": records,
         "completed": list(completed),
+        "encaminhamentos": encaminhamentos,
+        "encaminhadas_hoje": encaminhadas_hoje,
         "rule_stats": rule_stats,
         "uf_options": sorted(uf_set),
         "setor_options": sorted(setor_set),

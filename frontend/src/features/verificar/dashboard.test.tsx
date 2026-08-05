@@ -60,11 +60,12 @@ describe('Dashboard — filtro por inspetor', () => {
   beforeEach(() => {
     sessionStorage.removeItem('edp_verify_gerador');
     sessionStorage.removeItem('edp_verify_inspetor');
+    sessionStorage.removeItem('edp_verify_situacao');
   });
 
   it('sem seleção, mostra notas de todos os geradores', () => {
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     // Notas aparecem como <span ...>{id}</span> na fila; usamos os delimitadores
@@ -76,10 +77,26 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(html).toContain('>300<');
   });
 
+  it('filtra as notas pelo estado de encaminhamento', () => {
+    sessionStorage.setItem('edp_verify_situacao', JSON.stringify('falha_operacional'));
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={notes} completed={new Set(['100', '200'])}
+                 encaminhamentos={{
+                   '100': { situacao: 'encaminhada', etapa: 'pronta', erro: null, encaminhada_em: null, encaminhada_por: 'ana' },
+                   '200': { situacao: 'falha_operacional', etapa: 'pronta', erro: 'timeout', encaminhada_em: null, encaminhada_por: 'bruno' },
+                 }} encaminhadasHoje={[]} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html).not.toContain('>100<');
+    expect(html).toContain('>200<');
+    expect(html).not.toContain('>300<');
+    expect(html).toContain('Falha operacional');
+  });
+
   it('com inspetores ES/SP selecionado (via sessionStorage persistido), exclui notas de não inspetores', () => {
     sessionStorage.setItem('edp_verify_gerador', JSON.stringify('inspectors'));
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('>100<');
@@ -91,7 +108,7 @@ describe('Dashboard — filtro por inspetor', () => {
     sessionStorage.setItem('edp_verify_gerador', JSON.stringify('inspectors'));
     sessionStorage.setItem('edp_verify_inspetor', JSON.stringify('204565'));
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('aria-label="Filtrar por quem gerou a nota"');
@@ -105,7 +122,7 @@ describe('Dashboard — filtro por inspetor', () => {
 
   it('mostra "Gerada por" na fila mesmo sem filtro de inspetor ativo, para nota não-inspetor', () => {
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('Gerada por 999999');
@@ -114,7 +131,7 @@ describe('Dashboard — filtro por inspetor', () => {
 
   it('mostra "Gerada por" na fila para nota de inspetor, sem precisar do filtro ativo', () => {
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html).toContain('Gerada por Fabricio Dias · ES');
@@ -122,7 +139,7 @@ describe('Dashboard — filtro por inspetor', () => {
 
   it('nota cadastrada não recebe a marca de "matrícula não cadastrada" na fila', () => {
     const html = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(html.includes('Fabricio Dias · ES (matrícula não cadastrada)')).toBe(false);
@@ -142,14 +159,14 @@ describe('Dashboard — filtro por inspetor', () => {
     });
 
     const htmlCadastrada = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={[cadastrada]} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={[cadastrada]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(htmlCadastrada).toContain('Fabricio Dias · 204565');
     expect(htmlCadastrada).not.toContain('Fabricio Dias · 204565 (não cadastrado)');
 
     const htmlNaoCadastrada = renderToStaticMarkup(
-      <Dashboard showKpis={false} notes={[naoCadastrada]} completed={new Set()} dupResolved={new Set()}
+      <Dashboard showKpis={false} notes={[naoCadastrada]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
     expect(htmlNaoCadastrada).toContain('Sem Registro · 777777 (não cadastrado)');

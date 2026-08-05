@@ -1,5 +1,12 @@
 ﻿import React from 'react';
-import type { Note, NoteGenerator, UrgBand, RuleKey } from '../../types';
+import type {
+  Note,
+  NoteGenerator,
+  TriageDailyForwarding,
+  TriageForwarding,
+  UrgBand,
+  RuleKey,
+} from '../../types';
 import { EDPApi, ruleMeta } from '../../api';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
@@ -23,6 +30,8 @@ export interface DashboardProps {
   showKpis: boolean;
   notes: Note[];
   completed: Set<string>;
+  encaminhamentos: Record<string, TriageForwarding>;
+  encaminhadasHoje: TriageDailyForwarding[];
   dupResolved: Set<string>;
   onToggleComplete: (id: string) => void;
   onMarkMany: (ids: string[], action: "done" | "reopen") => void;
@@ -31,15 +40,27 @@ export interface DashboardProps {
 }
 
 export function Dashboard(props: DashboardProps): React.JSX.Element {
-  const { showKpis, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
+  const {
+    showKpis,
+    notes,
+    completed,
+    encaminhamentos,
+    encaminhadasHoje,
+    dupResolved,
+    onToggleComplete,
+    onMarkMany,
+    onMarkDuplicate,
+    onSendToCoffee,
+  } = props;
   const [q, setQ] = usePersistedState("edp_verify_q", "");
   const [uf, setUf] = usePersistedState("edp_verify_uf", "all");
   const [gerador, setGerador] = usePersistedState("edp_verify_gerador", "all");
   const [inspetor, setInspetor] = usePersistedState("edp_verify_inspetor", "all");
   const [setor, setSetor] = usePersistedState("edp_verify_setor", "all");
   const [urg, setUrg] = usePersistedState("edp_verify_urg", "all");
-  const [status, setStatus] = usePersistedState("edp_verify_status", "all");
   const [situacao, setSituacao] = usePersistedState("edp_verify_situacao", "all");
+  const situacaoAtual = situacao === "pending" ? "nao_encaminhada"
+    : situacao === "done" ? "encaminhada" : situacao;
   const [rulesArr, setRulesArr] = usePersistedState<RuleKey[]>("edp_verify_rules", []);
   const rules = React.useMemo(() => new Set(rulesArr), [rulesArr]);
   const setRules = React.useCallback((s: Set<RuleKey>) => setRulesArr([...s]), [setRulesArr]);
@@ -72,10 +93,10 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
     if (gerador === "inspectors" && inspetor !== "all" && n.gerador?.matricula !== inspetor) return false;
     if (setor !== "all" && n.setor !== setor) return false;
     if (urg !== "all" && urgBand(n.prioridade) !== urg) return false;
-    if (status !== "all" && n.status !== status) return false;
-    const done = completed.has(n.id);
-    if (situacao === "pending" && done) return false;
-    if (situacao === "done" && !done) return false;
+    const encaminhamento = encaminhamentos[n.id];
+    if (situacaoAtual === "nao_encaminhada" && encaminhamento) return false;
+    if (situacaoAtual === "encaminhada" && encaminhamento?.situacao !== "encaminhada") return false;
+    if (situacaoAtual === "falha_operacional" && encaminhamento?.situacao !== "falha_operacional") return false;
     if (rules.size && !n.errors.some((e) => rules.has(e.rule))) return false;
     return true;
   }
@@ -84,13 +105,18 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
   React.useEffect(() => {
     if (filtered.length && !filtered.some((n) => n.id === selId)) setSelId(filtered[0]?.id ?? null);
-  }, [q, uf, gerador, inspetor, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, uf, gerador, inspetor, setor, urg, situacaoAtual, rules]); // eslint-disable-line react-hooks/exhaustive-deps
   const sel: Note | undefined = notes.find((n) => n.id === selId) ?? filtered[0];
 
   const cTotal = notes.length;
   const cErr = notes.filter((n) => n.errors.length).length;
   const cOk = notes.filter((n) => !n.errors.length).length;
-  const cDone = notes.filter((n) => completed.has(n.id)).length;
+  const cEncaminhadas = notes.filter(
+    (n) => encaminhamentos[n.id]?.situacao === "encaminhada",
+  ).length;
+  const cFalhasOperacionais = notes.filter(
+    (n) => encaminhamentos[n.id]?.situacao === "falha_operacional",
+  ).length;
   const cDup = notes.filter((n) => n.duplicates.length).length;
   const pct = Math.round(cOk / cTotal * 100);
 
@@ -105,10 +131,16 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   }
   if (setor !== "all") chips.push({ k: "Setor: " + setor, clear: () => setSetor("all") });
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
-  if (status !== "all") chips.push({ k: "Status: " + (status === "ok" ? "Conforme" : "Com erro"), clear: () => setStatus("all") });
-  if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Em correção" : "Pendentes"), clear: () => setSituacao("all") });
+  if (situacaoAtual !== "all") {
+    const situacoes: Record<string, string> = {
+      nao_encaminhada: "Não encaminhadas",
+      encaminhada: "Encaminhadas",
+      falha_operacional: "Falha operacional",
+    };
+    chips.push({ k: "Situação: " + situacoes[situacaoAtual], clear: () => setSituacao("all") });
+  }
   rules.forEach((r) => chips.push({ k: "Bloqueio: " + ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
-  function clearAll(): void { setQ(""); setUf("all"); setGerador("all"); setInspetor("all"); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
+  function clearAll(): void { setQ(""); setUf("all"); setGerador("all"); setInspetor("all"); setSetor("all"); setUrg("all"); setSituacao("all"); setRules(new Set()); }
   function changeGerador(value: string): void { setGerador(value); if (value === "all") setInspetor("all"); }
 
   function toggleRule(r: RuleKey): void { const s = new Set(rules); if (s.has(r)) s.delete(r); else s.add(r); setRules(s); }
@@ -213,27 +245,16 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Status">
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="erro">Com erro</SelectItem>
-                <SelectItem value="ok">Conforme</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
           <Field label="Situação">
-            <Select value={situacao} onValueChange={setSituacao}>
+            <Select value={situacaoAtual} onValueChange={setSituacao}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="pending">Pendentes</SelectItem>
-                <SelectItem value="done">Em correção</SelectItem>
+                <SelectItem value="nao_encaminhada">Não encaminhadas</SelectItem>
+                <SelectItem value="encaminhada">Encaminhadas</SelectItem>
+                <SelectItem value="falha_operacional">Falha operacional</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -293,6 +314,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               </div>
             ) : filtered.map((n) => {
               const done = completed.has(n.id);
+              const encaminhamento = encaminhamentos[n.id];
               const isDup = dupResolved.has(n.id);
               const isSel = selBatch.has(n.id);
               const flagDup = n.duplicates.length > 0 && !isDup;
@@ -326,7 +348,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                     </button>
                   )}
                   {isDup ? <Badge variant="tagDup"><span className="w-[6px] h-[6px] rounded-full bg-current" />Dup.</Badge>
-                    : done ? <Badge variant="tagDone"><span className="w-[6px] h-[6px] rounded-full bg-current" />COFFEE</Badge>
+                    : encaminhamento ? <StatusTag status={n.status} done={done} encaminhamento={encaminhamento} />
                     : n.errors.length ? <span className="font-mono text-[11px] text-red font-semibold shrink-0">
                         {n.errors.length} {n.errors.length > 1 ? "falhas" : "falha"}</span>
                     : <Badge variant="tagOk"><span className="w-[6px] h-[6px] rounded-full bg-current" />OK</Badge>}
@@ -365,12 +387,14 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
         </div>
 
         <Detail sel={sel} done={!!sel && completed.has(sel.id)} dup={!!sel && dupResolved.has(sel.id)}
+                encaminhamento={sel ? encaminhamentos[sel.id] : undefined}
                 onToggleDone={onToggleComplete} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />
       </div>
 
       {showKpis && (
         <KpiDrawer pct={pct} cTotal={cTotal} cOk={cOk} cErr={cErr} cDup={cDup}
-                   cDone={cDone} cVisible={filtered.length}
+                   cEncaminhadas={cEncaminhadas} cFalhasOperacionais={cFalhasOperacionais}
+                   cVisible={filtered.length} encaminhadasHoje={encaminhadasHoje}
                    selectedNotes={notes.filter((n) => selBatch.has(n.id))}
                    onRemoveSelected={(id) => toggleBatch(id)} />
       )}
@@ -382,12 +406,13 @@ interface DetailProps {
   sel: Note | undefined;
   done: boolean;
   dup: boolean;
+  encaminhamento?: TriageForwarding;
   onToggleDone: (id: string) => void;
   onMarkDuplicate: (id: string) => void;
   onSendToCoffee: (ids: string[], sourceId?: string) => void;
 }
 
-function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee }: DetailProps): React.JSX.Element {
+function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate, onSendToCoffee }: DetailProps): React.JSX.Element {
   const [fs, setFs] = React.useState(false);
   React.useEffect(() => {
     if (!fs) return;
@@ -422,7 +447,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {/* ponytail: sem `text-balance` — o `whitespace-nowrap` do call site já vencia a classe legada. */}
             <h2 className="text-lg font-semibold leading-[1.15] tracking-display whitespace-nowrap m-0">Nota {sel.id}</h2>
             <PriorityChip p={sel.prioridade} />
-            <StatusTag status={sel.status} done={done} dup={dup} />
+            <StatusTag status={sel.status} done={done} dup={dup} encaminhamento={encaminhamento} />
           </div>
           <div className="font-mono text-[12px] text-text-mute mt-[5px]">
             {sel.tipo_nota} · {sel.referencia} · {sel.uf}/{sel.setor}</div>
@@ -436,7 +461,7 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
             {fs ? <Minimize2 /> : <Maximize2 />}
           </Button>
           <Button variant={done ? "outline" : "default"} size="sm" onClick={() => onToggleDone(sel.id)}>
-            {done ? <><RotateCcw /> Retirar da correção</> : <><Check /> Encaminhar</>}
+            {done ? <><RotateCcw /> Retirar do COFFEE</> : <><Check /> Encaminhar</>}
           </Button>
         </div>
       </div>

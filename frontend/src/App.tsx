@@ -170,29 +170,34 @@ function AppContent(): React.JSX.Element {
     );
   }
 
-  function markMany(ids: string[], action: "done" | "reopen"): void {
+  async function markMany(ids: string[], action: "done" | "reopen"): Promise<void> {
     const marking = action === "done";
     const targets = ids.filter((id) => completed.has(id) !== marking);
+    if (targets.length === 0) return;
+
     setCompleted((prev) => {
-      const s = new Set(prev);
-      targets.forEach((id) => { if (marking) s.add(id); else s.delete(id); });
-      return s;
+      const next = new Set(prev);
+      targets.forEach((id) => { if (marking) next.add(id); else next.delete(id); });
+      return next;
     });
     const numericTargets = targets.filter((id) => NUMERIC_ID_RE.test(id));
-    numericTargets.forEach((id) => EDPApi.marcarGerar(
+    const resultados = await Promise.allSettled(numericTargets.map((id) => EDPApi.marcarGerar(
       id,
       marking,
       marking ? undefined : "Nota retirada da correção na Verificar",
-    ).catch((error: unknown) => toast.error(
-      marking ? "Falha ao encaminhar para correção" : "Falha ao retirar da correção",
-      { description: error instanceof Error ? error.message : String(error) },
     )));
-    if (numericTargets.length > 0) void triagemQuery.refetch();
-    if (targets.length === 0) return;
-    const gerarInfo = numericTargets.length > 0
-      ? `${numericTargets.length} ${marking ? "encaminhada(s)" : "retirada(s)"}`
-      : undefined;
-    toast.success(`${targets.length} nota(s) ${marking ? "encaminhada(s) para correção" : "reaberta(s)"}`, { description: gerarInfo });
+    const falhas = resultados.filter((resultado) => resultado.status === "rejected");
+    if (falhas.length > 0) {
+      await triagemQuery.refetch();
+      toast.error(
+        `${falhas.length} nota${falhas.length === 1 ? " não foi" : "s não foram"} ${marking ? "encaminhada" : "reaberta"}${falhas.length === 1 ? "" : "s"}.`,
+      );
+      return;
+    }
+    if (numericTargets.length > 0) await triagemQuery.refetch();
+    toast.success(
+      `${targets.length} nota${targets.length === 1 ? "" : "s"} ${marking ? "encaminhada" : "reaberta"}${targets.length === 1 ? "" : "s"}.`,
+    );
   }
 
   function sendToCoffeeQueue(ids: string[], sourceId?: string): void {
@@ -225,6 +230,8 @@ function AppContent(): React.JSX.Element {
     showKpis: settings.showKpis,
     notes, completed, dupResolved, source,
     fonte: triagemQuery.data?.fonte ?? null,
+    encaminhamentos: triagemQuery.data?.encaminhamentos ?? {},
+    encaminhadasHoje: triagemQuery.data?.encaminhadasHoje ?? [],
     isLoading: triagemQuery.isLoading,
     isRefreshing: triagemQuery.isFetching,
     error: triagemQuery.error,

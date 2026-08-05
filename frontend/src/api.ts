@@ -8,6 +8,8 @@ import type {
   NoteRaw,
   NoteStatus,
   DuplicateCandidate,
+  TriageDailyForwarding,
+  TriageForwarding,
   TriageSourceInfo,
   ToggleResult,
   DuplicateResult,
@@ -94,6 +96,8 @@ interface ApiData {
   records?: ApiRecord[];
   completed?: string[];
   fonte?: TriageSourceInfo | null;
+  encaminhamentos?: Record<string, TriageForwarding>;
+  encaminhadas_hoje?: TriageDailyForwarding[];
 }
 
 function str(v: unknown, fb = ""): string {
@@ -144,6 +148,8 @@ function normalize(j: ApiData): FetchResult {
     completed: new Set(j.completed ?? []),
     source: "api",
     fonte: j.fonte ?? null,
+    encaminhamentos: j.encaminhamentos ?? {},
+    encaminhadasHoje: j.encaminhadas_hoje ?? [],
   };
 }
 
