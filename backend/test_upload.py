@@ -190,3 +190,73 @@ def test_upload_nao_devolve_colunas_extras_em_raw(tmp_path):
     assert "coluna_gigante_do_excel" not in registro["raw"]
     assert "chk_coordenada" not in registro["raw"]
     assert registro["raw"]["postes"] == "TR-088"
+
+
+def test_enriquecer_candidatos_externos_com_match(tmp_path, monkeypatch):
+    """Candidata externa com id_onr presente na Carteira ganha os campos reais."""
+    monkeypatch.setenv("CARTEIRA_DATA_DIR", str(tmp_path))
+    from carteira_module import db as carteira_db
+    carteira_db.inicializar_banco()
+    conn = carteira_db.conectar()
+    conn.execute(
+        "INSERT INTO nota_carteira (id_onr, local_instalacao, sintoma, componente_novo, "
+        "status_sap, prioridade_sap, descricao_conjunto, conjunto, latitude, longitude, "
+        "ausente_na_origem_em) VALUES (171153, '718ET00026773', 'queda', 'chave', "
+        "'Pendente', 3, 'POSTE DEMANDA', 'POSTE', '-23.1', '-45.2', NULL)"
+    )
+    conn.commit()
+    conn.close()
+
+    from main import enriquecer_candidatos_externos
+    records = [{
+        "id": "100",
+        "duplicates": [{"id": "171153", "in_sheet": False}],
+    }]
+    enriquecer_candidatos_externos(records)
+
+    cand = records[0]["duplicates"][0]
+    assert cand["carteira_match"] is True
+    assert cand["local_instalacao"] == "718ET00026773"
+    assert cand["problema"] == "chave · queda"
+    assert cand["status_sap"] == "Pendente"
+    assert cand["prioridade_sap"] == 3
+    assert cand["conjunto"] == "POSTE DEMANDA"
+    assert cand["carteira_ausente_em"] is None
+
+
+def test_enriquecer_candidatos_externos_sem_match(tmp_path, monkeypatch):
+    """Candidata externa sem linha na Carteira só ganha carteira_match=False."""
+    monkeypatch.setenv("CARTEIRA_DATA_DIR", str(tmp_path))
+    from carteira_module import db as carteira_db
+    carteira_db.inicializar_banco()
+
+    from main import enriquecer_candidatos_externos
+    records = [{"id": "100", "duplicates": [{"id": "999999", "in_sheet": False}]}]
+    enriquecer_candidatos_externos(records)
+
+    cand = records[0]["duplicates"][0]
+    assert cand["carteira_match"] is False
+    assert "local_instalacao" not in cand
+
+
+def test_enriquecer_candidatos_externos_ignora_in_sheet(tmp_path, monkeypatch):
+    """Candidata in_sheet=True não é tocada (já veio enriquecida por enrich_candidate)."""
+    monkeypatch.setenv("CARTEIRA_DATA_DIR", str(tmp_path))
+    from carteira_module import db as carteira_db
+    carteira_db.inicializar_banco()
+
+    from main import enriquecer_candidatos_externos
+    original = {"id": "200", "in_sheet": True, "local_instalacao": "SER-11"}
+    records = [{"id": "100", "duplicates": [dict(original)]}]
+    enriquecer_candidatos_externos(records)
+
+    assert records[0]["duplicates"][0] == original
+
+
+def test_enriquecer_candidatos_externos_lote_vazio_no_op(tmp_path, monkeypatch):
+    """Sem candidatas externas, a função não deve nem abrir conexão com a Carteira."""
+    monkeypatch.setenv("CARTEIRA_DATA_DIR", str(tmp_path / "carteira-nao-existe"))
+    from main import enriquecer_candidatos_externos
+    records = [{"id": "100", "duplicates": []}]
+    enriquecer_candidatos_externos(records)  # não deve levantar (banco nem existe)
+    assert records[0]["duplicates"] == []

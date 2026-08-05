@@ -17,6 +17,8 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 
 from coffee_module import db as _coffee_db
+from carteira_module import db as _carteira_db
+from carteira_module import repository as _carteira_repo
 from verificar_module.source import FonteVerificarIndisponivelErro, carregar_fonte
 
 app = FastAPI(title="De olho no Problema")
@@ -278,6 +280,47 @@ def enrich_candidate(cand: dict, source: dict) -> dict:
     }
 
 
+def enriquecer_candidatos_externos(records: list[dict]) -> None:
+    """Preenche candidatas externas (in_sheet=False) com dados da Carteira, em lote.
+
+    Uma única query IN para todas as candidatas externas do request inteiro —
+    nunca uma chamada por candidata. Candidatas in_sheet=True não são tocadas
+    (já vieram enriquecidas por enrich_candidate a partir da própria planilha).
+    """
+    ids_externos = {
+        int(cand["id"])
+        for record in records for cand in record["duplicates"]
+        if not cand["in_sheet"] and str(cand["id"]).isdigit()
+    }
+    if not ids_externos:
+        return
+
+    conn = _carteira_db.conectar()
+    try:
+        encontrados = _carteira_repo.obter_muitas(conn, list(ids_externos))
+    finally:
+        conn.close()
+
+    for record in records:
+        for cand in record["duplicates"]:
+            if cand["in_sheet"]:
+                continue
+            nota = encontrados.get(int(cand["id"])) if str(cand["id"]).isdigit() else None
+            cand["carteira_match"] = nota is not None
+            if nota is None:
+                continue
+            cand["local_instalacao"] = nota.get("local_instalacao") or ""
+            cand["problema"] = " · ".join(
+                parte for parte in [nota.get("componente_novo"), nota.get("sintoma")] if parte
+            ) or ""
+            cand["status_sap"] = nota.get("status_sap")
+            cand["prioridade_sap"] = nota.get("prioridade_sap")
+            cand["conjunto"] = nota.get("descricao_conjunto") or nota.get("conjunto")
+            cand["latitude"] = nota.get("latitude")
+            cand["longitude"] = nota.get("longitude")
+            cand["carteira_ausente_em"] = nota.get("ausente_na_origem_em")
+
+
 def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
     """Converte a fonte Verificar no contrato já consumido pelo frontend."""
     membros = carregar_membros()
@@ -351,6 +394,8 @@ def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
             "value": f"{len(candidates)} candidata{'s' if len(candidates) != 1 else ''}",
         })
         record["status"] = "erro"
+
+    enriquecer_candidatos_externos(records)
 
     for record in records:
         enriquecer_gerador(record, membros)
