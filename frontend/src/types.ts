@@ -90,6 +90,7 @@ export interface NoteGenerator {
   nome: string;
   uf: string;
   inspetor: boolean;
+  cadastrado: boolean;
 }
 
 export interface NoteRaw {

@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import type { Note, UrgBand, RuleKey } from '../../types';
+import type { Note, NoteGenerator, UrgBand, RuleKey } from '../../types';
 import { EDPApi, ruleMeta } from '../../api';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
@@ -35,7 +35,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const { showKpis, notes, completed, dupResolved, onToggleComplete, onMarkMany, onMarkDuplicate, onSendToCoffee } = props;
   const [q, setQ] = usePersistedState("edp_verify_q", "");
   const [uf, setUf] = usePersistedState("edp_verify_uf", "all");
-  const [gerador, setGerador] = usePersistedState("edp_verify_gerador", "all");
+  const [geradorInspetores, setGeradorInspetores] = usePersistedState<string[]>("edp_verify_gerador_insp", []);
   const [setor, setSetor] = usePersistedState("edp_verify_setor", "all");
   const [urg, setUrg] = usePersistedState("edp_verify_urg", "all");
   const [status, setStatus] = usePersistedState("edp_verify_status", "all");
@@ -52,6 +52,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
   const ufOpts = [...new Set(notes.map((n) => n.uf).filter(Boolean))].sort();
   const setorOpts = [...new Set(notes.map((n) => n.setor).filter(Boolean))].sort();
+  const inspetorOpts = React.useMemo(() => {
+    const porMatricula = new Map<string, NoteGenerator>();
+    notes.forEach((n) => { if (n.gerador?.inspetor) porMatricula.set(n.gerador.matricula, n.gerador); });
+    return [...porMatricula.values()].sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [notes]);
   const ruleStats: Record<RuleKey, number> = {};
   notes.forEach((n) => n.errors.forEach((e) => { ruleStats[e.rule] = (ruleStats[e.rule] ?? 0) + 1; }));
   const gruposNoveExtra = React.useMemo(() => detectarNoveExtra(notes), [notes]);
@@ -63,7 +68,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
       if (!terms.some((tm) => hay.includes(tm))) return false;
     }
     if (uf !== "all" && n.uf !== uf) return false;
-    if (gerador === "inspectors" && !n.gerador?.inspetor) return false;
+    if (geradorInspetores.length && !geradorInspetores.includes(n.gerador?.matricula ?? "")) return false;
     if (setor !== "all" && n.setor !== setor) return false;
     if (urg !== "all" && urgBand(n.prioridade) !== urg) return false;
     if (status !== "all" && n.status !== status) return false;
@@ -78,7 +83,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
 
   React.useEffect(() => {
     if (filtered.length && !filtered.some((n) => n.id === selId)) setSelId(filtered[0]?.id ?? null);
-  }, [q, uf, gerador, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, uf, geradorInspetores, setor, urg, status, situacao, rules]); // eslint-disable-line react-hooks/exhaustive-deps
   const sel: Note | undefined = notes.find((n) => n.id === selId) ?? filtered[0];
 
   const cTotal = notes.length;
@@ -92,13 +97,16 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   // (1 chip por nota, sem scroll). Gerenciamento de IDs é feito direto na search bar.
   const chips: Array<{ k: string; clear: () => void }> = [];
   if (uf !== "all") chips.push({ k: "UF: " + uf, clear: () => setUf("all") });
-  if (gerador === "inspectors") chips.push({ k: "Gerada por: Inspetores ES/SP", clear: () => setGerador("all") });
+  geradorInspetores.forEach((matricula) => {
+    const nome = inspetorOpts.find((i) => i.matricula === matricula)?.nome ?? matricula;
+    chips.push({ k: "Gerada por: " + nome, clear: () => setGeradorInspetores(geradorInspetores.filter((m) => m !== matricula)) });
+  });
   if (setor !== "all") chips.push({ k: "Setor: " + setor, clear: () => setSetor("all") });
   if (urg !== "all") chips.push({ k: "Urgência: " + URG[urg as UrgBand], clear: () => setUrg("all") });
   if (status !== "all") chips.push({ k: "Status: " + (status === "ok" ? "Conforme" : "Com erro"), clear: () => setStatus("all") });
   if (situacao !== "all") chips.push({ k: "Situação: " + (situacao === "done" ? "Concluídas" : "Pendentes"), clear: () => setSituacao("all") });
   rules.forEach((r) => chips.push({ k: "Bloqueio: " + ruleMeta(r).short, clear: () => { const s = new Set(rules); s.delete(r); setRules(s); } }));
-  function clearAll(): void { setQ(""); setUf("all"); setGerador("all"); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
+  function clearAll(): void { setQ(""); setUf("all"); setGeradorInspetores([]); setSetor("all"); setUrg("all"); setStatus("all"); setSituacao("all"); setRules(new Set()); }
 
   function toggleRule(r: RuleKey): void { const s = new Set(rules); if (s.has(r)) s.delete(r); else s.add(r); setRules(s); }
   function toggleBatch(id: string): void { const s = new Set(selBatch); if (s.has(id)) s.delete(id); else s.add(id); setSelBatch(s); }
@@ -152,14 +160,19 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Gerada por" accent>
-            <ToggleGroup type="single" variant="outline" size="sm" value={gerador}
-                         onValueChange={(value) => { if (value) setGerador(value); }}
-                         aria-label="Filtrar por quem gerou a nota">
-              <ToggleGroupItem value="all">Todas</ToggleGroupItem>
-              <ToggleGroupItem value="inspectors"><UserRound /> Inspetores ES/SP</ToggleGroupItem>
-            </ToggleGroup>
-          </Field>
+          {inspetorOpts.length > 0 && (
+            <Field label="Gerada por" accent>
+              <ToggleGroup type="multiple" variant="outline" size="sm" value={geradorInspetores}
+                           onValueChange={setGeradorInspetores}
+                           aria-label="Filtrar por inspetor de planejamento ES/SP">
+                {inspetorOpts.map((i) => (
+                  <ToggleGroupItem key={i.matricula} value={i.matricula}>
+                    <UserRound /> {i.nome} ({i.uf})
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </Field>
+          )}
           <Field label="Setor" accent>
             <Select value={setor} onValueChange={setSetor}>
               <SelectTrigger className="w-full">
@@ -279,7 +292,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
                     <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>
-                    {gerador === "inspectors" && n.gerador && (
+                    {geradorInspetores.length > 0 && n.gerador && (
                       <div className="text-[11px] text-text-mute whitespace-nowrap overflow-hidden text-ellipsis">
                         Gerada por {n.gerador.nome} · {n.gerador.uf}
                       </div>
