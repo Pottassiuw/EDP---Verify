@@ -54,8 +54,8 @@ e conclusão, indicando quantas notas entraram ou saíram da triagem. O filtro
 e retornadas pela Operação; as falhas de validação continuam nos bloqueios e no
 detalhe da nota.
 
-O painel de KPIs mostra encaminhamentos atuais, falhas operacionais e o total
-**Encaminhadas hoje** para todos os usuários, discriminado por usuário. O
+O painel de KPIs mostra encaminhamentos atuais, falhas operacionais, retornos
+da Operação e o total **Encaminhadas hoje** para todos os usuários, discriminado por usuário. O
 backend persiste o último encaminhamento em `coffee.db`, sem escrever na fonte
 compartilhada.
 

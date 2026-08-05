@@ -209,6 +209,7 @@ export interface KpiDrawerProps {
   cDup: number;     // notas com duplicatas
   cEncaminhadas: number; // notas atualmente encaminhadas ao COFFEE
   cFalhasOperacionais: number;
+  cRetornadas: number;
   cVisible: number; // notas visíveis no filtro atual
   encaminhadasHoje: TriageDailyForwarding[];
   selectedNotes?: Note[];

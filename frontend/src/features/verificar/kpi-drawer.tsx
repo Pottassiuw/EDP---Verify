@@ -12,6 +12,7 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
     cDup,
     cEncaminhadas,
     cFalhasOperacionais,
+    cRetornadas,
     cVisible,
     encaminhadasHoje,
     selectedNotes = [],
@@ -42,9 +43,10 @@ export function KpiDrawer(props: KpiDrawerProps): React.JSX.Element {
   }, [open]);
 
   const encaminhadasHojeTotal = encaminhadasHoje.reduce((total, item) => total + item.total, 0);
-  const rows: Array<[string, number, "red" | "indigo" | "blue" | "green"]> = [
+  const rows: Array<[string, number, "red" | "indigo" | "blue" | "green" | "accent"]> = [
     ["Falhas de validação", cErr, "red"], ["Duplicatas", cDup, "indigo"],
     ["Encaminhadas", cEncaminhadas, "green"], ["Falha operacional", cFalhasOperacionais, "red"],
+    ["Retornadas pela Operação", cRetornadas, "accent"],
     ["Visíveis (filtro atual)", cVisible, "blue"],
   ];
 

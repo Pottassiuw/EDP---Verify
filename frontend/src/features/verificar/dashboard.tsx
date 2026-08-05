@@ -118,6 +118,9 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
   const cFalhasOperacionais = notes.filter(
     (n) => encaminhamentos[n.id]?.situacao === "falha_operacional",
   ).length;
+  const cRetornadas = notes.filter(
+    (n) => encaminhamentos[n.id]?.situacao === "retornada",
+  ).length;
   const cDup = notes.filter((n) => n.duplicates.length).length;
   const pct = Math.round(cOk / cTotal * 100);
 
@@ -397,6 +400,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
       {showKpis && (
         <KpiDrawer pct={pct} cTotal={cTotal} cOk={cOk} cErr={cErr} cDup={cDup}
                    cEncaminhadas={cEncaminhadas} cFalhasOperacionais={cFalhasOperacionais}
+                   cRetornadas={cRetornadas}
                    cVisible={filtered.length} encaminhadasHoje={encaminhadasHoje}
                    selectedNotes={notes.filter((n) => selBatch.has(n.id))}
                    onRemoveSelected={(id) => toggleBatch(id)} />
