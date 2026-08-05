@@ -61,10 +61,13 @@ adiante por `coffee-verificar.tsx`, que decide entre renderizar
   `useState`/`useMemo`/`usePersistedState`. O filtro persistido `Gerada por`
   (`edp_verify_gerador_insp`) guarda as matrículas de inspetor selecionadas;
   as opções do multi-select são derivadas das notas do lote atual
-  (`inspetorOpts`, mesmo padrão de `ufOpts`/`setorOpts`). A fila sempre
+  (`inspetorOpts`): diferente de `ufOpts`/`setorOpts` (simples arrays de strings),
+  `inspetorOpts` é um `Map<matrícula, NoteGenerator>` que filtra apenas inspetores
+  com `n.gerador?.inspetor` verdadeiro e ordena por nome. A fila sempre
   informa nome e UF de quem gerou cada nota — não só quando o filtro de
   inspetor está ativo — e o detalhe mostra nome e matrícula; em ambos, uma
-  matrícula sem registro no De-Para aparece com o sufixo "não cadastrada".
+  matrícula sem registro no De-Para recebe um indicador not-cadastrado (fila: 
+  "(matrícula não cadastrada)", detalhe: "(não cadastrado)").
   Ações do usuário (concluir,
   marcar duplicata, enviar ao COFFEE) sobem via callbacks
   (`onToggleComplete`, `onMarkMany`, `onMarkDuplicate`, `onSendToCoffee`)
