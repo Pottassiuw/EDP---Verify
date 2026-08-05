@@ -4,6 +4,7 @@ import { EDPApi } from '../../api';
 import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Coffee } from 'lucide-react';
+import { ExternalCandidateCard } from './duplicate-compare-externa';
 
 const DUPC_STYLE = `
   .dupc-card{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
@@ -153,16 +154,7 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
                 ))}
               </div>
             ) : (
-              <div className="py-[14px] px-[16px]">
-                <div className="dupc-ext">
-                  <span className="text-[16px] shrink-0 leading-none">⧉</span>
-                  <div>
-                    <strong className="text-text">Nota fora desta planilha</strong><br />
-                    Verifique os campos direto no COFFEE. A comparação automática ficará disponível
-                    após a integração com o BI.
-                  </div>
-                </div>
-              </div>
+              <ExternalCandidateCard note={note} candidate={c} />
             )}
           </div>
         );
