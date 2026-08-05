@@ -29,6 +29,9 @@ const DUPC_STYLE = `
   .dupc-ext{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;
     background:var(--tint-amber);border:1px solid rgba(240,169,59,.25);
     border-radius:var(--r-sm);font-size:12.5px;color:var(--text-dim);line-height:1.5}
+  .dupc-warn{display:flex;align-items:center;gap:8px;padding:8px 14px;
+    background:var(--tint-amber);border-bottom:1px solid rgba(240,169,59,.25);
+    font-size:12px;color:var(--text-dim)}
 `;
 
 interface KeyFieldDef { key: DuplicateField; label: string; }
@@ -45,31 +48,31 @@ const DUPC_CTX: CtxFieldDef[] = [
   { label: "Setor · UF",   get: (x) => x.setor + " · " + x.uf },
 ];
 
-const dupcNorm = (s: string): string => String(s ?? "").trim().toLowerCase();
-const dupcEq = (a: string, b: string): boolean => dupcNorm(a) !== "" && dupcNorm(a) === dupcNorm(b);
+export const dupcNorm = (s: string): string => String(s ?? "").trim().toLowerCase();
+export const dupcEq = (a: string, b: string): boolean => dupcNorm(a) !== "" && dupcNorm(a) === dupcNorm(b);
+
+export function CompareRow({ label, open, cand, keyField }: {
+  label: string; open: string; cand: string; keyField: boolean;
+}): React.JSX.Element {
+  const same = keyField ? dupcEq(open, cand) : false;
+  const cls = keyField ? (same ? " same" : " diff") : "";
+  return (
+    <React.Fragment>
+      <div className="dupc-lbl">{label}</div>
+      <div className="dupc-val">{open || "—"}</div>
+      <div className={"dupc-val" + cls}>
+        {keyField && <span className={"dupc-mk" + (same ? " same" : " diff")}>{same ? "✓" : "≠"}</span>}
+        {cand || "—"}
+      </div>
+    </React.Fragment>
+  );
+}
 
 export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolved, onMarkDuplicate, onSendToCoffee }) => {
   const cands = note.duplicates;
   if (!cands.length) return null;
   const api = EDPApi;
   const allIds = cands.map((c) => c.id);
-
-  function CompareRow({ label, open, cand, keyField }: {
-    label: string; open: string; cand: string; keyField: boolean;
-  }): React.JSX.Element {
-    const same = keyField ? dupcEq(open, cand) : false;
-    const cls = keyField ? (same ? " same" : " diff") : "";
-    return (
-      <React.Fragment>
-        <div className="dupc-lbl">{label}</div>
-        <div className="dupc-val">{open || "—"}</div>
-        <div className={"dupc-val" + cls}>
-          {keyField && <span className={"dupc-mk" + (same ? " same" : " diff")}>{same ? "✓" : "≠"}</span>}
-          {cand || "—"}
-        </div>
-      </React.Fragment>
-    );
-  }
 
   return (
     <section>
