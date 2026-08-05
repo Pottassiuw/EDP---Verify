@@ -1,7 +1,8 @@
 """Testes do módulo Input (backend)."""
+import io
 import os
 import tempfile
-import io
+from pathlib import Path
 
 # Blindagem global: impede que a execução de testes afete o banco de dados real
 _tmp_test_dir = tempfile.mkdtemp(prefix="edp_input_test_")
@@ -1064,6 +1065,26 @@ def test_postergadas_schema_e_helpers(banco_temporario):
 
 
 # ── Task 2: Sincronização de Metas do Controle Plano de Recomposição ───────
+def test_caminho_controle_recomposicao_usa_usuario_da_maquina(monkeypatch):
+    from input_module import config
+
+    monkeypatch.delenv("CONTROLE_RECOMPOSICAO_PATH", raising=False)
+    monkeypatch.setenv("USER", "usuario-sharepoint")
+    monkeypatch.setenv("USERNAME", "outro-usuario")
+
+    esperado = (
+        Path("C:/Users")
+        / "usuario-sharepoint"
+        / "EDP"
+        / "O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
+        / "PLANO RECOMPOSIÇÃO"
+        / "SP"
+        / "2026"
+        / "Controle Plano de Recomposição 2026.xlsx"
+    )
+    assert config.caminho_controle_recomposicao() == esperado
+
+
 def _xlsx_controle(caminho, meta_jan=17.0, com_postergadas=True):
     """Planilha sintética mínima com abas base, dexpara e (opcional) Postergadas."""
     import gc

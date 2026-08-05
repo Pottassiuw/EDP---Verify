@@ -447,15 +447,22 @@ deles — só quem for rodar a extração local precisa instalá-las.
 ## Metas — sync do Controle Plano de Recomposição
 
 `input_module/metas.py` implementa a sincronização automática das metas
-do Plano de Recomposição a partir de um Excel (OneDrive sincronizado)
-que vive fora do repositório. O Excel é a fonte de verdade; o app apenas
-espelha seus dados no SQLite local.
+do Plano de Recomposição a partir da cópia local de um Excel hospedado no
+SharePoint. O Excel é a fonte de verdade; o app apenas espelha seus dados
+no SQLite local.
 
 ### Caminho e configuração
 
-A planilha é definida por `config.caminho_controle_recomposicao()`, que
-aponta por padrão para uma máquina específica (o usuário que hospeda o
-servidor hoje) mas pode ser sobrescrito via variável de ambiente:
+A planilha é definida por `config.caminho_controle_recomposicao()`. Por
+padrão, ela aponta para a pasta SharePoint sincronizada em cada máquina:
+
+```text
+C:\Users\<USER>\EDP\O365_Planejamento_Manutencao_EDP_Brasil - Documentos\PLANO RECOMPOSIÇÃO\SP\2026\Controle Plano de Recomposição 2026.xlsx
+```
+
+O nome do perfil vem de `USER`. Em Windows, quando essa variável não existe,
+o código usa `USERNAME` e depois o nome de `Path.home()`. Uma configuração
+explícita continua vencendo todos os defaults:
 
 ```python
 CONTROLE_RECOMPOSICAO_PATH=/caminho/alternativo/Controle.xlsx
