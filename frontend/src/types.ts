@@ -153,7 +153,7 @@ export interface TriageSourceInfo {
   atualizado_em: string | null;
 }
 
-export type TriageSituation = 'encaminhada' | 'falha_operacional';
+export type TriageSituation = 'encaminhada' | 'falha_operacional' | 'retornada';
 
 export interface TriageForwarding {
   situacao: TriageSituation;
@@ -161,6 +161,9 @@ export interface TriageForwarding {
   erro: string | null;
   encaminhada_em: string | null;
   encaminhada_por: string | null;
+  retornada_em: string | null;
+  retornada_por: string | null;
+  retorno_justificativa: string | null;
 }
 
 export interface TriageDailyForwarding {

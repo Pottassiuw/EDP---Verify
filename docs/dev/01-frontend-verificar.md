@@ -33,7 +33,9 @@ arquivo, a `schema_version` SQLite e a data de modificação; `user_version` nã
    são assumidos como iguais.
 3. Enquanto estiver em tratamento, a nota recebe o estado **Encaminhada**.
    Uma falha registrada pela fila operacional é exposta como **Falha operacional**,
-   sem confundi-la com as falhas de validação da fonte.
+   sem confundi-la com as falhas de validação da fonte. Se for removida da
+   Operação com justificativa, volta à triagem como **Retornada pela Operação**;
+   a justificativa e o usuário ficam visíveis no detalhe.
 4. Com SAP real, a transição a classifica como `corrigida`, registra data/hora
    e usuário da conclusão e a remove da triagem.
 5. Ela fica em **COFFEE > Concluídas > Corrigidas**.
@@ -48,8 +50,9 @@ antes dizia “Concluir” agora é **Encaminhar**; “concluída” fica reserv
 resultado real no SAP. `source-screen.tsx` representa carregamento ou
 indisponibilidade da fonte. O botão **Atualizar** exibe Sonner de carregamento
 e conclusão, indicando quantas notas entraram ou saíram da triagem. O filtro
-**Situação** separa notas não encaminhadas, encaminhadas e com falha operacional;
-as falhas de validação continuam nos bloqueios e no detalhe da nota.
+**Situação** separa notas não encaminhadas, encaminhadas, com falha operacional
+e retornadas pela Operação; as falhas de validação continuam nos bloqueios e no
+detalhe da nota.
 
 O painel de KPIs mostra encaminhamentos atuais, falhas operacionais e o total
 **Encaminhadas hoje** para todos os usuários, discriminado por usuário. O

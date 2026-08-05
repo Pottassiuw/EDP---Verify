@@ -48,6 +48,7 @@ _COLUNAS = ["pk", "id_sap", "id_sap_anterior", "arquivado",
             "classificacao", "dados_json", "buscado_em", "erro", "a_gerar", "origem",
             "classificacao_em", "usuario", "verificar_id", "verificar_ativa",
             "verificar_em", "verificar_por", "encaminhada_em", "encaminhada_por",
+            "retornada_em", "retornada_por", "retorno_justificativa",
             "corrigida_em", "corrigida_por"]
 
 
@@ -109,6 +110,12 @@ def inicializar_banco() -> None:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN encaminhada_em TEXT")
     if "encaminhada_por" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN encaminhada_por TEXT")
+    if "retornada_em" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN retornada_em TEXT")
+    if "retornada_por" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN retornada_por TEXT")
+    if "retorno_justificativa" not in cols_notas:
+        conn.execute("ALTER TABLE notas_coffee ADD COLUMN retorno_justificativa TEXT")
     if "corrigida_em" not in cols_notas:
         conn.execute("ALTER TABLE notas_coffee ADD COLUMN corrigida_em TEXT")
     if "corrigida_por" not in cols_notas:
@@ -533,7 +540,9 @@ def registrar_origem_verificar(pk: int, verificar_id: int) -> None:
         SET origem = 'verificar', verificar_id = ?, verificar_ativa = 1,
             verificar_em = COALESCE(verificar_em, ?),
             verificar_por = COALESCE(verificar_por, ?),
-            encaminhada_em = ?, encaminhada_por = ?
+            encaminhada_em = ?, encaminhada_por = ?,
+            retornada_em = NULL, retornada_por = NULL,
+            retorno_justificativa = NULL
         WHERE pk = ?
         """,
         (verificar_id, agora, _usuario_atual(), agora, _usuario_atual(), pk),
@@ -564,17 +573,35 @@ def desativar_verificar_por_pk(pk: int) -> None:
     conn.close()
 
 
+def registrar_retorno_verificar(pk: int, justificativa: str) -> None:
+    """Registra o retorno justificado da Operação para a triagem."""
+    conn = get_db_connection()
+    conn.execute(
+        """
+        UPDATE notas_coffee
+        SET verificar_ativa = 0, retornada_em = ?, retornada_por = ?,
+            retorno_justificativa = ?
+        WHERE pk = ? AND origem = 'verificar'
+        """,
+        (datetime.datetime.now().isoformat(), _usuario_atual(), justificativa, pk),
+    )
+    conn.commit()
+    conn.close()
+
+
 def resumo_triagem_verificar() -> dict:
     """Retorna o estado operacional e os encaminhamentos de Verificar no dia."""
     conn = get_db_connection()
     try:
         ativos = conn.execute(
             """
-            SELECT n.verificar_id, n.encaminhada_em, n.encaminhada_por,
-                   f.etapa, f.erro
+            SELECT n.verificar_id, n.verificar_ativa, n.encaminhada_em,
+                   n.encaminhada_por, n.retornada_em, n.retornada_por,
+                   n.retorno_justificativa, f.etapa, f.erro
             FROM notas_coffee n
             LEFT JOIN coffee_fila_operacao f ON f.nota_pk = n.pk
-            WHERE n.verificar_ativa = 1 AND n.verificar_id IS NOT NULL
+            WHERE n.verificar_id IS NOT NULL
+              AND (n.verificar_ativa = 1 OR n.retorno_justificativa IS NOT NULL)
             """
         ).fetchall()
         hoje = conn.execute(
@@ -594,13 +621,29 @@ def resumo_triagem_verificar() -> dict:
 
     encaminhamentos = {
         str(verificar_id): {
-            "situacao": "falha_operacional" if erro else "encaminhada",
+            "situacao": (
+                "retornada" if not verificar_ativa
+                else "falha_operacional" if erro else "encaminhada"
+            ),
             "etapa": etapa,
             "erro": erro,
             "encaminhada_em": encaminhada_em,
             "encaminhada_por": encaminhada_por,
+            "retornada_em": retornada_em,
+            "retornada_por": retornada_por,
+            "retorno_justificativa": retorno_justificativa,
         }
-        for verificar_id, encaminhada_em, encaminhada_por, etapa, erro in ativos
+        for (
+            verificar_id,
+            verificar_ativa,
+            encaminhada_em,
+            encaminhada_por,
+            retornada_em,
+            retornada_por,
+            retorno_justificativa,
+            etapa,
+            erro,
+        ) in ativos
     }
     return {
         "encaminhamentos": encaminhamentos,

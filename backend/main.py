@@ -415,7 +415,10 @@ def get_data():
         resumo_triagem = _coffee_db.resumo_triagem_verificar()
         encaminhamentos = resumo_triagem["encaminhamentos"]
         encaminhadas_hoje = resumo_triagem["encaminhadas_hoje"]
-        completed = set(encaminhamentos)
+        completed = {
+            identificar for identificar, estado in encaminhamentos.items()
+            if estado["situacao"] != "retornada"
+        }
 
     rule_stats = {}
     uf_set = set()

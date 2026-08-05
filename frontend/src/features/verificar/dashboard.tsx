@@ -97,6 +97,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
     if (situacaoAtual === "nao_encaminhada" && encaminhamento) return false;
     if (situacaoAtual === "encaminhada" && encaminhamento?.situacao !== "encaminhada") return false;
     if (situacaoAtual === "falha_operacional" && encaminhamento?.situacao !== "falha_operacional") return false;
+    if (situacaoAtual === "retornada" && encaminhamento?.situacao !== "retornada") return false;
     if (rules.size && !n.errors.some((e) => rules.has(e.rule))) return false;
     return true;
   }
@@ -136,6 +137,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
       nao_encaminhada: "Não encaminhadas",
       encaminhada: "Encaminhadas",
       falha_operacional: "Falha operacional",
+      retornada: "Retornadas pela Operação",
     };
     chips.push({ k: "Situação: " + situacoes[situacaoAtual], clear: () => setSituacao("all") });
   }
@@ -255,6 +257,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                 <SelectItem value="nao_encaminhada">Não encaminhadas</SelectItem>
                 <SelectItem value="encaminhada">Encaminhadas</SelectItem>
                 <SelectItem value="falha_operacional">Falha operacional</SelectItem>
+                <SelectItem value="retornada">Retornadas pela Operação</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -467,6 +470,18 @@ function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate,
       </div>
       <div className="flex-1 overflow-auto flex flex-col gap-[22px] p-[24px]">
         {hasDup && <DuplicateCompare note={sel} resolved={dup} onMarkDuplicate={onMarkDuplicate} onSendToCoffee={onSendToCoffee} />}
+
+        {encaminhamento?.situacao === "retornada" && (
+          <section className="bg-[var(--accent-tint)] rounded-app-sm py-[12px] px-[14px]" style={{ borderLeft: "3px solid var(--accent)" }}>
+            <Eyebrow asChild><div className="text-[var(--accent)] mb-[4px]">Retorno da Operação</div></Eyebrow>
+            <div className="text-[14px] text-text font-medium">{encaminhamento.retorno_justificativa}</div>
+            {encaminhamento.retornada_por && (
+              <div className="font-mono text-[11px] text-text-dim mt-[5px]">
+                Registrado por {encaminhamento.retornada_por}
+              </div>
+            )}
+          </section>
+        )}
 
         <section>
           <Eyebrow asChild><div className="mb-[11px]">

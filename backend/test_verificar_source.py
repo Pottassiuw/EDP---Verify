@@ -107,6 +107,33 @@ def test_resumo_triagem_separa_encaminhadas_de_falhas_e_usuarios_do_dia(
         coffee_db.definir_usuario(None)
 
 
+def test_retorno_da_operacao_mantem_justificativa_ate_novo_encaminhamento(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setenv("COFFEE_DATA_DIR", str(tmp_path))
+    coffee_db.inicializar_banco()
+    try:
+        coffee_db.definir_usuario("ana")
+        coffee_db.upsert_nota(900001, config.SAP_PENDENTE, {"id": 900001})
+        coffee_db.registrar_origem_verificar(900001, 123456)
+        coffee_db.definir_usuario("bruno")
+        coffee_db.registrar_retorno_verificar(900001, "Dados insuficientes.")
+
+        retorno = coffee_db.resumo_triagem_verificar()["encaminhamentos"]["123456"]
+
+        assert retorno["situacao"] == "retornada"
+        assert retorno["retorno_justificativa"] == "Dados insuficientes."
+        assert retorno["retornada_por"] == "bruno"
+
+        coffee_db.registrar_origem_verificar(900001, 123456)
+        novo_encaminhamento = coffee_db.resumo_triagem_verificar()["encaminhamentos"]["123456"]
+        assert novo_encaminhamento["situacao"] == "encaminhada"
+        assert novo_encaminhamento["retorno_justificativa"] is None
+    finally:
+        coffee_db.definir_usuario(None)
+
+
 def test_rastreia_chave_da_fonte_mesmo_quando_pk_coffee_e_diferente(
     tmp_path,
     monkeypatch,

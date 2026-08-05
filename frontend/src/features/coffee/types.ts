@@ -14,6 +14,11 @@ export interface CoffeeNota {
   verificar_ativa?: boolean;
   verificar_em?: string | null;
   verificar_por?: string | null;
+  encaminhada_em?: string | null;
+  encaminhada_por?: string | null;
+  retornada_em?: string | null;
+  retornada_por?: string | null;
+  retorno_justificativa?: string | null;
   corrigida_em?: string | null;
   corrigida_por?: string | null;
 }

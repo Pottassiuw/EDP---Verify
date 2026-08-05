@@ -47,6 +47,13 @@ export const StatusTag: React.FC<{
         Duplicata
       </Badge>
     );
+  if (encaminhamento?.situacao === "retornada")
+    return (
+      <Badge variant="tagDone" style={{ backgroundColor: "var(--accent-tint)", color: "var(--accent)" }}>
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
+        Retornada
+      </Badge>
+    );
   if (encaminhamento?.situacao === "falha_operacional")
     return (
       <Badge variant="tagErr" title={encaminhamento.erro ?? "Falha operacional"}>

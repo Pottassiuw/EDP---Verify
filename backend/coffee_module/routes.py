@@ -307,7 +307,7 @@ def remover_operacao(pedido: OperacaoRemoverPedido):
     for pk in ids:
         db.remover_item_operacao(pk)
         db.marcar_gerar(pk, False)
-        db.desativar_verificar_por_pk(pk)
+        db.registrar_retorno_verificar(pk, justificativa)
         db.registrar_log(
             "acao_usuario",
             "remover_fila_operacao",

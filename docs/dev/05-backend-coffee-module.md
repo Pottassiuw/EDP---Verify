@@ -114,10 +114,11 @@ tabelas criadas/migradas em `inicializar_banco()`:
   `origem` (`"avulsa"` | `"verificar"` | `NULL`), `classificacao_em` e a
   rastreabilidade da triagem: `verificar_id` (não assume que o ID da fonte é o
   PK COFFEE), `verificar_ativa`, `verificar_em`/`verificar_por`, o último
-  encaminhamento `encaminhada_em`/`encaminhada_por` e
+  encaminhamento `encaminhada_em`/`encaminhada_por`, o retorno justificado da
+  Operação (`retornada_em`/`retornada_por`/`retorno_justificativa`) e
   `corrigida_em`/`corrigida_por`. `resumo_triagem_verificar()` cruza essa
-  origem com a fila operacional para expor encaminhadas, falhas operacionais
-  e o total diário separado por usuário. Os timestamps são preservados entre
+  origem com a fila operacional para expor encaminhadas, falhas operacionais,
+  retornadas e o total diário separado por usuário. Os timestamps são preservados entre
   re-buscas que não mudam a classe.
 - **`coffee_logs`** — log de auditoria (`api_call` / `acao_usuario` /
   `transicao`), com `usuario` (best-effort via `getpass.getuser()`, nunca

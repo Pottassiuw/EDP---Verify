@@ -82,8 +82,8 @@ describe('Dashboard — filtro por inspetor', () => {
     const html = renderToStaticMarkup(
       <Dashboard showKpis={false} notes={notes} completed={new Set(['100', '200'])}
                  encaminhamentos={{
-                   '100': { situacao: 'encaminhada', etapa: 'pronta', erro: null, encaminhada_em: null, encaminhada_por: 'ana' },
-                   '200': { situacao: 'falha_operacional', etapa: 'pronta', erro: 'timeout', encaminhada_em: null, encaminhada_por: 'bruno' },
+                   '100': { situacao: 'encaminhada', etapa: 'pronta', erro: null, encaminhada_em: null, encaminhada_por: 'ana', retornada_em: null, retornada_por: null, retorno_justificativa: null },
+                   '200': { situacao: 'falha_operacional', etapa: 'pronta', erro: 'timeout', encaminhada_em: null, encaminhada_por: 'bruno', retornada_em: null, retornada_por: null, retorno_justificativa: null },
                  }} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
