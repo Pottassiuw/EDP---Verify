@@ -904,7 +904,10 @@ def test_marcar_gerar_desmarca_pk_resolvido_nao_o_id(coffee_cliente, monkeypatch
     r = coffee_cliente.post("/api/coffee/marcar-gerar", json={"id": 999, "a_gerar": True})
     assert r.status_code == 200
     assert db.listar_notas("a_gerar") == []
-    assert db.obter_nota(355617)["a_gerar"] is False
+    nota = db.obter_nota(355617)
+    assert nota["a_gerar"] is False
+    assert nota["verificar_id"] == 999
+    assert nota["verificar_ativa"] is True
 
 
 def test_marcar_gerar_grava_origem_verificar(coffee_cliente, monkeypatch):

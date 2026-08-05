@@ -71,8 +71,9 @@ desenvolvimento. Variáveis em `backend/.env.example`, detalhes em
 ## Hub COFFEE
 
 O fluxo de COFFEE é dividido em **Verificar**, **Abrir**, **Operação**,
-**Concluídas** e **Logs**. Verificar encaminha as notas selecionadas à fila
-persistida de Operação, exibida como Kanban (Fila, Prontas para gerar,
+**Concluídas** e **Logs**. Verificar lê o `Verificar.db` compartilhado em modo
+somente leitura e encaminha as notas selecionadas à fila persistida de
+Operação, exibida como Kanban (Fila, Prontas para gerar,
 Processando e Aguardando SAP). Concluídas é o histórico separado: notas
 geradas podem ser arquivadas e somente notas corrigidas podem ser movidas para
 o plano.
@@ -82,8 +83,9 @@ o plano.
 | Ação                  | Requisição                     | Retorno |
 |-----------------------|--------------------------------|---------|
 | Carregar dados        | `GET  /api/data`               | `{ records, completed, rule_stats, … }` |
-| Importar planilha     | `POST /api/upload` (multipart) | `{ status, total }` |
-| Concluir / reabrir    | `POST /api/complete/{id}`      | `{ status, completed }` (toggle) |
+| Triagem SQLite        | `GET /api/data`                | Lê `ids_verificacao` de `Verificar.db` |
+| Importar planilha     | `POST /api/upload` (multipart) | Compatibilidade/testes; não é usado pela interface |
+| Encaminhar / retirar  | `POST /api/coffee/marcar-gerar` | Controla a fila COFFEE e a rastreabilidade |
 | Marcar como duplicata | `POST /api/duplicata/{id}`     | `{ status }` |
 
 ## Módulo Input (Gestão de Notas)

@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 
 from coffee_module import db as _coffee_db
+from verificar_module.source import FonteVerificarIndisponivelErro, carregar_registros
 
 app = FastAPI(title="De olho no Problema")
 
@@ -210,7 +211,8 @@ def load_state():
         )
 
 
-load_state()
+# A triagem agora vem do Verificar.db. O estado em JSON é mantido apenas para
+# compatibilidade do endpoint legado de upload e não é restaurado no startup.
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -271,6 +273,85 @@ def enrich_candidate(cand: dict, source: dict) -> dict:
     }
 
 
+def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
+    """Converte a fonte Verificar no contrato já consumido pelo frontend."""
+    membros = carregar_membros()
+    chk_cols = [
+        coluna for coluna in df.columns
+        if re.match(r"^chk_", str(coluna).strip(), re.IGNORECASE)
+        and str(coluna).strip().lower() not in _IGNORED_CHK
+    ]
+    records = []
+
+    for _, row in df.iterrows():
+        errors = []
+        for coluna in chk_cols:
+            valor = str(row[coluna]).strip().lower()
+            if valor and valor not in ["ok", "nan", "none", ""]:
+                errors.append({
+                    "rule": coluna,
+                    "rule_name": coluna.replace("chk_", "").replace("_", " ").title(),
+                    "value": str(row[coluna]),
+                })
+
+        prioridade_raw = row.get("prioridade")
+        try:
+            prioridade = int(prioridade_raw) if pd.notna(prioridade_raw) else 99
+        except (TypeError, ValueError):
+            prioridade = 99
+
+        problema_parts = [
+            extract_str(row, "componente"),
+            extract_str(row, "sintoma"),
+            extract_str(row, "causa"),
+        ]
+        records.append({
+            "id": str(row.get("id", "")).strip(),
+            "prioridade": prioridade,
+            "tipo_nota": str(row.get("tipo_nota", "-")),
+            "referencia": str(
+                row.get("referencia_fisica") or row.get("referencia_eletrica") or "-"
+            ).strip(),
+            "uf": extract_str(row, "uf"),
+            "setor": extract_str(row, "setor", "REGIAO"),
+            "latitude": parse_coord(row.get("latitude")),
+            "longitude": parse_coord(row.get("longitude")),
+            "precisao": extract_str(row, "precisao"),
+            "poste": extract_str(row, "postes", "poste"),
+            "problema": " · ".join(parte for parte in problema_parts if parte) or None,
+            "errors": errors,
+            "status": "erro" if errors else "ok",
+            "_dup_raw": str(row.get("chk_duplicada", "") or "").strip(),
+            "raw": {
+                str(chave): str(valor) if pd.notna(valor) else "-"
+                for chave, valor in row.items() if str(chave) in _RAW_UTEIS
+            },
+        })
+
+    ids = {record["id"] for record in records}
+    por_id = {record["id"]: record for record in records}
+    for record in records:
+        candidates = parse_duplicate_ids(record.pop("_dup_raw", ""), record["id"], ids)
+        if not candidates:
+            record["duplicates"] = []
+            continue
+        record["duplicates"] = [
+            enrich_candidate(candidate, por_id[candidate["id"]])
+            if candidate["in_sheet"] else candidate
+            for candidate in candidates
+        ]
+        record["errors"].append({
+            "rule": "chk_duplicata",
+            "rule_name": "Duplicata",
+            "value": f"{len(candidates)} candidata{'s' if len(candidates) != 1 else ''}",
+        })
+        record["status"] = "erro"
+
+    for record in records:
+        enriquecer_gerador(record, membros)
+    return records
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
@@ -293,126 +374,42 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Erro ao ler arquivo: {e}")
 
     try:
-        membros = carregar_membros()
+        RECORDS = montar_registros_triagem(df)
     except (FileNotFoundError, ValueError, OSError) as erro:
-        raise HTTPException(status_code=500, detail=f"Não foi possível identificar quem gerou as notas: {erro}")
-
-    chk_cols = [
-        c for c in df.columns
-        if re.match(r"^chk_", str(c).strip(), re.IGNORECASE)
-        and str(c).strip().lower() not in _IGNORED_CHK
-    ]
-
-    # ── Pass 1: build records ─────────────────────────────────────────────
-    records = []
-
-    for _, row in df.iterrows():
-        errors = []
-
-        for col in chk_cols:
-            val = str(row[col]).strip().lower()
-            if val and val not in ["ok", "nan", "none", ""]:
-                errors.append(
-                    {
-                        "rule": col,
-                        "rule_name": (
-                            col.replace("chk_", "").replace("_", " ").title()
-                        ),
-                        "value": str(row[col]),
-                    }
-                )
-
-        prioridade_raw = row.get("prioridade")
-        try:
-            prioridade = int(prioridade_raw) if pd.notna(prioridade_raw) else 99
-        except Exception:
-            prioridade = 99
-
-        referencia = str(
-            row.get("referencia_fisica") or row.get("referencia_eletrica") or "-"
-        ).strip()
-
-        precisao_raw = row.get("precisao")
-        precisao = (
-            str(precisao_raw).strip()
-            if pd.notna(precisao_raw) and str(precisao_raw).strip()
-            else None
-        )
-
-        problema_parts = [
-            extract_str(row, "componente"),
-            extract_str(row, "sintoma"),
-            extract_str(row, "causa"),
-        ]
-        problema = " · ".join(p for p in problema_parts if p) or None
-
-        records.append(
-            {
-                "id":         str(row.get("id", "")).strip(),
-                "prioridade": prioridade,
-                "tipo_nota":  str(row.get("tipo_nota", "-")),
-                "referencia": referencia,
-                "uf":         extract_str(row, "uf"),
-                "setor":      extract_str(row, "setor"),
-                "latitude":   parse_coord(row.get("latitude")),
-                "longitude":  parse_coord(row.get("longitude")),
-                "precisao":   precisao,
-                "poste":      extract_str(row, "postes", "poste"),
-                "problema":   problema,
-                "errors":     errors,
-                "status":     "erro" if errors else "ok",
-                "_dup_raw":   str(row.get("chk_duplicada", "") or "").strip(),
-                "raw":        {str(k): str(v) if pd.notna(v) else "-"
-                               for k, v in row.items() if str(k) in _RAW_UTEIS},
-            }
-        )
-
-    # ── Pass 2: resolve duplicates ────────────────────────────────────────
-    id_set = {r["id"] for r in records}
-    id_map = {r["id"]: r for r in records}
-
-    for rec in records:
-        dup_raw = rec.pop("_dup_raw", "")
-        cands = parse_duplicate_ids(dup_raw, rec["id"], id_set)
-
-        if not cands:
-            rec["duplicates"] = []
-            continue
-
-        enriched = []
-        for c in cands:
-            if c["in_sheet"]:
-                enriched.append(enrich_candidate(c, id_map[c["id"]]))
-            else:
-                enriched.append(c)
-
-        rec["duplicates"] = enriched
-        rec["errors"].append(
-            {
-                "rule":      "chk_duplicata",
-                "rule_name": "Duplicata",
-                "value":     f"{len(cands)} candidata{'s' if len(cands) != 1 else ''}",
-            }
-        )
-        rec["status"] = "erro"
-
-    for registro in records:
-        enriquecer_gerador(registro, membros)
-
-    RECORDS = records
+        raise HTTPException(
+            status_code=500,
+            detail=f"Não foi possível identificar quem gerou as notas: {erro}",
+        ) from erro
     COMPLETED = set()
     save_state()
 
-    return {"status": "ok", "total": len(records)}
+    return {"status": "ok", "total": len(RECORDS)}
 
 
 @app.get("/api/data")
 def get_data():
+    completed = COMPLETED
+    if RECORDS:
+        records = RECORDS
+    else:
+        try:
+            records = montar_registros_triagem(carregar_registros())
+        except FonteVerificarIndisponivelErro as erro:
+            raise HTTPException(status_code=503, detail=str(erro)) from erro
+        except (FileNotFoundError, ValueError, OSError) as erro:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Não foi possível preparar a triagem: {erro}",
+            ) from erro
+        corrigidos = _coffee_db.ids_verificar_corrigidos()
+        records = [record for record in records if record["id"] not in corrigidos]
+        completed = _coffee_db.ids_verificar_em_correcao()
+
     rule_stats = {}
     uf_set = set()
     setor_set = set()
 
-    for r in RECORDS:
+    for r in records:
         for e in r["errors"]:
             rule_stats[e["rule"]] = rule_stats.get(e["rule"], 0) + 1
         if r["uf"]:
@@ -421,8 +418,8 @@ def get_data():
             setor_set.add(r["setor"])
 
     return {
-        "records": RECORDS,
-        "completed": list(COMPLETED),
+        "records": records,
+        "completed": list(completed),
         "rule_stats": rule_stats,
         "uf_options": sorted(uf_set),
         "setor_options": sorted(setor_set),

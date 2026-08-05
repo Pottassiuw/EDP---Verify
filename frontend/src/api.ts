@@ -8,7 +8,6 @@ import type {
   NoteRaw,
   NoteStatus,
   DuplicateCandidate,
-  UploadResult,
   ToggleResult,
   DuplicateResult,
 } from "./types";
@@ -181,17 +180,6 @@ async function erroComDetail(res: Response, fallback: string): Promise<Error> {
   return new Error(e.detail ?? (fallback + " -> " + res.status));
 }
 
-export async function upload(file: File): Promise<UploadResult> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await fetch(BASE + "/upload", { method: "POST", body: fd });
-  if (!res.ok) {
-    const e = (await res.json().catch(() => ({}))) as { detail?: string };
-    throw new Error(e.detail ?? "POST /upload -> " + res.status);
-  }
-  return res.json() as Promise<UploadResult>;
-}
-
 export async function toggleComplete(id: string): Promise<ToggleResult> {
   const res = await fetch(BASE + "/complete/" + encodeURIComponent(id), {
     method: "POST",
@@ -304,7 +292,6 @@ export async function resumoForaDoPlano(): Promise<{ corrigidas_fora_do_plano: n
 export const EDPApi = {
   BASE,
   fetchData,
-  upload,
   toggleComplete,
   markDuplicate,
   marcarGerar,

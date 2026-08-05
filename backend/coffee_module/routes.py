@@ -277,13 +277,17 @@ def gerar_operacao(pedido: OperacaoIdsPedido):
 
 
 @router.post("/operacao/atualizar-sap")
-def atualizar_sap_operacao(pedido: OperacaoIdsPedido):
+def atualizar_sap_operacao(
+    pedido: OperacaoIdsPedido,
+    usuario: Optional[str] = Depends(usuario_coffee),
+):
     _garantir_banco()
     ids = _validar_ids(pedido.ids)
     try:
         job_id = jobs.iniciar_atualizacao_sap(
             ids,
             trace=db.trace_atual(),
+            usuario=usuario,
         )
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -303,6 +307,7 @@ def remover_operacao(pedido: OperacaoRemoverPedido):
     for pk in ids:
         db.remover_item_operacao(pk)
         db.marcar_gerar(pk, False)
+        db.desativar_verificar_por_pk(pk)
         db.registrar_log(
             "acao_usuario",
             "remover_fila_operacao",
@@ -369,7 +374,7 @@ def marcar_gerar(pedido: MarcarGerarPedido):
                               "justificativa": pedido.justificativa}, False)
             raise HTTPException(status_code=502,
                                 detail="Nao foi possivel buscar a nota na API COFFEE.")
-        db.definir_origem(pk, "verificar")
+        db.registrar_origem_verificar(pk, pedido.id)
         etapa = operation_service.etapa_da_classificacao(classificacao)
         if etapa is None:
             db.remover_item_operacao(pk)
@@ -385,6 +390,7 @@ def marcar_gerar(pedido: MarcarGerarPedido):
     else:
         db.remover_item_operacao(pk)
         db.marcar_gerar(pk, False)
+        db.desativar_verificar(pedido.id)
     db.registrar_log("acao_usuario", "marcar_gerar", pk,
                      {"id": pedido.id, "a_gerar": pedido.a_gerar,
                       "justificativa": pedido.justificativa}, True)

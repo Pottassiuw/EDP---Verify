@@ -152,10 +152,6 @@ export interface FetchResult {
   completed: Set<string>;
   source: Source;
 }
-export interface UploadResult {
-  status: string;
-  total: number;
-}
 export interface ToggleResult {
   status: string;
   completed: boolean;
@@ -170,10 +166,6 @@ export interface FieldProps {
   accent?: boolean;
   children?: React.ReactNode;
   grow?: boolean;
-}
-export interface UploadScreenProps {
-  theme?: Theme;
-  onUpload: (file: File) => Promise<void>;
 }
 export interface DuplicateCompareProps {
   note: Note;

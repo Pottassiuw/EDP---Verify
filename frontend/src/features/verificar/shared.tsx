@@ -50,7 +50,7 @@ export const StatusTag: React.FC<{
     return (
       <Badge variant="tagDone">
         <span className="w-[6px] h-[6px] rounded-full bg-current" />
-        Concluída
+        Em correção
       </Badge>
     );
   return status === "ok" ? (
