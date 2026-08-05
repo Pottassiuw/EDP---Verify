@@ -43,6 +43,24 @@ arquivo, a `schema_version` SQLite e a data de modificação; `user_version` nã
 Retirar uma nota da fila do COFFEE a torna visível novamente em Verificar. SAP
 real é terminal para este fluxo; notas corrigidas não retornam à triagem.
 
+## Duplicatas externas × Carteira de Notas
+
+Candidatas de `chk_duplicada` fora da planilha Verificar (`in_sheet: false`,
+maioria dos casos reais) são cruzadas em lote com a Carteira de Notas
+(`carteira_module`, espelho local da base COFFEE/Databricks) por `id_onr` —
+mesmo espaço de ID das duplicatas. O cruzamento roda uma única query `IN`
+por request de `/api/data` (`main.py: enriquecer_candidatos_externos`),
+nunca uma chamada por candidata.
+
+Candidata com linha na Carteira ganha comparação real de Local de instalação
+e Problema (`sintoma` + `componente_novo`), além de contexto (Status SAP,
+Prioridade SAP, Conjunto). A Carteira não tem Poste/Referência — um botão por
+card busca esses 2 campos ao vivo na API COFFEE (`GET
+/api/coffee/consultar/{id}`), sob demanda, nunca em lote (evita travar o
+carregamento da tela com N chamadas de até 120s). Candidata sem linha na
+Carteira mostra um estado dedicado ("não encontrada na Carteira") com o mesmo
+botão de busca ao vivo em destaque.
+
 ## Interface
 
 `dashboard.tsx` é responsável por filtros, seleção e apresentação. A ação que
