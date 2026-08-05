@@ -292,9 +292,11 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
                     <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>
-                    {geradorInspetores.length > 0 && n.gerador && (
+                    {n.gerador && (
                       <div className="text-[11px] text-text-mute whitespace-nowrap overflow-hidden text-ellipsis">
-                        Gerada por {n.gerador.nome} · {n.gerador.uf}
+                        Gerada por {n.gerador.nome}
+                        {n.gerador.uf && ` · ${n.gerador.uf}`}
+                        {!n.gerador.cadastrado && " (matrícula não cadastrada)"}
                       </div>
                     )}
                   </div>
@@ -382,7 +384,9 @@ function Detail({ sel, done, dup, onToggleDone, onMarkDuplicate, onSendToCoffee 
   };
   const fields: Array<[string, string]> = [
     ["Tipo de nota", v(sel.tipo_nota)], ["Referência", v(sel.referencia)], ["Problema", v(sel.problema || sel.descricao)],
-    ["Gerada por", sel.gerador ? `${sel.gerador.nome} · ${sel.gerador.matricula}` : v(sel.colaborador)],
+    ["Gerada por", sel.gerador
+      ? `${sel.gerador.nome} · ${sel.gerador.matricula}${sel.gerador.cadastrado ? "" : " (não cadastrado)"}`
+      : v(sel.colaborador)],
     ["Estado", v(sel.uf)], ["Setor", v(sel.setor)],
     ["Local instal.", v(sel.local_instalacao)], ["Poste", v(sel.poste)], ["ID SAP", v(sel.id_sap)],
     ["Imagens", v(sel.imagens_recebidas) + " / " + v(sel.imagens_totais)],

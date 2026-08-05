@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Note } from '../../types';
 
@@ -8,6 +8,7 @@ vi.hoisted(() => {
   vi.stubGlobal('sessionStorage', {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => { store.set(key, value); },
+    removeItem: (key: string) => { store.delete(key); },
   });
   // dashboard.tsx (fila recolhida) e api.ts (BASE) leem localStorage no module
   // scope / mount; sem stub, o ambiente node do vitest não tem esse global.
@@ -52,6 +53,14 @@ const notes: Note[] = [
 const noop = (): void => {};
 
 describe('Dashboard — filtro por inspetor', () => {
+  // O mock de sessionStorage é um Map compartilhado por todo o arquivo (ver
+  // vi.hoisted acima); sem limpar entre testes, o filtro persistido por um
+  // teste (ex.: "com inspetor selecionado") vaza para os seguintes e filtra
+  // a fila de forma inesperada.
+  beforeEach(() => {
+    sessionStorage.removeItem('edp_verify_gerador_insp');
+  });
+
   it('sem seleção, mostra notas de todos os geradores', () => {
     const html = renderToStaticMarkup(
       <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
@@ -85,5 +94,22 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(html).toContain('aria-label="Filtrar por inspetor de planejamento ES/SP"');
     expect(html).toContain('Fabricio Dias');
     expect(html).toContain('Outro Inspetor');
+  });
+
+  it('mostra "Gerada por" na fila mesmo sem filtro de inspetor ativo, para nota não-inspetor', () => {
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html).toContain('Gerada por 999999');
+    expect(html).toContain('matrícula não cadastrada');
+  });
+
+  it('mostra "Gerada por" na fila para nota de inspetor, sem precisar do filtro ativo', () => {
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={notes} completed={new Set()} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html).toContain('Gerada por Fabricio Dias · ES');
   });
 });
