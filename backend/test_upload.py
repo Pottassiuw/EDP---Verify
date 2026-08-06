@@ -260,3 +260,66 @@ def test_enriquecer_candidatos_externos_lote_vazio_no_op(tmp_path, monkeypatch):
     records = [{"id": "100", "duplicates": []}]
     enriquecer_candidatos_externos(records)  # não deve levantar (banco nem existe)
     assert records[0]["duplicates"] == []
+
+
+def test_load_state_enriquece_candidatas_externas_restauradas(tmp_path, monkeypatch):
+    """Estado legado restaurado recebe o mesmo enriquecimento da fonte atual."""
+    import json
+    import main
+    from carteira_module import db as carteira_db
+
+    monkeypatch.setenv("CARTEIRA_DATA_DIR", str(tmp_path / "carteira"))
+    carteira_db.inicializar_banco()
+    conn = carteira_db.conectar()
+    conn.execute(
+        "INSERT INTO nota_carteira (id_onr, local_instalacao, sintoma, componente_novo) "
+        "VALUES (171153, '718ET00026773', 'queda', 'chave')"
+    )
+    conn.commit()
+    conn.close()
+
+    estado = tmp_path / "app_state.json"
+    estado.write_text(json.dumps({
+        "records": [{
+            "id": "100",
+            "raw": {},
+            "duplicates": [{"id": "171153", "in_sheet": False}],
+        }],
+        "completed": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr(main, "STATE_FILE", estado)
+    monkeypatch.setattr(main, "carregar_membros", lambda: {})
+    monkeypatch.setattr(main, "RECORDS", [])
+    monkeypatch.setattr(main, "COMPLETED", set())
+
+    main.load_state()
+
+    candidata = main.RECORDS[0]["duplicates"][0]
+    assert candidata["carteira_match"] is True
+    assert candidata["local_instalacao"] == "718ET00026773"
+
+
+def test_get_data_retorna_503_quando_carteira_indisponivel(monkeypatch):
+    """Falha de leitura da Carteira vira dependência indisponível, não 500 cru."""
+    import sqlite3
+    from types import SimpleNamespace
+    import pandas as pd
+    from fastapi.testclient import TestClient
+    import main
+
+    monkeypatch.setattr(main, "RECORDS", [])
+    monkeypatch.setattr(main, "carregar_membros", lambda: {})
+    monkeypatch.setattr(main, "carregar_fonte", lambda: SimpleNamespace(
+        registros=pd.DataFrame([{"id": "100", "chk_duplicada": "171153"}]),
+        arquivo="Verificar.db", schema_version=1, atualizado_em=None,
+    ))
+
+    def carteira_falhou():
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(main._carteira_db, "conectar", carteira_falhou)
+
+    resposta = TestClient(main.app).get("/api/data")
+
+    assert resposta.status_code == 503
+    assert "Carteira" in resposta.json()["detail"]

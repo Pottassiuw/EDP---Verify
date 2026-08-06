@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
-from coffee_module import client, config, db, jobs, operation_service
+from coffee_module import classify, client, config, db, jobs, operation_service
 
 _PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
 
@@ -153,7 +153,12 @@ def consultar(id: int):
     _garantir_banco()
     try:
         nota = client.buscar_nota(id)
-        classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
+        estado_local = db.obter_nota(nota["pk"])
+        classe = classify.classificar(
+            nota["id_sap"],
+            None if estado_local is None else estado_local["id_sap"],
+            None if estado_local is None else estado_local["origem"],
+        )
     except client.NotaNaoEncontradaErro as exc:
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=404, detail=str(exc))

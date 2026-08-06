@@ -60,7 +60,9 @@ com `nota_carteira` por `id_onr` — o ID das duplicatas do Verificar é o mesmo
 `id_onr` da Carteira, não o `id_sap`. Diferente do enriquecimento por SAP
 (Fase 4B), aqui não há filtro `PII`: o consumidor é interno (mesma equipe que
 já vê `local_instalacao`/coordenadas na planilha Verificar), então a projeção
-inclui `local_instalacao`/`latitude`/`longitude`.
+inclui `local_instalacao`/`latitude`/`longitude`. O enriquecimento também
+é reaplicado ao estado legado restaurado em `app_state.json`; uma falha de
+leitura da projeção é exposta por `GET /api/data` como HTTP `503`.
 
 ## Movimentação (Fase 2)
 

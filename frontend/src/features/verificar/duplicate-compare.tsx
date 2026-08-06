@@ -115,17 +115,13 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
             <div className="dupc-hd">
               <div className="flex items-center gap-[10px] min-w-0">
                 <span className="font-mono text-[13px] font-semibold">{c.id}</span>
-                {inSheet ? (
+                {inSheet && (
                   <span className="dupc-badge" style={{
                     color: strong ? "var(--green)" : "var(--amber)",
                     background: strong ? "var(--tint-green)" : "var(--tint-amber)",
                     border: "1px solid " + (strong ? "rgba(0,168,89,.3)" : "rgba(240,169,59,.3)"),
                   }}>
                     {strong ? "●" : "◐"} {matches}/{DUPC_KEYS.length} campos-chave
-                  </span>
-                ) : (
-                  <span className="dupc-badge text-amber bg-tint-amber" style={{ border: "1px solid rgba(240,169,59,.3)" }}>
-                    ⧉ Externo
                   </span>
                 )}
               </div>

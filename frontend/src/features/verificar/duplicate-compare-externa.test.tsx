@@ -10,6 +10,7 @@ vi.hoisted(() => {
 });
 
 import type { DuplicateCandidate, Note } from '../../types';
+import { DuplicateCompare } from './duplicate-compare';
 import { ExternalCandidateCard, mergeConsultaCampos } from './duplicate-compare-externa';
 
 function nota(overrides: Partial<Note>): Note {
@@ -86,6 +87,25 @@ describe('ExternalCandidateCard', () => {
   it('sem match na Carteira, mostra estado dedicado sem grid', () => {
     const html = renderCard(nota({}), candidataMatch({ carteira_match: false }));
     expect(html).toContain('Não encontrada na Carteira de Notas');
+    expect(html).toContain('dupc-badge');
     expect(html).not.toContain('campos-chave');
+  });
+});
+
+describe('DuplicateCompare — candidatas externas', () => {
+  it('renderiza um único badge de estado para a candidata externa', () => {
+    const candidate = candidataMatch({});
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <DuplicateCompare
+          note={nota({ duplicates: [candidate] })}
+          resolved={false}
+          onMarkDuplicate={() => undefined}
+        />
+      </QueryClientProvider>,
+    );
+    const badges = html.match(/class="[^"]*dupc-badge/g) ?? [];
+    expect(badges).toHaveLength(1);
+    expect(html).not.toContain('⧉ Externo');
   });
 });

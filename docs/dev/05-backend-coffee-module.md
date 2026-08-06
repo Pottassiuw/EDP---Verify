@@ -45,6 +45,10 @@ e a rota `/marcar-gerar` responde 502 "Nao foi possivel buscar a nota".
   `/marcar-gerar` convertem em 404 (qualquer outra exceção vira 502).
   Retorna um dict com `pk`, `id_sap`, `arquivado`, `local_instalacao`
   (montado por `compor_local_instalacao`) e os `fields` brutos.
+  A rota síncrona `GET /api/coffee/consultar/{id}` é somente leitura para a
+  busca sob demanda de duplicatas: ela não faz `upsert` em `notas_coffee`,
+  mas calcula `classificacao` a partir do estado local já existente e devolve
+  também `poste`/`referencia` extraídos dos campos COFFEE.
 - `compor_local_instalacao(fields)` (`client.py:25`) — a API não devolve
   um campo pronto de local de instalação: ele é montado a partir de
   `cidade` (3 dígitos, zero-padded) + `tipo_local_instalacao` (2 letras) +
@@ -167,7 +171,7 @@ Router `/api/coffee` (prefixo). Mapeamento para o frontend
 | `POST /operacao/remover` | Remove cards da operação; exige justificativa. | `operacao/coffee-operacao.tsx` |
 | `GET /job/{job_id}` | Consulta um snapshot de job diretamente. | Compatibilidade e diagnóstico. |
 | `GET /notas` | Lista notas; `status=concluida` retorna geradas e corrigidas. | `concluidas/concluidas-api.ts` |
-| `GET /consultar/{id}` | Busca síncrona de uma nota; permanece como rota de compatibilidade. | Integrações legadas/manual. |
+| `GET /consultar/{id}` | Busca síncrona somente leitura, com poste/referência; permanece como rota de compatibilidade. | Integrações legadas/manual e duplicatas externas. |
 | `POST /sap` | Define `id_sap` de uma nota diretamente. | uso interno/manual |
 | `POST /desarquivar` | Desarquiva uma nota diretamente. | uso interno/manual |
 | `POST /local-instalacao` | Corrige o local e reconsulta o card/ficha. | `components/coffee-nota-inspector.tsx` |

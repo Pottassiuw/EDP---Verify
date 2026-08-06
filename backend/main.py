@@ -4,6 +4,7 @@ import math
 import os
 import pathlib
 import re
+import sqlite3
 import time
 import uuid
 
@@ -209,6 +210,9 @@ def load_state():
             if isinstance(registro.get("raw"), dict):
                 registro["raw"] = slim_raw(registro["raw"])
                 enriquecer_gerador(registro, membros)
+        enriquecer_candidatos_externos(RECORDS)
+    except CarteiraIndisponivelErro:
+        raise
     except Exception as e:
         print(
             f"Falha ao ler {STATE_FILE.name}: {e}. "
@@ -280,6 +284,10 @@ def enrich_candidate(cand: dict, source: dict) -> dict:
     }
 
 
+class CarteiraIndisponivelErro(RuntimeError):
+    """A projeção local da Carteira não pôde ser lida para a triagem."""
+
+
 def enriquecer_candidatos_externos(records: list[dict]) -> None:
     """Preenche candidatas externas (in_sheet=False) com dados da Carteira, em lote.
 
@@ -295,11 +303,16 @@ def enriquecer_candidatos_externos(records: list[dict]) -> None:
     if not ids_externos:
         return
 
-    conn = _carteira_db.conectar()
     try:
-        encontrados = _carteira_repo.obter_muitas(conn, list(ids_externos))
-    finally:
-        conn.close()
+        conn = _carteira_db.conectar()
+        try:
+            encontrados = _carteira_repo.obter_muitas(conn, list(ids_externos))
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError) as exc:
+        raise CarteiraIndisponivelErro(
+            "Carteira de Notas indisponível para enriquecer duplicatas externas."
+        ) from exc
 
     for record in records:
         for cand in record["duplicates"]:
@@ -425,6 +438,8 @@ async def upload_file(file: UploadFile = File(...)):
 
     try:
         RECORDS = montar_registros_triagem(df)
+    except CarteiraIndisponivelErro as erro:
+        raise HTTPException(status_code=503, detail=str(erro)) from erro
     except (FileNotFoundError, ValueError, OSError) as erro:
         raise HTTPException(
             status_code=500,
@@ -449,6 +464,8 @@ def get_data():
             fonte = carregar_fonte()
             records = montar_registros_triagem(fonte.registros)
         except FonteVerificarIndisponivelErro as erro:
+            raise HTTPException(status_code=503, detail=str(erro)) from erro
+        except CarteiraIndisponivelErro as erro:
             raise HTTPException(status_code=503, detail=str(erro)) from erro
         except (FileNotFoundError, ValueError, OSError) as erro:
             raise HTTPException(

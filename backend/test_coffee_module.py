@@ -349,16 +349,14 @@ def test_rotas_de_escrita(coffee_cliente, monkeypatch):
     assert ("sap", 1, 10000000) in chamadas
 
 
-def test_rota_consultar_grava_dono_do_header(coffee_cliente):
-    """Regressão: usuario_coffee precisa ser async — dependency sync setava a
-    contextvar numa cópia de contexto descartada e o upsert gravava o dono
-    errado (fallback getpass), sumindo a nota da lista do requisitante."""
+def test_rota_consultar_nao_persiste_nota_do_header(coffee_cliente):
+    """Consulta usada pela busca de duplicata não deve criar estado local."""
     from coffee_module import db
     r = coffee_cliente.get("/api/coffee/consultar/999", headers={"X-User": "alice"})
     assert r.status_code == 200
-    assert db.obter_nota(999)["usuario"] == "alice"
+    assert db.obter_nota(999) is None
     de_alice = coffee_cliente.get("/api/coffee/notas", headers={"X-User": "alice"}).json()["registros"]
-    assert [n["pk"] for n in de_alice] == [999]
+    assert de_alice == []
     de_bob = coffee_cliente.get("/api/coffee/notas", headers={"X-User": "bob"}).json()["registros"]
     assert de_bob == []
 

@@ -59,7 +59,10 @@ card busca esses 2 campos ao vivo na API COFFEE (`GET
 /api/coffee/consultar/{id}`), sob demanda, nunca em lote (evita travar o
 carregamento da tela com N chamadas de até 120s). Candidata sem linha na
 Carteira mostra um estado dedicado ("não encontrada na Carteira") com o mesmo
-botão de busca ao vivo em destaque.
+botão de busca ao vivo em destaque. O estado legado restaurado de `app_state.json`
+passa pelo mesmo enriquecimento antes de ser exposto; se a Carteira estiver
+indisponível, `GET /api/data` responde `503` em vez de devolver uma falha 500
+sem contexto.
 
 ## Interface
 

@@ -76,6 +76,15 @@ export function ExternalCandidateCard({ note, candidate }: ExternalCandidateCard
   if (!candidate.carteira_match) {
     return (
       <div className="py-[14px] px-[16px]">
+        <div className="flex items-center justify-end gap-[8px] mb-[10px]">
+          <span className="dupc-badge" style={{
+            color: "var(--amber)",
+            background: "var(--tint-amber)",
+            border: "1px solid rgba(240,169,59,.3)",
+          }}>
+            ◌ Sem match · Carteira
+          </span>
+        </div>
         <div className="dupc-ext">
           <span className="text-[16px] shrink-0 leading-none">⧉</span>
           <div>
