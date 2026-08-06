@@ -5,6 +5,12 @@ import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Coffee } from 'lucide-react';
 import { ExternalCandidateCard } from './duplicate-compare-externa';
+import {
+  calculateDuplicateScore,
+  isDuplicateValueUnavailable,
+  normalizeDuplicateValue,
+  type DuplicateScoreResult,
+} from './duplicate-score';
 
 const DUPC_STYLE = `
   .dupc-card{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
@@ -39,33 +45,72 @@ interface KeyFieldDef { key: DuplicateField; label: string; }
 interface CtxFieldDef { label: string; get: (x: ComparableFields) => string; }
 
 const DUPC_KEYS: KeyFieldDef[] = [
+  { key: "problema",         label: "Problema"      },
   { key: "local_instalacao", label: "Local instal." },
   { key: "poste",            label: "Poste(s)"      },
   { key: "referencia",       label: "Referência"    },
-  { key: "problema",         label: "Problema"      },
 ];
 const DUPC_CTX: CtxFieldDef[] = [
+  { label: "Observação", get: (x) => x.observacao ?? "" },
   { label: "Tipo de nota", get: (x) => x.tipo_nota },
   { label: "Setor · UF",   get: (x) => x.setor + " · " + x.uf },
 ];
 
-export const dupcNorm = (s: string): string => String(s ?? "").trim().toLowerCase();
-export const dupcEq = (a: string, b: string): boolean => dupcNorm(a) !== "" && dupcNorm(a) === dupcNorm(b);
+export const dupcNorm = (s: string): string => normalizeDuplicateValue(s);
+export const dupcKnown = (s: string): boolean => !isDuplicateValueUnavailable(s);
+export const dupcEq = (a: string, b: string): boolean => dupcKnown(a) && dupcKnown(b) && dupcNorm(a) === dupcNorm(b);
 
 export function CompareRow({ label, open, cand, keyField }: {
   label: string; open: string; cand: string; keyField: boolean;
 }): React.JSX.Element {
-  const same = keyField ? dupcEq(open, cand) : false;
-  const cls = keyField ? (same ? " same" : " diff") : "";
+  const comparable = keyField && dupcKnown(open) && dupcKnown(cand);
+  const same = comparable && dupcEq(open, cand);
+  const cls = comparable ? (same ? " same" : " diff") : "";
   return (
     <React.Fragment>
       <div className="dupc-lbl">{label}</div>
       <div className="dupc-val">{open || "—"}</div>
       <div className={"dupc-val" + cls}>
-        {keyField && <span className={"dupc-mk" + (same ? " same" : " diff")}>{same ? "✓" : "≠"}</span>}
+        {comparable && <span className={"dupc-mk" + (same ? " same" : " diff")}>{same ? "✓" : "≠"}</span>}
         {cand || "—"}
       </div>
     </React.Fragment>
+  );
+}
+
+const SCORE_LABEL: Record<DuplicateScoreResult['faixa'], string> = {
+  forte: 'Forte', possivel: 'Possível', distinta: 'Distinta', insuficiente: 'Evidência insuficiente',
+};
+
+const SCORE_COLORS: Record<DuplicateScoreResult['faixa'], { color: string; background: string; border: string }> = {
+  forte: { color: 'var(--green)', background: 'var(--tint-green)', border: 'rgba(0,168,89,.3)' },
+  possivel: { color: 'var(--amber)', background: 'var(--tint-amber)', border: 'rgba(240,169,59,.3)' },
+  distinta: { color: 'var(--red)', background: 'var(--tint-red)', border: 'rgba(240,85,92,.3)' },
+  insuficiente: { color: 'var(--indigo)', background: 'var(--tint-indigo)', border: 'rgba(86,96,255,.3)' },
+};
+
+export function DuplicateScoreEvidence({ note, candidate, suffix }: {
+  note: ComparableFields;
+  candidate: ComparableFields;
+  suffix?: string;
+}): React.JSX.Element {
+  const score = calculateDuplicateScore(note, candidate, note.campos_com_erro ?? [], candidate.campos_com_erro ?? []);
+  const colors = SCORE_COLORS[score.faixa];
+  const reduced = Object.entries(score.campos)
+    .filter(([, field]) => field.pesoEfetivo === 1 && field.peso !== 1)
+    .map(([field]) => field.replace('_', ' '));
+  const percentage = score.faixa === 'insuficiente' || score.score == null
+    ? ''
+    : ` · ${Math.round(score.score * 100)}%`;
+  const text = `${SCORE_LABEL[score.faixa]}${percentage} · cobertura ${Math.round(score.cobertura * 100)}%`;
+
+  return (
+    <div className="flex items-center gap-[8px] flex-wrap">
+      <span className="dupc-badge" style={{ color: colors.color, background: colors.background, border: `1px solid ${colors.border}` }}>
+        {text}{suffix ? ` · ${suffix}` : ''}
+      </span>
+      {reduced.length > 0 && <span className="text-[11px] text-text-dim">Peso reduzido para 1: {reduced.join(', ')}.</span>}
+    </div>
   );
 }
 
@@ -105,25 +150,12 @@ export const DuplicateCompare: React.FC<DuplicateCompareProps> = ({ note, resolv
 
       {cands.map((c) => {
         const inSheet = c.in_sheet === true;
-        const matches = inSheet
-          ? DUPC_KEYS.filter((f) => dupcEq(note[f.key], c[f.key])).length
-          : 0;
-        const strong = inSheet && matches === DUPC_KEYS.length;
-
         return (
           <div key={c.id} className="dupc-card">
             <div className="dupc-hd">
               <div className="flex items-center gap-[10px] min-w-0">
                 <span className="font-mono text-[13px] font-semibold">{c.id}</span>
-                {inSheet && (
-                  <span className="dupc-badge" style={{
-                    color: strong ? "var(--green)" : "var(--amber)",
-                    background: strong ? "var(--tint-green)" : "var(--tint-amber)",
-                    border: "1px solid " + (strong ? "rgba(0,168,89,.3)" : "rgba(240,169,59,.3)"),
-                  }}>
-                    {strong ? "●" : "◐"} {matches}/{DUPC_KEYS.length} campos-chave
-                  </span>
-                )}
+                {inSheet && <DuplicateScoreEvidence note={note} candidate={c} />}
               </div>
               <div className="flex gap-[8px] shrink-0">
                 {c.latitude && c.longitude && (

@@ -52,17 +52,32 @@ mesmo espaço de ID das duplicatas. O cruzamento roda uma única query `IN`
 por request de `/api/data` (`main.py: enriquecer_candidatos_externos`),
 nunca uma chamada por candidata.
 
-Candidata com linha na Carteira ganha comparação real de Local de instalação
-e Problema (`componente_novo` + `sintoma`), além de contexto (Status SAP,
-Prioridade SAP, Conjunto). A Carteira não tem Poste/Referência — um botão por
-card busca esses 2 campos ao vivo na API COFFEE (`GET
-/api/coffee/consultar/{id}`), sob demanda, nunca em lote (evita travar o
-carregamento da tela com N chamadas de até 120s). Candidata sem linha na
-Carteira mostra um estado dedicado ("não encontrada na Carteira") com o mesmo
-botão de busca ao vivo em destaque. O estado legado restaurado de `app_state.json`
-passa pelo mesmo enriquecimento antes de ser exposto; se a Carteira estiver
-indisponível, `GET /api/data` responde `503` em vez de devolver uma falha 500
-sem contexto.
+Candidata com linha na Carteira ganha comparação de Local de instalação e
+Problema (`componente_novo` + `sintoma`), além de contexto (Status SAP,
+Prioridade SAP, Conjunto). A Carteira não contém Poste, Referência ou
+Observação. O botão por card consulta sob demanda `GET
+/api/coffee/consultar/{id}` e projeta cinco campos do COFFEE em memória:
+Local, Problema (`componente`/`sintoma`/`causa`), Poste, Referência e
+Observação. A resposta não faz `upsert`, não escreve na Carteira e não altera
+o estado persistido; valores COFFEE não vazios prevalecem somente enquanto o
+card está aberto. Isso permite comparar uma candidata ausente da Carteira sem
+esperar uma sincronização em lote.
+
+A evidência de possível duplicata usa os quatro campos pontuados Problema (2),
+Local de instalação (1,6), Poste (1,3) e Referência física (1,1), normalizada
+pelo peso dos campos disponíveis. Observação fica lado a lado para decisão
+humana, mas não entra no score. Uma regra `chk_*` que afete um desses campos
+reduz apenas aquele peso para 1; sentinelas/valores ausentes não são match nem
+diferença. A faixa exige cobertura suficiente e ao menos dois matches: Forte
+(verde), Possível (âmbar), Distinta (vermelho) ou Evidência insuficiente
+(índigo). A fila usa o melhor indicador com evidência entre as candidatas e o
+card explica percentual, cobertura e pesos reduzidos.
+
+Candidata sem linha na Carteira mantém estado dedicado ("não encontrada na
+Carteira") e uma única badge; após a consulta ao vivo ela exibe a mesma grade
+completa. O estado legado restaurado de `app_state.json` passa pelo mesmo
+enriquecimento antes de ser exposto; se a Carteira estiver indisponível,
+`GET /api/data` responde `503` em vez de devolver uma falha 500 sem contexto.
 
 ## Interface
 

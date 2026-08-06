@@ -10,6 +10,7 @@ import type {
 import { EDPApi, ruleMeta } from '../../api';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
+import { calculateDuplicateScore } from './duplicate-score';
 import { KpiDrawer } from './kpi-drawer';
 import { detectarNoveExtra } from './malha-fina';
 import { MalhaFinaPanel } from './malha-fina-panel';
@@ -24,6 +25,34 @@ import { Maximize2, Minimize2, RotateCcw, Check, Coffee, MapPin } from 'lucide-r
 
 const URG: Record<UrgBand, string> = { high: "Alta (1–2)", med: "Média (3–4)", low: "Baixa (5+)" };
 function urgBand(p: number): UrgBand { return p <= 2 ? "high" : p <= 4 ? "med" : "low"; }
+
+const DUPLICATE_INDICATOR = {
+  forte: { symbol: '●', className: 'text-green', label: 'Forte' },
+  possivel: { symbol: '◐', className: 'text-amber', label: 'Possível' },
+  distinta: { symbol: '×', className: 'text-red', label: 'Distinta' },
+  insuficiente: { symbol: '◌', className: 'text-indigo', label: 'Evidência insuficiente' },
+} as const;
+
+function duplicateIndicator(note: Note): { symbol: string; className: string; label: string } | null {
+  const ranked = note.duplicates.map((candidate) => calculateDuplicateScore(
+    note,
+    candidate,
+    note.campos_com_erro ?? [],
+    candidate.campos_com_erro ?? [],
+  )).sort((left, right) => {
+    const rank = { forte: 3, possivel: 2, distinta: 1, insuficiente: 0 };
+    return rank[right.faixa] - rank[left.faixa]
+      || (right.score ?? -1) - (left.score ?? -1)
+      || right.cobertura - left.cobertura;
+  });
+  const best = ranked[0];
+  if (!best) return null;
+  const indicator = DUPLICATE_INDICATOR[best.faixa];
+  const evidence = best.faixa === 'insuficiente'
+    ? `evidência insuficiente (cobertura ${Math.round(best.cobertura * 100)}%)`
+    : `${Math.round((best.score ?? 0) * 100)}% · cobertura ${Math.round(best.cobertura * 100)}%`;
+  return { ...indicator, label: `${indicator.label}: ${evidence}` };
+}
 
 
 export interface DashboardProps {
@@ -324,6 +353,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
               const isDup = dupResolved.has(n.id);
               const isSel = selBatch.has(n.id);
               const flagDup = n.duplicates.length > 0 && !isDup;
+              const dupIndicator = flagDup ? duplicateIndicator(n) : null;
               return (
                 <div key={n.id} className={"q" + (n.id === selId ? " on" : "") + (done ? " dimdone" : "")}
                      onClick={() => setSelId(n.id)}>
@@ -334,7 +364,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px]">
                       <span className="font-mono text-[13px] font-semibold">{n.id}</span>
-                      {flagDup && <span title="Possível duplicata" className="text-indigo text-[13px]">⧉</span>}
+                      {dupIndicator && <span title={dupIndicator.label} aria-label={dupIndicator.label} className={`${dupIndicator.className} text-[13px]`}>{dupIndicator.symbol}</span>}
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
                     <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>

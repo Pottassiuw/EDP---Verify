@@ -10,7 +10,8 @@ vi.hoisted(() => {
 });
 
 import type { DuplicateCandidate, Note } from '../../types';
-import { DuplicateCompare } from './duplicate-compare';
+import { DuplicateCompare, dupcEq } from './duplicate-compare';
+import { Dashboard } from './dashboard';
 import { ExternalCandidateCard, mergeConsultaCampos } from './duplicate-compare-externa';
 
 function nota(overrides: Partial<Note>): Note {
@@ -53,29 +54,41 @@ function renderCard(note: Note, candidate: DuplicateCandidate): string {
 
 describe('mergeConsultaCampos', () => {
   it('preenche poste/referencia buscados, sem mexer no resto da candidata', () => {
-    const candidate = candidataMatch({ poste: '', referencia: '' });
-    const resultado = mergeConsultaCampos(candidate, { poste: 'TR-088', referencia: 'SER-11' });
+    const candidate = candidataMatch({ local_instalacao: 'LI anterior', problema: 'Problema anterior', poste: '', referencia: '', observacao: 'Observação anterior' });
+    const resultado = mergeConsultaCampos(candidate, { local_instalacao: 'LI COFFEE', problema: 'Problema COFFEE', poste: 'TR-088', referencia: 'SER-11', observacao: 'Observação COFFEE' });
+    expect(resultado).not.toBe(candidate);
+    expect(candidate.local_instalacao).toBe('LI anterior');
+    expect(candidate.observacao).toBe('Observação anterior');
+    expect(resultado.local_instalacao).toBe('LI COFFEE');
+    expect(resultado.problema).toBe('Problema COFFEE');
     expect(resultado.poste).toBe('TR-088');
     expect(resultado.referencia).toBe('SER-11');
-    expect(resultado.local_instalacao).toBe('718ET00026773');
+    expect(resultado.observacao).toBe('Observação COFFEE');
   });
 
   it('campos nulos da busca caem pro que já existia na candidata', () => {
-    const candidate = candidataMatch({ poste: 'ja-tinha', referencia: '' });
-    const resultado = mergeConsultaCampos(candidate, { poste: null, referencia: null });
+    const candidate = candidataMatch({ local_instalacao: 'LI anterior', problema: 'Problema anterior', poste: 'ja-tinha', referencia: 'REF anterior', observacao: 'Observação anterior' });
+    const resultado = mergeConsultaCampos(candidate, { local_instalacao: null, problema: ' ', poste: '', referencia: null, observacao: '   ' });
+    expect(resultado.local_instalacao).toBe('LI anterior');
+    expect(resultado.problema).toBe('Problema anterior');
     expect(resultado.poste).toBe('ja-tinha');
-    expect(resultado.referencia).toBe('');
+    expect(resultado.referencia).toBe('REF anterior');
+    expect(resultado.observacao).toBe('Observação anterior');
   });
 });
 
 describe('ExternalCandidateCard', () => {
-  it('com match na Carteira, mostra grid de 2 campos-chave e contexto SAP', () => {
-    const html = renderCard(nota({}), candidataMatch({}));
+  it('com match na Carteira, mostra os quatro campos, observação e contexto SAP', () => {
+    const html = renderCard(nota({ observacao: 'Observação desta nota' }), candidataMatch({ observacao: 'Observação candidata' }));
     expect(html).toContain('718ET00026773');
+    expect(html).toContain('Observação desta nota');
+    expect(html).toContain('Observação candidata');
     expect(html).toContain('Pendente');
     expect(html).toContain('POSTE DEMANDA');
-    expect(html).toContain('2/2 campos-chave');
+    expect(html).toContain('Forte');
+    expect(html).toContain('100%');
     expect(html).toContain('Buscar poste/referência no COFFEE');
+    expect(html).not.toContain('≠');
   });
 
   it('tombstoned mostra aviso de ausencia mas ainda mostra os dados', () => {
@@ -85,10 +98,16 @@ describe('ExternalCandidateCard', () => {
   });
 
   it('sem match na Carteira, mostra estado dedicado sem grid', () => {
-    const html = renderCard(nota({}), candidataMatch({ carteira_match: false }));
+    const html = renderCard(nota({}), candidataMatch({ carteira_match: false, local_instalacao: '', problema: '', poste: '', referencia: '' }));
     expect(html).toContain('Não encontrada na Carteira de Notas');
-    expect(html).toContain('dupc-badge');
-    expect(html).not.toContain('campos-chave');
+    expect(html).toContain('Evidência insuficiente');
+    expect(html.match(/class="[^"]*dupc-badge/g) ?? []).toHaveLength(1);
+  });
+});
+
+describe('Normalização visual da comparação', () => {
+  it('considera espaços internos como o score ponderado', () => {
+    expect(dupcEq(' P 01 ', 'P01')).toBe(true);
   });
 });
 
@@ -107,5 +126,33 @@ describe('DuplicateCompare — candidatas externas', () => {
     const badges = html.match(/class="[^"]*dupc-badge/g) ?? [];
     expect(badges).toHaveLength(1);
     expect(html).not.toContain('⧉ Externo');
+  });
+});
+
+describe('Dashboard — indicador de compatibilidade', () => {
+  it('prioriza evidência forte sobre score bruto com cobertura insuficiente', () => {
+    const forte = candidataMatch({
+      id: '101', local_instalacao: '718ET00026773', problema: 'chave · queda', poste: 'P1', referencia: 'REF-1',
+    });
+    const semEvidencia = candidataMatch({
+      id: '102', local_instalacao: '', problema: '', poste: '', referencia: '',
+    });
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <Dashboard
+          showKpis={false}
+          notes={[nota({ duplicates: [semEvidencia, forte] })]}
+          completed={new Set()}
+          encaminhamentos={{}}
+          encaminhadasHoje={[]}
+          dupResolved={new Set()}
+          onToggleComplete={() => undefined}
+          onMarkMany={() => undefined}
+          onMarkDuplicate={() => undefined}
+          onSendToCoffee={() => undefined}
+        />
+      </QueryClientProvider>,
+    );
+    expect(html).toContain('aria-label="Forte: 100% · cobertura 100%"');
   });
 });

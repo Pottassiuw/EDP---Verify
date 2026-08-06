@@ -47,8 +47,11 @@ e a rota `/marcar-gerar` responde 502 "Nao foi possivel buscar a nota".
   (montado por `compor_local_instalacao`) e os `fields` brutos.
   A rota síncrona `GET /api/coffee/consultar/{id}` é somente leitura para a
   busca sob demanda de duplicatas: ela não faz `upsert` em `notas_coffee`,
-  mas calcula `classificacao` a partir do estado local já existente e devolve
-  também `poste`/`referencia` extraídos dos campos COFFEE.
+  mas calcula `classificacao` a partir do estado local já existente. Além de
+  `poste`/`referencia`, projeta `problema` (junção não vazia de
+  `componente`/`componente_novo`, `sintoma`, `causa`) e `observacao`
+  (`observacao` ou `observacoes`). A ausência de `fields` ou desses aliases
+  produz `null`, não erro nem escrita.
 - `compor_local_instalacao(fields)` (`client.py:25`) — a API não devolve
   um campo pronto de local de instalação: ele é montado a partir de
   `cidade` (3 dígitos, zero-padded) + `tipo_local_instalacao` (2 letras) +

@@ -75,6 +75,8 @@ export interface ComparableFields {
   setor: string;
   uf: string;
   prioridade: number;
+  observacao?: string;
+  campos_com_erro?: DuplicateField[];
 }
 
 export interface DuplicateCandidate extends ComparableFields {

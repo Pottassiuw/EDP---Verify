@@ -166,7 +166,24 @@ def consultar(id: int):
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=502,
                             detail="Nao foi possivel consultar a nota na API COFFEE.")
-    fields = nota["fields"]
+    fields = nota.get("fields") or {}
+    problema_partes = [
+        parte.strip()
+        for parte in [
+            fields.get("componente") or fields.get("componente_novo"),
+            fields.get("sintoma"),
+            fields.get("causa"),
+        ]
+        if isinstance(parte, str) and parte.strip()
+    ]
+    observacao = next(
+        (
+            parte.strip()
+            for parte in [fields.get("observacao"), fields.get("observacoes")]
+            if isinstance(parte, str) and parte.strip()
+        ),
+        None,
+    )
     db.registrar_log("acao_usuario", "consultar", nota["pk"], {"id": id}, True)
     return {
         "pk": nota["pk"],
@@ -176,6 +193,8 @@ def consultar(id: int):
         "arquivado": nota["arquivado"],
         "poste": fields.get("postes") or fields.get("poste"),
         "referencia": fields.get("referencia_fisica") or fields.get("referencia_eletrica"),
+        "problema": " · ".join(problema_partes) or None,
+        "observacao": observacao,
     }
 
 

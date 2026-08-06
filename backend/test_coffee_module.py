@@ -632,12 +632,31 @@ def test_rota_consultar_poste_referencia_ausentes_vira_none(coffee_cliente, monk
     monkeypatch.setattr(
         client, "buscar_nota",
         lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
-                   "local_instalacao": None, "fields": {"id_sap": 17247854}},
+                   "local_instalacao": None},
     )
     r = coffee_cliente.get("/api/coffee/consultar/355617")
     body = r.json()
     assert body["poste"] is None
     assert body["referencia"] is None
+    assert body["problema"] is None
+    assert body["observacao"] is None
+
+
+def test_rota_consultar_projeta_problema_e_observacao_sem_persistir(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+    monkeypatch.setattr(
+        client, "buscar_nota",
+        lambda i: {"pk": int(i), "id_sap": 17247854, "arquivado": False,
+                   "local_instalacao": "718ET00026773",
+                   "fields": {"componente_novo": "Luminaria", "sintoma": "Apagada",
+                              "causa": "Lampada queimada", "observacoes": "Trocar lampada"}},
+    )
+
+    body = coffee_cliente.get("/api/coffee/consultar/355617").json()
+
+    assert body["problema"] == "Luminaria · Apagada · Lampada queimada"
+    assert body["observacao"] == "Trocar lampada"
+    assert db.obter_nota(355617) is None
 
 
 def test_compor_local_instalacao():

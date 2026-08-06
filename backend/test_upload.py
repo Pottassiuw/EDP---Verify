@@ -1,6 +1,9 @@
 import re
+
+import pandas as pd
 import pytest
-from main import enrich_candidate, parse_coord, parse_duplicate_ids
+
+from main import enrich_candidate, montar_registros_triagem, parse_coord, parse_duplicate_ids
 
 
 def test_ok_returns_empty():
@@ -75,6 +78,24 @@ def test_enrich_candidate_empty_fields():
     assert result["local_instalacao"] == ""
     assert result["poste"] == ""
     assert result["problema"] == ""
+
+
+def test_montar_triagem_mapeia_erros_e_propaga_contexto_para_candidata(monkeypatch):
+    monkeypatch.setattr("main.carregar_membros", lambda: {})
+    registros = montar_registros_triagem(pd.DataFrame([
+        {
+            "id": "100", "chk_duplicada": "200", "observacoes": "Conferir no campo",
+            "chk_componente": "diverge", "chk_local_instalacao": "diverge",
+            "chk_postes": "diverge", "chk_referencia_fisica": "diverge",
+        },
+        {"id": "200", "observacao": "Nota relacionada"},
+    ]))
+
+    origem, candidata = registros[0], registros[0]["duplicates"][0]
+    assert origem["observacao"] == "Conferir no campo"
+    assert origem["campos_com_erro"] == ["problema", "local_instalacao", "poste", "referencia"]
+    assert candidata["observacao"] == "Nota relacionada"
+    assert candidata["campos_com_erro"] == []
 
 def test_gzip_comprime_resposta_grande(monkeypatch):
     """Respostas acima do limite saem comprimidas quando o cliente aceita gzip."""

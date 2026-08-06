@@ -85,6 +85,8 @@ export interface CoffeeConsulta {
   arquivado: boolean | null;
   poste: string | null;
   referencia: string | null;
+  problema: string | null;
+  observacao: string | null;
 }
 
 export interface PropostaPlano {

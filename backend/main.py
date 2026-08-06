@@ -279,6 +279,8 @@ def enrich_candidate(cand: dict, source: dict) -> dict:
         "poste":            source.get("poste") or "",
         "referencia":       source.get("referencia") or "",
         "problema":         source.get("problema") or "",
+        "observacao":       source.get("observacao") or "",
+        "campos_com_erro":  source.get("campos_com_erro") or [],
         "latitude":         source.get("latitude"),
         "longitude":        source.get("longitude"),
     }
@@ -318,6 +320,7 @@ def enriquecer_candidatos_externos(records: list[dict]) -> None:
         for cand in record["duplicates"]:
             if cand["in_sheet"]:
                 continue
+            cand["campos_com_erro"] = cand.get("campos_com_erro") or []
             nota = encontrados.get(int(cand["id"])) if str(cand["id"]).isdigit() else None
             cand["carteira_match"] = nota is not None
             if nota is None:
@@ -346,6 +349,7 @@ def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
 
     for _, row in df.iterrows():
         errors = []
+        campos_com_erro = []
         for coluna in chk_cols:
             valor = str(row[coluna]).strip().lower()
             if valor and valor not in ["ok", "nan", "none", ""]:
@@ -354,6 +358,19 @@ def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
                     "rule_name": coluna.replace("chk_", "").replace("_", " ").title(),
                     "value": str(row[coluna]),
                 })
+                tokens = str(coluna).strip().lower().replace("chk_", "").split("_")
+                if any(token in {"componente", "sintoma", "causa", "problema"} for token in tokens):
+                    campo = "problema"
+                elif "local" in tokens and "instalacao" in tokens:
+                    campo = "local_instalacao"
+                elif any(token in {"poste", "postes"} for token in tokens):
+                    campo = "poste"
+                elif "referencia" in tokens:
+                    campo = "referencia"
+                else:
+                    campo = None
+                if campo and campo not in campos_com_erro:
+                    campos_com_erro.append(campo)
 
         prioridade_raw = row.get("prioridade")
         try:
@@ -380,6 +397,8 @@ def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
             "precisao": extract_str(row, "precisao"),
             "poste": extract_str(row, "postes", "poste"),
             "problema": " · ".join(parte for parte in problema_parts if parte) or None,
+            "observacao": extract_str(row, "observacao", "observacoes") or "",
+            "campos_com_erro": campos_com_erro,
             "errors": errors,
             "status": "erro" if errors else "ok",
             "_dup_raw": str(row.get("chk_duplicada", "") or "").strip(),
