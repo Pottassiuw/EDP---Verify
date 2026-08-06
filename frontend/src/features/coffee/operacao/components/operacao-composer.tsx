@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Search } from 'lucide-react';
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -48,9 +49,11 @@ export function OperacaoComposer({
 
   return (
     <section className="rounded-[11px] border border-line bg-surface p-4">
-      <label htmlFor="coffee-operation-ids" className="edp-eyebrow">
-        IDs COFFEE
-      </label>
+      <Eyebrow asChild>
+        <label htmlFor="coffee-operation-ids">
+          IDs COFFEE
+        </label>
+      </Eyebrow>
       <Textarea
         id="coffee-operation-ids"
         value={value}

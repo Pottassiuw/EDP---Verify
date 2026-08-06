@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ export function RegionalRanking({
   );
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Ranking de disponibilidade"
@@ -41,7 +42,7 @@ export function RegionalRanking({
         <EstadoVazio>Aguardando o detalhamento do recorte por regional.</EstadoVazio>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="edp-table min-w-[760px]">
+          <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead>Regional</TableHead>
@@ -62,9 +63,9 @@ export function RegionalRanking({
                     <BadgeDisponibilidade pct={regional.pctDisp} />
                   </div>
                 </TableCell>
-                <TableCell className="text-right edp-mono">{fmtQtd(regional.meta)}</TableCell>
-                <TableCell className="text-right edp-mono">{fmtQtd(regional.carteira)}</TableCell>
-                <TableCell className={`text-right edp-mono ${regional.saldo < 0 ? 'text-red' : 'text-green'}`}>{fmtQtd(regional.saldo)}</TableCell>
+                <TableCell className="text-right font-mono">{fmtQtd(regional.meta)}</TableCell>
+                <TableCell className="text-right font-mono">{fmtQtd(regional.carteira)}</TableCell>
+                <TableCell className={`text-right font-mono ${regional.saldo < 0 ? 'text-red' : 'text-green'}`}>{fmtQtd(regional.saldo)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     type="button"
@@ -83,7 +84,7 @@ export function RegionalRanking({
           </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

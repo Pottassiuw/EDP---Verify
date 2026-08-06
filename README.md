@@ -52,17 +52,28 @@ configurável via `localStorage.setItem('edp_api', 'http://SEU_HOST:8000/api')`.
 
 ```bash
 cd frontend && npm run build   # gera frontend/dist/ (não versionado)
-cd ../backend && uvicorn main:app
+cd ../backend
+set EDP_PERFIL=producao        # banco de notas = arquivo da rede
+uvicorn main:app
 ```
 
 O FastAPI serve `frontend/dist/` como estático e expõe a API no mesmo
 processo (porta 8000).
 
+`EDP_PERFIL=producao` faz o módulo Input ler e gravar direto no banco
+compartilhado da rede — é o que faz notas criadas por outra pessoa
+aparecerem para todo mundo. Sem acesso à rede o servidor **falha de forma
+explícita** em vez de servir a cópia local desatualizada. O padrão
+(`local`) mantém `backend/data/notas_departamento.db` para
+desenvolvimento. Variáveis em `backend/.env.example`, detalhes em
+[docs/dev/06-backend-input-module.md](docs/dev/06-backend-input-module.md).
+
 ## Hub COFFEE
 
 O fluxo de COFFEE é dividido em **Verificar**, **Abrir**, **Operação**,
-**Concluídas** e **Logs**. Verificar encaminha as notas selecionadas à fila
-persistida de Operação, exibida como Kanban (Fila, Prontas para gerar,
+**Concluídas** e **Logs**. Verificar lê o `Verificar.db` compartilhado em modo
+somente leitura e encaminha as notas selecionadas à fila persistida de
+Operação, exibida como Kanban (Fila, Prontas para gerar,
 Processando e Aguardando SAP). Concluídas é o histórico separado: notas
 geradas podem ser arquivadas e somente notas corrigidas podem ser movidas para
 o plano.
@@ -72,8 +83,9 @@ o plano.
 | Ação                  | Requisição                     | Retorno |
 |-----------------------|--------------------------------|---------|
 | Carregar dados        | `GET  /api/data`               | `{ records, completed, rule_stats, … }` |
-| Importar planilha     | `POST /api/upload` (multipart) | `{ status, total }` |
-| Concluir / reabrir    | `POST /api/complete/{id}`      | `{ status, completed }` (toggle) |
+| Triagem SQLite        | `GET /api/data`                | Lê `ids_verificacao` de `Verificar.db` |
+| Importar planilha     | `POST /api/upload` (multipart) | Compatibilidade/testes; não é usado pela interface |
+| Encaminhar / retirar  | `POST /api/coffee/marcar-gerar` | Controla a fila COFFEE e a rastreabilidade |
 | Marcar como duplicata | `POST /api/duplicata/{id}`     | `{ status }` |
 
 ## Módulo Input (Gestão de Notas)
@@ -81,8 +93,10 @@ o plano.
 Porte do painel Streamlit do departamento (spec em
 `docs/superpowers/specs/2026-06-11-input-module-design.md`).
 
-- Banco local: `backend/data/notas_departamento.db` (migrado automaticamente
-  do servidor `\\ebeat-fp1` na primeira execução, se a rede estiver acessível).
+- Banco: em `EDP_PERFIL=producao`, o próprio arquivo compartilhado da rede
+  (sem cópia local, sem espelhamento). Em `local` (padrão),
+  `backend/data/notas_departamento.db`, migrado da rede na primeira
+  execução — nesse perfil as escritas **não** voltam para a rede.
 - O motor cruza o banco com as planilhas da rede EDP (SAP IW28/IW38,
   indicadores ANEEL etc.); sem rede, o painel funciona com indicadores parciais.
 - Após cada salvamento, regrava `Base_Notas_Sincronizada.xlsx` na rede

@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { SegTabs, Banner } from '@/components/branded/section';
+import { SegTabs, Banner, Eyebrow, StatNumber } from '@/components/branded/section';
 import { ConfirmModal } from '../coffee/confirm-modal';
 
 type ModoRamal = 'visao' | 'rapida' | 'lote' | 'exclusao' | 'cadastro' | 'colagem';
@@ -210,8 +210,8 @@ export function Ramal({
       {modo === 'visao' && dadosRamal && (
         <React.Fragment>
           <div className="flex items-baseline gap-3 bg-surface p-4 rounded-lg border border-line shadow-sm">
-            <span className="edp-num text-2xl font-bold tracking-tight text-foreground">{registros.length.toLocaleString('pt-BR')}</span>
-            <span className="edp-eyebrow text-xs text-text-mute uppercase tracking-wider font-mono">notas cadastradas no ramal</span>
+            <StatNumber>{registros.length.toLocaleString('pt-BR')}</StatNumber>
+            <Eyebrow className="text-xs tracking-wider">notas cadastradas no ramal</Eyebrow>
           </div>
           <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
             <DataGrid registros={registrosComoNotaInput} colunas={COLUNAS_RAMAL} />

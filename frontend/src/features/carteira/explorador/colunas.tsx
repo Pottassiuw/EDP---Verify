@@ -12,7 +12,7 @@ export const colunasCarteira: ColumnDef<NotaCarteira>[] = [
     cell: ({ row }) => row.original.regional ?? '—' },
   { accessorKey: 'quantidade', header: 'Qtd',
     cell: ({ row }) => (
-      <span className="num-cell">
+      <span className="tabular-nums text-right">
         {row.original.quantidade_valida ? row.original.quantidade : '—'}
       </span>
     ) },

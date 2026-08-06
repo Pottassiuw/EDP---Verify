@@ -1,10 +1,32 @@
 """Rotas /api/coffee/* -- fundacao do hub COFFEE."""
+import os
+import time
+from contextlib import contextmanager
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
-from coffee_module import client, config, db, jobs, operation_service
+from coffee_module import classify, client, config, db, jobs, operation_service
+
+_PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
+
+
+@contextmanager
+def _medir(etapa: str):
+    """Mede uma etapa do handler (consulta ao banco) quando EDP_PERF=1.
+
+    O middleware de main.py já mede a requisição inteira; isto separa o tempo
+    de banco do tempo de serialização/rede.
+    """
+    if not _PERF_ATIVO:
+        yield
+        return
+    inicio = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f"[COFFEE-PERF]   {etapa}: {(time.perf_counter() - inicio) * 1000:.0f}ms")
 
 async def usuario_coffee(x_user: Optional[str] = Header(default=None, alias="X-User")) -> Optional[str]:
     """Identidade do dono das notas: header X-User quando presente, senão None (fallback local).
@@ -121,7 +143,9 @@ def job(job_id: str):
 @router.get("/notas")
 def notas(status: Optional[str] = None, usuario: Optional[str] = Depends(usuario_coffee)):
     _garantir_banco()
-    return {"registros": db.listar_notas(status, usuario=usuario)}
+    with _medir("db.listar_notas"):
+        registros = db.listar_notas(status, usuario=usuario)
+    return {"registros": registros}
 
 
 @router.get("/consultar/{id}")
@@ -129,7 +153,12 @@ def consultar(id: int):
     _garantir_banco()
     try:
         nota = client.buscar_nota(id)
-        classe = db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
+        estado_local = db.obter_nota(nota["pk"])
+        classe = classify.classificar(
+            nota["id_sap"],
+            None if estado_local is None else estado_local["id_sap"],
+            None if estado_local is None else estado_local["origem"],
+        )
     except client.NotaNaoEncontradaErro as exc:
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=404, detail=str(exc))
@@ -137,6 +166,7 @@ def consultar(id: int):
         db.registrar_log("acao_usuario", "consultar", id, {"id": id}, False)
         raise HTTPException(status_code=502,
                             detail="Nao foi possivel consultar a nota na API COFFEE.")
+    fields = nota["fields"]
     db.registrar_log("acao_usuario", "consultar", nota["pk"], {"id": id}, True)
     return {
         "pk": nota["pk"],
@@ -144,6 +174,8 @@ def consultar(id: int):
         "local_instalacao": nota["local_instalacao"],
         "classificacao": classe,
         "arquivado": nota["arquivado"],
+        "poste": fields.get("postes") or fields.get("poste"),
+        "referencia": fields.get("referencia_fisica") or fields.get("referencia_eletrica"),
     }
 
 
@@ -222,7 +254,8 @@ def local_instalacao(pedido: LocalPedido):
 @router.get("/operacao")
 def obter_operacao():
     _garantir_banco()
-    return operation_service.listar_quadro()
+    with _medir("operation_service.listar_quadro"):
+        return operation_service.listar_quadro()
 
 
 @router.post("/operacao/consultar")
@@ -252,13 +285,17 @@ def gerar_operacao(pedido: OperacaoIdsPedido):
 
 
 @router.post("/operacao/atualizar-sap")
-def atualizar_sap_operacao(pedido: OperacaoIdsPedido):
+def atualizar_sap_operacao(
+    pedido: OperacaoIdsPedido,
+    usuario: Optional[str] = Depends(usuario_coffee),
+):
     _garantir_banco()
     ids = _validar_ids(pedido.ids)
     try:
         job_id = jobs.iniciar_atualizacao_sap(
             ids,
             trace=db.trace_atual(),
+            usuario=usuario,
         )
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -278,6 +315,7 @@ def remover_operacao(pedido: OperacaoRemoverPedido):
     for pk in ids:
         db.remover_item_operacao(pk)
         db.marcar_gerar(pk, False)
+        db.registrar_retorno_verificar(pk, justificativa)
         db.registrar_log(
             "acao_usuario",
             "remover_fila_operacao",
@@ -344,7 +382,7 @@ def marcar_gerar(pedido: MarcarGerarPedido):
                               "justificativa": pedido.justificativa}, False)
             raise HTTPException(status_code=502,
                                 detail="Nao foi possivel buscar a nota na API COFFEE.")
-        db.definir_origem(pk, "verificar")
+        db.registrar_origem_verificar(pk, pedido.id)
         etapa = operation_service.etapa_da_classificacao(classificacao)
         if etapa is None:
             db.remover_item_operacao(pk)
@@ -360,6 +398,7 @@ def marcar_gerar(pedido: MarcarGerarPedido):
     else:
         db.remover_item_operacao(pk)
         db.marcar_gerar(pk, False)
+        db.desativar_verificar(pedido.id)
     db.registrar_log("acao_usuario", "marcar_gerar", pk,
                      {"id": pedido.id, "a_gerar": pedido.a_gerar,
                       "justificativa": pedido.justificativa}, True)

@@ -2,6 +2,7 @@ import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CoffeeConclusaoFiltro } from '../../../types';
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '../confirm-modal';
 import {
@@ -191,10 +192,10 @@ export function CoffeeConcluidas({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="px-[22px] pt-4">
-        <span className="edp-eyebrow">Histórico operacional</span>
+        <Eyebrow>Histórico operacional</Eyebrow>
         <div className="flex items-baseline gap-3">
-          <h1 className="edp-title text-lg">Notas concluídas</h1>
-          <span className="edp-mono text-xs text-text-mute">
+          <h1 className="text-lg font-semibold tracking-display text-balance">Notas concluídas</h1>
+          <span className="font-mono text-xs text-text-mute">
             {contagens.todas} no total
           </span>
         </div>
@@ -211,7 +212,7 @@ export function CoffeeConcluidas({
         onCopy={() => void copyIds()}
       />
       <div className="flex items-center gap-3 border-b border-line px-[22px] py-2">
-        <span className="edp-mono text-xs text-text-mute">
+        <span className="font-mono text-xs text-text-mute">
           {concluidas.isLoading ? 'Carregando…' : `${filtered.length} resultados`}
         </span>
         <div className="flex-1" />

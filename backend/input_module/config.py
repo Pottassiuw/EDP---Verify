@@ -18,6 +18,23 @@ def data_dir() -> Path:
     )
 
 
+# ── Perfil de execução ───────────────────────────────────────────────────
+# "local"    → banco em backend/data/ (desenvolvimento e testes)
+# "producao" → banco compartilhado da rede; sem fallback silencioso para o local
+PERFIL_LOCAL = "local"
+PERFIL_PRODUCAO = "producao"
+
+
+def perfil() -> str:
+    """Perfil ativo, lido de EDP_PERFIL (padrão: local)."""
+    valor = os.environ.get("EDP_PERFIL", PERFIL_LOCAL).strip().lower()
+    return PERFIL_PRODUCAO if valor == PERFIL_PRODUCAO else PERFIL_LOCAL
+
+
+def em_producao() -> bool:
+    return perfil() == PERFIL_PRODUCAO
+
+
 def caminho_sap_robot() -> Path:
     """Script do robô SAP — vive em backend/Sap_Robot.py, não numa pasta de rede."""
     return Path(
@@ -28,20 +45,40 @@ def caminho_sap_robot() -> Path:
 
 
 def caminho_controle_recomposicao() -> Path:
-    """Planilha Controle Plano de Recomposição (OneDrive local sincronizado).
+    """Retorna a cópia local do Excel hospedado no SharePoint.
 
-    Default aponta para o perfil do usuário que hospeda o servidor hoje;
-    outra máquina sobrescreve via env CONTROLE_RECOMPOSICAO_PATH.
+    ``CONTROLE_RECOMPOSICAO_PATH`` vence para ambientes que usam outro
+    diretório. No padrão, a pasta sincronizada é montada com o usuário da
+    máquina, evitando deixar o perfil do servidor fixo no código.
     """
-    return Path(os.environ.get(
-        "CONTROLE_RECOMPOSICAO_PATH",
-        r"C:\Users\e713611\EDP\O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
-        r"\PLANO RECOMPOSIÇÃO\SP\2026\Controle Plano de Recomposição 2026.xlsx",
-    ))
+    caminho_configurado = os.environ.get("CONTROLE_RECOMPOSICAO_PATH", "").strip()
+    if caminho_configurado:
+        return Path(caminho_configurado)
+
+    usuario = (
+        os.environ.get("USER")
+        or os.environ.get("USERNAME")
+        or Path.home().name
+    )
+    return (
+        Path("C:/Users")
+        / usuario
+        / "EDP"
+        / "O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
+        / "PLANO RECOMPOSIÇÃO"
+        / "SP"
+        / "2026"
+        / "Controle Plano de Recomposição 2026.xlsx"
+    )
 
 
 # ── Caminhos da rede EDP ─────────────────────────────────────────────────
-REDE_RAIZ = r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM"
+# Raiz sobrescritível por env: outra máquina/ambiente aponta para o próprio
+# compartilhamento sem editar código (o default é o servidor usado hoje).
+REDE_RAIZ = os.environ.get(
+    "INPUT_REDE_RAIZ",
+    r"\\ebeat-fp1\Documentos\Diretoria Tecnica\Engenharia\DSPM\Planejamento Distribuição 2016\Estrutura BI - DDPM",
+)
 REDE_INPUT_SQL = REDE_RAIZ + r"\INPUT SQL"
 REDE_ARQUIVOS_SAP = REDE_INPUT_SQL + r"\Arquivos_SAP"
 REDE_BASES_APOIO = REDE_INPUT_SQL + r"\Bases_Apoio"
@@ -58,6 +95,34 @@ CAMINHO_GANHOS = REDE_BASES_APOIO + r"\Ganhos.xlsx"
 CAMINHO_PROJETO_CONSTRUCAO = REDE_RAIZ + r"\config_projeto_construcao.json"
 CAMINHO_COPIA_EXCEL = REDE_INPUT_SQL + r"\Base_Notas_Sincronizada.xlsx"
 CAMINHO_INPUT_NOTA_RAIZ = REDE_RAIZ + r"\Input Nota.xlsx"
+
+
+def caminho_banco_notas() -> str:
+    """Banco de notas em uso, resolvido pelo perfil.
+
+    Ordem: INPUT_DB_PATH (override explícito, usado também pelo robô SAP) →
+    banco compartilhado da rede em produção → banco local em desenvolvimento.
+    """
+    explicito = os.environ.get("INPUT_DB_PATH", "").strip()
+    if explicito:
+        return explicito
+    if em_producao():
+        return REDE_DB_ORIGEM
+    return str(data_dir() / "notas_departamento.db")
+
+
+def mascarar_caminho(caminho: str) -> str:
+    """Versão de um caminho segura para log: só host mascarado e nome do arquivo.
+
+    ``\\\\servidor-xy\\Pasta\\...\\notas_departamento.db``
+    vira ``\\\\se***xy\\…\\notas_departamento.db``.
+    """
+    nome = os.path.basename(caminho) or caminho
+    if not caminho.startswith("\\\\"):
+        return f"local:…\\{nome}"
+    host = caminho[2:].split("\\", 1)[0]
+    host_mascarado = host[:2] + "***" + host[-2:] if len(host) > 4 else "***"
+    return f"\\\\{host_mascarado}\\…\\{nome}"
 
 # Bases lidas pelo motor (para o meta.bases da API)
 BASES_REDE = {

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { MesExecucaoPicker } from '@/components/branded/mes-execucao-picker';
+import { Banner, Eyebrow } from '@/components/branded/section';
 import { useMoverParaPlano, useMoverPreview } from '../use-carteira-mover';
 
 export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
@@ -40,7 +41,7 @@ export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
 
   return (
     <Dialog open={aberto} onOpenChange={(o) => { if (!o && !mover.isPending) onClose(); }}>
-      <DialogContent className="edp carteira-scope w-[520px]">
+      <DialogContent className="w-[520px]">
         <DialogHeader>
           <DialogTitle>Mover {idOnrs.length} nota(s) para o plano</DialogTitle>
           <DialogDescription>
@@ -48,24 +49,26 @@ export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
           </DialogDescription>
         </DialogHeader>
 
-        {preview.isLoading && <span className="edp-eyebrow">Validando seleção…</span>}
+        {preview.isLoading && <Eyebrow>Validando seleção…</Eyebrow>}
         {bloqueadas.length > 0 && (
-          <div className="edp-banner err">
+          <Banner tipo="err">
             {bloqueadas.length} nota(s) não podem ser movidas — ajuste a seleção:
             <ul style={{ margin: '4px 0 0', paddingLeft: 16 }}>
               {bloqueadas.slice(0, 5).map((b) => (
-                <li key={b.id_onr} className="edp-eyebrow" style={{ textTransform: 'none' }}>
-                  {b.id_onr}: {b.motivo_bloqueio}
-                </li>
+                <Eyebrow key={b.id_onr} asChild>
+                  <li style={{ textTransform: 'none' }}>
+                    {b.id_onr}: {b.motivo_bloqueio}
+                  </li>
+                </Eyebrow>
               ))}
             </ul>
-          </div>
+          </Banner>
         )}
         {temDuplicataNoLote && (
-          <div className="edp-banner err">
+          <Banner tipo="err">
             Há notas com o mesmo nº SAP na seleção (id_sap duplicado na base).
             Elas virariam o mesmo registro no plano — selecione só uma de cada.
-          </div>
+          </Banner>
         )}
         {itens.some((i) => i.avisos.length > 0) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -80,7 +83,7 @@ export function MoverModal({ aberto, idOnrs, onClose, onSucesso }: {
             <Label htmlFor="mv-mes">Mês de execução planejado</Label>
             <MesExecucaoPicker id="mv-mes" value={mes} onChange={setMes}
                                valorNeutro="-" rotuloNeutro="Escolha o mês"
-                               className="edp carteira-scope" />
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Label htmlFor="mv-obra">Status da obra</Label>

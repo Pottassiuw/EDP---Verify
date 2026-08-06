@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Banner, PageHeader, SegTabs } from '@/components/branded/section';
+import { Banner, PageHeader, SectionPage, SegTabs } from '@/components/branded/section';
 
 import { FiltrosGlobais } from './filtros-globais';
 import { RELATORIOS_TABS, TITULOS_RELATORIOS } from './navigation';
@@ -47,7 +47,7 @@ export function RelatoriosSection({
   }
 
   return (
-    <div className="edp-page">
+    <SectionPage>
       <PageHeader
         eyebrow="Relatórios"
         title={TITULOS_RELATORIOS[page]}
@@ -80,7 +80,7 @@ export function RelatoriosSection({
         <Banner tipo="err">{avisoExecutadasSemData}</Banner>
       )}
 
-      {dados.isLoading && <p className="edp-mono text-sm text-text-mute">Carregando relatórios…</p>}
+      {dados.isLoading && <p className="font-mono text-sm text-text-mute">Carregando relatórios…</p>}
       {dados.error && (
         <Banner tipo="err">
           Erro ao carregar relatórios: {mensagemErro(dados.error)}
@@ -95,7 +95,7 @@ export function RelatoriosSection({
       {dashboard && (
         <>
           {dados.isDetalheRegionalLoading && !regional && (
-            <p className="edp-mono text-xs text-text-mute">Atualizando o detalhamento por regional…</p>
+            <p className="font-mono text-xs text-text-mute">Atualizando o detalhamento por regional…</p>
           )}
           <RelatoriosPageContent
             page={page}
@@ -122,7 +122,7 @@ export function RelatoriosSection({
         onVerPlano={onVerPlano}
         onIrParaCoffee={onIrParaCoffee}
       />
-    </div>
+    </SectionPage>
   );
 }
 

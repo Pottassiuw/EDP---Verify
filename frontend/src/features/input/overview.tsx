@@ -7,9 +7,17 @@ import { aplicarFiltros, parseBuscaGlobal } from './lib';
 import { COLUNAS } from './columns';
 import { type FiltersState } from './filters';
 import { NotesTable } from './notes-table';
+import { DataGrid } from './data-grid';
 import { useRecarregarInput } from './use-input-data';
 import { useAutoVinculos } from './use-auto-vinculos';
 import { Button } from '@/components/ui/button';
+import { Eyebrow, StatNumber, SegTabs } from '@/components/branded/section';
+
+type Visualizacao = 'hierarquica' | 'plana';
+const VISUALIZACOES: { id: Visualizacao; rotulo: string }[] = [
+  { id: 'hierarquica', rotulo: '📁 Visão Hierárquica' },
+  { id: 'plana', rotulo: '📄 Visão Plana' },
+];
 
 export function filtrarRegistros(registros: NotaInput[], estado: FiltersState): NotaInput[] {
   let resultado = registros;
@@ -93,23 +101,20 @@ export function Overview({
     <div className="p-6 flex flex-col gap-6 max-w-full">
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <div className="flex items-baseline gap-3">
-          <span className="edp-num text-2xl font-bold tracking-tight text-foreground">
+          <StatNumber>
             {filtrados.length.toLocaleString('pt-BR')}
-          </span>
-          <span className="edp-eyebrow text-xs text-text-mute uppercase tracking-wider font-mono">
+          </StatNumber>
+          <Eyebrow className="text-xs tracking-wider">
             {filtrado ? `de ${dados.registros.length.toLocaleString('pt-BR')} notas encontradas` : 'notas cadastradas'}
-          </span>
+          </Eyebrow>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant={agruparGavetinhas ? "secondary" : "outline"}
-            size="sm"
-            className="h-9 px-3 text-xs"
-            onClick={() => setAgruparGavetinhas((prev) => !prev)}
-            title="Alternar visualização agrupada (gavetinhas) de notas mães e filhas"
-          >
-            {agruparGavetinhas ? "📁 Visão Hierárquica" : "📄 Visão Plana"}
-          </Button>
+          <SegTabs
+            tabs={VISUALIZACOES}
+            value={agruparGavetinhas ? 'hierarquica' : 'plana'}
+            onChange={(v) => setAgruparGavetinhas(v === 'hierarquica')}
+            ariaLabel="Alternar visualização agrupada (gavetinhas) de notas mães e filhas"
+          />
           <Button
             variant="outline"
             size="sm"
@@ -163,12 +168,16 @@ export function Overview({
       </div>
 
       <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
-        <NotesTable
-          registros={filtrados}
-          todosOsRegistros={dados.registros}
-          colunas={COLUNAS}
-          agruparGavetinhas={agruparGavetinhas}
-        />
+        {agruparGavetinhas ? (
+          <NotesTable
+            registros={filtrados}
+            todosOsRegistros={dados.registros}
+            colunas={COLUNAS}
+            agruparGavetinhas
+          />
+        ) : (
+          <DataGrid registros={filtrados} colunas={COLUNAS} />
+        )}
       </div>
 
       <div className="flex items-center justify-between text-xs text-text-mute font-mono px-3 py-2 bg-surface-2/50 rounded-md border border-line">

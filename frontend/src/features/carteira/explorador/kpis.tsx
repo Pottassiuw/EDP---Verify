@@ -6,8 +6,8 @@ export function KpisCarteira(): React.JSX.Element {
   const { data } = useCarteiraResumo();
   const s = data?.por_situacao ?? {};
   return (
-    <div className="edp-stats-row" style={{ display: 'flex', gap: 'var(--gap)', flexWrap: 'wrap' }}>
-      <StatTile label="Total na carteira" value={data?.total ?? '—'} />
+    <div style={{ display: 'flex', gap: 'var(--gap)', flexWrap: 'wrap' }}>
+      <StatTile label="Total na carteira" value={data?.total ?? '—'} destaque />
       <StatTile label="Fora do plano" value={s['fora_do_plano'] ?? '—'} />
       <StatTile label="No plano" value={s['no_plano'] ?? '—'} />
       <StatTile label="Executadas" value={s['executada'] ?? '—'} />

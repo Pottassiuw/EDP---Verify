@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Card } from '@/components/ui/card';
+
 import { MESES_ABREV_PT, fmtQtd } from '../fmt';
 import type { MesMensalizacao } from '../types';
 import { TituloPainel } from '../relatorios-ui';
@@ -20,7 +22,7 @@ export function MensalizacaoChart({
   const maximo = Math.max(1, ...meses.flatMap((mes) => [mes.meta, mes.carteira]));
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-3">
         <TituloPainel
           titulo="Meta e carteira por mês"
@@ -41,7 +43,7 @@ export function MensalizacaoChart({
                 type="button"
                 onClick={() => onSelecionarMes(mes.mes)}
                 aria-pressed={selecionado}
-                className={`group flex min-w-0 flex-col gap-2 rounded-edp px-2 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                className={`group flex min-w-0 flex-col gap-2 rounded-app px-2 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                   selecionado ? 'bg-accent-tint' : 'hover:bg-surface-2'
                 }`}
               >
@@ -59,18 +61,18 @@ export function MensalizacaoChart({
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-1">
-                  <span className="edp-mono text-xs text-text-dim">{MESES_ABREV_PT[mes.mes - 1]}</span>
+                  <span className="font-mono text-xs text-text-dim">{MESES_ABREV_PT[mes.mes - 1]}</span>
                   {mes.mes === mesCorrente && postergadasMesCorrente > 0 && (
                     <span className="size-1.5 rounded-full bg-amber" title={`${fmtQtd(postergadasMesCorrente)} postergadas`} aria-label={`${fmtQtd(postergadasMesCorrente)} postergadas`} />
                   )}
                 </div>
-                <span className="edp-mono text-[10px] text-text-mute">Exec. {Math.round(percentualExecutado * 100)}%</span>
+                <span className="font-mono text-[10px] text-text-mute">Exec. {Math.round(percentualExecutado * 100)}%</span>
               </button>
             );
           })}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }
 

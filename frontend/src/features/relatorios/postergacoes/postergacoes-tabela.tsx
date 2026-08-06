@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ export function PostergacoesTabela({
   );
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Planos com postergação"
@@ -45,7 +46,7 @@ export function PostergacoesTabela({
         </EstadoVazio>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="edp-table min-w-[860px]">
+          <Table className="min-w-[860px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Plano</TableHead>
@@ -61,10 +62,10 @@ export function PostergacoesTabela({
                 <TableRow key={plano.id}>
                   <TableCell>
                     <div className="font-medium text-text">{plano.nome_curto}</div>
-                    <div className="edp-mono mt-1 text-xs text-text-mute">{plano.plano} · {plano.area}</div>
+                    <div className="mt-1 font-mono text-xs text-text-mute">{plano.plano} · {plano.area}</div>
                   </TableCell>
                   <TableCell className="text-text-dim">{plano.regional}</TableCell>
-                  <TableCell className="text-right edp-mono text-amber">{fmtQtd(plano.postergado)}</TableCell>
+                  <TableCell className="text-right font-mono text-amber">{fmtQtd(plano.postergado)}</TableCell>
                   <TableCell className="text-text-mute">—</TableCell>
                   <TableCell className="text-text-mute">—</TableCell>
                   <TableCell className="text-right">
@@ -79,6 +80,6 @@ export function PostergacoesTabela({
           </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

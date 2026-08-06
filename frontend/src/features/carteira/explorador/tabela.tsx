@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components/branded/section';
 import { colunasCarteira } from './colunas';
 import type { NotaCarteira } from '../types';
 
@@ -37,7 +38,7 @@ export function TabelaCarteira({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)' }}>
-      <div className="carteira-table" style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto' }}>
         <Table>
           <TableHeader>
             {tabela.getHeaderGroups().map((hg) => (
@@ -79,7 +80,7 @@ export function TabelaCarteira({
         </Table>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap)', justifyContent: 'flex-end' }}>
-        <span className="edp-eyebrow">{total} nota(s) · pág. {page}/{ultimaPagina}</span>
+        <Eyebrow>{total} nota(s) · pág. {page}/{ultimaPagina}</Eyebrow>
         <Button variant="outline" size="sm" disabled={page <= 1}
                 onClick={() => onPagina(page - 1)} aria-label="Página anterior">
           Anterior

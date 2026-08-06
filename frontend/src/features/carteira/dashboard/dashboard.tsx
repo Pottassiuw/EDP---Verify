@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Banner } from '@/components/branded/section';
+import { Banner, Eyebrow } from '@/components/branded/section';
 
 import type { FiltrosCarteira } from '../types';
 import { useCarteiraDashboard } from '../use-carteira-dashboard';
@@ -18,7 +18,7 @@ export function DashboardCarteiraView({ onDrill }: {
     return <Banner tipo="err">Não foi possível carregar o dashboard: {error instanceof Error ? error.message : String(error)}</Banner>;
   }
   if (isLoading || !data) {
-    return <span className="edp-eyebrow">Carregando dashboard…</span>;
+    return <Eyebrow>Carregando dashboard…</Eyebrow>;
   }
 
   // Drill por plano: `LinhaPlano.plano` é a descrição do conjunto (o

@@ -12,7 +12,6 @@ import {
 import { fmtQtd } from '../fmt';
 import type { PlanoRelatorio } from '../relatorios-data';
 import type { DashboardRelatorios } from '../types';
-import { useRelatoriosPortalTheme } from '../use-relatorios-portal-theme';
 
 export function PostergacoesKpis({
   dashboard,
@@ -23,7 +22,6 @@ export function PostergacoesKpis({
   planos: PlanoRelatorio[];
   mesSelecionado: number;
 }): React.JSX.Element {
-  const portalTheme = useRelatoriosPortalTheme();
   const planosPostergados = planos.filter((plano) => plano.postergado > 0);
   const totalPostergado = planosPostergados.reduce((total, plano) => total + plano.postergado, 0);
   const postergadasNoMes = mesSelecionado === dashboard.mes_referencia
@@ -46,7 +44,7 @@ export function PostergacoesKpis({
                   <Info className="size-4" aria-hidden="true" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent {...portalTheme} sideOffset={6} className="edp">
+              <TooltipContent sideOffset={6} >
                 Não fornecido pelo contrato atual de Relatórios.
               </TooltipContent>
             </Tooltip>

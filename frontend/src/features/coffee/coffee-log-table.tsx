@@ -139,7 +139,7 @@ function StructuredDetails({ detalhes }: { detalhes: Record<string, unknown> | n
       {entries.map(([k, v]) => (
         <div key={k} className="clog-detail-row">
           <span className="clog-detail-key">{DETAIL_LABELS[k] ?? k}:</span>
-          <span className="clog-detail-val edp-mono">{formatDetailValue(k, v)}</span>
+          <span className="clog-detail-val font-mono">{formatDetailValue(k, v)}</span>
         </div>
       ))}
     </div>
@@ -200,7 +200,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "todos",
 
       {notaRoot !== undefined && (
         <div className="clog-root">
-          <span className="text-[14px]">Nota <span className="edp-mono">#{notaRoot}</span></span>
+          <span className="text-[14px]">Nota <span className="font-mono">#{notaRoot}</span></span>
           {classe && (
             <span className="clog-tag bg-surface-2 text-text">
               {classe}
@@ -219,7 +219,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "todos",
               <div className="clog-card" style={{ cursor: g.cabecalho.detalhes ? "pointer" : undefined }}
                    onClick={() => { if (g.cabecalho.detalhes) toggle(g.cabecalho.id); }}>
                 <div className="flex items-center gap-[8px] flex-wrap">
-                  <span className="edp-mono text-text-mute" style={{ fontSize: compact ? 10.5 : 11.5 }}
+                  <span className="font-mono text-text-mute" style={{ fontSize: compact ? 10.5 : 11.5 }}
                         title={g.cabecalho.timestamp}>
                     {formatRelativeTime(g.cabecalho.timestamp)}
                   </span>
@@ -228,7 +228,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "todos",
                   </span>
                   <span className="font-semibold" style={{ fontSize: compact ? 12 : 13 }}>{g.cabecalho.acao}</span>
                   {g.cabecalho.nota_pk !== null && (
-                    <span className="edp-mono text-[12px] font-semibold"
+                    <span className="font-mono text-[12px] font-semibold"
                       style={{
                         cursor: onClickNota ? "pointer" : undefined,
                         color: onClickNota ? "var(--accent)" : "var(--text)",
@@ -245,7 +245,7 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "todos",
                     </span>
                   )}
                   {g.cabecalho.usuario && (
-                    <span className="edp-mono text-[11px] text-text-dim">
+                    <span className="font-mono text-[11px] text-text-dim">
                       {g.cabecalho.usuario}
                     </span>
                   )}
@@ -265,13 +265,13 @@ export function LogTable({ logs, loading, compact, onClickNota, passo = "todos",
             {visiveis.map((f, i, arr) => (
               <div key={f.id} className="clog-filho pl-[30px]" style={{ cursor: f.detalhes ? "pointer" : undefined }}
                    onClick={() => { if (f.detalhes) toggle(f.id); }}>
-                <span className="clog-conector edp-mono">{i === arr.length - 1 ? "└──" : "├──"}</span>
+                <span className="clog-conector font-mono">{i === arr.length - 1 ? "└──" : "├──"}</span>
                 <span className={`clog-tag ${TIPO_CLASS[f.tipo] ?? ""}`}>{TIPO_LABEL[f.tipo] ?? f.tipo}</span>
-                <span className="edp-mono font-semibold">{f.acao}</span>
+                <span className="font-mono font-semibold">{f.acao}</span>
                 {f.nota_pk !== null && (
-                  <span className="edp-mono text-text-mute">#{f.nota_pk}</span>
+                  <span className="font-mono text-text-mute">#{f.nota_pk}</span>
                 )}
-                <span className="edp-mono text-text-mute">{resumoFilho(f)}</span>
+                <span className="font-mono text-text-mute">{resumoFilho(f)}</span>
                 {!f.sucesso && <span className="text-red font-semibold">✗ FALHA</span>}
                 {f.detalhes && (
                   <span className="ml-auto text-[10px] text-text-mute">

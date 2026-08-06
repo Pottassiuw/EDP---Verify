@@ -75,27 +75,29 @@ export function InputSection({
 
   return (
     <div className="input-scope flex-1 min-w-0 flex flex-col overflow-hidden h-full">
-      <PageHeader
-        eyebrow="Rede EDP · SQLite Local"
-        title="Gestão de Notas"
-        subtitle="Controle unificado de notas, alterações, base ramal e indicadores."
-        action={
-          <div className="flex items-center gap-3 flex-wrap">
-            {sincronizando ? (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber/10 border border-amber/30 text-amber text-xs font-medium animate-pulse">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
-                <span>Sincronizando com a rede...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 border border-green/20 text-green text-xs font-medium">
-                <div className="carteira-sync-dot" />
-                <span>Base Sincronizada</span>
-              </div>
-            )}
-            <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
-          </div>
-        }
-      />
+      <div className="shrink-0 bg-surface border-b border-b-line pt-[13px] px-[22px] pb-[11px]">
+        <PageHeader
+          eyebrow="Rede EDP · SQLite Local"
+          title="Gestão de Notas"
+          subtitle="Controle unificado de notas, alterações, base ramal e indicadores."
+          action={
+            <div className="flex items-center gap-3 flex-wrap">
+              {sincronizando ? (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber/10 border border-amber/30 text-amber text-xs font-medium animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber" />
+                  <span>Sincronizando com a rede...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green/10 border border-green/20 text-green text-xs font-medium">
+                  <div className="carteira-sync-dot" />
+                  <span>Base Sincronizada</span>
+                </div>
+              )}
+              <SegTabs tabs={INPUT_SUBS} value={sub} onChange={setSub} ariaLabel="Seções do módulo Input" />
+            </div>
+          }
+        />
+      </div>
 
       {dados && (sub === 'visao' || sub === 'gerenciar' || sub === 'ramal' || sub === 'relatorios') && (
         <div className="shrink-0 bg-surface border-b border-line px-6 py-3">

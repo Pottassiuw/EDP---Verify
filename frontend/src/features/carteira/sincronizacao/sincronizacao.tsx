@@ -45,7 +45,7 @@ export function Sincronizacao(): React.JSX.Element {
         <StatTile label="Journal mode"
                   value={metricas?.journal_mode ?? '—'} />
       </div>
-      <div className="carteira-table" style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto' }}>
         <Table>
           <TableHeader>
             <TableRow>

@@ -3,6 +3,7 @@ import { ChevronDown, SlidersHorizontal } from 'lucide-react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -22,7 +23,6 @@ import {
 import { fmtQtd, fmtRS } from '../fmt';
 import { ordenarPlanos, type OrdenacaoPlanos, type PlanoRelatorio } from '../relatorios-data';
 import { BadgeDisponibilidade, EstadoVazio, TituloPainel } from '../relatorios-ui';
-import { useRelatoriosPortalTheme } from '../use-relatorios-portal-theme';
 
 const ROTULOS_ORDENACAO: Record<OrdenacaoPlanos, string> = {
   crit: 'Prioridade crítica',
@@ -41,11 +41,10 @@ export function DetalhamentoCarteira({
 }): React.JSX.Element {
   const [ordenacao, setOrdenacao] = React.useState<OrdenacaoPlanos>('crit');
   const [abertas, setAbertas] = React.useState<Record<string, boolean>>({});
-  const portalTheme = useRelatoriosPortalTheme();
   const grupos = React.useMemo(() => agruparPorArea(planos, ordenacao), [ordenacao, planos]);
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Detalhamento da carteira"
@@ -57,7 +56,7 @@ export function DetalhamentoCarteira({
             <SelectTrigger className="w-52" aria-label="Ordenar detalhamento da carteira">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent {...portalTheme} className="edp">
+            <SelectContent >
               {(Object.keys(ROTULOS_ORDENACAO) as OrdenacaoPlanos[]).map((valor) => (
                 <SelectItem key={valor} value={valor}>{ROTULOS_ORDENACAO[valor]}</SelectItem>
               ))}
@@ -86,14 +85,14 @@ export function DetalhamentoCarteira({
                     <span className="flex min-w-0 items-center gap-3">
                       <ChevronDown className={`size-4 shrink-0 text-text-mute transition-transform ${aberta ? '' : '-rotate-90'}`} aria-hidden="true" />
                       <span className="font-medium text-text">{area}</span>
-                      <span className="edp-mono text-xs text-text-mute">{fmtQtd(itens.length)} planos</span>
+                      <span className="font-mono text-xs text-text-mute">{fmtQtd(itens.length)} planos</span>
                     </span>
                     <span className="text-xs text-text-mute">{fmtQtd(itens.reduce((total, item) => total + item.deficit, 0))} em déficit</span>
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="overflow-x-auto">
-                    <Table className="edp-table min-w-[1000px]">
+                    <Table className="min-w-[1000px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead>Plano</TableHead>
@@ -119,15 +118,15 @@ export function DetalhamentoCarteira({
                               >
                                 {plano.nome_curto}
                               </Button>
-                              <div className="edp-mono mt-1 text-xs text-text-mute">{plano.plano} · {plano.unidade}</div>
+                              <div className="mt-1 font-mono text-xs text-text-mute">{plano.plano} · {plano.unidade}</div>
                             </TableCell>
                             <TableCell className="text-text-dim">{plano.regional}</TableCell>
-                            <TableCell className="text-right edp-mono">{fmtQtd(plano.meta)}</TableCell>
-                            <TableCell className="text-right edp-mono">{fmtQtd(plano.carteira)}</TableCell>
-                            <TableCell className={`text-right edp-mono ${plano.saldo < 0 ? 'text-red' : 'text-green'}`}>{fmtQtd(plano.saldo)}</TableCell>
+                            <TableCell className="text-right font-mono">{fmtQtd(plano.meta)}</TableCell>
+                            <TableCell className="text-right font-mono">{fmtQtd(plano.carteira)}</TableCell>
+                            <TableCell className={`text-right font-mono ${plano.saldo < 0 ? 'text-red' : 'text-green'}`}>{fmtQtd(plano.saldo)}</TableCell>
                             <TableCell className="text-right"><BadgeDisponibilidade pct={plano.pct_disp} /></TableCell>
-                            <TableCell className="text-right edp-mono text-text-dim">{fmtQtd(plano.postergado)}</TableCell>
-                            <TableCell className={`text-right edp-mono ${plano.gap_rs < 0 ? 'text-red' : 'text-text-mute'}`}>{fmtRS(plano.gap_rs)}</TableCell>
+                            <TableCell className="text-right font-mono text-text-dim">{fmtQtd(plano.postergado)}</TableCell>
+                            <TableCell className={`text-right font-mono ${plano.gap_rs < 0 ? 'text-red' : 'text-text-mute'}`}>{fmtRS(plano.gap_rs)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -139,7 +138,7 @@ export function DetalhamentoCarteira({
           })}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

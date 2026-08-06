@@ -1,7 +1,8 @@
 """Testes do módulo Input (backend)."""
+import io
 import os
 import tempfile
-import io
+from pathlib import Path
 
 # Blindagem global: impede que a execução de testes afete o banco de dados real
 _tmp_test_dir = tempfile.mkdtemp(prefix="edp_input_test_")
@@ -63,8 +64,7 @@ def test_inicializar_banco_cria_tabelas(banco_temporario):
     tabelas = {r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     conn.close()
-    assert {"notas", "log_alteracoes", "log_arquivos"} <= tabelas
-    assert "bloqueios" not in tabelas  # fora do escopo (spec)
+    assert {"notas", "log_alteracoes", "log_arquivos", "bloqueios"} <= tabelas
 
 
 def test_inicializar_banco_cria_indices(banco_temporario):
@@ -164,12 +164,27 @@ def test_reverter_ultima_alteracao(banco_temporario):
     from input_module import db
     db.salvar_em_massa(pd.DataFrame([_nota(3000)]))
     db.aplicar_edicoes([{"Numero_Nota": 3000, "Status_Nota": "99 Encerrado"}], usuario="t")
-    ok, _msg = db.reverter_ultima_alteracao()
+    ok, _msg = db.reverter_ultima_alteracao("t")
     assert ok
     df = db.carregar_dados()
     assert df[df["Numero_Nota"] == 3000].iloc[0]["Status_Nota"] == "10 Em planejamento"
-    ok, _msg = db.reverter_ultima_alteracao()
+    ok, _msg = db.reverter_ultima_alteracao("t")
     assert not ok
+
+
+def test_reverter_nao_desfaz_alteracao_de_outro_usuario(banco_temporario):
+    """O undo é por usuário: com o banco compartilhado, desfazer o próprio
+    trabalho não pode reverter o da colega que salvou depois."""
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(3100)]))
+    db.aplicar_edicoes([{"Numero_Nota": 3100, "Observacao": "minha"}], usuario="eu")
+    db.aplicar_edicoes([{"Numero_Nota": 3100, "Observacao": "dela"}], usuario="outra")
+
+    ok, _msg = db.reverter_ultima_alteracao("eu")
+    assert ok
+    df = db.carregar_dados()
+    # A edição da outra pessoa (mais recente) permanece intocada.
+    assert df[df["Numero_Nota"] == 3100].iloc[0]["Observacao"] == "dela"
 
 
 def test_deletar_notas(banco_temporario):
@@ -215,6 +230,85 @@ def test_deletar_notas_gera_log(banco_temporario):
     linha = logs[logs["Numero_Nota"] == 4100].iloc[0]
     assert linha["Campo_Alterado"] == "EXCLUSÃO DE NOTA"
     assert linha["Usuario"] == "tester"
+
+
+# ── Fase 2: bloqueios (edição concorrente no banco compartilhado) ────────
+def test_travar_nota_bloqueia_outro_usuario(banco_temporario):
+    from input_module import db
+    assert db.travar_nota(4200, "ana") == {"ok": True}
+    resultado = db.travar_nota(4200, "bob")
+    assert resultado["ok"] is False
+    assert resultado["usuario"] == "ana"
+    assert "desde" in resultado
+
+
+def test_travar_nota_mesmo_usuario_renova(banco_temporario):
+    from input_module import db
+    assert db.travar_nota(4201, "ana")["ok"] is True
+    # Segunda chamada da MESMA pessoa não é bloqueio — é renovação do TTL.
+    assert db.travar_nota(4201, "ana")["ok"] is True
+
+
+def test_destravar_libera_para_outro_usuario(banco_temporario):
+    from input_module import db
+    db.travar_nota(4202, "ana")
+    assert db.destravar_notas([4202], "ana") == 1
+    assert db.travar_nota(4202, "bob")["ok"] is True
+
+
+def test_destravar_nao_derruba_lock_de_outro(banco_temporario):
+    """Um release tardio de quem perdeu a corrida não pode apagar o lock de
+    quem já assumiu a nota no meio tempo."""
+    from input_module import db
+    db.travar_nota(4203, "ana")
+    assert db.destravar_notas([4203], "bob") == 0  # bob nunca foi o dono
+    assert db.obter_bloqueios([4203])[4203]["usuario"] == "ana"
+
+
+def test_bloqueio_expira_por_ttl(banco_temporario, monkeypatch):
+    from input_module import db
+    import datetime
+    db.travar_nota(4204, "ana")
+    # Simula um lock antigo sem esperar o TTL de verdade.
+    expirado = datetime.datetime.now() - datetime.timedelta(minutes=db.BLOQUEIO_TTL_MINUTOS + 1)
+    conn = db.get_db_connection()
+    conn.execute("UPDATE bloqueios SET Data_Hora = ? WHERE Numero_Nota = ?", (expirado, 4204))
+    conn.commit()
+    conn.close()
+    assert db.obter_bloqueios([4204]) == {}
+    assert db.travar_nota(4204, "bob")["ok"] is True
+
+
+def test_aplicar_edicoes_pula_nota_travada_por_outro(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4205)]))
+    db.travar_nota(4205, "outra")
+    resultado = db.aplicar_edicoes(
+        [{"Numero_Nota": 4205, "Observacao": "tentativa"}], usuario="eu")
+    assert resultado["alteradas"] == 0
+    assert resultado["bloqueadas"] == [4205]
+    df = db.carregar_dados()
+    assert df[df["Numero_Nota"] == 4205].iloc[0]["Observacao"] == ""
+
+
+def test_aplicar_edicoes_permite_dono_do_bloqueio(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4206)]))
+    db.travar_nota(4206, "eu")
+    resultado = db.aplicar_edicoes(
+        [{"Numero_Nota": 4206, "Observacao": "minha edicao"}], usuario="eu")
+    assert resultado["alteradas"] == 1
+    assert resultado["bloqueadas"] == []
+
+
+def test_deletar_notas_pula_travada_por_outro(banco_temporario):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(4207), _nota(4208)]))
+    db.travar_nota(4207, "outra")
+    assert db.deletar_notas([4207, 4208], usuario="eu") == 1
+    numeros = set(db.carregar_dados()["Numero_Nota"])
+    assert 4207 in numeros   # travada: sobreviveu
+    assert 4208 not in numeros  # livre: excluída
 
 
 def test_backup_rotativo(banco_temporario):
@@ -680,6 +774,42 @@ def test_delete_e_desfazer(cliente):
     assert r.status_code == 200 and r.json()["excluidas"] == 1
 
 
+def test_travar_e_listar_bloqueios_api(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8100)]))
+    r = cliente.post("/api/input/notas/8100/travar", headers=CABECALHO_USER, json={})
+    assert r.status_code == 200 and r.json()["ok"] is True
+
+    ativos = cliente.get("/api/input/bloqueios").json()["bloqueios"]
+    assert any(b["Numero_Nota"] == 8100 and b["Usuario"] == "ana" for b in ativos)
+
+    r = cliente.post("/api/input/notas/8100/travar", headers={"X-User": "bob"}, json={})
+    assert r.status_code == 200  # não é erro HTTP — o conflito vem no corpo, como /desfazer
+    assert r.json()["ok"] is False
+    assert r.json()["usuario"] == "ana"
+
+
+def test_destravar_api(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8101)]))
+    cliente.post("/api/input/notas/8101/travar", headers=CABECALHO_USER, json={})
+    r = cliente.post("/api/input/notas/destravar", headers=CABECALHO_USER,
+                     json={"numeros": [8101]})
+    assert r.status_code == 200 and r.json()["liberadas"] == 1
+    assert cliente.get("/api/input/bloqueios").json()["bloqueios"] == []
+
+
+def test_patch_retorna_notas_bloqueadas(cliente):
+    from input_module import db
+    db.salvar_em_massa(pd.DataFrame([_nota(8102)]))
+    cliente.post("/api/input/notas/8102/travar", headers={"X-User": "outra"}, json={})
+    r = cliente.patch("/api/input/notas", headers=CABECALHO_USER,
+                      json={"linhas": [{"Numero_Nota": 8102, "Observacao": "via api"}]})
+    assert r.status_code == 200
+    assert r.json()["alteradas"] == 0
+    assert r.json()["bloqueadas"] == [8102]
+
+
 def test_export_gera_xlsx(cliente):
     from input_module import db, engine
     db.salvar_em_massa(pd.DataFrame([_nota(9000)]))
@@ -935,6 +1065,26 @@ def test_postergadas_schema_e_helpers(banco_temporario):
 
 
 # ── Task 2: Sincronização de Metas do Controle Plano de Recomposição ───────
+def test_caminho_controle_recomposicao_usa_usuario_da_maquina(monkeypatch):
+    from input_module import config
+
+    monkeypatch.delenv("CONTROLE_RECOMPOSICAO_PATH", raising=False)
+    monkeypatch.setenv("USER", "usuario-sharepoint")
+    monkeypatch.setenv("USERNAME", "outro-usuario")
+
+    esperado = (
+        Path("C:/Users")
+        / "usuario-sharepoint"
+        / "EDP"
+        / "O365_Planejamento_Manutencao_EDP_Brasil - Documentos"
+        / "PLANO RECOMPOSIÇÃO"
+        / "SP"
+        / "2026"
+        / "Controle Plano de Recomposição 2026.xlsx"
+    )
+    assert config.caminho_controle_recomposicao() == esperado
+
+
 def _xlsx_controle(caminho, meta_jan=17.0, com_postergadas=True):
     """Planilha sintética mínima com abas base, dexpara e (opcional) Postergadas."""
     import gc
@@ -1324,3 +1474,125 @@ def test_criar_notas_origem_default_manual(banco_temporario):
     row = conn.execute("SELECT origem FROM notas WHERE Numero_Nota=778002").fetchone()
     conn.close()
     assert row[0] == "manual"
+
+
+# ── Perfil de execução: local x produção ─────────────────────────────────────
+def test_perfil_padrao_e_local(monkeypatch):
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    assert config.perfil() == config.PERFIL_LOCAL
+    assert config.em_producao() is False
+
+
+def test_perfil_producao_reconhecido(monkeypatch):
+    monkeypatch.setenv("EDP_PERFIL", "PRODUCAO")
+    assert config.perfil() == config.PERFIL_PRODUCAO
+    assert config.em_producao() is True
+
+
+def test_perfil_local_usa_banco_do_data_dir(monkeypatch, tmp_path):
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    assert config.caminho_banco_notas() == str(tmp_path / "notas_departamento.db")
+
+
+def test_perfil_producao_usa_banco_da_rede(monkeypatch, tmp_path):
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    assert config.caminho_banco_notas() == config.REDE_DB_ORIGEM
+
+
+def test_input_db_path_vence_o_perfil(monkeypatch, tmp_path):
+    alvo = tmp_path / "compartilhado.db"
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.setenv("INPUT_DB_PATH", str(alvo))
+    assert config.caminho_banco_notas() == str(alvo)
+
+
+def test_producao_sem_banco_acessivel_falha_alto(monkeypatch, tmp_path):
+    """Produção sem rede levanta erro — jamais cai no banco local silenciosamente."""
+    from input_module import db
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    monkeypatch.setenv("INPUT_DB_PATH", str(tmp_path / "inexistente.db"))
+    with pytest.raises(db.BancoRedeIndisponivelErro) as erro:
+        db.migrar_da_rede_se_preciso()
+    mensagem = str(erro.value)
+    assert "EDP_PERFIL=producao" in mensagem
+    assert "inexistente.db" in mensagem          # nome lógico do banco: útil
+    assert str(tmp_path) not in mensagem         # diretório completo: não vaza
+
+
+def test_producao_com_banco_acessivel_nao_copia_nada(monkeypatch, tmp_path):
+    from input_module import db
+    compartilhado = tmp_path / "compartilhado.db"
+    monkeypatch.setenv("INPUT_DB_PATH", str(compartilhado))
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    db.inicializar_banco()
+    monkeypatch.setenv("EDP_PERFIL", "producao")
+    assert db.migrar_da_rede_se_preciso() == "rede"
+    assert not (tmp_path / "notas_departamento.db").exists()
+
+
+def test_mascarar_caminho_nao_expoe_host_nem_diretorio():
+    mascarado = config.mascarar_caminho(config.REDE_DB_ORIGEM)
+    assert "notas_departamento.db" in mascarado
+    assert "ebeat-fp1" not in mascarado
+    assert "Diretoria Tecnica" not in mascarado
+    assert config.mascarar_caminho(r"C:\dados\notas.db").startswith("local:")
+
+
+def test_descrever_conexao_resume_sem_caminho_completo(monkeypatch, tmp_path):
+    from input_module import db
+    monkeypatch.delenv("EDP_PERFIL", raising=False)
+    monkeypatch.delenv("INPUT_DB_PATH", raising=False)
+    monkeypatch.setenv("INPUT_DATA_DIR", str(tmp_path))
+    db.inicializar_banco()
+    db.salvar_em_massa(pd.DataFrame([_nota(9100)]))
+    resumo = db.descrever_conexao()
+    assert resumo["ambiente"] == "local"
+    assert resumo["tipo"] == "sqlite"
+    assert resumo["status"] == "ok"
+    assert resumo["qtd_notas"] == 1
+    assert str(tmp_path) not in resumo["alvo"]
+
+
+def test_rede_raiz_respeita_env(monkeypatch):
+    """INPUT_REDE_RAIZ redireciona todos os caminhos derivados da rede."""
+    import importlib
+    monkeypatch.setenv("INPUT_REDE_RAIZ", r"\outro-host\Compartilhado")
+    try:
+        importlib.reload(config)
+        assert config.REDE_RAIZ == r"\outro-host\Compartilhado"
+        assert config.REDE_DB_ORIGEM.startswith(r"\outro-host\Compartilhado")
+        assert config.CAMINHO_BASE_IW28.startswith(r"\outro-host\Compartilhado")
+    finally:
+        monkeypatch.delenv("INPUT_REDE_RAIZ", raising=False)
+        importlib.reload(config)
+    assert "outro-host" not in config.REDE_RAIZ
+
+
+# ── Ramal: idempotência do ID_Cronologia ─────────────────────────────────────
+def test_ramal_lote_parcial_preserva_id_cronologia(banco_temporario):
+    """Reprocessar uma nota não renumera a cronologia nem colide com as outras."""
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame(
+        [_nota_ramal(5201), _nota_ramal(5202), _nota_ramal(5203)]))
+    antes = dict(zip(db.carregar_dados_ramal()["Numero_Nota"],
+                     db.carregar_dados_ramal()["ID_Cronologia"]))
+    assert len(set(antes.values())) == 3  # cronologias distintas
+
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5203, Observacao="editada")]))
+    depois = dict(zip(db.carregar_dados_ramal()["Numero_Nota"],
+                      db.carregar_dados_ramal()["ID_Cronologia"]))
+    assert depois == antes
+    assert len(db.carregar_dados_ramal()) == 3
+
+
+def test_ramal_nota_nova_continua_a_numeracao(banco_temporario):
+    from input_module import db
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5301), _nota_ramal(5302)]))
+    db.salvar_ramal_em_massa(pd.DataFrame([_nota_ramal(5303)]))
+    df = db.carregar_dados_ramal()
+    cronologias = sorted(int(x) for x in df["ID_Cronologia"])
+    assert cronologias == [1, 2, 3]

@@ -1,5 +1,15 @@
 import React from 'react';
 
+import { Card } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 import { fmtPct } from '../fmt';
 import type { PlanoRelatorio } from '../relatorios-data';
 import { EstadoVazio, TituloPainel } from '../relatorios-ui';
@@ -21,7 +31,7 @@ export function RegionalMatriz({
   const matriz = React.useMemo(() => criarMatriz(planos), [planos]);
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Matriz regional por área"
@@ -32,17 +42,17 @@ export function RegionalMatriz({
         <EstadoVazio>Aguardando o detalhamento do recorte por regional.</EstadoVazio>
       ) : (
         <div className="overflow-x-auto">
-          <table className="edp-table min-w-[660px]">
-          <thead>
-            <tr>
-              <th>Regional</th>
-              {areas.map((area) => <th key={area} className="text-right">{area}</th>)}
-            </tr>
-          </thead>
-          <tbody>
+          <Table className="min-w-[660px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Regional</TableHead>
+              {areas.map((area) => <TableHead key={area} className="text-right">{area}</TableHead>)}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {regionais.map((regional) => (
-              <tr key={regional.regional}>
-                <td>
+              <TableRow key={regional.regional}>
+                <TableCell>
                   <button
                     type="button"
                     onClick={() => onSelecionarRegional(regional.regional)}
@@ -50,18 +60,18 @@ export function RegionalMatriz({
                   >
                     {regional.regional}
                   </button>
-                </td>
+                </TableCell>
                 {areas.map((area) => {
                   const valor = matriz.get(chaveMatriz(regional.regional, area));
-                  return <td key={area} className={`text-right edp-mono ${classeMatriz(valor)}`}>{fmtPct(valor ?? null)}</td>;
+                  return <TableCell key={area} className={`text-right font-mono ${classeMatriz(valor)}`}>{fmtPct(valor ?? null)}</TableCell>;
                 })}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-          </table>
+          </TableBody>
+          </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

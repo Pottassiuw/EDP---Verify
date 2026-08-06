@@ -52,7 +52,7 @@ export function NotaOperacaoCard({
           className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Abrir detalhes da nota ${id}`}
         >
-          <span className="edp-mono text-sm font-semibold">#{id}</span>
+          <span className="font-mono text-sm font-semibold">#{id}</span>
           <span className="ml-2 text-xs text-text-mute">
             {item.origem === 'verificar' ? 'Verificar' : 'Avulsa'}
           </span>
@@ -99,7 +99,7 @@ export function NotaOperacaoCard({
               }}
             />
           </div>
-          <span className="edp-mono mt-1 block text-xs text-text-mute">
+          <span className="font-mono mt-1 block text-xs text-text-mute">
             {progress.feitas}/{progress.total}
           </span>
         </div>

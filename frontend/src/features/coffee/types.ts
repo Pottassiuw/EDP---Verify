@@ -10,6 +10,17 @@ export interface CoffeeNota {
   erro: string | null;
   a_gerar?: boolean;
   origem?: string | null;
+  verificar_id?: number | null;
+  verificar_ativa?: boolean;
+  verificar_em?: string | null;
+  verificar_por?: string | null;
+  encaminhada_em?: string | null;
+  encaminhada_por?: string | null;
+  retornada_em?: string | null;
+  retornada_por?: string | null;
+  retorno_justificativa?: string | null;
+  corrigida_em?: string | null;
+  corrigida_por?: string | null;
 }
 
 export interface CoffeeJob {
@@ -72,6 +83,8 @@ export interface CoffeeConsulta {
   local_instalacao: string | null;
   classificacao: string;
   arquivado: boolean | null;
+  poste: string | null;
+  referencia: string | null;
 }
 
 export interface PropostaPlano {

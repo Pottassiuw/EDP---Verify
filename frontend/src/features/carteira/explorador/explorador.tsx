@@ -1,8 +1,9 @@
 import React from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { usePersistedState } from '../../../hooks/use-persisted-state';
-import { Banner } from '@/components/branded/section';
+import { Banner, Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useCarteiraNotas } from '../use-carteira-notas';
 import type { FiltrosCarteira } from '../types';
 import { FiltrosCarteiraBar } from './filtros';
@@ -53,17 +54,17 @@ export function Explorador({ handoff, drill }: {
       <KpisCarteira />
       <FiltrosCarteiraBar filtros={filtros} onChange={aplicarFiltros} />
       {idsSelecionados.length > 0 && (
-        <div className="edp-panel" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap)', padding: '10px 14px' }}>
-          <span className="edp-eyebrow">{idsSelecionados.length} selecionada(s)</span>
+        <Card style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap)', padding: '10px 14px' }}>
+          <Eyebrow>{idsSelecionados.length} selecionada(s)</Eyebrow>
           <Button size="sm" style={{ marginLeft: 'auto' }} onClick={() => setModalAberto(true)}>
             Mover para o plano
           </Button>
           <Button variant="outline" size="sm" onClick={() => setSelecao({})}>Limpar</Button>
-        </div>
+        </Card>
       )}
       {error && <Banner tipo="err">Não foi possível carregar a carteira: {error instanceof Error ? error.message : String(error)}</Banner>}
       {isLoading && !data
-        ? <span className="edp-eyebrow">Carregando…</span>
+        ? <Eyebrow>Carregando…</Eyebrow>
         : (
           <TabelaCarteira
             registros={data?.registros ?? []}

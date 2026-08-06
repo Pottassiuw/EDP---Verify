@@ -6,7 +6,7 @@ import { valoresUnicos, formatarNumero } from './lib';
 import type { ColunaDef } from './columns';
 import { NotesTable } from './notes-table';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/branded/section';
+import { PageHeader, SectionPage } from '@/components/branded/section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiSelect } from './filters';
 import { Loader2, Mail } from 'lucide-react';
@@ -95,7 +95,7 @@ function Rosca({ fatias }: { fatias: FatiaRosca[] }): React.JSX.Element {
         })}
       </svg>
       <div className="flex flex-col gap-[6px] text-[12px] flex-1 min-w-[180px]">
-        <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider mb-[2px]">
+        <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider mb-[2px]">
           Distribuição dos Prazos
         </span>
         {fatias.map((f) => {
@@ -553,7 +553,7 @@ export function Reports({
   }
 
   return (
-    <div className="edp-page flex flex-col gap-[16px]">
+    <SectionPage className="flex flex-col gap-[16px]">
       <PageHeader
         eyebrow="Relatórios"
         title="Painel Executivo"
@@ -612,7 +612,7 @@ export function Reports({
             {/* Bloco de KPIs e Gráfico */}
             <Card className="lg:col-span-2 bg-surface border border-line flex flex-col justify-between">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Métricas de Desempenho Geral
                 </CardTitle>
               </CardHeader>
@@ -647,13 +647,13 @@ export function Reports({
             {/* Bloco de Filtros da Auditoria */}
             <Card className="bg-surface border border-line">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Filtros da Auditoria
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-[16px] flex flex-col gap-[12px]">
                 <div className="flex flex-col gap-[6px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Filtro Rápido
                   </span>
                   <div className="flex flex-wrap gap-[6px]">
@@ -674,7 +674,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px] mt-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Ano de Encerramento (SAP)
                   </span>
                   <MultiSelect
@@ -686,7 +686,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Resultado da Auditoria
                   </span>
                   <MultiSelect
@@ -698,7 +698,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Regional
                   </span>
                   <MultiSelect
@@ -714,7 +714,7 @@ export function Reports({
 
           {/* Tabela dos Resultados da Auditoria */}
           <div className="flex flex-col gap-[6px] flex-1 min-h-[300px]">
-            <span className="text-[12px] font-bold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
+            <span className="text-[12px] font-semibold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
               Detalhamento da Auditoria de Prazo ({auditadas.length})
             </span>
             <NotesTable registros={auditadas} colunas={COLUNAS_AUDITORIA} altura={380} />
@@ -729,7 +729,7 @@ export function Reports({
             {/* Bloco de KPIs e Gráficos de Barra Financeiros */}
             <Card className="lg:col-span-2 bg-surface border border-line flex flex-col justify-between">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Consolidação dos Recursos Planejados
                 </CardTitle>
               </CardHeader>
@@ -772,7 +772,7 @@ export function Reports({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] border-t border-line pt-[16px]">
                   {/* Progress bars por Regional */}
                   <div>
-                    <h4 className="text-[12px] font-bold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
+                    <h4 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
                       Orçamento por Regional
                     </h4>
                     <div className="flex flex-col gap-[10px] max-h-[160px] overflow-y-auto pr-[4px]">
@@ -805,7 +805,7 @@ export function Reports({
 
                   {/* Progress bars por Status */}
                   <div>
-                    <h4 className="text-[12px] font-bold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
+                    <h4 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
                       Orçamento por Status
                     </h4>
                     <div className="flex flex-col gap-[10px] max-h-[160px] overflow-y-auto pr-[4px]">
@@ -844,13 +844,13 @@ export function Reports({
             {/* Bloco de Filtros Financeiros */}
             <Card className="bg-surface border border-line">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Filtros Financeiros
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-[16px] flex flex-col gap-[12px]">
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Mês Planejado
                   </span>
                   <MultiSelect
@@ -862,7 +862,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Regional
                   </span>
                   <MultiSelect
@@ -874,7 +874,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Status de Nota
                   </span>
                   <MultiSelect
@@ -890,7 +890,7 @@ export function Reports({
 
           {/* Tabela de Detalhamento de Custos */}
           <div className="flex flex-col gap-[6px] flex-1 min-h-[300px]">
-            <span className="text-[12px] font-bold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
+            <span className="text-[12px] font-semibold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
               Detalhamento de Custos ({registrosFinancas.length})
             </span>
             <NotesTable
@@ -921,7 +921,7 @@ export function Reports({
                 <Mail size={18} />
               </div>
               <div>
-                <h4 className="text-[13px] font-bold text-text">Relatório Diário de Engenharia (Status 10)</h4>
+                <h4 className="text-[13px] font-semibold text-text">Relatório Diário de Engenharia (Status 10)</h4>
                 <p className="text-[11.5px] text-text-mute">
                   Gera a tabela analítica formatada e abre o rascunho de e-mail no Outlook pronto para disparo aos engenheiros.
                 </p>
@@ -932,7 +932,7 @@ export function Reports({
               size="sm"
               disabled={enviandoEmailSt10 || registrosPlanejamento.length === 0}
               onClick={() => { void dispararEmailStatus10(); }}
-              className="bg-primary hover:bg-primary/90 text-white gap-[6px]"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-[6px]"
             >
               {enviandoEmailSt10 ? (
                 <>
@@ -952,7 +952,7 @@ export function Reports({
             {/* Bloco de KPIs e Gráficos de Prioridade */}
             <Card className="lg:col-span-2 bg-surface border border-line flex flex-col justify-between">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Métricas do Backlog (Status 10)
                 </CardTitle>
               </CardHeader>
@@ -987,7 +987,7 @@ export function Reports({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] border-t border-line pt-[16px]">
                   {/* Progress bars por Regional (Valor) */}
                   <div>
-                    <h4 className="text-[12px] font-bold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
+                    <h4 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
                       Orçamento do Backlog por Regional
                     </h4>
                     <div className="flex flex-col gap-[10px] max-h-[160px] overflow-y-auto pr-[4px]">
@@ -1020,7 +1020,7 @@ export function Reports({
 
                   {/* Progress bars por Prioridade (Qtd) */}
                   <div>
-                    <h4 className="text-[12px] font-bold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
+                    <h4 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
                       Notas por Prioridade
                     </h4>
                     <div className="flex flex-col gap-[10px] max-h-[160px] overflow-y-auto pr-[4px]">
@@ -1064,13 +1064,13 @@ export function Reports({
             {/* Bloco de Filtros do Backlog */}
             <Card className="bg-surface border border-line">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Filtros do Backlog
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-[16px] flex flex-col gap-[12px]">
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Mês Planejado
                   </span>
                   <MultiSelect
@@ -1085,7 +1085,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Regional
                   </span>
                   <MultiSelect
@@ -1100,7 +1100,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Prioridade
                   </span>
                   <MultiSelect
@@ -1119,7 +1119,7 @@ export function Reports({
 
           {/* Tabela do Backlog (Status 10) */}
           <div className="flex flex-col gap-[6px] flex-1 min-h-[300px]">
-            <span className="text-[12px] font-bold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
+            <span className="text-[12px] font-semibold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
               Notas de Backlog em Planejamento ({registrosPlanejamento.length})
             </span>
             <NotesTable
@@ -1148,7 +1148,7 @@ export function Reports({
             {/* Bloco de KPIs e Gráficos de Aderência */}
             <Card className="lg:col-span-2 bg-surface border border-line flex flex-col justify-between">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Métricas de Aderência ao Cronograma (SLA)
                 </CardTitle>
               </CardHeader>
@@ -1189,7 +1189,7 @@ export function Reports({
                 </div>
 
                 <div className="border-t border-line pt-[16px]">
-                  <h4 className="text-[12px] font-bold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
+                  <h4 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider mb-[10px] font-sans border-b border-line-2 pb-[4px]">
                     Distribuição dos Desvios de Planejamento (Aderência Geral)
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px]">
@@ -1227,13 +1227,13 @@ export function Reports({
             {/* Bloco de Filtros de SLA */}
             <Card className="bg-surface border border-line">
               <CardHeader className="py-[12px] px-[16px] border-b border-line">
-                <CardTitle className="text-[13px] uppercase font-bold text-text-dim tracking-wider">
+                <CardTitle className="text-[13px] uppercase font-semibold text-text-dim tracking-wider">
                   Filtros de SLA
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-[16px] flex flex-col gap-[12px]">
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Mês Planejado
                   </span>
                   <MultiSelect
@@ -1245,7 +1245,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Regional
                   </span>
                   <MultiSelect
@@ -1257,7 +1257,7 @@ export function Reports({
                 </div>
 
                 <div className="flex flex-col gap-[4px]">
-                  <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider">
                     Status de SLA
                   </span>
                   <MultiSelect
@@ -1280,13 +1280,13 @@ export function Reports({
 
           {/* Tabela do SLA */}
           <div className="flex flex-col gap-[6px] flex-1 min-h-[300px]">
-            <span className="text-[12px] font-bold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
+            <span className="text-[12px] font-semibold text-text-dim uppercase tracking-wider font-sans ml-[4px]">
               Detalhamento de Aderência e Desvios ({auditadasSLAFlat.length})
             </span>
             <NotesTable registros={auditadasSLAFlat} colunas={COLUNAS_SLA} altura={380} />
           </div>
         </>
       )}
-    </div>
+    </SectionPage>
   );
 }

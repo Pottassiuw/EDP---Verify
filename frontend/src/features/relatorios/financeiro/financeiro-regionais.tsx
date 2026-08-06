@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -26,7 +27,7 @@ export function FinanceiroRegionais({
   );
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Financeiro por regional"
@@ -37,7 +38,7 @@ export function FinanceiroRegionais({
         <EstadoVazio>Aguardando o detalhamento financeiro por regional.</EstadoVazio>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="edp-table min-w-[700px]">
+          <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead>Regional</TableHead>
@@ -58,16 +59,16 @@ export function FinanceiroRegionais({
                     {regional.regional}
                   </button>
                 </TableCell>
-                <TableCell className="text-right edp-mono text-text-dim">{formatarValor(regional.metaRs)}</TableCell>
-                <TableCell className="text-right edp-mono text-text-dim">{formatarValor(regional.carteiraRs)}</TableCell>
-                <TableCell className={`text-right edp-mono ${regional.gapRs !== null && regional.gapRs !== undefined && regional.gapRs < 0 ? 'text-red' : 'text-text-dim'}`}>{formatarValor(regional.gapRs)}</TableCell>
+                <TableCell className="text-right font-mono text-text-dim">{formatarValor(regional.metaRs)}</TableCell>
+                <TableCell className="text-right font-mono text-text-dim">{formatarValor(regional.carteiraRs)}</TableCell>
+                <TableCell className={`text-right font-mono ${regional.gapRs !== null && regional.gapRs !== undefined && regional.gapRs < 0 ? 'text-red' : 'text-text-dim'}`}>{formatarValor(regional.gapRs)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
           </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

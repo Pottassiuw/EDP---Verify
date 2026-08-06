@@ -276,12 +276,13 @@ def _rodar_geracao_operacao(
 def iniciar_atualizacao_sap(
     pks: list[int],
     trace: str | None = None,
+    usuario: str | None = None,
 ) -> str:
     operation_service.validar_aguardando_sap(pks)
     job_id, snapshot = _novo_job("atualizacao_sap", len(pks))
     threading.Thread(
         target=_rodar_atualizacao_sap,
-        args=(job_id, snapshot, list(pks), trace),
+        args=(job_id, snapshot, list(pks), trace, usuario),
         daemon=True,
     ).start()
     return job_id
@@ -292,8 +293,10 @@ def _rodar_atualizacao_sap(
     snapshot: dict,
     pks: list[int],
     trace: str | None,
+    usuario: str | None,
 ) -> None:
     db.definir_trace(trace)
+    db.definir_usuario(usuario)
     for pk in pks:
         try:
             nota = client.buscar_nota(pk)

@@ -280,7 +280,7 @@ export function DataGrid({
 
   const detailsColumn = React.useMemo<
     SimpleColumn<NotaInput, DetalhesColumnData> | undefined
-  >(() => (
+    >(() => (
     onOpenDetails
       ? {
           title: <span className="sr-only">Detalhes</span>,
@@ -314,9 +314,9 @@ export function DataGrid({
       <div className="dsg-statusbar">
         {resumo && resumo.contagem > 0 ? (
           <span>
-            Soma <b className="edp-mono">{formatarNumero(resumo.soma)}</b> ·{" "}
-            Média <b className="edp-mono">{formatarNumero(resumo.media)}</b> ·{" "}
-            Contagem <b className="edp-mono">{resumo.contagem}</b>
+            Soma <b className="font-mono">{formatarNumero(resumo.soma)}</b> ·{" "}
+            Média <b className="font-mono">{formatarNumero(resumo.media)}</b> ·{" "}
+            Contagem <b className="font-mono">{resumo.contagem}</b>
           </span>
         ) : (
           <span className="dsg-statusbar-dim">Selecione células numéricas para ver soma · média · contagem</span>

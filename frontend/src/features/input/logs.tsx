@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { InputApi } from './api';
 import type { LogArquivo, LogRegistro } from './types';
+import { formatarDataHora } from './lib';
 import { SegTabs, type SegTab } from '@/components/branded/section';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -14,12 +15,6 @@ const LOG_TABS: SegTab<SubAba>[] = [
   { id: 'arquivos', rotulo: 'Bases de Apoio' },
   { id: 'timeline', rotulo: 'Linha do Tempo' },
 ];
-
-export function formatarDataHora(v: string | number | null): string {
-  if (v === null || v === undefined || v === '') return '—';
-  const d = typeof v === 'number' ? new Date(v) : new Date(String(v).replace(' ', 'T'));
-  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('pt-BR');
-}
 
 export function Logs(): React.JSX.Element {
   const [sub, setSub] = React.useState<SubAba>('notas');
@@ -68,7 +63,7 @@ export function Logs(): React.JSX.Element {
           </div>
 
           <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs border-collapse carteira-table">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-surface-2 border-b border-line">
                   {['Nº Nota', 'Usuário', 'Data e Hora', 'Campo Alterado', 'Valor Antigo', 'Valor Novo']
@@ -81,7 +76,7 @@ export function Logs(): React.JSX.Element {
               </thead>
               <tbody className="divide-y divide-line">
                 {registros.slice(0, 500).map((r) => (
-                  <tr key={r.ID_Log} className="hover:bg-accent-tint/40 transition-colors">
+                  <tr key={r.ID_Log} className="even:bg-[var(--zebra)] hover:bg-accent-tint/40 transition-colors">
                     <td className="px-3 py-2 font-mono font-semibold text-accent">{r.Numero_Nota}</td>
                     <td className="px-3 py-2 text-foreground font-medium">{r.Usuario}</td>
                     <td className="px-3 py-2 text-text-dim font-mono">{formatarDataHora(r.Data_Hora)}</td>
@@ -103,7 +98,7 @@ export function Logs(): React.JSX.Element {
 
       {sub === 'arquivos' && (
         <div className="rounded-lg border border-line bg-surface overflow-hidden shadow-sm">
-          <table className="w-full text-left text-xs border-collapse carteira-table">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-surface-2 border-b border-line">
                 {['Arquivo', 'Usuário', 'Data e Hora', 'Ação Realizada'].map((h) => (
@@ -115,7 +110,7 @@ export function Logs(): React.JSX.Element {
             </thead>
             <tbody className="divide-y divide-line">
               {(logsArquivos.data?.registros ?? []).map((r: LogArquivo) => (
-                <tr key={r.ID_Log} className="hover:bg-accent-tint/40 transition-colors">
+                <tr key={r.ID_Log} className="even:bg-[var(--zebra)] hover:bg-accent-tint/40 transition-colors">
                   <td className="px-3 py-2 font-mono font-medium text-foreground">{r.Nome_Arquivo}</td>
                   <td className="px-3 py-2 text-text-dim">{r.Usuario}</td>
                   <td className="px-3 py-2 text-text-dim font-mono">{formatarDataHora(r.Data_Hora)}</td>

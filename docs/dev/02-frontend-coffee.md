@@ -12,8 +12,7 @@ perder o progresso ao atualizar o navegador.
 `coffee-hub.tsx` é a casca da feature. Ele recebe a subpágina de `App.tsx` e
 renderiza uma de cinco seções por `SegTabs`:
 
-- **Verificar** — reusa a triagem de planilha e encaminha notas para a fila
-  COFFEE.
+- **Verificar** — lê a triagem diretamente do `Verificar.db` e encaminha notas para a fila COFFEE.
 - **Abrir** — abre IDs manualmente no COFFEE; a lista fica no navegador.
 - **Operação** — o Kanban da fila ativa.
 - **Concluídas** — histórico separado de notas geradas e corrigidas.
@@ -89,10 +88,11 @@ ainda não foi sincronizada, o callback sobe por `CoffeeOperacao` ou
 `App.tsx`. O card não interfere na edição de local, atividade nem nas ações
 contextuais do inspector.
 
-`useCoffeePortalTheme` propaga tema resolvido, densidade e accent para o
-`Sheet`, `Dialog`, `AlertDialog` e `Select` portalizados. Assim, os modos
-Sistema, Claro e Escuro e as preferências de densidade/acento também se aplicam
-fora da raiz visual do app.
+`Sheet`, `Dialog`, `AlertDialog` e `Select` portalizam fora da raiz do app e
+mesmo assim seguem tema, densidade e accent: desde a Fase 4c esses tokens
+vivem em `:root`, escritos no `<html>` pelo `SettingsProvider`. O hook
+`useCoffeePortalTheme`, que propagava isso à mão em cada call site, foi
+removido.
 
 ## Concluídas e Plano
 
@@ -104,7 +104,9 @@ consulta quando esse dado antigo não existir.
 Notas geradas podem ser arquivadas após justificativa. Apenas corrigidas podem
 ser selecionadas e movidas, individualmente ou em lote, para o Plano. O
 `MoverPlanoModal` invalida `INPUT_DADOS_KEY` e a revisão de cada nota movida e
-oferece a navegação para a Visão Geral do Input.
+oferece a navegação para a Visão Geral do Input. Para notas vindas de Verificar,
+a lista informa a data/hora de entrada e da correção; o inspector mostra também
+quem encaminhou e quem concluiu.
 
 ## Logs e timings
 

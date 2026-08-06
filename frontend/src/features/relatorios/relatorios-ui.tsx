@@ -31,7 +31,7 @@ export function TituloPainel({
 export function BadgeDisponibilidade({ pct }: { pct: number | null }): React.JSX.Element {
   const cor = farol(pct);
   if (!cor) {
-    return <span className="edp-mono text-xs text-text-mute">—</span>;
+    return <span className="font-mono text-xs text-text-mute">—</span>;
   }
 
   return (

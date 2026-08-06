@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { StatTile } from '@/components/branded/section';
+import { Card } from '@/components/ui/card';
 
 import { fmtPct, fmtQtd } from '../fmt';
 import { EstadoVazio } from '../relatorios-ui';
@@ -28,9 +29,9 @@ export function RegionalKpis({
 
   if (escopo.length === 0) {
     return (
-      <section className="edp-panel">
+      <Card className="p-[var(--pad)]">
         <EstadoVazio>Aguardando o detalhamento do recorte por regional.</EstadoVazio>
-      </section>
+      </Card>
     );
   }
 

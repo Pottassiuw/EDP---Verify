@@ -22,20 +22,20 @@ export function FiltrosCarteiraBar({ filtros, onChange }: {
              style={{ maxWidth: 280 }} />
       <Select value={filtros.regional ?? TODOS}
               onValueChange={(v) => onChange({ ...filtros, regional: v === TODOS ? undefined : v })}>
-        <SelectTrigger className="edp" style={{ width: 200 }}>
+        <SelectTrigger  style={{ width: 200 }}>
           <SelectValue placeholder="Regional" />
         </SelectTrigger>
-        <SelectContent className="edp carteira-scope">
+        <SelectContent >
           <SelectItem value={TODOS}>Todas as regionais</SelectItem>
           {REGIONAIS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={filtros.situacao ?? TODOS}
               onValueChange={(v) => onChange({ ...filtros, situacao: v === TODOS ? undefined : (v as SituacaoCarteira) })}>
-        <SelectTrigger className="edp" style={{ width: 180 }}>
+        <SelectTrigger  style={{ width: 180 }}>
           <SelectValue placeholder="Situação" />
         </SelectTrigger>
-        <SelectContent className="edp carteira-scope">
+        <SelectContent >
           <SelectItem value={TODOS}>Todas as situações</SelectItem>
           {Object.entries(SITUACAO_INFO).map(([id, info]) =>
             <SelectItem key={id} value={id}>{info.rotulo}</SelectItem>)}

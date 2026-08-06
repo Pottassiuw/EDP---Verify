@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useCoffeePortalTheme } from './use-coffee-portal-theme';
 
 export interface MoverAlvo {
   pks: number[];
@@ -47,7 +46,6 @@ function camposIniciais(revisao: NotaRevisao | null): CamposManuais {
 
 export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: MoverPlanoModalProps): React.JSX.Element {
   const qc = useQueryClient();
-  const portalTheme = useCoffeePortalTheme();
   const [campos, setCampos] = React.useState<CamposManuais>(() => camposIniciais(alvo?.revisao ?? null));
   React.useEffect(() => { setCampos(camposIniciais(alvo?.revisao ?? null)); }, [alvo]);
   const setCampo = (campo: keyof CamposManuais) => (v: string) =>
@@ -79,7 +77,7 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
 
   return (
     <Dialog open={alvo !== null} onOpenChange={(next) => { if (!next && !mutacao.isPending) onClose(); }}>
-      <DialogContent {...portalTheme} className="edp w-[480px]">
+      <DialogContent className="w-[480px]">
         <DialogHeader>
           <DialogTitle>
             {atualizar ? 'Atualizar dados no plano' : emLote
@@ -95,11 +93,11 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
 
         {proposta && !emLote && (
           <div className="rounded-[8px] border border-line bg-surface-2 p-[10px] flex flex-col gap-[4px] text-[12.5px]">
-            <div><span className="text-text-mute">Nº Nota </span><span className="edp-mono">{proposta.Numero_Nota}</span></div>
-            <div><span className="text-text-mute">Local </span><span className="edp-mono">{proposta.Local_Instalacao}</span></div>
-            <div><span className="text-text-mute">Circuito </span><span className="edp-mono">{proposta.Circuito}</span></div>
+            <div><span className="text-text-mute">Nº Nota </span><span className="font-mono">{proposta.Numero_Nota}</span></div>
+            <div><span className="text-text-mute">Local </span><span className="font-mono">{proposta.Local_Instalacao}</span></div>
+            <div><span className="text-text-mute">Circuito </span><span className="font-mono">{proposta.Circuito}</span></div>
             <div><span className="text-text-mute">Prioridade </span>{proposta.Prioridade_Nota}</div>
-            <div><span className="text-text-mute">Planejado </span><span className="edp-mono">
+            <div><span className="text-text-mute">Planejado </span><span className="font-mono">
               {proposta.Planejado_DDPM}{proposta.Planejado_Unidade ? ` ${proposta.Planejado_Unidade}` : ''}
             </span></div>
           </div>
@@ -110,8 +108,7 @@ export function MoverPlanoModal({ alvo, onClose, onSucesso, onIrParaInput }: Mov
             <Label htmlFor="mp-mes">Data de execução planejada</Label>
             <MesExecucaoPicker id="mp-mes" value={campos.Mes_Execucao_Planejado}
                                onChange={setCampo('Mes_Execucao_Planejado')}
-                               valorNeutro="-" rotuloNeutro="Sem planejamento"
-                               contentProps={{ ...portalTheme, className: 'edp' }} />
+                               valorNeutro="-" rotuloNeutro="Sem planejamento" />
           </div>
           <div className="flex flex-col gap-[4px]">
             <Label htmlFor="mp-obra">Status da obra</Label>

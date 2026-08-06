@@ -3,6 +3,8 @@ import * as React from "react";
 import { ChevronDown, ChevronRight, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
+import { Eyebrow } from "@/components/branded/section";
+
 import { BASE, corrigirLocalLote } from "../../api";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -106,9 +108,9 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
         {aberto ? <ChevronDown className="size-[14px] text-text-mute" />
                 : <ChevronRight className="size-[14px] text-text-mute" />}
         <Wrench className="size-[13px] text-[var(--accent)]" />
-        <span className="edp-eyebrow">
+        <Eyebrow>
           Malha fina · {visiveis.length} grupo{visiveis.length !== 1 ? "s" : ""} / {totalAfetadas} nota{totalAfetadas !== 1 ? "s" : ""} com 9 extra
-        </span>
+        </Eyebrow>
       </button>
 
       {aberto && (
@@ -151,14 +153,14 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
             <div className="flex items-center gap-[10px]">
               <Progress className="max-w-[260px]"
                         value={fase.job ? (fase.job.feitas / Math.max(fase.job.total, 1)) * 100 : 0} />
-              <span className="edp-mono text-[11px] text-text-mute">
+              <span className="font-mono text-[11px] text-text-mute">
                 {fase.job ? `${fase.job.feitas}/${fase.job.total}` : "iniciando…"}
               </span>
             </div>
           )}
 
           {fase.fase === "concluido" && (
-            <div className="flex items-center gap-[8px] flex-wrap edp-mono text-[11px]">
+            <div className="flex items-center gap-[8px] flex-wrap font-mono text-[11px]">
               <span className="text-[var(--accent)]">corrigidas {fase.job.corrigidas?.length ?? 0}</span>
               <span className="text-text-mute">já corrigidas {fase.job.ja_corrigidas?.length ?? 0}</span>
               <span className="text-text-mute">divergentes {fase.job.divergentes?.length ?? 0}</span>
@@ -180,9 +182,9 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
                            onChange={() => toggleGrupo(g.localErrado)}
                            aria-label={`Selecionar grupo ${g.localErrado}`}
                            className="shrink-0 w-[16px] h-[16px] [accent-color:var(--accent)] cursor-pointer" />
-                    <span className="edp-mono text-[12px] text-red line-through">{g.localErrado}</span>
+                    <span className="font-mono text-[12px] text-red line-through">{g.localErrado}</span>
                     <span className="text-text-mute text-[12px]">→</span>
-                    <span className="edp-mono text-[12px] text-[var(--accent)]">{g.localProposto}</span>
+                    <span className="font-mono text-[12px] text-[var(--accent)]">{g.localProposto}</span>
                     <span className="text-[11.5px] text-text-dim">
                       {g.notasAfetadas.length} nota{g.notasAfetadas.length !== 1 ? "s" : ""}
                       {g.ignoradasSemId > 0 ? ` · ${g.ignoradasSemId} sem id (ignorada${g.ignoradasSemId !== 1 ? "s" : ""})` : ""}
@@ -195,7 +197,7 @@ export function MalhaFinaPanel({ grupos }: MalhaFinaPanelProps): React.JSX.Eleme
                     </button>
                   </div>
                   {exp && (
-                    <div className="edp-mono text-[11px] text-text-dim pl-[26px] pt-[4px]">
+                    <div className="font-mono text-[11px] text-text-dim pl-[26px] pt-[4px]">
                       <div>afetadas: {g.notasAfetadas.map((n) => n.id).join(", ")}</div>
                     </div>
                   )}

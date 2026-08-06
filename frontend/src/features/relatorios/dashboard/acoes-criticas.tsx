@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, CircleAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -33,7 +34,7 @@ export function AcoesCriticas({
   );
 
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Ações críticas"
@@ -49,7 +50,7 @@ export function AcoesCriticas({
         <EstadoVazio>Nenhum plano abaixo da meta no filtro atual.</EstadoVazio>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="edp-table min-w-[860px]">
+          <Table className="min-w-[860px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Plano</TableHead>
@@ -66,18 +67,18 @@ export function AcoesCriticas({
                 <TableRow key={plano.id}>
                   <TableCell>
                     <div className="font-medium text-text">{plano.nome_curto}</div>
-                    <div className="edp-mono mt-1 text-xs text-text-mute">{plano.plano} · {plano.area}</div>
+                    <div className="mt-1 font-mono text-xs text-text-mute">{plano.plano} · {plano.area}</div>
                   </TableCell>
                   <TableCell className="text-text-dim">{plano.regional}</TableCell>
-                  <TableCell className="text-right edp-mono text-red">{fmtQtd(plano.deficit)}</TableCell>
-                  <TableCell className="text-right edp-mono text-red">{fmtPct(plano.pct_disp)}</TableCell>
-                  <TableCell className="text-right edp-mono text-red">{fmtRS(plano.gapFinanceiro)}</TableCell>
+                  <TableCell className="text-right font-mono text-red">{fmtQtd(plano.deficit)}</TableCell>
+                  <TableCell className="text-right font-mono text-red">{fmtPct(plano.pct_disp)}</TableCell>
+                  <TableCell className="text-right font-mono text-red">{fmtRS(plano.gapFinanceiro)}</TableCell>
                   <TableCell>
                     {plano.cobertura_pct == null ? (
                       <span className="text-xs text-text-mute">—</span>
                     ) : (
                       <div>
-                        <span className="edp-mono" style={{ color: corCobertura(plano.cobertura_pct) }}>
+                        <span className="font-mono" style={{ color: corCobertura(plano.cobertura_pct) }}>
                           {fmtPct(plano.cobertura_pct)}
                         </span>
                         <div className="text-xs text-text-mute">base {fmtQtd(plano.base_disponivel ?? 0)}</div>
@@ -102,6 +103,6 @@ export function AcoesCriticas({
           </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

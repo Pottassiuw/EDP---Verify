@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Eyebrow } from '@/components/branded/section';
 
 import type {
   CarteiraEnriquecimento,
@@ -163,13 +164,13 @@ export function CarteiraEnriquecimentoContent({
     <Card>
       <CardHeader className="gap-2 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="edp-eyebrow">Dados da base COFFEE</span>
+          <Eyebrow>Dados da base COFFEE</Eyebrow>
           <Badge variant="outline">Somente leitura</Badge>
         </div>
         <CardTitle className="text-lg">
           {exibir(dados.descricao_conjunto)}
         </CardTitle>
-        <p className="edp-mono text-sm text-text-mute">
+        <p className="font-mono text-sm text-text-mute">
           Conjunto {exibir(dados.conjunto)}
         </p>
         {resultado.estado === 'ausente_na_origem' && (
@@ -186,8 +187,8 @@ export function CarteiraEnriquecimentoContent({
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CAMPOS.map(({ chave, rotulo }) => (
             <div key={chave} className="min-w-0 rounded-md bg-surface-2 p-3">
-              <dt className="edp-eyebrow">{rotulo}</dt>
-              <dd className="edp-mono mt-1 break-words text-sm">
+              <Eyebrow asChild><dt>{rotulo}</dt></Eyebrow>
+              <dd className="mt-1 break-words font-mono text-sm">
                 {exibir(dados[chave])}
               </dd>
             </div>

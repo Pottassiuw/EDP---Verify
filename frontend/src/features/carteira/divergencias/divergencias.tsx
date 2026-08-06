@@ -3,7 +3,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Banner } from '@/components/branded/section';
+import { Banner, Eyebrow } from '@/components/branded/section';
 import { useCarteiraDivergencias } from '../use-carteira-divergencias';
 
 const TIPO_INFO: Record<string, { rotulo: string; variant: 'situCancel' | 'situFora' }> = {
@@ -17,17 +17,17 @@ export function Divergencias(): React.JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)', padding: 'var(--pad)' }}>
-      <p className="edp-sub" style={{ margin: 0 }}>
+      <p className="text-[13px] text-text-dim" style={{ margin: 0 }}>
         Notas no plano que destoam da carteira — canceladas ou ausentes na origem.
         Apenas alerta; nada é alterado automaticamente.
       </p>
       {error && <Banner tipo="err">Não foi possível carregar as divergências: {error instanceof Error ? error.message : String(error)}</Banner>}
-      {isLoading && !data && <span className="edp-eyebrow">Carregando…</span>}
+      {isLoading && !data && <Eyebrow>Carregando…</Eyebrow>}
       {!isLoading && linhas.length === 0 && (
         <Banner tipo="ok">Nenhuma divergência — plano e carteira estão coerentes.</Banner>
       )}
       {linhas.length > 0 && (
-        <div className="carteira-table" style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto' }}>
           <Table>
             <TableHeader>
               <TableRow>

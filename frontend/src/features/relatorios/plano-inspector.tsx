@@ -1,6 +1,7 @@
 import React from 'react';
 import { CircleAlert, ExternalLink } from 'lucide-react';
 
+import { Eyebrow, StatNumber } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -14,7 +15,10 @@ import {
 import { farol, FAROL_COR, fmtPct, fmtQtd, fmtRS } from './fmt';
 import type { PlanoRelatorio } from './relatorios-data';
 import { BadgeDisponibilidade } from './relatorios-ui';
-import { useRelatoriosPortalTheme } from './use-relatorios-portal-theme';
+
+/** Casca do tile de KPI. Não dá para usar `StatTile` aqui: o conteúdo varia
+ *  entre badge, número com tamanho sobrescrito e valor colorido inline. */
+const CLASSE_TILE = 'flex min-w-[120px] flex-col gap-[7px] rounded-app-md border border-line bg-surface px-4 py-[14px]';
 
 function corCobertura(pct: number | null | undefined): string | undefined {
   const f = farol(pct ?? null);
@@ -36,7 +40,6 @@ export function PlanoInspector({
   onVerPlano,
   onIrParaCoffee,
 }: PlanoInspectorProps): React.JSX.Element | null {
-  const portalTheme = useRelatoriosPortalTheme();
 
   if (!plano) {
     return null;
@@ -44,11 +47,11 @@ export function PlanoInspector({
 
   return (
     <Sheet open onOpenChange={(aberto) => { if (!aberto) onFechar(); }}>
-      <SheetContent {...portalTheme} className="edp w-full border-line bg-surface p-0 sm:max-w-[470px]">
+      <SheetContent className="w-full border-line bg-surface p-0 sm:max-w-[470px]">
         <SheetHeader className="border-b border-line px-5 py-5">
-          <span className="edp-eyebrow">Plano de recomposição</span>
+          <Eyebrow>Plano de recomposição</Eyebrow>
           <SheetTitle className="pr-8 text-lg text-text">{plano.nome_curto}</SheetTitle>
-          <SheetDescription className="edp-mono text-xs text-text-mute">
+          <SheetDescription className="font-mono text-xs text-text-mute">
             {plano.plano} · {plano.regional ?? 'SP (todas)'} · {plano.area}
           </SheetDescription>
         </SheetHeader>
@@ -60,14 +63,14 @@ export function PlanoInspector({
             <Valor label="Saldo" valor={fmtQtd(plano.saldo)} destaque={plano.saldo < 0 ? 'negativo' : 'normal'} />
             <Valor label="Postergado" valor={fmtQtd(plano.postergado)} />
             <Valor label="Gap financeiro" valor={fmtRS(plano.gap_rs)} destaque={plano.gap_rs < 0 ? 'negativo' : 'normal'} />
-            <div className="edp-stat">
-              <span className="edp-eyebrow">Disponibilidade</span>
+            <div className={CLASSE_TILE}>
+              <Eyebrow>Disponibilidade</Eyebrow>
               <BadgeDisponibilidade pct={plano.pct_disp} />
             </div>
           </div>
 
           {plano.cobertura_pct == null ? (
-            <div className="rounded-edp border border-line bg-tint-amber p-4">
+            <div className="rounded-app border border-line bg-tint-amber p-4">
               <div className="flex gap-3">
                 <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber" aria-hidden="true" />
                 <div className="space-y-1">
@@ -81,8 +84,8 @@ export function PlanoInspector({
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <Valor label="Base disponível" valor={fmtQtd(plano.base_disponivel ?? 0)} />
-              <div className="edp-stat">
-                <span className="edp-eyebrow">Cobertura possível</span>
+              <div className={CLASSE_TILE}>
+                <Eyebrow>Cobertura possível</Eyebrow>
                 <span className="text-lg font-semibold" style={{ color: corCobertura(plano.cobertura_pct) }}>
                   {fmtPct(plano.cobertura_pct)}
                 </span>
@@ -121,9 +124,9 @@ function Valor({
   destaque?: 'normal' | 'negativo';
 }): React.JSX.Element {
   return (
-    <div className="edp-stat">
-      <span className="edp-eyebrow">{label}</span>
-      <span className={`edp-num text-xl ${destaque === 'negativo' ? 'text-red' : ''}`}>{valor}</span>
+    <div className={CLASSE_TILE}>
+      <Eyebrow>{label}</Eyebrow>
+      <StatNumber className={`text-xl ${destaque === 'negativo' ? 'text-red' : ''}`}>{valor}</StatNumber>
     </div>
   );
 }

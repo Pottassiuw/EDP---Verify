@@ -13,12 +13,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Righteous:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       html, body { margin: 0; height: 100%; font-family: 'Righteous', sans-serif; }
-      body { background: var(--bg, #161e2b); overflow: hidden; }
+      body { background: var(--bg, #ffffff); overflow: hidden; }
       #root { height: 100vh; }
     </style>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Tema e densidade no <html> antes do primeiro paint. O React só assume
+         depois de montar (SettingsProvider), e sem isto o usuário em tema
+         escuro veria um flash do canvas branco em todo carregamento. -->
+    <script>
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('edp_settings') || '{}');
+          var tema = s.theme && s.theme !== 'system'
+            ? s.theme
+            : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = tema;
+          document.documentElement.dataset.density = s.density || 'cozy';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

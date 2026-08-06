@@ -1,6 +1,9 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 
+import { Eyebrow } from '@/components/branded/section';
+import { Card } from '@/components/ui/card';
+
 import { fmtPct, fmtQtd } from '../fmt';
 import { BarraDisponibilidade, BadgeDisponibilidade, EstadoVazio, TituloPainel } from '../relatorios-ui';
 import type { ResumoRegionalDetalhado } from '../use-relatorios-data';
@@ -20,7 +23,7 @@ export function SaldoRegionalResumo({
   );
 
   return (
-    <section className="edp-panel flex flex-col gap-4">
+    <Card className="flex flex-col gap-4 p-[var(--pad)]">
       <TituloPainel
         titulo="Saldo por regional"
         detalhe="Clique em uma regional para aplicar o filtro global."
@@ -37,7 +40,7 @@ export function SaldoRegionalResumo({
               type="button"
               onClick={() => onSelecionarRegional(ativa ? null : regional.regional)}
               aria-pressed={ativa}
-              className={`rounded-edp border p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+              className={`rounded-app border p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                 ativa ? 'border-accent bg-accent-tint' : 'border-line bg-bg-2 hover:bg-surface-2'
               }`}
             >
@@ -60,14 +63,14 @@ export function SaldoRegionalResumo({
           })}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
 function Info({ label, valor, tom = 'text-text' }: { label: string; valor: string; tom?: string }): React.JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="edp-eyebrow truncate">{label}</p>
+      <Eyebrow asChild><p className="truncate">{label}</p></Eyebrow>
       <p className={`mt-1 truncate text-sm font-semibold ${tom}`}>{valor}</p>
     </div>
   );

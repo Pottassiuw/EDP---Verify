@@ -2,7 +2,8 @@ import React from 'react';
 import { useCoffeeLogs } from './use-coffee-logs';
 import { LogTable, PASSOS, agruparLogs } from './coffee-log-table';
 import { BASE as API_BASE } from '../../api';
-import { SegTabs, StatTile } from '@/components/branded/section';
+import { Eyebrow, SegTabs, StatTile } from '@/components/branded/section';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -69,14 +70,14 @@ export function CoffeeLogs(): React.JSX.Element {
 
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Nota:</label>
-          <input type="number" placeholder="PK" value={notaPk} className="edp-field edp-mono w-[90px] h-[30px] text-[12px]"
+          <Input type="number" placeholder="PK" value={notaPk} className="font-mono w-[90px] h-[30px] text-[12px] "
                  onChange={(e) => setNotaPk(e.target.value)} />
         </div>
 
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Usuario:</label>
           <Select value={usuario || "__todos"} onValueChange={(v) => setUsuario(v === "__todos" ? "" : v)}>
-            <SelectTrigger className="edp-field edp-mono h-[30px] text-[12px]">
+            <SelectTrigger className="font-mono h-[30px] text-[12px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -89,7 +90,7 @@ export function CoffeeLogs(): React.JSX.Element {
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Limite:</label>
           <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-            <SelectTrigger className="edp-field h-[30px] text-[12px]">
+            <SelectTrigger className="h-[30px] text-[12px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -101,7 +102,7 @@ export function CoffeeLogs(): React.JSX.Element {
         <div className="flex items-center gap-[6px]">
           <label className="text-[12px] text-text-dim">Período:</label>
           <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-            <SelectTrigger className="edp-field h-[30px] text-[12px]">
+            <SelectTrigger className="h-[30px] text-[12px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -120,7 +121,7 @@ export function CoffeeLogs(): React.JSX.Element {
       </div>
 
       <div className="shrink-0 pt-0 px-[22px] pb-[12px] flex flex-col gap-[6px]">
-        <span className="edp-eyebrow">No período carregado</span>
+        <Eyebrow>No período carregado</Eyebrow>
         <div className="flex gap-[10px] flex-wrap">
           <StatTile label="Ações" value={agruparLogs(logs).length} />
           <StatTile label="Falhas" value={logs.filter((l) => !l.sucesso).length} />

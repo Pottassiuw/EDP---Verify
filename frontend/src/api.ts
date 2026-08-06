@@ -4,10 +4,13 @@ import type {
   FetchResult,
   Note,
   NoteError,
+  NoteGenerator,
   NoteRaw,
   NoteStatus,
   DuplicateCandidate,
-  UploadResult,
+  TriageDailyForwarding,
+  TriageForwarding,
+  TriageSourceInfo,
   ToggleResult,
   DuplicateResult,
 } from "./types";
@@ -76,6 +79,7 @@ interface ApiRecord {
   latitude?: string | null;
   longitude?: string | null;
   colaborador?: string | null;
+  gerador?: NoteGenerator;
   imagens_totais?: number | null;
   imagens_recebidas?: number | null;
   local_instalacao?: string;
@@ -91,6 +95,9 @@ interface ApiRecord {
 interface ApiData {
   records?: ApiRecord[];
   completed?: string[];
+  fonte?: TriageSourceInfo | null;
+  encaminhamentos?: Record<string, TriageForwarding>;
+  encaminhadas_hoje?: TriageDailyForwarding[];
 }
 
 function str(v: unknown, fb = ""): string {
@@ -124,6 +131,7 @@ function normalize(j: ApiData): FetchResult {
       longitude:
         r.longitude ?? (raw.longitude != null ? String(raw.longitude) : null),
       colaborador: r.colaborador ?? (str(raw.colaborador) || null),
+      gerador: r.gerador,
       imagens_totais: r.imagens_totais ?? num(raw.imagens_totais),
       imagens_recebidas: r.imagens_recebidas ?? num(raw.imagens_recebidas),
       errors: r.errors ?? [],
@@ -135,31 +143,54 @@ function normalize(j: ApiData): FetchResult {
       raw: raw as NoteRaw,
     };
   });
-  return { notes, completed: new Set(j.completed ?? []), source: "api" };
+  return {
+    notes,
+    completed: new Set(j.completed ?? []),
+    source: "api",
+    fonte: j.fonte ?? null,
+    encaminhamentos: j.encaminhamentos ?? {},
+    encaminhadasHoje: j.encaminhadas_hoje ?? [],
+  };
+}
+
+// Instrumentação opcional da abertura da seção COFFEE:
+// localStorage.setItem('edp_perf', '1') e recarregue. Loga rede, parse e
+// normalização separados, além da contagem de chamadas (chamadas duplicadas
+// aparecem como #2, #3… para a mesma rota).
+const perfAtivo = localStorage.getItem("edp_perf") === "1";
+const perfChamadas = new Map<string, number>();
+function perfLog(rota: string, etapas: Record<string, number>, sufixo = ""): void {
+  const n = (perfChamadas.get(rota) ?? 0) + 1;
+  perfChamadas.set(rota, n);
+  const detalhe = Object.entries(etapas)
+    .map(([k, v]) => `${k}=${Math.round(v)}ms`)
+    .join(" ");
+  console.info(`[COFFEE-PERF] ${rota} #${n} ${detalhe} ${sufixo}`.trimEnd());
 }
 
 export async function fetchData(): Promise<FetchResult> {
+  const t0 = performance.now();
   const res = await fetch(BASE + "/data", {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error("GET /data -> " + res.status);
-  return normalize((await res.json()) as ApiData);
+  const t1 = performance.now();
+  const json = (await res.json()) as ApiData;
+  const t2 = performance.now();
+  const resultado = normalize(json);
+  if (perfAtivo) {
+    perfLog("GET /data", {
+      rede: t1 - t0,
+      parse: t2 - t1,
+      normalize: performance.now() - t2,
+    }, `notas=${resultado.notes.length}`);
+  }
+  return resultado;
 }
 
 async function erroComDetail(res: Response, fallback: string): Promise<Error> {
   const e = await res.json().catch(() => ({})) as { detail?: string };
   return new Error(e.detail ?? (fallback + " -> " + res.status));
-}
-
-export async function upload(file: File): Promise<UploadResult> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await fetch(BASE + "/upload", { method: "POST", body: fd });
-  if (!res.ok) {
-    const e = (await res.json().catch(() => ({}))) as { detail?: string };
-    throw new Error(e.detail ?? "POST /upload -> " + res.status);
-  }
-  return res.json() as Promise<UploadResult>;
 }
 
 export async function toggleComplete(id: string): Promise<ToggleResult> {
@@ -274,7 +305,6 @@ export async function resumoForaDoPlano(): Promise<{ corrigidas_fora_do_plano: n
 export const EDPApi = {
   BASE,
   fetchData,
-  upload,
   toggleComplete,
   markDuplicate,
   marcarGerar,

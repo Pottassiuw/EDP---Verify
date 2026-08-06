@@ -10,6 +10,7 @@ import {
 } from "./columns";
 import { CLASSE_SELECT_MONO } from "./ui";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Search, X, ChevronDown, ChevronRight, Filter, Check } from "lucide-react";
@@ -245,7 +246,7 @@ export function MultiSelect({
                 return (
                   <div key={group.year} className="flex flex-col gap-[2px] border-b border-line-2/40 pb-[4px]">
                     {/* Cabeçalho do Ano */}
-                    <div className="flex items-center justify-between w-full px-[6px] py-[4px] rounded-[4px] bg-bg-2/80 hover:bg-surface-2 text-[11.5px] font-bold text-text-dim transition-colors group/year">
+                    <div className="flex items-center justify-between w-full px-[6px] py-[4px] rounded-[4px] bg-bg-2/80 hover:bg-surface-2 text-[11.5px] font-semibold text-text-dim transition-colors group/year">
                       <button
                         type="button"
                         onClick={() => toggleYear(group.items)}
@@ -254,7 +255,7 @@ export function MultiSelect({
                         <div
                           className={`flex items-center justify-center size-[13px] rounded border transition-colors ${
                             isYearFullySelected
-                              ? "border-primary bg-primary text-white"
+                              ? "border-primary bg-primary text-primary-foreground"
                               : isYearPartial
                               ? "border-primary bg-primary/20 text-primary font-bold"
                               : "border-line-2 bg-bg-2 group-hover/year:border-text-dim"
@@ -296,7 +297,7 @@ export function MultiSelect({
                               <div
                                 className={`flex items-center justify-center size-[12px] rounded border transition-colors ${
                                   isChecked
-                                    ? "border-primary bg-primary text-white"
+                                    ? "border-primary bg-primary text-primary-foreground"
                                     : "border-line-2 bg-bg-2 group-hover/item:border-text-dim"
                                 }`}
                               >
@@ -325,7 +326,7 @@ export function MultiSelect({
                     <div
                       className={`flex items-center justify-center size-[14px] rounded border transition-colors ${
                         isChecked
-                          ? "border-primary bg-primary text-white"
+                          ? "border-primary bg-primary text-primary-foreground"
                           : "border-line-2 bg-bg-2 group-hover:border-text-dim"
                       }`}
                     >
@@ -386,11 +387,11 @@ export function Filters({
         {/* Campo de Busca Global */}
         <div className="relative flex items-center w-[280px]">
           <Search size={14} className="absolute left-[11px] text-text-mute" />
-          <input
+          <Input
             value={estado.busca}
             placeholder="Buscar notas: 12345, 54321..."
             onChange={(e) => setEstado({ ...estado, busca: e.target.value })}
-            className="edp-field pl-[32px] pr-[28px] w-full"
+            className="pl-[32px] pr-[28px] w-full"
           />
           {estado.busca && (
             <button
@@ -440,7 +441,7 @@ export function Filters({
           <Filter size={13} />
           <span>Filtros avançados</span>
           {estado.filtros.length > 0 && (
-            <span className="ml-[2px] bg-primary text-white size-[16px] text-[10px] font-bold rounded-full flex items-center justify-center">
+            <span className="ml-[2px] bg-primary text-primary-foreground size-[16px] text-[10px] font-bold rounded-full flex items-center justify-center">
               {estado.filtros.length}
             </span>
           )}
@@ -496,7 +497,7 @@ export function Filters({
                   className="flex flex-col gap-[6px] p-[10px] bg-surface border border-line-2 rounded-[8px] w-full sm:w-[240px] shadow-sm relative group/card hover:border-line-2/80 transition-colors"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-text-mute uppercase tracking-wider font-sans">
+                    <span className="text-[11px] font-semibold text-text-mute uppercase tracking-wider font-sans">
                       {ROTULOS[f.campo] ?? f.campo}
                     </span>
                     <button

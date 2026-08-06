@@ -1,7 +1,6 @@
 import React from 'react';
 import { Copy, Search } from 'lucide-react';
 import type { CoffeeConclusaoFiltro } from '../../../../types';
-import { useCoffeePortalTheme } from '../../use-coffee-portal-theme';
 import { SegTabs } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +37,6 @@ export function ConcluidasToolbar({
   copyDisabled,
   onCopy,
 }: ConcluidasToolbarProps): React.JSX.Element {
-  const portalTheme = useCoffeePortalTheme();
 
   return (
     <div className="flex flex-wrap items-end gap-3 border-b border-line px-[22px] py-4">
@@ -72,7 +70,7 @@ export function ConcluidasToolbar({
           <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent {...portalTheme} className="edp">
+          <SelectContent >
             <SelectItem value="7d">7 dias</SelectItem>
             <SelectItem value="30d">30 dias</SelectItem>
             <SelectItem value="tudo">Todo período</SelectItem>

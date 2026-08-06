@@ -1,7 +1,9 @@
 import React from 'react';
 import { ArrowRight, CircleAlert, WalletCards } from 'lucide-react';
 
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 import { calcularResumoCritico, type PlanoRelatorio } from '../relatorios-data';
 import { BarraDisponibilidade, BadgeDisponibilidade, TituloPainel } from '../relatorios-ui';
@@ -42,7 +44,7 @@ export function ResumoDecisao({
 
   return (
     <div className="grid gap-4 xl:grid-cols-3">
-      <section className="edp-panel flex flex-col gap-4">
+      <Card className="flex flex-col gap-4 p-[var(--pad)]">
         <TituloPainel
           titulo="Carteira versus meta"
           detalhe={`Referência mensal: ${nomeMes(mes)}`}
@@ -61,9 +63,9 @@ export function ResumoDecisao({
             <ArrowRight />
           </Button>
         </div>
-      </section>
+      </Card>
 
-      <section className="edp-panel flex flex-col gap-4">
+      <Card className="flex flex-col gap-4 p-[var(--pad)]">
         <TituloPainel
           titulo="Déficit que exige ação"
           detalhe="Soma de faltas por plano; sobras não compensam déficits."
@@ -77,9 +79,9 @@ export function ResumoDecisao({
         <p className="mt-auto text-xs leading-5 text-text-mute">
           A lista abaixo prioriza o maior impacto financeiro e a menor disponibilidade.
         </p>
-      </section>
+      </Card>
 
-      <section className="edp-panel flex flex-col gap-4">
+      <Card className="flex flex-col gap-4 p-[var(--pad)]">
         <TituloPainel
           titulo="Cobertura possível"
           detalhe="Planejado + base fora do plano (COFFEE), sobre a meta."
@@ -88,7 +90,7 @@ export function ResumoDecisao({
         <div className="grid grid-cols-2 gap-3">
           <Resumo label="Base disponível" valor={fmtQtd(baseDisponivel)} />
           <div className="min-w-0">
-            <p className="edp-eyebrow truncate">Cobertura possível</p>
+            <Eyebrow asChild><p className="truncate">Cobertura possível</p></Eyebrow>
             <p className="mt-1 truncate text-lg font-semibold tracking-display"
                style={{ color: corCobertura(coberturaPossivel) }}>
               {coberturaPossivel === null ? '—' : fmtPct(coberturaPossivel)}
@@ -100,7 +102,7 @@ export function ResumoDecisao({
             Ver {fmtQtd(corrigidasForaDoPlano)} corrigidas fora do plano
           </Button>
         ) : null}
-      </section>
+      </Card>
     </div>
   );
 }
@@ -116,7 +118,7 @@ function Resumo({
 }): React.JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="edp-eyebrow truncate">{label}</p>
+      <Eyebrow asChild><p className="truncate">{label}</p></Eyebrow>
       <p className={`mt-1 truncate text-lg font-semibold tracking-display ${tom}`}>{valor}</p>
     </div>
   );

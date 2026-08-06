@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ export function MensalizacaoTabela({
   onSelecionarMes: (mes: number) => void;
 }): React.JSX.Element {
   return (
-    <section className="edp-panel overflow-hidden p-0">
+    <Card className="overflow-hidden">
       <div className="px-5 pt-5 pb-4">
         <TituloPainel
           titulo="Detalhamento mensal"
@@ -36,7 +37,7 @@ export function MensalizacaoTabela({
         />
       </div>
       <div className="overflow-x-auto">
-        <Table className="edp-table min-w-[800px]">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
               <TableHead>Mês</TableHead>
@@ -66,11 +67,11 @@ export function MensalizacaoTabela({
                       {MESES_ABREV_PT[mes.mes - 1]}
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right edp-mono">{fmtQtd(mes.meta)}</TableCell>
-                  <TableCell className="text-right edp-mono">{fmtQtd(mes.carteira)}</TableCell>
-                  <TableCell className="text-right edp-mono">{fmtQtd(mes.executado)}</TableCell>
-                  <TableCell className="text-right edp-mono">{fmtPct(disponibilidade)}</TableCell>
-                  <TableCell className="text-right edp-mono text-text-dim">{mes.mes === mesCorrente ? fmtQtd(postergadasMesCorrente) : '—'}</TableCell>
+                  <TableCell className="text-right font-mono">{fmtQtd(mes.meta)}</TableCell>
+                  <TableCell className="text-right font-mono">{fmtQtd(mes.carteira)}</TableCell>
+                  <TableCell className="text-right font-mono">{fmtQtd(mes.executado)}</TableCell>
+                  <TableCell className="text-right font-mono">{fmtPct(disponibilidade)}</TableCell>
+                  <TableCell className="text-right font-mono text-text-dim">{mes.mes === mesCorrente ? fmtQtd(postergadasMesCorrente) : '—'}</TableCell>
                   <TableCell><Situacao disponibilidade={disponibilidade} /></TableCell>
                 </TableRow>
               );
@@ -78,7 +79,7 @@ export function MensalizacaoTabela({
           </TableBody>
         </Table>
       </div>
-    </section>
+    </Card>
   );
 }
 

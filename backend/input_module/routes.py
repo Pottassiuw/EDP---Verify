@@ -197,10 +197,37 @@ def excluir_notas(pedido: ExclusaoPedido, tasks: BackgroundTasks,
     return {"excluidas": excluidas}
 
 
+# ── Bloqueios (edição concorrente) ──────────────────────────────────────────
+class DestravarPedido(BaseModel):
+    numeros: list[int]
+
+
+@router.get("/bloqueios")
+def listar_bloqueios():
+    garantir_banco()
+    ativos = db.obter_bloqueios()
+    return {"bloqueios": [
+        {"Numero_Nota": numero, "Usuario": info["usuario"], "Data_Hora": info["desde"]}
+        for numero, info in ativos.items()
+    ]}
+
+
+@router.post("/notas/{numero}/travar")
+def travar_nota(numero: int, usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    return db.travar_nota(numero, usuario)
+
+
+@router.post("/notas/destravar")
+def destravar_notas(pedido: DestravarPedido, usuario: str = Depends(usuario_atual)):
+    garantir_banco()
+    return {"liberadas": db.destravar_notas(pedido.numeros, usuario)}
+
+
 @router.post("/desfazer")
 def desfazer(tasks: BackgroundTasks, usuario: str = Depends(usuario_atual)):
     garantir_banco()
-    ok, mensagem = db.reverter_ultima_alteracao()
+    ok, mensagem = db.reverter_ultima_alteracao(usuario)
     if ok:
         pos_escrita(tasks)
     return {"ok": ok, "mensagem": mensagem}
@@ -426,9 +453,8 @@ def importar_ramal(pedido: RamalLotePedido, tasks: BackgroundTasks,
     garantir_banco()
     if not pedido.notas:
         raise HTTPException(400, "Lote vazio.")
-    import pandas as pd
+    # ID_Cronologia é resolvido no db (preserva o de quem já existe).
     df = pd.DataFrame([n.model_dump() for n in pedido.notas])
-    df["ID_Cronologia"] = list(range(1, len(df) + 1))
     db.salvar_ramal_em_massa(df)
     pos_escrita(tasks)
     return {"inseridas": len(df)}

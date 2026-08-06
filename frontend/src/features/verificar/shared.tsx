@@ -1,6 +1,7 @@
 import React from "react";
+import { Eyebrow } from "@/components/branded/section";
 import { Badge } from "@/components/ui/badge";
-import type { FieldProps, NoteStatus } from "../../types";
+import type { FieldProps, NoteStatus, TriageForwarding } from "../../types";
 
 export const LOGO_DARK =
   "/assets/RGB/Dark/Regular/NEG/EDP_Group_MasterLogo_RGB_Dark_NEG.png";
@@ -37,7 +38,8 @@ export const StatusTag: React.FC<{
   status: NoteStatus;
   done: boolean;
   dup?: boolean;
-}> = ({ status, done, dup }) => {
+  encaminhamento?: TriageForwarding;
+}> = ({ status, done, dup, encaminhamento }) => {
   if (dup)
     return (
       <Badge variant="tagDup">
@@ -45,11 +47,32 @@ export const StatusTag: React.FC<{
         Duplicata
       </Badge>
     );
+  if (encaminhamento?.situacao === "retornada")
+    return (
+      <Badge variant="tagDone" style={{ backgroundColor: "var(--accent-tint)", color: "var(--accent)" }}>
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
+        Retornada
+      </Badge>
+    );
+  if (encaminhamento?.situacao === "falha_operacional")
+    return (
+      <Badge variant="tagErr" title={encaminhamento.erro ?? "Falha operacional"}>
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
+        Falha operacional
+      </Badge>
+    );
+  if (encaminhamento)
+    return (
+      <Badge variant="tagDone">
+        <span className="w-[6px] h-[6px] rounded-full bg-current" />
+        Encaminhada
+      </Badge>
+    );
   if (done)
     return (
       <Badge variant="tagDone">
         <span className="w-[6px] h-[6px] rounded-full bg-current" />
-        Concluída
+        Encaminhada
       </Badge>
     );
   return status === "ok" ? (
@@ -78,12 +101,9 @@ export const Field: React.FC<FieldProps> = ({
       minWidth: grow ? 150 : 0,
     }}
   >
-    <span
-      className="edp-eyebrow"
-      style={{ color: accent ? "var(--green)" : "var(--text-mute)" }}
-    >
+    <Eyebrow style={{ color: accent ? "var(--green)" : "var(--text-mute)" }}>
       {label}
-    </span>
+    </Eyebrow>
     {children}
   </label>
 );

@@ -52,6 +52,18 @@ O lookup usa `ix_nc_lookup_sap` (`id_sap`, `sap_real`, `sincronizado_em DESC`,
 requisição, o service abre uma única conexão e uma transação de leitura
 explícita: a versão e a nota são lidas da mesma snapshot antes do fechamento.
 
+### Consumidor: duplicatas externas do Verificar
+
+`backend/main.py: enriquecer_candidatos_externos()` usa `repository.obter_muitas`
+(não `obter_por_id_sap`) pra cruzar candidatas duplicatas externas do Verificar
+com `nota_carteira` por `id_onr` — o ID das duplicatas do Verificar é o mesmo
+`id_onr` da Carteira, não o `id_sap`. Diferente do enriquecimento por SAP
+(Fase 4B), aqui não há filtro `PII`: o consumidor é interno (mesma equipe que
+já vê `local_instalacao`/coordenadas na planilha Verificar), então a projeção
+inclui `local_instalacao`/`latitude`/`longitude`. O enriquecimento também
+é reaplicado ao estado legado restaurado em `app_state.json`; uma falha de
+leitura da projeção é exposta por `GET /api/data` como HTTP `503`.
+
 ## Movimentação (Fase 2)
 
 `movimentacao.py` move notas da carteira para o plano do Input, espelhando o

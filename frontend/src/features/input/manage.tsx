@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, Undo2, Save, Trash2 } from 'lucide-react';
-import type { Celula, InputDataset, NotaInput } from './types';
-import { InputApi } from './api';
+import type { Celula, EdicaoResultado, InputDataset, NotaInput } from './types';
+import { InputApi, getUsuario } from './api';
 import { toast } from 'sonner';
 import { parseColagemTsv } from './lib';
 import { COLUNAS, COLUNAS_COLAGEM, ROTULOS } from './columns';
@@ -9,6 +9,7 @@ import { type FiltersState } from './filters';
 import { filtrarRegistros } from './overview';
 import { NotesTable } from './notes-table';
 import { useRecarregarInput } from './use-input-data';
+import { useBloqueios } from './use-bloqueios';
 import { MesExecucaoPicker } from '@/components/branded/mes-execucao-picker';
 import { ColagemPlanilha } from './colagem-planilha';
 import { CLASSE_SELECT_MONO } from './ui';
@@ -19,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { SegTabs, Banner } from '@/components/branded/section';
+import { SegTabs, Banner, Eyebrow } from '@/components/branded/section';
 import { ConfirmModal } from '../coffee/confirm-modal';
 
 import { Rateio } from './rateio';
@@ -34,6 +35,12 @@ const MODOS: { id: Modo; rotulo: string }[] = [
   { id: 'exclusao', rotulo: 'Exclusão' },
   { id: 'cadastro', rotulo: 'Cadastrar Nota' },
   { id: 'colagem', rotulo: 'Colar Planilha' },
+];
+
+type Visualizacao = 'hierarquica' | 'plana';
+const VISUALIZACOES: { id: Visualizacao; rotulo: string }[] = [
+  { id: 'hierarquica', rotulo: '📁 Visão Hierárquica' },
+  { id: 'plana', rotulo: '📄 Visão Plana' },
 ];
 
 interface Mensagem { tipo: 'ok' | 'erro'; texto: string; }
@@ -52,6 +59,8 @@ interface ManageProps {
 
 export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element {
   const recarregar = useRecarregarInput();
+  const usuarioAtual = getUsuario();
+  const { mapa: bloqueios, recarregar: recarregarBloqueios } = useBloqueios();
   const [base, setBase] = React.useState<'geral' | 'ramal'>('geral');
   const [modo, setModo] = React.useState<Modo>('rapida');
   const [agruparGavetinhas, setAgruparGavetinhas] = React.useState(true);
@@ -70,13 +79,19 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
   const previewColagem = React.useMemo(
     () => parseColagemTsv(textoColagem, COLUNAS_COLAGEM), [textoColagem]);
 
-  async function executar(rotuloOk: string, fn: () => Promise<unknown>): Promise<void> {
+  // rotuloOk aceita uma mensagem fixa OU derivada do resultado — necessário
+  // para refletir corretamente quando o backend salva/exclui MENOS do que o
+  // solicitado (ex.: notas travadas por outro usuário são puladas).
+  async function executar<T>(
+    rotuloOk: string | ((resultado: T) => string), fn: () => Promise<T>,
+  ): Promise<void> {
     setSalvando(true); setMsg(null);
     try {
-      await fn();
+      const resultado = await fn();
       await recarregar();
-      setMsg({ tipo: 'ok', texto: rotuloOk });
-      toast.success(rotuloOk);
+      const texto = typeof rotuloOk === 'function' ? rotuloOk(resultado) : rotuloOk;
+      setMsg({ tipo: 'ok', texto });
+      toast.success(texto);
     } catch (e) {
       const txt = e instanceof Error ? e.message : String(e);
       setMsg({ tipo: 'erro', texto: txt });
@@ -93,6 +108,32 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
       return m;
     });
   }
+
+  // Trava a nota antes de liberar a edição inline. Idempotente para o mesmo
+  // usuário — cada nova célula clicada na mesma nota renova o TTL do lock.
+  const onIniciarEdicao = React.useCallback(async (numero: number): Promise<boolean> => {
+    try {
+      const resultado = await InputApi.travarNota(numero);
+      recarregarBloqueios();
+      if (!resultado.ok) {
+        toast.warning(`Nota ${numero} em edição por ${resultado.usuario}`, {
+          description: 'Aguarde a liberação para editar.',
+        });
+      }
+      return resultado.ok;
+    } catch (e) {
+      toast.error('Não foi possível travar a nota para edição', {
+        description: e instanceof Error ? e.message : String(e),
+      });
+      return false;
+    }
+  }, [recarregarBloqueios]);
+
+  const descartarEdicoes = (): void => {
+    void InputApi.destravarNotas([...edicoes.keys()]);
+    setEdicoes(new Map());
+    recarregarBloqueios();
+  };
   function toggleSelecionado(numero: number): void {
     setSelecionados((prev) => {
       const s = new Set(prev);
@@ -109,11 +150,25 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
   }
 
   const salvarRapida = (): void => {
-    void executar(`${edicoes.size} nota(s) atualizada(s).`, async () => {
-      const linhas = [...edicoes.entries()].map(([n, campos]) => ({ Numero_Nota: n, ...campos }));
-      await InputApi.editar(linhas);
-      setEdicoes(new Map());
-    });
+    const numerosAlvo = [...edicoes.keys()];
+    void executar<EdicaoResultado>(
+      (r) => r.bloqueadas.length > 0
+        ? `${r.alteradas} nota(s) atualizada(s) — ${r.bloqueadas.length} travada(s) por outro usuário, edição mantida pendente.`
+        : `${r.alteradas} nota(s) atualizada(s).`,
+      async () => {
+        const linhas = numerosAlvo.map((n) => ({ Numero_Nota: n, ...edicoes.get(n) }));
+        const resultado = await InputApi.editar(linhas);
+        const bloqueadas = new Set(resultado.bloqueadas);
+        const liberar = numerosAlvo.filter((n) => !bloqueadas.has(n));
+        if (liberar.length > 0) void InputApi.destravarNotas(liberar);
+        setEdicoes((prev) => {
+          const m = new Map(prev);
+          for (const n of liberar) m.delete(n);
+          return m;
+        });
+        recarregarBloqueios();
+        return resultado;
+      });
   };
 
   React.useEffect(() => {
@@ -155,10 +210,16 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
 
   const confirmarExcluir = (): void => {
     setConfirmDeleteOpen(false);
-    void executar(`${selecionados.size} nota(s) excluída(s).`, async () => {
-      await InputApi.excluir([...selecionados]);
-      setSelecionados(new Set());
-    });
+    const solicitadas = selecionados.size;
+    void executar<{ excluidas: number }>(
+      (r) => r.excluidas < solicitadas
+        ? `${r.excluidas} nota(s) excluída(s) — ${solicitadas - r.excluidas} travada(s) por outro usuário, não excluída(s).`
+        : `${r.excluidas} nota(s) excluída(s).`,
+      async () => {
+        const r = await InputApi.excluir([...selecionados]);
+        setSelecionados(new Set());
+        return r;
+      });
   };
 
   const desfazer = (): void => {
@@ -204,7 +265,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
       {/* Seletor da Base (Geral vs Ramal) */}
       <div className="flex items-center justify-between gap-4 flex-wrap bg-surface p-4 rounded-lg border border-line shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-text-mute">Base de Dados:</span>
+          <span className="text-xs font-mono font-semibold uppercase tracking-wider text-text-mute">Base de Dados:</span>
           <SegTabs
             tabs={[
               { id: 'geral', rotulo: '📋 Geral' },
@@ -218,15 +279,12 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
 
         {base === 'geral' && (
           <div className="flex items-center gap-2">
-            <Button
-              variant={agruparGavetinhas ? "secondary" : "outline"}
-              size="sm"
-              className="h-9 px-3 text-xs"
-              onClick={() => setAgruparGavetinhas((prev) => !prev)}
-              title="Alternar visualização agrupada (gavetinhas) de notas mães e filhas"
-            >
-              {agruparGavetinhas ? "📁 Visão Hierárquica" : "📄 Visão Plana"}
-            </Button>
+            <SegTabs
+              tabs={VISUALIZACOES}
+              value={agruparGavetinhas ? 'hierarquica' : 'plana'}
+              onChange={(v) => setAgruparGavetinhas(v === 'hierarquica')}
+              ariaLabel="Alternar visualização agrupada (gavetinhas) de notas mães e filhas"
+            />
             <Button
               variant="outline"
               size="sm"
@@ -256,7 +314,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
               {modo === 'lote' && (
                 <Card className="border border-line bg-surface shadow-sm">
                   <CardHeader className="pb-3">
-                    <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Ação em Lote</span>
+                    <Eyebrow className="text-xs tracking-wider">Ação em Lote</Eyebrow>
                     <CardTitle className="text-base font-semibold text-foreground">Alterar Campos em Lote</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -322,7 +380,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
                           Salvar Alterações
                         </Button>
                         <Button variant="ghost" size="sm" className="h-9 text-xs" disabled={edicoes.size === 0}
-                                onClick={() => setEdicoes(new Map())}>Descartar</Button>
+                                onClick={descartarEdicoes}>Descartar</Button>
                       </div>
                     </div>
                   </CardContent>
@@ -338,7 +396,10 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
                             onEditar={modo === 'rapida' ? onEditar : undefined}
                             statusOpcoes={dados.meta.status_opcoes}
                             prioridadeOpcoes={dados.meta.prioridade_opcoes}
-                            agruparGavetinhas={agruparGavetinhas} />
+                            agruparGavetinhas={agruparGavetinhas}
+                            bloqueios={bloqueios}
+                            usuarioAtual={usuarioAtual}
+                            onIniciarEdicao={modo === 'rapida' ? onIniciarEdicao : undefined} />
               </div>
             </React.Fragment>
           )}
@@ -346,7 +407,7 @@ export function Manage({ dados, estadoFiltros }: ManageProps): React.JSX.Element
           {modo === 'cadastro' && (
             <Card className="border border-line bg-surface shadow-sm">
               <CardHeader className="pb-3">
-                <span className="edp-eyebrow text-xs text-text-mute font-mono uppercase tracking-wider">Nova Nota</span>
+                <Eyebrow className="text-xs tracking-wider">Nova Nota</Eyebrow>
                 <CardTitle className="text-base font-semibold text-foreground">Cadastrar Nova Nota no Banco</CardTitle>
               </CardHeader>
               <CardContent>

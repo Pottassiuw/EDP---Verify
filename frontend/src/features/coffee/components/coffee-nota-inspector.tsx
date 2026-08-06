@@ -17,8 +17,8 @@ import { OperacaoApi } from '../operacao/operacao-api';
 import type { NotaRevisao, OperacaoEtapa } from '../types';
 import { REVISAO_KEY, useNotaRevisao } from '../use-nota-revisao';
 import { useCoffeeNotaLogs } from '../use-coffee-logs';
-import { useCoffeePortalTheme } from '../use-coffee-portal-theme';
 import { CarteiraEnriquecimentoCard } from '../../carteira/carteira-enriquecimento-card';
+import { Eyebrow } from '@/components/branded/section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -59,6 +59,16 @@ function unmaskLocal(value: string): string {
   return value.toUpperCase().replace(/[^0-9A-Z]/g, '');
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 function nextStep(etapa: OperacaoEtapa | undefined, classificacao: string): string {
   if (etapa === 'fila') return 'Aguarde a consulta ou tente novamente.';
   if (etapa === 'pronta') return 'Revise o local e gere a nota.';
@@ -80,7 +90,6 @@ export function CoffeeNotaInspector({
   onAction,
   onIrParaSincronizacao,
 }: CoffeeNotaInspectorProps): React.JSX.Element {
-  const portalTheme = useCoffeePortalTheme();
   const queryClient = useQueryClient();
   const revisao = useNotaRevisao(pk);
   const logs = useCoffeeNotaLogs(pk);
@@ -123,12 +132,11 @@ export function CoffeeNotaInspector({
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <SheetContent
         side="right"
-        {...portalTheme}
-        className="edp flex w-full max-w-none flex-col gap-0 p-0 motion-reduce:duration-0 sm:max-w-none lg:max-w-[clamp(420px,38vw,620px)]"
+        className="flex w-full max-w-none flex-col gap-0 p-0 motion-reduce:duration-0 sm:max-w-none lg:max-w-[clamp(420px,38vw,620px)]"
       >
         <SheetHeader className="border-b border-line p-4">
           <SheetTitle>
-            Ficha da nota <span className="edp-mono">#{pk}</span>
+            Ficha da nota <span className="font-mono">#{pk}</span>
           </SheetTitle>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -144,9 +152,11 @@ export function CoffeeNotaInspector({
             <div className="flex flex-col gap-6">
               <section aria-labelledby="coffee-local-editor">
                 <div className="mb-2 flex items-center gap-2">
-                  <h2 id="coffee-local-editor" className="edp-eyebrow">
-                    Local de instalação
-                  </h2>
+                  <Eyebrow asChild>
+                    <h2 id="coffee-local-editor">
+                      Local de instalação
+                    </h2>
+                  </Eyebrow>
                   <div className="flex-1" />
                   {canEditLocal && !editingLocal && (
                     <Button
@@ -164,7 +174,7 @@ export function CoffeeNotaInspector({
                       value={localValue}
                       onChange={(event) => setLocalValue(maskLocal(event.target.value))}
                       aria-label="Local de instalação"
-                      className="edp-mono"
+                      className="font-mono"
                       disabled={localMutation.isPending}
                     />
                     <Button
@@ -189,7 +199,7 @@ export function CoffeeNotaInspector({
                     </Button>
                   </div>
                 ) : (
-                  <p className="edp-mono text-sm">{maskLocal(persistedLocal) || '—'}</p>
+                  <p className="font-mono text-sm">{maskLocal(persistedLocal) || '—'}</p>
                 )}
                 {Boolean(localMutation.error) && (
                   <p role="alert" className="mt-2 text-sm text-red">
@@ -200,19 +210,42 @@ export function CoffeeNotaInspector({
                 )}
               </section>
               <NotaSummary revisao={revisao.data} />
+              {revisao.data.coffee.origem === 'verificar' && (
+                <section className="rounded-[11px] border border-line bg-surface-2 p-3">
+                  <Eyebrow asChild><h2>Rastreabilidade da correção</h2></Eyebrow>
+                  <dl className="mt-2 grid gap-2 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Veio de Verificar</dt>
+                      <dd className="text-right">{formatDateTime(revisao.data.coffee.verificar_em)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Encaminhada por</dt>
+                      <dd className="text-right">{revisao.data.coffee.verificar_por ?? '—'}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Corrigida</dt>
+                      <dd className="text-right">{formatDateTime(revisao.data.coffee.corrigida_em)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-text-mute">Concluída por</dt>
+                      <dd className="text-right">{revisao.data.coffee.corrigida_por ?? '—'}</dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
               <CarteiraEnriquecimentoCard
                 numeroSap={revisao.data.coffee.id_sap}
                 enabled={open}
                 onIrParaSincronizacao={onIrParaSincronizacao}
               />
               <section className="rounded-[11px] border border-line bg-surface-2 p-3">
-                <h2 className="edp-eyebrow">Próximo passo</h2>
+                <Eyebrow asChild><h2>Próximo passo</h2></Eyebrow>
                 <p className="mt-1 text-sm text-text-dim">
                   {nextStep(etapa, revisao.data.coffee.classificacao)}
                 </p>
               </section>
               <section>
-                <h2 className="edp-eyebrow mb-3">Atividade</h2>
+                <Eyebrow asChild><h2 className="mb-3">Atividade</h2></Eyebrow>
                 <NotaActivity logs={logs.data ?? []} loading={logs.isLoading} />
               </section>
             </div>

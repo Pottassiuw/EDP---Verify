@@ -4,6 +4,8 @@ import { EDPApi } from '../../api';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { StatTile, Banner } from '@/components/branded/section';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Plus, Coffee, Check, Copy, Trash2, X } from 'lucide-react';
 
 const COFFEE_STYLE = `
@@ -122,15 +124,16 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
       <style>{COFFEE_STYLE}</style>
       <div className="coffee-wrap">
         <div>
-          <h1 className="edp-title">Abrir notas no COFFEE</h1>
-          <p className="edp-sub mt-[4px]">
+          <h1 className="text-[21px] font-semibold leading-[1.15] tracking-display text-balance">
+            Abrir notas no COFFEE</h1>
+          <p className="mt-[4px] text-[13px] text-text-dim">
             Monte uma lista de notas e abra no COFFEE — todas de uma vez, em blocos ou uma a uma.</p>
         </div>
 
         {coffeeReturn && (
           <Banner tipo="err">
             <span className="flex-1 min-w-0">
-              Você estava na <strong className="edp-mono">Nota {coffeeReturn.noteId}</strong>
+              Você estava na <strong className="font-mono">Nota {coffeeReturn.noteId}</strong>
               {coffeeReturn.noteRef ? <span className="text-text-dim"> · {coffeeReturn.noteRef}</span> : null}
             </span>
             <Button size="sm" onClick={onBackToTriagem}>Voltar à triagem</Button>
@@ -140,9 +143,9 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
           </Banner>
         )}
 
-        <div className="edp-panel flex flex-col gap-[14px]">
+        <Card className="flex flex-col gap-[14px] p-[var(--pad)]">
           <div className="coffee-input">
-            <input className="edp-field" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown}
+            <Input className="" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown}
                    inputMode="numeric" placeholder="Digite ou cole IDs e tecle Enter…" aria-label="ID da nota" />
             <Button onClick={() => { if (input.trim()) addFromText(input); }} disabled={!input.trim()}>
               <Plus /> Adicionar
@@ -161,7 +164,7 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
                 indicatorClassName="bg-green rounded-[999px]"
               />
               <div className="flex gap-[8px] items-center">
-                <span className="edp-mono text-[11.5px] text-text-mute flex-1">
+                <span className="font-mono text-[11.5px] text-text-mute flex-1">
                   {opened.size} de {ids.length} abertas</span>
                 <Button variant="ghost" size="sm" disabled={!ids.length} onClick={() => void copyIds()}>
                   <Copy /> Copiar IDs
@@ -192,7 +195,7 @@ export function CoffeeAbrir({ notes, coffeeReturn, onClearReturn, onBackToTriage
             <span className="text-[11px] text-text-mute">
               Abre em ordem decrescente, uma aba por nota. Agrupar abas exige extensão de navegador.</span>
           </div>
-        </div>
+        </Card>
 
         {ids.length === 0 ? (
           <div className="coffee-empty">
