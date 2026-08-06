@@ -83,6 +83,13 @@ export interface DuplicateCandidate extends ComparableFields {
   match: DuplicateField[];
   latitude: string | null;
   longitude: string | null;
+  /** Presente só para candidatas externas (in_sheet=false): achou linha na Carteira? */
+  carteira_match?: boolean;
+  status_sap?: string | null;
+  prioridade_sap?: number | null;
+  conjunto?: string | null;
+  /** Data em que a nota saiu da última sincronização da Carteira (tombstone), se aplicável. */
+  carteira_ausente_em?: string | null;
 }
 
 export interface NoteGenerator {

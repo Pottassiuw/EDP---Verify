@@ -4,6 +4,7 @@ import math
 import os
 import pathlib
 import re
+import sqlite3
 import time
 import uuid
 
@@ -17,6 +18,8 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 
 from coffee_module import db as _coffee_db
+from carteira_module import db as _carteira_db
+from carteira_module import repository as _carteira_repo
 from verificar_module.source import FonteVerificarIndisponivelErro, carregar_fonte
 
 app = FastAPI(title="De olho no Problema")
@@ -207,6 +210,9 @@ def load_state():
             if isinstance(registro.get("raw"), dict):
                 registro["raw"] = slim_raw(registro["raw"])
                 enriquecer_gerador(registro, membros)
+        enriquecer_candidatos_externos(RECORDS)
+    except CarteiraIndisponivelErro:
+        raise
     except Exception as e:
         print(
             f"Falha ao ler {STATE_FILE.name}: {e}. "
@@ -276,6 +282,56 @@ def enrich_candidate(cand: dict, source: dict) -> dict:
         "latitude":         source.get("latitude"),
         "longitude":        source.get("longitude"),
     }
+
+
+class CarteiraIndisponivelErro(RuntimeError):
+    """A projeção local da Carteira não pôde ser lida para a triagem."""
+
+
+def enriquecer_candidatos_externos(records: list[dict]) -> None:
+    """Preenche candidatas externas (in_sheet=False) com dados da Carteira, em lote.
+
+    Uma única query IN para todas as candidatas externas do request inteiro —
+    nunca uma chamada por candidata. Candidatas in_sheet=True não são tocadas
+    (já vieram enriquecidas por enrich_candidate a partir da própria planilha).
+    """
+    ids_externos = {
+        int(cand["id"])
+        for record in records for cand in record["duplicates"]
+        if not cand["in_sheet"] and str(cand["id"]).isdigit()
+    }
+    if not ids_externos:
+        return
+
+    try:
+        conn = _carteira_db.conectar()
+        try:
+            encontrados = _carteira_repo.obter_muitas(conn, list(ids_externos))
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError) as exc:
+        raise CarteiraIndisponivelErro(
+            "Carteira de Notas indisponível para enriquecer duplicatas externas."
+        ) from exc
+
+    for record in records:
+        for cand in record["duplicates"]:
+            if cand["in_sheet"]:
+                continue
+            nota = encontrados.get(int(cand["id"])) if str(cand["id"]).isdigit() else None
+            cand["carteira_match"] = nota is not None
+            if nota is None:
+                continue
+            cand["local_instalacao"] = nota.get("local_instalacao") or ""
+            cand["problema"] = " · ".join(
+                parte for parte in [nota.get("componente_novo"), nota.get("sintoma")] if parte
+            ) or ""
+            cand["status_sap"] = nota.get("status_sap")
+            cand["prioridade_sap"] = nota.get("prioridade_sap")
+            cand["conjunto"] = nota.get("descricao_conjunto") or nota.get("conjunto")
+            cand["latitude"] = nota.get("latitude")
+            cand["longitude"] = nota.get("longitude")
+            cand["carteira_ausente_em"] = nota.get("ausente_na_origem_em")
 
 
 def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
@@ -352,6 +408,8 @@ def montar_registros_triagem(df: pd.DataFrame) -> list[dict]:
         })
         record["status"] = "erro"
 
+    enriquecer_candidatos_externos(records)
+
     for record in records:
         enriquecer_gerador(record, membros)
     return records
@@ -380,6 +438,8 @@ async def upload_file(file: UploadFile = File(...)):
 
     try:
         RECORDS = montar_registros_triagem(df)
+    except CarteiraIndisponivelErro as erro:
+        raise HTTPException(status_code=503, detail=str(erro)) from erro
     except (FileNotFoundError, ValueError, OSError) as erro:
         raise HTTPException(
             status_code=500,
@@ -404,6 +464,8 @@ def get_data():
             fonte = carregar_fonte()
             records = montar_registros_triagem(fonte.registros)
         except FonteVerificarIndisponivelErro as erro:
+            raise HTTPException(status_code=503, detail=str(erro)) from erro
+        except CarteiraIndisponivelErro as erro:
             raise HTTPException(status_code=503, detail=str(erro)) from erro
         except (FileNotFoundError, ValueError, OSError) as erro:
             raise HTTPException(
