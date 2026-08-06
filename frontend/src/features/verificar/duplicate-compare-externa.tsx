@@ -85,7 +85,7 @@ export function ExternalCandidateCard({ note, candidate }: ExternalCandidateCard
   const display = consulta ? mergeConsultaCampos(candidate, consulta) : candidate;
   const botaoBuscar = (
     <Button variant="outline" size="sm" disabled={buscar.isPending} onClick={() => buscar.mutate()}>
-      ⌕ {buscar.isPending ? 'Buscando…' : 'Buscar poste/referência no COFFEE'}
+      ⌕ {buscar.isPending ? 'Buscando…' : 'Buscar dados no COFFEE'}
     </Button>
   );
 

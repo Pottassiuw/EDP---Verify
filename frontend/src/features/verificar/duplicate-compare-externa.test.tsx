@@ -87,7 +87,7 @@ describe('ExternalCandidateCard', () => {
     expect(html).toContain('POSTE DEMANDA');
     expect(html).toContain('Forte');
     expect(html).toContain('100%');
-    expect(html).toContain('Buscar poste/referência no COFFEE');
+    expect(html).toContain('Buscar dados no COFFEE');
     expect(html).not.toContain('≠');
   });
 
