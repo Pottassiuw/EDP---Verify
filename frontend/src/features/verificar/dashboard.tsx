@@ -364,7 +364,7 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px]">
                       <span className="font-mono text-[13px] font-semibold">{n.id}</span>
-                      {dupIndicator && <span title={dupIndicator.label} aria-label={dupIndicator.label} className={`${dupIndicator.className} text-[13px]`}>{dupIndicator.symbol}</span>}
+                      {dupIndicator && <span role="img" title={dupIndicator.label} aria-label={dupIndicator.label} className={`${dupIndicator.className} text-[13px]`}>{dupIndicator.symbol}</span>}
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
                     <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>

@@ -171,4 +171,21 @@ describe('Dashboard — filtro por inspetor', () => {
     );
     expect(htmlNaoCadastrada).toContain('Sem Registro · 777777 (não cadastrado)');
   });
+
+  it('expõe semanticamente o indicador de compatibilidade na fila', () => {
+    const comCandidata = nota({
+      id: '700',
+      duplicates: [{
+        id: '701', local_instalacao: 'ABC-10', poste: 'P1', referencia: 'REF-1', problema: 'Problema',
+        tipo_nota: 'Poda', setor: 'Centro', uf: 'ES', prioridade: 3,
+        in_sheet: true, match: [], latitude: null, longitude: null,
+      }],
+    });
+    const html = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[comCandidata]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    expect(html).toContain('role="img"');
+    expect(html).toContain('aria-label="Forte: 100% · cobertura 100%"');
+  });
 });
