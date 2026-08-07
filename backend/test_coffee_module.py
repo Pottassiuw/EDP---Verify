@@ -2,6 +2,7 @@
 import os
 import tempfile
 import time as _time
+from io import BytesIO
 
 # Blindagem global: impede que a execução de testes afete o banco de dados real
 _tmp_test_dir = tempfile.mkdtemp(prefix="edp_coffee_test_")
@@ -359,6 +360,92 @@ def test_rota_consultar_nao_persiste_nota_do_header(coffee_cliente):
     assert de_alice == []
     de_bob = coffee_cliente.get("/api/coffee/notas", headers={"X-User": "bob"}).json()["registros"]
     assert de_bob == []
+
+
+def test_rota_exportar_concluidas_gera_xlsx_so_com_notas_concluidas(coffee_cliente):
+    """O Excel de concluídas usa somente o espelho local já filtrado por status."""
+    from openpyxl import load_workbook
+    from coffee_module import db
+
+    db.upsert_nota(101, 17247854, {
+        "cidade": "Serra",
+        "tipo_local_instalacao": "ET",
+        "local_instalacao_numero": "00026773",
+        "postes": "P-77",
+        "referencia_fisica": "Rua da Consulta",
+        "componente": "Chave",
+        "sintoma": "Queda",
+        "observacoes": "Validada pela engenharia",
+    })
+    db.upsert_nota(102, 10000000, {"cidade": "Vitória"})
+
+    response = coffee_cliente.post(
+        "/api/coffee/notas/concluidas/exportar",
+        json={"pks": [101, 102]},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    assert "notas_concluidas" in response.headers["content-disposition"]
+    worksheet = load_workbook(BytesIO(response.content)).active
+    rows = list(worksheet.values)
+    assert rows[0][:4] == ("ID ONR", "ID SAP", "Classificação", "Local de instalação")
+    assert rows[1][:8] == (
+        101,
+        17247854,
+        "Gerada",
+        "Serra-ET-00026773",
+        "P-77",
+        "Rua da Consulta",
+        "Chave",
+        "Queda",
+    )
+    assert len(rows) == 2
+    assert worksheet.freeze_panes == "A2"
+
+
+def test_rota_exportar_concluidas_nao_expoe_notas_de_outro_usuario(coffee_cliente):
+    """O header X-User limita a planilha a notas concluídas do próprio usuário."""
+    from openpyxl import load_workbook
+    from coffee_module import db
+
+    try:
+        db.definir_usuario("alice")
+        db.upsert_nota(201, 17247854, {"observacoes": "Nota da Alice"})
+        db.definir_usuario("bob")
+        db.upsert_nota(202, 17247855, {"observacoes": "Nota do Bob"})
+
+        response = coffee_cliente.post(
+            "/api/coffee/notas/concluidas/exportar",
+            json={"pks": [201, 202]},
+            headers={"X-User": "alice"},
+        )
+
+        assert response.status_code == 200
+        rows = list(load_workbook(BytesIO(response.content)).active.values)
+        assert [row[0] for row in rows[1:]] == [201]
+        assert rows[1][8] == "Nota da Alice"
+    finally:
+        db.definir_usuario(None)
+
+
+def test_planilha_concluidas_neutraliza_formula_de_texto_externo():
+    """Campos vindos do COFFEE não podem executar fórmulas ao abrir no Excel."""
+    from openpyxl import load_workbook
+    from coffee_module.exportacao import gerar_planilha_concluidas
+
+    arquivo = gerar_planilha_concluidas([{
+        "pk": 101,
+        "id_sap": 17247854,
+        "classificacao": "gerada",
+        "dados_json": {"observacoes": "=HYPERLINK(\"https://exemplo.invalid\")"},
+    }])
+
+    observacao = load_workbook(BytesIO(arquivo)).active["I2"]
+    assert observacao.data_type == "s"
+    assert observacao.value == "'=HYPERLINK(\"https://exemplo.invalid\")"
 
 
 def test_rota_buscar_log_acao_com_usuario_do_header(coffee_cliente):

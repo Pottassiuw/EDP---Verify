@@ -29,6 +29,7 @@ renderiza uma de cinco seções por `SegTabs`:
 | `operacao/components/operacao-kanban.tsx` | Quatro colunas responsivas, sem drag and drop: Fila, Prontas, Processando e Aguardando SAP. |
 | `components/coffee-nota-inspector.tsx` | Ficha lateral da nota com resumo, card read-only da Carteira, atividade, edição de local e ações contextuais. |
 | `concluidas/coffee-concluidas.tsx` | Histórico, filtros, arquivamento de geradas e movimento de corrigidas para o Plano. |
+| `concluidas/concluidas-api.ts` | Consulta e exportação do conjunto filtrado de concluídas. |
 | `concluidas/components/concluidas-list.tsx` | Lista responsiva de concluídas e seleção restrita às corrigidas. |
 | `coffee-abrir.tsx` | Lista local de IDs e abertura escalonada no COFFEE. |
 | `coffee-logs.tsx` e `coffee-log-table.tsx` | Filtros e linha do tempo de auditoria por `trace_id`. |
@@ -107,6 +108,14 @@ ser selecionadas e movidas, individualmente ou em lote, para o Plano. O
 oferece a navegação para a Visão Geral do Input. Para notas vindas de Verificar,
 a lista informa a data/hora de entrada e da correção; o inspector mostra também
 quem encaminhou e quem concluiu.
+
+O botão **Exportar Excel** envia os PKs do resultado atualmente filtrado (tipo,
+busca e período), junto do `X-User` da sessão COFFEE, para o backend e baixa
+`notas_concluidas_YYYY-MM-DD.xlsx`.
+A planilha contém ID ONR, ID SAP, classificação, local, poste, referência,
+componente, sintoma, observação, origem e data de conclusão. Ela não exporta
+notas que deixaram de estar concluídas ou de estar disponíveis para o usuário
+entre a listagem e o download.
 
 ## Logs e timings
 

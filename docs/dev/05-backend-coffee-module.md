@@ -17,6 +17,7 @@ consultada é classificada localmente (`nao_gerada` / `pendente` /
 | `backend/coffee_module/jobs.py` | Workers em threads com snapshots persistidos de consulta, geração e atualização SAP. |
 | `backend/coffee_module/classify.py` | Função pura `classificar()` que deriva o status de uma nota (`nao_gerada`/`pendente`/`corrigida`/`gerada`) a partir de `id_sap` atual, anterior e origem. |
 | `backend/coffee_module/db.py` | Persistência local em SQLite (`coffee.db`): notas, logs, snapshots de jobs e fila operacional. |
+| `backend/coffee_module/exportacao.py` | Gera a planilha XLSX de notas concluídas a partir do espelho local filtrado. |
 | `backend/coffee_module/routes.py` | Router FastAPI `/api/coffee/*`: expõe Operação, Concluídas, local, arquivamento, triagem e logs. |
 | `backend/coffee_module/config.py` | Configuração: chave da API COFFEE, URL base, diretório de dados, delays entre chamadas e a constante `SAP_PENDENTE` (`10000000`). |
 
@@ -174,6 +175,7 @@ Router `/api/coffee` (prefixo). Mapeamento para o frontend
 | `POST /operacao/remover` | Remove cards da operação; exige justificativa. | `operacao/coffee-operacao.tsx` |
 | `GET /job/{job_id}` | Consulta um snapshot de job diretamente. | Compatibilidade e diagnóstico. |
 | `GET /notas` | Lista notas; `status=concluida` retorna geradas e corrigidas. | `concluidas/concluidas-api.ts` |
+| `POST /notas/concluidas/exportar` | Gera XLSX para os PKs concluídos ainda disponíveis ao usuário; a lista vazia/obsoleta retorna 404. | `concluidas/concluidas-api.ts` |
 | `GET /consultar/{id}` | Busca síncrona somente leitura, com poste/referência; permanece como rota de compatibilidade. | Integrações legadas/manual e duplicatas externas. |
 | `POST /sap` | Define `id_sap` de uma nota diretamente. | uso interno/manual |
 | `POST /desarquivar` | Desarquiva uma nota diretamente. | uso interno/manual |

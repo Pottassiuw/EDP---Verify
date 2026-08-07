@@ -4,10 +4,10 @@ import time
 from contextlib import contextmanager
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
 
-from coffee_module import classify, client, config, db, jobs, operation_service
+from coffee_module import classify, client, config, db, exportacao, jobs, operation_service
 
 _PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
 
@@ -66,6 +66,10 @@ class SapPedido(BaseModel):
 
 class IdPedido(BaseModel):
     id: int
+
+
+class ExportarConcluidasPedido(BaseModel):
+    pks: list[int]
 
 
 class LocalPedido(BaseModel):
@@ -146,6 +150,38 @@ def notas(status: Optional[str] = None, usuario: Optional[str] = Depends(usuario
     with _medir("db.listar_notas"):
         registros = db.listar_notas(status, usuario=usuario)
     return {"registros": registros}
+
+
+@router.post("/notas/concluidas/exportar")
+def exportar_concluidas(
+    pedido: ExportarConcluidasPedido,
+    usuario: Optional[str] = Depends(usuario_coffee),
+):
+    """Exporta apenas as notas concluídas ainda visíveis ao usuário atual."""
+    _garantir_banco()
+    pks = _validar_ids(pedido.pks)
+    por_pk = {
+        nota["pk"]: nota
+        for nota in db.listar_notas("concluida", usuario=usuario)
+    }
+    selecionadas = [por_pk[pk] for pk in pks if pk in por_pk]
+    if not selecionadas:
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhuma das notas selecionadas continua concluída e disponível para exportação.",
+        )
+    db.registrar_log(
+        "acao_usuario",
+        "exportar_concluidas",
+        None,
+        {"total": len(selecionadas)},
+        True,
+    )
+    return Response(
+        content=exportacao.gerar_planilha_concluidas(selecionadas),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="notas_concluidas.xlsx"'},
+    )
 
 
 @router.get("/consultar/{id}")
