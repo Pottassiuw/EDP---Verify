@@ -8,6 +8,7 @@ import type {
   RuleKey,
 } from '../../types';
 import { EDPApi, ruleMeta } from '../../api';
+import { regraLocalInstalacao } from '../../lib/local-instalacao';
 import { PriorityChip, StatusTag, Field } from './shared';
 import { DuplicateCompare } from './duplicate-compare';
 import { calculateDuplicateScore } from './duplicate-score';
@@ -56,6 +57,24 @@ function duplicateIndicator(note: Note): { symbol: string; className: string; la
   return { ...indicator, coverage, label: `${indicator.label}: ${evidence}` };
 }
 
+
+function notaRequerCorrecaoLocal(note: Note): boolean {
+  return note.errors.some((error) => regraLocalInstalacao(error.rule));
+}
+
+export function idsEncaminhaveisEmLote(
+  ids: string[],
+  notes: Note[],
+  completed: Set<string>,
+): string[] {
+  const notesById = new Map(notes.map((note) => [note.id, note]));
+  return ids.filter((id) => {
+    const note = notesById.get(id);
+    return note !== undefined
+      && !completed.has(id)
+      && !notaRequerCorrecaoLocal(note);
+  });
+}
 
 export interface DashboardProps {
   showKpis: boolean;
@@ -402,14 +421,34 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
             const ids = [...selBatch];
             const allDone = ids.every((id) => completed.has(id));
             const allOpen = ids.every((id) => !completed.has(id));
-            const doAction = (action: "done" | "reopen"): void => { onMarkMany(ids, action); setSelBatch(new Set()); };
+            const encaminhaveis = idsEncaminhaveisEmLote(ids, notes, completed);
+            const pendentes = ids.filter((id) => !completed.has(id));
+            const bloqueadas = pendentes.length - encaminhaveis.length;
+            const doAction = (action: "done" | "reopen"): void => {
+              if (action === "done") {
+                if (encaminhaveis.length === 0) return;
+                onMarkMany(encaminhaveis, action);
+                const encaminhadas = new Set(encaminhaveis);
+                setSelBatch(new Set(ids.filter((id) => !encaminhadas.has(id))));
+                return;
+              }
+              onMarkMany(ids, action);
+              setSelBatch(new Set());
+            };
             return (
               <div className="shrink-0 flex items-center gap-[10px] py-[10px] px-[15px] bg-bg-2 flex-wrap border-t-[1px] border-t-line-2">
                 <span className="text-[13px] text-text-dim mr-[2px]">
                   <strong className="text-[15px] text-[var(--accent)] [font-family:var(--font-display)]">{selBatch.size}</strong> selec.</span>
+                {bloqueadas > 0 && (
+                  <span className="font-mono text-[11px] text-amber">
+                    {bloqueadas} {bloqueadas === 1 ? "exige" : "exigem"} correção de local
+                  </span>
+                )}
                 {!allDone && (
-                  <Button size="sm" onClick={() => doAction("done")}>
-                    <Check /> {allOpen ? "Encaminhar" : "Encaminhar pendentes"}
+                  <Button size="sm" disabled={encaminhaveis.length === 0} onClick={() => doAction("done")}>
+                    <Check /> {bloqueadas > 0
+                      ? `Encaminhar elegíveis (${encaminhaveis.length})`
+                      : allOpen ? "Encaminhar" : "Encaminhar pendentes"}
                   </Button>
                 )}
                 {!allOpen && (
@@ -480,9 +519,7 @@ function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate,
     ["Latitude", v(sel.latitude)], ["Longitude", v(sel.longitude)],
   ];
   const otherErrors = sel.errors.filter((e) => e.rule !== "chk_duplicata");
-  const hasLocalError = sel.errors.some(
-    (error) => error.rule === "chk_local_instalacao",
-  );
+  const hasLocalError = notaRequerCorrecaoLocal(sel);
   const hasDup = sel.duplicates.length > 0;
   return (
     <div className={"flex flex-col overflow-hidden bg-bg-2" + (fs ? " fixed inset-0 z-[60]" : "")}>

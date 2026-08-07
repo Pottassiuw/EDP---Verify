@@ -27,7 +27,7 @@ vi.mock('./local-instalacao-correction', () => ({
   ),
 }));
 
-import { Dashboard } from './dashboard';
+import { Dashboard, idsEncaminhaveisEmLote } from './dashboard';
 
 function nota(overrides: Partial<Note>): Note {
   return {
@@ -199,12 +199,40 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(html).toContain('100% cob.');
   });
 
-  it('oferece correção direta no COFFEE apenas para falha de local', () => {
+  it('exclui do encaminhamento em lote notas com correção local pendente', () => {
+    const localAtual = nota({
+      id: '900',
+      errors: [{ rule: 'chk_local_instalacao', rule_name: 'Local', value: 'x' }],
+    });
+    const localLegado = nota({
+      id: '901',
+      errors: [{ rule: 'chk_local_instal', rule_name: 'Local', value: 'x' }],
+    });
+    const elegivel = nota({ id: '902' });
+    const concluida = nota({ id: '903' });
+
+    expect(idsEncaminhaveisEmLote(
+      ['900', '901', '902', '903'],
+      [localAtual, localLegado, elegivel, concluida],
+      new Set(['903']),
+    )).toEqual(['902']);
+  });
+
+  it('oferece correção direta para os dois identificadores de falha local', () => {
     const comFalhaLocal = nota({
       id: '800',
       local_instalacao: '701CF123456789',
       errors: [{
         rule: 'chk_local_instalacao',
+        rule_name: 'Local Instalação',
+        value: '701CF123456789',
+      }],
+      status: 'erro',
+    });
+    const comAliasLegado = nota({
+      id: '802',
+      errors: [{
+        rule: 'chk_local_instal',
         rule_name: 'Local Instalação',
         value: '701CF123456789',
       }],
@@ -220,6 +248,10 @@ describe('Dashboard — filtro por inspetor', () => {
       <Dashboard showKpis={false} notes={[comFalhaLocal]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
     );
+    const htmlAlias = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[comAliasLegado]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
     const htmlOutra = renderToStaticMarkup(
       <Dashboard showKpis={false} notes={[comOutraFalha]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
                  onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
@@ -230,6 +262,8 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(htmlLocal).toContain('3 cidade · 2 tipo · 8 número');
     expect(htmlLocal).toContain('Encaminhar para operação');
     expect(htmlLocal.match(/Encaminhar/g)).toHaveLength(1);
+    expect(htmlAlias).toContain('Corrigir local no COFFEE');
+    expect(htmlAlias.match(/Encaminhar/g)).toHaveLength(1);
     expect(htmlOutra).not.toContain('Corrigir local no COFFEE');
   });
 });

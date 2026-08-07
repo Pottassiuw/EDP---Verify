@@ -58,7 +58,9 @@ ser ocultados pelo próprio Django conforme as opções declaradas no modelo.
 
 ## UX implementada em Verificar
 
-O painel **Corrigir local no COFFEE** aparece somente para notas com
+O painel **Corrigir local no COFFEE** aparece em **Verificar**, no topo do
+detalhe da nota selecionada, antes da lista de falhas. Ele reconhece os dois
+identificadores usados pela fonte: `chk_local_instal` e
 `chk_local_instalacao`:
 
 1. consulta automaticamente o valor atual via `json_all`;

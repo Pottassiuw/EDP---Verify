@@ -1,4 +1,12 @@
 const LOCAL_INSTALACAO_RE = /^\d{3}[A-Z0-9]{2}\d{8}$/;
+const REGRAS_LOCAL_INSTALACAO = new Set([
+  'chk_local_instal',
+  'chk_local_instalacao',
+]);
+
+export function regraLocalInstalacao(rule: string): boolean {
+  return REGRAS_LOCAL_INSTALACAO.has(rule);
+}
 
 export function normalizarLocalInstalacao(value: string): string {
   return value.toUpperCase().replace(/[^0-9A-Z]/g, '');

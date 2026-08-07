@@ -45,11 +45,14 @@ real é terminal para este fluxo; notas corrigidas não retornam à triagem.
 
 ### Correção direta de local
 
-Quando a nota possui `chk_local_instalacao`, o detalhe mostra **Corrigir local
-no COFFEE**. O painel consulta o valor atual, valida o contrato de 13 caracteres
-(3 cidade + 2 tipo + 8 número), salva pela API existente e confirma por
-releitura antes de habilitar **Encaminhar para operação**. A edição sozinha não
-cria card na Operação. A matriz de campos editáveis e não editáveis está em
+Na tela **Verificar**, selecione na fila uma nota cuja falha seja
+`chk_local_instal` ou `chk_local_instalacao`. No painel de detalhe à direita,
+antes da lista de falhas, aparece **Corrigir local no COFFEE**. O painel consulta
+o valor atual, valida o contrato de 13 caracteres (3 cidade + 2 tipo + 8 número),
+salva pela API existente e confirma por releitura antes de habilitar
+**Encaminhar para operação**. A edição sozinha não cria card na Operação e o
+encaminhamento em lote exclui notas cuja correção de local ainda está pendente.
+A matriz de campos editáveis e não editáveis está em
 [`12-integracao-edicao-coffee.md`](12-integracao-edicao-coffee.md).
 
 ## Duplicatas externas × Carteira de Notas
