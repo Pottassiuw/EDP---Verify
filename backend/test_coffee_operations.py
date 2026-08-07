@@ -186,7 +186,7 @@ def test_rota_local_reconsulta_e_atualiza_o_quadro(
     operation_client,
     monkeypatch,
 ):
-    local = {"value": "ABC01001"}
+    local = {"value": "701CF12345678"}
     monkeypatch.setattr(
         client,
         "alterar_local",
@@ -212,14 +212,14 @@ def test_rota_local_reconsulta_e_atualiza_o_quadro(
 
     resposta = operation_client.post(
         "/api/coffee/local-instalacao",
-        json={"id": 101, "local": "XYZ02002"},
+        json={"id": 101, "local": "702ET87654321"},
     )
 
     assert resposta.status_code == 200
     quadro = operation_client.get("/api/coffee/operacao").json()
     assert (
         quadro["itens"][0]["nota"]["dados_json"]["local_instalacao"]
-        == "XYZ02002"
+        == "702ET87654321"
     )
 
 

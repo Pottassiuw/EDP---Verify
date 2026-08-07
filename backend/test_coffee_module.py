@@ -341,13 +341,115 @@ def test_rota_job_inexistente_404(coffee_cliente):
 def test_rotas_de_escrita(coffee_cliente, monkeypatch):
     from coffee_module import client
     chamadas = []
+    local = "701CF12345678"
     monkeypatch.setattr(client, "definir_sap", lambda i, s: chamadas.append(("sap", i, s)) or True)
     monkeypatch.setattr(client, "desarquivar", lambda i: chamadas.append(("des", i)) or True)
     monkeypatch.setattr(client, "alterar_local", lambda i, l: chamadas.append(("loc", i, l)) or True)
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda i: {
+            "pk": int(i),
+            "id_sap": 17247854,
+            "arquivado": False,
+            "local_instalacao": local,
+            "fields": {"id_sap": 17247854},
+        },
+    )
     assert coffee_cliente.post("/api/coffee/sap", json={"id": 1, "sap": 10000000}).json()["ok"] is True
     assert coffee_cliente.post("/api/coffee/desarquivar", json={"id": 1}).json()["ok"] is True
-    assert coffee_cliente.post("/api/coffee/local-instalacao", json={"id": 1, "local": "X"}).json()["ok"] is True
+    resposta_local = coffee_cliente.post(
+        "/api/coffee/local-instalacao",
+        json={"id": 1, "local": local},
+    )
+    assert resposta_local.json() == {"ok": True, "local_instalacao": local}
     assert ("sap", 1, 10000000) in chamadas
+
+
+def test_rota_local_rejeita_formato_invalido_sem_chamar_coffee(
+    coffee_cliente,
+    monkeypatch,
+):
+    from coffee_module import client
+
+    chamadas = []
+    monkeypatch.setattr(
+        client,
+        "alterar_local",
+        lambda i, local: chamadas.append((i, local)) or True,
+    )
+
+    resposta = coffee_cliente.post(
+        "/api/coffee/local-instalacao",
+        json={"id": 1, "local": "701-CF-123"},
+    )
+
+    assert resposta.status_code == 400
+    assert "13" in resposta.json()["detail"]
+    assert chamadas == []
+
+
+def test_rota_local_rejeita_sucesso_nao_confirmado(coffee_cliente, monkeypatch):
+    from coffee_module import client
+
+    monkeypatch.setattr(client, "alterar_local", lambda i, local: True)
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda i: {
+            "pk": int(i),
+            "id_sap": 17247854,
+            "arquivado": False,
+            "local_instalacao": "701CF99999999",
+            "fields": {"id_sap": 17247854},
+        },
+    )
+
+    resposta = coffee_cliente.post(
+        "/api/coffee/local-instalacao",
+        json={"id": 1, "local": "701CF12345678"},
+    )
+
+    assert resposta.status_code == 409
+    assert "não confirmou" in resposta.json()["detail"]
+
+
+def test_rota_local_nao_encaminha_nota_sozinha(coffee_cliente, monkeypatch):
+    from coffee_module import client, db
+
+    local = "701CF12345678"
+    monkeypatch.setattr(client, "alterar_local", lambda i, valor: True)
+    monkeypatch.setattr(
+        client,
+        "buscar_nota",
+        lambda i: {
+            "pk": int(i),
+            "id_sap": None,
+            "arquivado": False,
+            "local_instalacao": local,
+            "fields": {
+                "id_sap": None,
+                "cidade": "701",
+                "tipo_local_instalacao": "CF",
+                "local_instalacao_numero": 12345678,
+            },
+        },
+    )
+
+    resposta = coffee_cliente.post(
+        "/api/coffee/local-instalacao",
+        json={"id": 1, "local": local},
+        headers={"X-User": "alice"},
+    )
+
+    assert resposta.status_code == 200
+    assert db.listar_itens_operacao() == []
+    espelho = db.obter_nota(1)
+    assert espelho["usuario"] == "alice"
+    campos = espelho["dados_json"]
+    assert campos["cidade"] == "701"
+    assert campos["tipo_local_instalacao"] == "CF"
+    assert campos["local_instalacao_numero"] == 12345678
 
 
 def test_rota_consultar_nao_persiste_nota_do_header(coffee_cliente):

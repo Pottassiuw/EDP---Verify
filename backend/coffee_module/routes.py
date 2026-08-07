@@ -1,5 +1,6 @@
 """Rotas /api/coffee/* -- fundacao do hub COFFEE."""
 import os
+import re
 import time
 from contextlib import contextmanager
 from typing import Optional
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from coffee_module import classify, client, config, db, exportacao, jobs, operation_service
 
 _PERF_ATIVO = os.environ.get("EDP_PERF", "").strip() not in ("", "0", "false")
+_LOCAL_INSTALACAO_RE = re.compile(r"^\d{3}[A-Z0-9]{2}\d{8}$")
 
 
 @contextmanager
@@ -249,6 +251,14 @@ def desarquivar(pedido: IdPedido):
 @router.post("/local-instalacao")
 def local_instalacao(pedido: LocalPedido):
     _garantir_banco()
+    if not _LOCAL_INSTALACAO_RE.fullmatch(pedido.local):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Local de instalação deve ter 13 caracteres: "
+                "3 dígitos da cidade, 2 do tipo e 8 do número."
+            ),
+        )
     try:
         client.alterar_local(pedido.id, pedido.local)
     except Exception as exc:  # noqa: BLE001
@@ -281,6 +291,26 @@ def local_instalacao(pedido: LocalPedido):
             ),
         ) from exc
 
+    if nota["local_instalacao"] != pedido.local:
+        db.registrar_log(
+            "acao_usuario",
+            "alterar_local",
+            nota["pk"],
+            {
+                "id": pedido.id,
+                "solicitado": pedido.local,
+                "confirmado": nota["local_instalacao"],
+            },
+            False,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "O COFFEE não confirmou o local solicitado. "
+                "Consulte a nota novamente antes de tentar outra alteração."
+            ),
+        )
+
     item = next(
         (
             atual
@@ -290,12 +320,11 @@ def local_instalacao(pedido: LocalPedido):
         ),
         None,
     )
-    origem = (
-        (item or {}).get("origem")
-        or db.origem_atual(nota["pk"])
-        or "avulsa"
-    )
-    operation_service.aplicar_consulta(pedido.id, nota, origem, None)
+    if item is None:
+        db.upsert_nota(nota["pk"], nota["id_sap"], nota["fields"])
+    else:
+        origem = item.get("origem") or db.origem_atual(nota["pk"]) or "avulsa"
+        operation_service.aplicar_consulta(pedido.id, nota, origem, None)
     db.registrar_log(
         "acao_usuario",
         "alterar_local",
@@ -303,7 +332,7 @@ def local_instalacao(pedido: LocalPedido):
         {"id": pedido.id, "local": pedido.local},
         True,
     )
-    return {"ok": True}
+    return {"ok": True, "local_instalacao": nota["local_instalacao"]}
 
 
 @router.get("/operacao")
