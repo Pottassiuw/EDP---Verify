@@ -59,9 +59,11 @@ Observação. O botão por card consulta sob demanda `GET
 /api/coffee/consultar/{id}` e projeta cinco campos do COFFEE em memória:
 Local, Problema (`componente`/`sintoma`/`causa`), Poste, Referência e
 Observação. A resposta não faz `upsert`, não escreve na Carteira e não altera
-o estado persistido; valores COFFEE não vazios prevalecem somente enquanto o
-card está aberto. Isso permite comparar uma candidata ausente da Carteira sem
-esperar uma sincronização em lote.
+o estado persistido. Ela fica no cache em memória do React Query por 30 minutos,
+chaveada pelo ID da candidata: ao navegar para outra nota e voltar, os valores
+COFFEE não vazios reaparecem; atualizar a página ou encerrar a sessão descarta
+esse enriquecimento temporário. Isso permite comparar uma candidata ausente da
+Carteira sem esperar uma sincronização em lote.
 
 A evidência de possível duplicata usa os quatro campos pontuados Problema (2),
 Local de instalação (1,6), Poste (1,3) e Referência física (1,1), normalizada
@@ -70,8 +72,9 @@ humana, mas não entra no score. Uma regra `chk_*` que afete um desses campos
 reduz apenas aquele peso para 1; sentinelas/valores ausentes não são match nem
 diferença. A faixa exige cobertura suficiente e ao menos dois matches: Forte
 (verde), Possível (âmbar), Distinta (vermelho) ou Evidência insuficiente
-(índigo). A fila usa o melhor indicador com evidência entre as candidatas e o
-card explica percentual, cobertura e pesos reduzidos.
+(índigo). A fila usa o melhor indicador com evidência entre as candidatas e
+mostra a cobertura visível como `NN% cob.`; o card explica percentual,
+cobertura e pesos reduzidos.
 
 Candidata sem linha na Carteira mantém estado dedicado ("não encontrada na
 Carteira") e uma única badge; após a consulta ao vivo ela exibe a mesma grade

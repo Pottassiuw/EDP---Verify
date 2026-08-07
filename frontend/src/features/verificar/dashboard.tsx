@@ -33,7 +33,7 @@ const DUPLICATE_INDICATOR = {
   insuficiente: { symbol: '◌', className: 'text-indigo', label: 'Evidência insuficiente' },
 } as const;
 
-function duplicateIndicator(note: Note): { symbol: string; className: string; label: string } | null {
+function duplicateIndicator(note: Note): { symbol: string; className: string; label: string; coverage: number } | null {
   const ranked = note.duplicates.map((candidate) => calculateDuplicateScore(
     note,
     candidate,
@@ -48,10 +48,11 @@ function duplicateIndicator(note: Note): { symbol: string; className: string; la
   const best = ranked[0];
   if (!best) return null;
   const indicator = DUPLICATE_INDICATOR[best.faixa];
+  const coverage = Math.round(best.cobertura * 100);
   const evidence = best.faixa === 'insuficiente'
-    ? `evidência insuficiente (cobertura ${Math.round(best.cobertura * 100)}%)`
-    : `${Math.round((best.score ?? 0) * 100)}% · cobertura ${Math.round(best.cobertura * 100)}%`;
-  return { ...indicator, label: `${indicator.label}: ${evidence}` };
+    ? `evidência insuficiente (cobertura ${coverage}%)`
+    : `${Math.round((best.score ?? 0) * 100)}% · cobertura ${coverage}%`;
+  return { ...indicator, coverage, label: `${indicator.label}: ${evidence}` };
 }
 
 
@@ -364,7 +365,10 @@ export function Dashboard(props: DashboardProps): React.JSX.Element {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-[8px]">
                       <span className="font-mono text-[13px] font-semibold">{n.id}</span>
-                      {dupIndicator && <span role="img" title={dupIndicator.label} aria-label={dupIndicator.label} className={`${dupIndicator.className} text-[13px]`}>{dupIndicator.symbol}</span>}
+                      {dupIndicator && <span className="inline-flex items-center gap-[3px]" title={dupIndicator.label}>
+                        <span role="img" aria-label={dupIndicator.label} className={`${dupIndicator.className} text-[13px]`}>{dupIndicator.symbol}</span>
+                        <span className="font-mono text-[10px] text-text-mute">{dupIndicator.coverage}% cob.</span>
+                      </span>}
                       <span className="text-[11px] text-text-mute">· {n.uf}/{n.setor}</span>
                     </div>
                     <div className="text-[12px] text-text-dim whitespace-nowrap overflow-hidden text-ellipsis">{n.tipo_nota}</div>

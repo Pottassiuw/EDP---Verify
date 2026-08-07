@@ -78,6 +78,33 @@ describe('mergeConsultaCampos', () => {
 });
 
 describe('ExternalCandidateCard', () => {
+  it('reaproveita a consulta COFFEE já em cache ao voltar para a nota', () => {
+    const candidate = candidataMatch({
+      carteira_match: false,
+      local_instalacao: '',
+      problema: '',
+      poste: '',
+      referencia: '',
+    });
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['coffee', 'consulta', candidate.id], {
+      local_instalacao: 'LI COFFEE',
+      problema: 'Problema COFFEE',
+      poste: 'P-77',
+      referencia: 'Rua da Consulta',
+      observacao: 'Observação recuperada do cache',
+    });
+
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={queryClient}>
+        <ExternalCandidateCard note={nota({})} candidate={candidate} />
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Dados abaixo vieram direto do COFFEE.');
+    expect(html).toContain('Observação recuperada do cache');
+  });
+
   it('com match na Carteira, mostra os quatro campos, observação e contexto SAP', () => {
     const html = renderCard(nota({ observacao: 'Observação desta nota' }), candidataMatch({ observacao: 'Observação candidata' }));
     expect(html).toContain('718ET00026773');

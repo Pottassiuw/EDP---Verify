@@ -187,5 +187,6 @@ describe('Dashboard — filtro por inspetor', () => {
     );
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Forte: 100% · cobertura 100%"');
+    expect(html).toContain('100% cob.');
   });
 });
