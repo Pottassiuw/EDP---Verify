@@ -218,6 +218,24 @@ export async function marcarGerar(id: string, aGerar: boolean, justificativa?: s
   if (!res.ok) throw await erroComDetail(res, "POST /marcar-gerar");
 }
 
+export interface AlterarLocalInstalacaoResultado {
+  ok: true;
+  local_instalacao: string;
+}
+
+export async function alterarLocalInstalacao(
+  id: number,
+  local: string,
+): Promise<AlterarLocalInstalacaoResultado> {
+  const res = await coffeeFetch(BASE + "/coffee/local-instalacao", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, local }),
+  });
+  if (!res.ok) throw await erroComDetail(res, "POST /local-instalacao");
+  return res.json() as Promise<AlterarLocalInstalacaoResultado>;
+}
+
 export async function consultarNota(
   id: number,
 ): Promise<import("./features/coffee/types").CoffeeConsulta> {
@@ -309,6 +327,7 @@ export const EDPApi = {
   markDuplicate,
   marcarGerar,
   consultarNota,
+  alterarLocalInstalacao,
   coffeeUrl,
   mapsUrl,
   openCoffee,

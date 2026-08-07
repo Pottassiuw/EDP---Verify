@@ -179,7 +179,7 @@ Router `/api/coffee` (prefixo). Mapeamento para o frontend
 | `GET /consultar/{id}` | Busca síncrona somente leitura, com poste/referência; permanece como rota de compatibilidade. | Integrações legadas/manual e duplicatas externas. |
 | `POST /sap` | Define `id_sap` de uma nota diretamente. | uso interno/manual |
 | `POST /desarquivar` | Desarquiva uma nota diretamente. | uso interno/manual |
-| `POST /local-instalacao` | Corrige o local e reconsulta o card/ficha. | `components/coffee-nota-inspector.tsx` |
+| `POST /local-instalacao` | Valida 13 caracteres, corrige e reconsulta. Se não existe card operacional, apenas sincroniza a nota local; se já existe, reclassifica sua ficha. Retorna conflito se o COFFEE não confirmar o valor. | Verificar e `components/coffee-nota-inspector.tsx` |
 | `GET /logs` | Lista logs, filtrável por `nota_pk`/`tipo`/`usuario`/`since`/`limit`. | `coffee-logs.tsx`, inspector |
 | `GET /logs/usuarios` | Lista usuários distintos que aparecem nos logs. | `coffee-logs.tsx` |
 | `POST /arquivar` | Arquiva uma nota concluída; exige justificativa. | `concluidas/coffee-concluidas.tsx` |

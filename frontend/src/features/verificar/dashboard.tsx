@@ -14,6 +14,7 @@ import { calculateDuplicateScore } from './duplicate-score';
 import { KpiDrawer } from './kpi-drawer';
 import { detectarNoveExtra } from './malha-fina';
 import { MalhaFinaPanel } from './malha-fina-panel';
+import { LocalInstalacaoCorrection } from './local-instalacao-correction';
 import { usePersistedState } from '../../hooks/use-persisted-state';
 import { toast } from 'sonner';
 import { Eyebrow } from '@/components/branded/section';
@@ -479,6 +480,9 @@ function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate,
     ["Latitude", v(sel.latitude)], ["Longitude", v(sel.longitude)],
   ];
   const otherErrors = sel.errors.filter((e) => e.rule !== "chk_duplicata");
+  const hasLocalError = sel.errors.some(
+    (error) => error.rule === "chk_local_instalacao",
+  );
   const hasDup = sel.duplicates.length > 0;
   return (
     <div className={"flex flex-col overflow-hidden bg-bg-2" + (fs ? " fixed inset-0 z-[60]" : "")}>
@@ -501,9 +505,11 @@ function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate,
                   aria-label={fs ? "Sair da tela cheia" : "Expandir"} onClick={() => setFs((v) => !v)}>
             {fs ? <Minimize2 /> : <Maximize2 />}
           </Button>
-          <Button variant={done ? "outline" : "default"} size="sm" onClick={() => onToggleDone(sel.id)}>
-            {done ? <><RotateCcw /> Retirar do COFFEE</> : <><Check /> Encaminhar</>}
-          </Button>
+          {(!hasLocalError || done) && (
+            <Button variant={done ? "outline" : "default"} size="sm" onClick={() => onToggleDone(sel.id)}>
+              {done ? <><RotateCcw /> Retirar do COFFEE</> : <><Check /> Encaminhar</>}
+            </Button>
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-auto flex flex-col gap-[22px] p-[24px]">
@@ -519,6 +525,16 @@ function Detail({ sel, done, dup, encaminhamento, onToggleDone, onMarkDuplicate,
               </div>
             )}
           </section>
+        )}
+
+        {hasLocalError && (
+          <LocalInstalacaoCorrection
+            key={sel.id}
+            noteId={sel.id}
+            localTriagem={sel.local_instalacao}
+            encaminhada={done}
+            onEncaminhar={() => onToggleDone(sel.id)}
+          />
         )}
 
         <section>

@@ -18,6 +18,15 @@ vi.hoisted(() => {
   });
 });
 
+vi.mock('./local-instalacao-correction', () => ({
+  LocalInstalacaoCorrection: () => (
+    <section>
+      Corrigir local no COFFEE · Disponível via API · 3 cidade · 2 tipo · 8 número
+      <button>Encaminhar para operação</button>
+    </section>
+  ),
+}));
+
 import { Dashboard } from './dashboard';
 
 function nota(overrides: Partial<Note>): Note {
@@ -188,5 +197,39 @@ describe('Dashboard — filtro por inspetor', () => {
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Forte: 100% · cobertura 100%"');
     expect(html).toContain('100% cob.');
+  });
+
+  it('oferece correção direta no COFFEE apenas para falha de local', () => {
+    const comFalhaLocal = nota({
+      id: '800',
+      local_instalacao: '701CF123456789',
+      errors: [{
+        rule: 'chk_local_instalacao',
+        rule_name: 'Local Instalação',
+        value: '701CF123456789',
+      }],
+      status: 'erro',
+    });
+    const comOutraFalha = nota({
+      id: '801',
+      errors: [{ rule: 'chk_referencia', rule_name: 'Referência', value: '-' }],
+      status: 'erro',
+    });
+
+    const htmlLocal = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[comFalhaLocal]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+    const htmlOutra = renderToStaticMarkup(
+      <Dashboard showKpis={false} notes={[comOutraFalha]} completed={new Set()} encaminhamentos={{}} encaminhadasHoje={[]} dupResolved={new Set()}
+                 onToggleComplete={noop} onMarkMany={noop} onMarkDuplicate={noop} onSendToCoffee={noop} />
+    );
+
+    expect(htmlLocal).toContain('Corrigir local no COFFEE');
+    expect(htmlLocal).toContain('Disponível via API');
+    expect(htmlLocal).toContain('3 cidade · 2 tipo · 8 número');
+    expect(htmlLocal).toContain('Encaminhar para operação');
+    expect(htmlLocal.match(/Encaminhar/g)).toHaveLength(1);
+    expect(htmlOutra).not.toContain('Corrigir local no COFFEE');
   });
 });

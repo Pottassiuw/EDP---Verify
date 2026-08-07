@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import type { DuplicateCandidate, DuplicateField, Note } from '../../types';
 import { EDPApi } from '../../api';
+import { COFFEE_CONSULTA_KEY } from '../coffee/coffee-query-keys';
 import { Button } from '@/components/ui/button';
 import { CompareRow, DuplicateScoreEvidence } from './duplicate-compare';
 
@@ -67,7 +68,7 @@ interface ExternalCandidateCardProps { note: Note; candidate: DuplicateCandidate
 
 export function ExternalCandidateCard({ note, candidate }: ExternalCandidateCardProps): React.JSX.Element {
   const consultaQuery = useQuery({
-    queryKey: ['coffee', 'consulta', candidate.id],
+    queryKey: COFFEE_CONSULTA_KEY(Number(candidate.id)),
     queryFn: async (): Promise<ConsultaCampos> => {
       const resposta = await EDPApi.consultarNota(Number(candidate.id));
       return {

@@ -10,6 +10,7 @@ vi.hoisted(() => {
 });
 
 import type { DuplicateCandidate, Note } from '../../types';
+import { COFFEE_CONSULTA_KEY } from '../coffee/coffee-query-keys';
 import { DuplicateCompare, dupcEq } from './duplicate-compare';
 import { Dashboard } from './dashboard';
 import { ExternalCandidateCard, mergeConsultaCampos } from './duplicate-compare-externa';
@@ -87,7 +88,7 @@ describe('ExternalCandidateCard', () => {
       referencia: '',
     });
     const queryClient = new QueryClient();
-    queryClient.setQueryData(['coffee', 'consulta', candidate.id], {
+    queryClient.setQueryData(COFFEE_CONSULTA_KEY(Number(candidate.id)), {
       local_instalacao: 'LI COFFEE',
       problema: 'Problema COFFEE',
       poste: 'P-77',
